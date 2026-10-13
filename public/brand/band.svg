@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 300" preserveAspectRatio="xMidYMax slice">
+  <!-- Purse's floor: an order book's duplicate sheets (cream, pink) under its perforated top sheet. -->
+  <defs>
+    <pattern id="perf" width="20" height="300" patternUnits="userSpaceOnUse"><circle cx="10" cy="146" r="3" fill="#f7f5f0"/></pattern>
+  </defs>
+  <path d="M-20 118 L1460 92 V300 H-20 Z" fill="#f0e4d0"/>
+  <path d="M-20 128 L1460 112 V300 H-20 Z" fill="#ecd0d4"/>
+  <rect x="-20" y="136" width="1480" height="180" fill="#fbfaf6"/>
+  <rect x="-20" y="136" width="1480" height="20" fill="url(#perf)"/>
+</svg>

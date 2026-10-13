@@ -1,0 +1,29 @@
+{
+  "sections": [
+    {
+      "title": "Get started",
+      "pages": [
+        { "slug": "introduction", "title": "What Purse is", "file": "introduction.md", "summary": "How a purchase moves through Purse, from request to approval, order, receipt and invoice." },
+        { "slug": "run", "title": "Run Purse on your computer", "file": "run.md", "summary": "Install rer, get Purse, start it with rer dev and finish first-run setup." },
+        { "slug": "set-up", "title": "Set up your business", "file": "set-up.md", "summary": "Business codes, people and their purchasing capabilities, approval policies and delegation." }
+      ]
+    },
+    {
+      "title": "Everyday purchasing",
+      "pages": [
+        { "slug": "requests", "title": "Requests, quotes and approvals", "file": "requests.md", "summary": "Draft a request, compare supplied quotes, submit it, and approve the exact revision." },
+        { "slug": "orders", "title": "Purchase orders and receiving", "file": "orders.md", "summary": "Generate a numbered PO, record its issue, then receive, reject, return or cancel line by line." },
+        { "slug": "invoices", "title": "Invoices and the accounting CSV", "file": "invoices.md", "summary": "Match invoice evidence to order lines, review any difference, and download the accounting CSV." },
+        { "slug": "suppliers", "title": "Suppliers and the catalogue", "file": "suppliers.md", "summary": "Keep known suppliers with their contracts and renewals, and approved reference prices." },
+        { "slug": "overview", "title": "Overview, preparation and audit", "file": "overview.md", "summary": "What's still owed in each currency, human-written preparation drafts, and the audit history." }
+      ]
+    },
+    {
+      "title": "Move in and keep it safe",
+      "pages": [
+        { "slug": "move-in", "title": "Move in from CSV", "file": "move-in.md", "summary": "Preview every row before it's written, commit the reviewed batch, resume it, and undo what you haven't touched." },
+        { "slug": "backup-and-restore", "title": "Backup and restore", "file": "backup-and-restore.md", "summary": "Export the whole installation to one archive and restore it into an empty Purse." }
+      ]
+    }
+  ]
+}

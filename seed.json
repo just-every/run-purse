@@ -1,0 +1,130 @@
+{
+  "id": "purse",
+  "name": "Purse",
+  "version": "0.1.0",
+  "maturity": "phase-1-local-validation",
+  "category": "procurement",
+  "spine": {
+    "id": "purchasing-chain",
+    "record": "Versioned Request \u2192 Decision \u2192 PurchaseOrder \u2192 Receipt \u2192 InvoiceEvidence"
+  },
+  "description": "Provider-free purchasing from known suppliers, with exact-revision authority, commitment events, native receiving and historical CSV move-in.",
+  "capabilities": [
+    {
+      "id": "business-members",
+      "clauses": [
+        "PUR-001"
+      ]
+    },
+    {
+      "id": "suppliers-catalogue",
+      "clauses": [
+        "PUR-002",
+        "PUR-003"
+      ]
+    },
+    {
+      "id": "requests-quotes",
+      "clauses": [
+        "PUR-004",
+        "PUR-005"
+      ]
+    },
+    {
+      "id": "authority-commitments",
+      "clauses": [
+        "PUR-006",
+        "PUR-007",
+        "PUR-016"
+      ]
+    },
+    {
+      "id": "orders-receiving-invoices",
+      "clauses": [
+        "PUR-008",
+        "PUR-009",
+        "PUR-010",
+        "PUR-011"
+      ]
+    },
+    {
+      "id": "archive-import",
+      "clauses": [
+        "PUR-012",
+        "PUR-013"
+      ]
+    },
+    {
+      "id": "human-preparation",
+      "clauses": [
+        "PUR-014"
+      ]
+    },
+    {
+      "id": "native-runtime",
+      "clauses": [
+        "PUR-015",
+        "PUR-017"
+      ]
+    }
+  ],
+  "nonGoals": [
+    "Payment execution",
+    "Accounting posting",
+    "Tax determination",
+    "Supplier discovery",
+    "Provider-free simulated AI",
+    "Supplier messages or binding negotiation"
+  ],
+  "externals": [
+    {
+      "id": "cloudflare",
+      "required": false,
+      "why": "Optional hosted Worker/D1 deployment; native local operation requires no account",
+      "data": [
+        "Hosted HTTP requests and purchasing records only if owner deploys"
+      ],
+      "adapters": []
+    }
+  ],
+  "env": [],
+  "deploy": {
+    "healthPath": "/health",
+    "publicPaths": [
+      "/",
+      "/health",
+      "/signin"
+    ],
+    "notes": "Native owner sessions guard /app; unknown paths return real 404s; the development outbox is local-only."
+  },
+  "extensionPoints": {
+    "contributions": [],
+    "policies": [],
+    "events": [],
+    "slots": [],
+    "adapters": []
+  },
+  "limits": {
+    "status": "explicit local limits",
+    "attachmentBytes": 1000000,
+    "requestLines": 100,
+    "csvRecordsPerReview": 300
+  },
+  "accessibility": {
+    "level": "WCAG 2.2 AA",
+    "status": "target; unaudited"
+  },
+  "operatingCost": {
+    "status": "unmeasured"
+  },
+  "composition": {
+    "base": "base",
+    "family": "procurement",
+    "edition": "purse",
+    "modules": [
+      "operator-auth",
+      "mail",
+      "import-kit"
+    ]
+  }
+}

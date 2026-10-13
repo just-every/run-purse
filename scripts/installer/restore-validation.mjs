@@ -1,0 +1,80 @@
+import { canonicalJson } from '@runeditrun/rer/internal/modules/portability/hash.mjs';
+import { PortabilityError } from '@runeditrun/rer/modules/portability';
+import { validateOrderLinks } from './restore-order-links.mjs';
+
+const kinds = new Set(['business','member','supplier','catalogue','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit']);
+export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
+export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
+export const integer = n => Number.isSafeInteger(n) && n >= 0;
+export const money = n => integer(n) && n <= 1e12;
+export function quantity(value) {
+ check(typeof value === 'string' && /^(0|[1-9]\d{0,8})(\.\d{1,3})?$/.test(value), 'quantity');
+ const [whole, fraction = ''] = value.split('.'); const q = Number(whole) * 1000 + Number(fraction.padEnd(3, '0'));
+ check(q > 0, 'quantity'); return q;
+}
+export const amount = (q, unit) => Number((BigInt(q) * BigInt(unit) + 500n) / 1000n);
+export function lineAmounts(r, quote = false) {
+ check(Array.isArray(r.lines) && r.lines.length > 0 && new Set(r.lines.map(l => l.id)).size === r.lines.length, 'lines');
+ for (const l of r.lines) {
+  check(typeof l.id === 'string' && l.id.length && quantity(l.quantity) === l.q && money(l.unitMinor) && money(l.totalMinor), 'line_amount');
+  check(l.totalMinor === amount(l.q,l.unitMinor), 'line_amount');
+  check(integer(l.carriedAccepted ?? 0) && integer(l.carriedCancelled ?? 0) && (l.carriedAccepted ?? 0) + (l.carriedCancelled ?? 0) <= l.q, 'line_carry');
+ }
+ if (quote) { check((r.freightMinor === null || money(r.freightMinor)) && (r.taxMinor === null || money(r.taxMinor)), 'quote_amount'); return; }
+ check(money(r.freightMinor) && money(r.taxMinor) && money(r.totalMinor), 'total');
+ check(r.totalMinor === r.lines.reduce((n,l) => n + l.totalMinor,0) + r.freightMinor + r.taxMinor, 'total');
+}
+const purchaseFields = ['supplier','supplierSnapshot','currency','needDate','lines','freightMinor','taxMinor','totalMinor','terms'];
+export const purchasing = r => Object.fromEntries(purchaseFields.map(k => [k,r[k]]));
+
+// Generic JSON rows have no SQL foreign keys. Validate the complete staged graph
+// read-only before Base writes any destination records or objects.
+export function validatePurchasingArchive(rows) {
+ const records = new Map();
+ for (const row of rows) {
+  let value; try { value = JSON.parse(row.value); } catch { check(false,'record_json'); }
+  check(row.business === 'main' && kinds.has(row.kind) && value?.id === row.id && typeof row.revision === 'string' && row.revision.length, 'record');
+  const key = JSON.stringify([row.kind,row.id]); check(!records.has(key),'duplicate_record'); records.set(key,value);
+ }
+ const get = (kind,id) => { const v = records.get(JSON.stringify([kind,id])); check(v,kind + '_link'); return v; };
+ const all = kind => rows.filter(r => r.kind === kind).map(r => get(kind,r.id));
+ if (!rows.length) return true;
+ check(all('business').length === 1, 'business'); get('business','main');
+ for (const kind of ['request','revision','order']) for (const r of all(kind)) {
+  get('supplier',r.supplier); lineAmounts(r);
+  if (!r.imported) {
+   const identity = r.supplierSnapshot;
+   check(identity?.id === r.supplier && typeof identity.name === 'string' && identity.name.trim().length && Array.isArray(identity.contacts) && typeof identity.contractRef === 'string', 'supplier_identity');
+   check(identity.contacts.every(c => typeof c.name === 'string' && typeof c.email === 'string'),'supplier_contacts');
+  }
+  for (const l of r.lines) if (l.catalogue) get('catalogue',l.catalogue);
+  if (r.imported) check(r.status === 'imported' && !r.issuedAt && r.policy === null, 'import_authority');
+ }
+ for (const r of all('request').filter(r => !r.imported)) {
+  const snapshot = get('revision',r.id + ':' + r.revision);
+  check(snapshot.request === r.id && same(purchasing(snapshot),purchasing(r)), 'request_revision');
+  if (r.policy) get('policy',r.policy);
+  if (r.amends) check(get('order',r.amends).request === r.id,'amendment_link');
+ }
+ for (const r of all('revision')) {
+  const request = get('request',r.request);
+  check(r.id === r.request + ':' + r.revision && Number.isSafeInteger(r.revision) && r.revision > 0 && r.revision <= request.revision, 'revision_link');
+ }
+ for (const d of all('decision')) {
+  get('revision',d.request + ':' + d.revision); get('policy',d.policy);
+  if (d.delegation) check(get('delegation',d.delegation).policy === d.policy,'decision_delegation');
+ }
+ for (const kind of ['catalogue','quote']) for (const r of all(kind)) { get('supplier',r.supplier); if (kind === 'quote') { get('revision',r.request + ':' + r.revision); lineAmounts(r,true); } }
+ for (const d of all('delegation')) get('policy',d.policy);
+ for (const e of all('commitment')) { get('revision',e.request + ':' + e.revision); get('policy',e.policy); check(Number.isSafeInteger(e.amountMinor),'commitment_amount'); }
+ for (const a of all('attachment')) {
+  check(['request','supplier','order','invoice'].includes(a.kind),'attachment_kind'); get(a.kind,a.record);
+  check(all('audit').some(e => e.action === 'attachment' && e.attachment === a.id && e.record === a.record),'attachment_link');
+  check(typeof a.base64 === 'string','attachment_bytes');
+  let bytes; try { bytes = atob(a.base64); } catch { check(false,'attachment_bytes'); }
+  check(bytes.length === a.size && a.size <= 1000000,'attachment_size');
+ }
+ for (const r of all('agentRun')) for (const ref of r.references) get(ref.kind,ref.id);
+ for (const p of all('proposedAction')) { get('agentRun',p.run); for (const ref of p.references) get(ref.kind,ref.id); }
+ validateOrderLinks({get,all}); return true;
+}

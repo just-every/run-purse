@@ -1,0 +1,64 @@
+/* The homepage (SPEC §1–2): ink on paper; colour lives only in the drawings. At 1440 the copy sits in a 560px column
+   at left and each drawing at right; at 390 every section stacks as heading, body, then its drawing. */
+.landing { max-width: 1440px; margin: 0 auto; padding: 0 64px; }
+
+.hero, .band { display: grid; grid-template-columns: minmax(0, 540px) minmax(0, 1fr); column-gap: 64px; align-items: center; }
+.hero { grid-template-columns: minmax(0, 590px) minmax(0, 1fr); column-gap: 32px; padding: 64px 0 40px; min-height: 760px; }
+.hero h1 { font-size: 80px; line-height: 0.98; font-weight: 700; letter-spacing: -0.035em; text-wrap: balance; }
+.hero-sub { margin-top: 36px !important; max-width: 520px; font-size: 22px; line-height: 1.45; text-wrap: pretty; }
+.hero-free { margin-top: 28px !important; max-width: 520px; color: var(--purse-muted); font-size: 18px; line-height: 1.5; }
+.hero-free strong { color: var(--purse-ink); font-weight: 600; }
+
+.actions { display: flex; align-items: center; gap: 20px 40px; flex-wrap: wrap; margin-top: 44px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 56px; padding: 0 32px; border-radius: 999px; background: var(--purse-ink); color: var(--purse-paper); font: 500 18px/1 var(--purse-font); text-decoration: none; transition: background 0.15s; }
+.btn:hover { background: #000; }
+.btn .arrow { font-size: 20px; transition: transform 0.15s; }
+.btn:hover .arrow { transform: translateX(3px); }
+.text-link { color: var(--purse-ink); font-size: 18px; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
+.text-link:hover { text-decoration-thickness: 2px; }
+.small-print { margin-top: 28px !important; color: var(--purse-faint); font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { .btn, .btn .arrow { transition: none; } .btn:hover .arrow { transform: none; } }
+
+.band { margin-top: 136px; scroll-margin-top: 32px; }
+.band h2 { font-size: 64px; line-height: 1; font-weight: 700; letter-spacing: -0.035em; text-wrap: balance; }
+.band-body { margin-top: 28px !important; max-width: 500px; font-size: 21px; line-height: 1.5; text-wrap: pretty; }
+
+/* "Try it beside what you have": the three steps, then the closing band, beside one drawing. */
+.band-try { grid-template-areas: "copy drawing" "closing drawing"; align-items: start; margin-top: 144px; }
+.band-try .band-copy { grid-area: copy; }
+.band-try .drawing { grid-area: drawing; align-self: center; }
+.steps { display: grid; gap: 22px; margin-top: 40px !important; padding: 0; list-style: none; }
+.steps li { display: flex; align-items: center; gap: 18px; font-size: 22px; font-weight: 500; line-height: 1.3; }
+.step-disc { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--purse-rose); color: #fff; font-size: 18px; font-weight: 600; font-variant-numeric: var(--purse-figures); }
+.closing { grid-area: closing; margin-top: 80px; }
+.closing h2 { font-size: 56px; }
+.closing .actions { margin-top: 36px; }
+
+@media (max-width: 1180px) {
+  .landing { padding: 0 40px; }
+  .hero, .band { grid-template-columns: minmax(0, 1fr); row-gap: 56px; }
+  .hero { min-height: 0; padding-top: 56px; }
+  .band-try { grid-template-areas: "copy" "drawing" "closing"; }
+  .hero-copy, .band-copy, .closing { max-width: 680px; }
+  .drawing { max-width: 760px; }
+}
+@media (max-width: 760px) {
+  .landing { padding: 0 20px; }
+  .hero { padding-top: 40px; row-gap: 48px; }
+  .hero h1 { font-size: 48px; line-height: 1; }
+  .hero-sub { margin-top: 24px !important; font-size: 18px; }
+  .hero-free { margin-top: 20px !important; font-size: 16px; }
+  .actions { flex-direction: column; align-items: stretch; gap: 18px; margin-top: 32px; }
+  .btn { min-height: 52px; font-size: 17px; }
+  .text-link { align-self: center; font-size: 17px; }
+  .small-print { text-align: center; font-size: 14px; margin-top: 20px !important; }
+  .band { margin-top: 96px; row-gap: 36px; }
+  .band h2 { font-size: 36px; line-height: 1.05; letter-spacing: -0.03em; }
+  .band-body { margin-top: 18px !important; font-size: 17px; }
+  .band-try { margin-top: 96px; }
+  .steps { gap: 16px; margin-top: 28px !important; }
+  .steps li { font-size: 18px; gap: 14px; }
+  .step-disc { width: 32px; height: 32px; font-size: 15px; }
+  .closing { margin-top: 24px; }
+  .closing h2 { font-size: 36px; }
+}

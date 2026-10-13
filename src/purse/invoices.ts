@@ -1,0 +1,40 @@
+import { moneyInput } from './money';
+import { all, audit, can, get, put, requireThat, text, minor, quantity, extended, uid, type Actor, type Data, type State } from './types';
+import { linePosition } from './orders';
+
+// Receipt positions and formatting are not invoice identity. Compare the
+// submitted evidence and normalized allocations, independently of line order.
+function evidence(i: Data) {
+    return JSON.stringify({ order: i.order, currency: i.currency, source: i.source,
+        allocations: i.allocations.map((x: Data) => [x.line, x.q, x.amountMinor])
+            .sort((a: any[], b: any[]) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0) });
+}
+
+export function invoice(s: State, a: Actor, b: Data) {
+    can(s, a, 'buyer');
+    const o = get(s, 'order', b.order);
+    requireThat(o.issuedAt && !o.imported, 'Issued PO required', 409);
+    const reference = text(b.reference, 'Invoice reference'), source = text(b.source, 'Invoice evidence source');
+    requireThat(Array.isArray(b.allocations) && b.allocations.length > 0, 'Allocate invoice lines');
+    const seen = new Set();
+    const allocations = b.allocations.map((x: Data) => {
+        const l = o.lines.find((l: Data) => l.id === x.line);
+        requireThat(l && !seen.has(l.id), 'Use each PO line once');
+        seen.add(l.id);
+        const q = quantity(x.quantity);
+        return { line: l.id, quantity: x.quantity, q, amountMinor: moneyInput(x, 'amount', 'amountMinor', 'Invoice amount'),
+            orderedMinor: extended(q, l.unitMinor), receivedQ: linePosition(s, o.id, l).accepted };
+    });
+    const candidate = { order: o.id, supplier: o.supplier, reference, source, currency: o.currency, allocations };
+    const existing = all(s, 'invoice').filter(i => get(s, 'order', i.order).supplier === o.supplier && i.reference === reference);
+    if (existing.length) {
+        requireThat(existing.length === 1 && evidence(existing[0]) === evidence(candidate),
+            'Invoice reference already exists for this supplier with different evidence or allocations; review the existing invoice before correction', 409);
+        return existing[0];
+    }
+    requireThat(o.status === 'issued', 'Issued PO required for new invoice evidence', 409);
+    const id = uid();
+    put(s, 'invoice', id, { ...candidate, id, totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total'), actor: a.id, at: new Date().toISOString() });
+    audit(s, a, 'invoice', id);
+    return get(s, 'invoice', id);
+}

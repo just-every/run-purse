@@ -1,0 +1,88 @@
+diff --git a/cli/portability.mjs b/cli/portability.mjs
+--- a/cli/portability.mjs
++++ b/cli/portability.mjs
+@@ -8,8 +8,11 @@
+ 
+ // Seeds declare their real bindings and data policy. The shared module owns the
+ // archive format and atomic restore; the shared runner owns its native children.
+-export function localPortability({ database, binding = 'DB', buckets = {}, policy, transient = [] }) {
++export function localPortability({ database, binding = 'DB', buckets = {}, policy, policyModule, transient = [] }) {
++ if (policyModule !== undefined && (policy !== undefined || typeof policyModule !== 'string' || !policyModule)) throw new TypeError('Use either policy or a checkout-relative policyModule');
++ JSON.stringify(policy, (_key, value) => { if (typeof value === 'function') throw new TypeError('Use policyModule for portability hooks'); return value; });
+  async function run({ root, path, journal, store, signal, operationToken, platform, legacyRecovery }, direction) {
++  if (platform === 'container' && policyModule) throw refuse('This product requires native local portability for its staged policy validation.');
+   if (direction === 'export') {
+    if (await lstat(path).catch(error => { if (error.code === 'ENOENT') return null; throw error; })) throw refuse('Export requires a new archive path.');
+   }
+@@ -22,6 +25,7 @@
+     if(journal)for await(const record of fileRecords(journal)) {}
+    }
+    catch (error) {
++    if (error.message === 'archive_json') throw new RerError('invalid_archive', 'Restore refused (archive_json): archive verification failed.', 2);
+     if (!(error instanceof PortabilityError)) throw error;
+     const message = error.code === 'legacy_archive_unverifiable'
+      ? 'Restore refused (legacy_archive_unverifiable): version 1 metadata cannot be authenticated. Upgrade the original installation and re-export, or use rer import --legacy-v1 --input FILE --yes --acknowledge-unverified-metadata --output exports/recovered-v2.rer in an empty installation. See modules/portability/README.md#backup-only-v1-recovery.'
+@@ -32,7 +36,7 @@
+   }
+   if(legacyRecovery)store.report('Legacy v1 recovery: manifest metadata is unverified. Restored data will be audited and exported to a new v2 backup.');
+   if(platform==='container') return (await import('./container-transfer.mjs')).containerTransfer({root,path,journal,store,signal,direction,binding,buckets,policy,transient});
+-  const input={ root, path, journal, binding, buckets, policy, transient, legacyRecovery };
++  const input={ root, path, journal, binding, buckets, policy, policyModule, transient, legacyRecovery };
+   // Do not apply pending product migrations to a populated recovery target.
+   // Check real existing bindings first; finalize repeats this under the lock.
+   if(legacyRecovery)await nativeWorker(store,'legacy-preflight',input,signal);
+diff --git a/cli/portability-worker.mjs b/cli/portability-worker.mjs
+--- a/cli/portability-worker.mjs
++++ b/cli/portability-worker.mjs
+@@ -7,6 +7,8 @@
+ import { join } from 'node:path';
+ import { readFile } from 'node:fs/promises';
+ import { createRequire } from 'node:module';
++import { pathToFileURL } from 'node:url';
++import { contained } from './project.mjs';
+ import { createPortability, PortabilityError, readArchive } from '../modules/portability/index.mjs';
+ import { parseJsonc } from './jsonc.mjs';
+ 
+@@ -19,7 +21,10 @@
+  return Promise.all(names.map(async name => ({ name, statements: split(await readFile(join(directory, name), 'utf8')) })));
+ }
+ 
+-async function run(direction, { root, path, journal, binding, buckets, policy, transient, legacyRecovery }) {
++async function run(direction, { root, path, journal, binding, buckets, policy, policyModule, transient, legacyRecovery }) {
++ // Only seed-authored code under the checkout may supply executable policy.
++ // Archive contents never choose or load this module.
++ if (policyModule) policy = (await import(pathToFileURL(await contained(root, policyModule)).href)).default;
+  // Validate all inputs before opening bindings or acquiring a restore lock.
+  if (direction === 'import') {
+   for await (const record of fileRecords(path,legacyRecovery?readLegacyArchive:readArchive)) {}
+diff --git a/cli/package-mode.mjs b/cli/package-mode.mjs
+--- a/cli/package-mode.mjs
++++ b/cli/package-mode.mjs
+@@ -39,8 +39,25 @@
+   const entries = block(...own, `${group}:`, 4), entry = entries && block(...entries, `'${packageName}':`, 6);
+   if (!entry) continue;
+   const fields = Object.fromEntries(lines.slice(...entry).map(line => /^\s+(specifier|version):\s*'?([^'\s]*)'?\s*$/.exec(line)).filter(Boolean).map(match => [match[1], match[2]]));
+-  const packages = block(0, lines.length, 'packages:', 0), resolved = packages && block(...packages, `'${packageName}@${fields.version}':`, 2);
+-  return { group, specifier: fields.specifier, version: fields.version, locked: Boolean(resolved && lines.slice(...resolved).some(line => /^\s+resolution: \{integrity: sha512-/.test(line))) };
++  const version = lockedVersion(fields.version);
++  const packages = block(0, lines.length, 'packages:', 0), resolved = version && packages && block(...packages, `'${packageName}@${version}':`, 2);
++  return { group, specifier: fields.specifier, version, locked: Boolean(resolved && lines.slice(...resolved).some(line => /^\s+resolution: \{integrity: sha512-/.test(line))) };
+  }
+  return undefined;
+ }
++
++// pnpm's importer selects a snapshot: patches and peers qualify the exact
++// package version, while packages stores its registry integrity at the bare
++// version. Remove only complete pnpm contexts, innermost peers first.
++function lockedVersion(reference) {
++ if (typeof reference !== 'string') return undefined;
++ const boundary = reference.indexOf('('), version = boundary < 0 ? reference : reference.slice(0, boundary);
++ if (!exactVersion.test(version)) return undefined;
++ let context = boundary < 0 ? '' : reference.slice(boundary);
++ while (context) {
++  const next = context.replace(/\((?:patch_hash=[a-z0-9]+|(?:@[A-Za-z0-9._-]+\/)?[A-Za-z0-9._-]+@\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)\)/g, '');
++  if (next === context) return undefined;
++  context = next;
++ }
++ return version;
++}

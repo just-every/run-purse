@@ -1,0 +1,6 @@
+kind,sourceId,name,status,supplierId,requestId,orderId,currency,description,quantity,unitPrice,freight,tax,needDate,date,category,project,terms,number,attachment,codeType,contractRef,renewal
+supplier,s1,Example office supplier,active,,,,,,,,,,,,,,,,,,Agreement-42,2027-01-01
+code,c1,Fitout,active,,,,,,,,,,,,,,,,,project,,
+request,r1,Office tables,approved,s1,,,AUD,Work table,2.5,100.00,10.00,26.00,2026-11-30,,Equipment,Fitout,30 days,,,,,
+order,p1,Office tables,issued,s1,r1,,AUD,Work table,2.5,100.00,10.00,26.00,2026-11-30,,Equipment,Fitout,30 days,OLD-42,,,,
+receipt,d1,First table,received,,,p1,,,1,,,,,2026-10-10,,,,,,,,

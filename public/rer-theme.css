@@ -1,0 +1,81 @@
+/* Purse's tokens, defined once (SPEC §2): the app (/purse.css), the run site,
+   the Lobby, sign-in and /setup all read them. Paper, ink and one accent:
+   duplicate-book rose. On the run site rose stays inside the drawings; inside
+   the product it marks labels, record identity and the primary action. */
+@import url('/fonts/fonts.css');
+
+:root {
+  --purse-paper: #f7f5f0;
+  --purse-sheet: #fbfaf6;
+  --purse-ink: #1c2020;
+  --purse-muted: #4f5553;
+  --purse-faint: #6b706d;
+  --purse-rule: #d9d6cf;
+  --purse-rose: #b03058;
+  --purse-rose-deep: #9a2a4e;
+  --purse-rose-wash: #f6e9eb;
+  --purse-rose-line: #e3c9ce;
+  --purse-dup-pink: #ecd0d4;
+  --purse-dup-cream: #f0e4d0;
+  --purse-font: Outfit, 'Outfit Fallback', Arial, sans-serif;
+  --purse-figures: tabular-nums lining-nums;
+
+  --rer-font-body: var(--purse-font);
+  --rer-font-heading: var(--purse-font);
+  --rer-page: var(--purse-paper);
+  --rer-surface: var(--purse-sheet);
+  --rer-text: var(--purse-ink);
+  --rer-muted: var(--purse-muted);
+  --rer-border: var(--purse-rule);
+  --rer-focus: var(--purse-ink);
+  --rer-link: var(--purse-rose-deep);
+  --rer-accent: var(--purse-rose-deep);
+  --rer-accent-text: var(--purse-sheet);
+  --rer-radius: 6px;
+  --rer-button-radius: 6px;
+  --rer-wordmark-weight: 500;
+  --rer-logo: url('/brand/mark.svg');
+}
+
+/* Sign-in (operator-auth) and first-run /setup: Base's no-script frames wear
+   the theme through these rules. A paper sheet, left-aligned, no shadow; rose
+   labels and the rose action, as the 12ui picks draw them. */
+html.rer-themed body { background: var(--purse-paper); font-family: var(--purse-font); }
+html.rer-themed body main { width: 100%; max-width: 620px; padding: 56px 52px; background: var(--purse-sheet); border: 1px solid var(--purse-rule); border-radius: 4px; box-shadow: none; }
+html.rer-themed body h1 { font-size: 56px; line-height: 1.05; font-weight: 700; letter-spacing: -0.025em; margin: 0 0 20px; color: var(--purse-ink); }
+html.rer-themed body p { color: var(--purse-muted); font-size: 19px; line-height: 1.45; }
+html.rer-themed body .brand,
+html.rer-themed body .rer-brand { gap: 12px; margin: 0 0 32px; color: var(--purse-ink); font-size: 26px; font-weight: 500; letter-spacing: -0.01em; }
+html.rer-themed body .brand::before,
+html.rer-themed body .rer-brand::before { width: 30px; height: 30px; }
+html.rer-themed body label { color: var(--purse-rose-deep); font-size: 17px; font-weight: 500; }
+html.rer-themed body label:has(input[type=checkbox]) { color: var(--purse-ink); }
+html.rer-themed body input:not([type=checkbox]):not([type=hidden]) { min-height: 56px; font-size: 18px; border: 1px solid color-mix(in srgb, var(--purse-rose) 55%, transparent); border-radius: 6px; background: var(--purse-sheet); color: var(--purse-ink); }
+html.rer-themed body input[type=checkbox] { accent-color: var(--purse-rose-deep); width: 20px; height: 20px; flex: none; }
+html.rer-themed body button,
+html.rer-themed body .action { min-height: 54px; border: 1px solid var(--purse-rose-deep); border-radius: 6px; background: var(--purse-rose-deep); color: var(--purse-sheet); font-size: 18px; font-weight: 500; }
+html.rer-themed body button:hover,
+html.rer-themed body .action:hover { background: #84213f; box-shadow: none; }
+html.rer-themed body button.secondary { background: transparent; color: var(--purse-rose-deep); border-color: var(--purse-rose-deep); }
+html.rer-themed body .notice { border-left: 3px solid var(--purse-rose); color: var(--purse-ink); }
+html.rer-themed body .secondary-link a { color: var(--purse-rose-deep); }
+html.rer-themed body :focus-visible { outline: 3px solid var(--purse-ink); outline-offset: 3px; }
+/* /setup: the owner as a two-row ruled form (the <dl>), then the checkbox row. */
+html.rer-themed body dl { grid-template-columns: 160px minmax(0, 1fr); gap: 0; margin: 0 0 12px; border: 1px solid color-mix(in srgb, var(--purse-rose) 55%, transparent); border-radius: 4px; }
+html.rer-themed body dt,
+html.rer-themed body dd { padding: 16px 22px; font-size: 18px; }
+html.rer-themed body dt { background: var(--purse-rose-wash); color: var(--purse-muted); border-right: 1px solid var(--purse-rose-line); }
+html.rer-themed body dt:not(:first-of-type),
+html.rer-themed body dt:not(:first-of-type) + dd { border-top: 1px solid var(--purse-rose-line); }
+html.rer-themed body form label:has(input[type=checkbox]) { align-items: center; padding: 16px 22px; border: 1px solid color-mix(in srgb, var(--purse-rose) 55%, transparent); border-radius: 4px; font-size: 16px; }
+@media (max-width: 600px) {
+  html.rer-themed body { padding: 24px 20px; }
+  html.rer-themed body main { padding: 28px 0; background: transparent; border: 0; }
+  html.rer-themed body h1 { font-size: 38px; }
+  html.rer-themed body p { font-size: 17px; }
+  html.rer-themed body label { font-size: 16px; }
+  html.rer-themed body input:not([type=checkbox]):not([type=hidden]) { min-height: 52px; }
+  html.rer-themed body dl { grid-template-columns: 96px minmax(0, 1fr); }
+  html.rer-themed body dt,
+  html.rer-themed body dd { padding: 12px 14px; font-size: 16px; }
+}
