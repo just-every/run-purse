@@ -87,6 +87,7 @@ remote-transfer support.
 docs, the static site `rer build --site` writes to `dist/site` for run-purse.com
 (`src/site`, `deploy-site.json`). The docs are the Markdown pages in `docs/`, listed
 in reading order in `docs/site.json`. The installed app's own `/` is the Lobby.
+The site is live at https://run-purse.com, deployed from `main` by `.github/workflows/run-site.yml`.
 
 ## Purchasing workspace
 
