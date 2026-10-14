@@ -84,6 +84,7 @@ a:hover { color: #7c2140; }
 .record-dates { color: var(--purse-muted); font-variant-numeric: var(--purse-figures); }
 .record-terms { color: var(--purse-muted); }
 .record-sum { margin-top: 0; padding: 12px 20px; border: 1px solid color-mix(in srgb, var(--purse-rose) 55%, transparent); border-top: 0; border-radius: 0 0 4px 4px; background: var(--purse-rose-wash); text-align: right; font-variant-numeric: var(--purse-figures); max-width: none !important; }
+.sum-item, .sum-amount { white-space: nowrap; }
 .record-table:has(+ .record-sum) { margin-bottom: 0; border-radius: 4px 4px 0 0; }
 .record-end { display: flex; gap: 12px; margin: 32px 0 0; }
 .invoice { margin-top: 16px; }
@@ -192,7 +193,11 @@ a:hover { color: #7c2140; }
   .record-table-stack .row-action { width: 100%; text-align: left; }
   .record-table-stack tbody tr:last-child td:not(:last-child) { border-bottom: 1px solid var(--purse-rose-line); }
   .record-table:has(+ .record-sum) tr { margin-bottom: 0; }
-  .record-sum { border-top: 1px solid color-mix(in srgb, var(--purse-rose) 55%, transparent); border-radius: 4px; margin-top: 8px; text-align: left; }
+  .record-sum { border-top: 1px solid color-mix(in srgb, var(--purse-rose) 55%, transparent); border-radius: 4px; margin-top: 8px; padding: 4px 16px; text-align: left; }
+  .sum-sep { display: none; }
+  .sum-item { display: grid; grid-template-columns: minmax(0, 40%) minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--purse-rose-line); }
+  .sum-item:last-child { border-bottom: 0; }
+  .sum-label { color: var(--purse-rose-deep); font-size: 13px; font-weight: 500; white-space: normal; }
   .record-form { grid-template-columns: 1fr; padding: 18px 16px; }
   .record-form .line { grid-template-columns: 1fr; }
   .form-end .btn-primary { width: 100%; min-height: 48px; }
