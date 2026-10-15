@@ -129,7 +129,7 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
   const desks = await request(19, maya.actor, 'Standing desks for the project room', harbour, 30, 'Sydney', 'Studio', [{ description: 'Electric standing desk, 1600 mm', quantity: '4', unitAmount: '1,120.00', category: 'Furniture', project: 'Office' }], { freightAmount: '120.00' })
   await submit(19, maya.actor, desks)
   await decide(18, desks, 'rejected', 'Holding furniture spend until the Melbourne fitout is invoiced')
-  await on(11, tom.actor, 'prepare', { workflow: 'renewal', fields: { agreement: 'NS-AG-019', 'usage evidence': '14 devices supplied this year' }, draft: 'Kestrel IT agreement NS-AG-019 renews soon. Usage is steady; ask for the same hardware pricing and a two-year warranty on new monitors before we decide to keep, change or cancel.', references: [{ kind: 'supplier', id: kestrel }] })
+  await on(11, tom.actor, 'prepare', { workflow: 'renewal', fields: { agreement: 'NS-AG-019', 'usage evidence': '14 devices supplied this year', 'notice date': date(9), 'keep/change/cancel options': 'Keep current pricing; request a two-year monitor warranty before renewal' }, draft: 'Kestrel IT agreement NS-AG-019 renews soon. Usage is steady; ask for the same hardware pricing and a two-year warranty on new monitors before we decide to keep, change or cancel.', references: [{ kind: 'supplier', id: kestrel }] })
 
   const written = [...state.values()].filter(r => before.get(`${r.kind}:${r.id}`)?.revision !== r.revision)
   await env.DB.batch([

@@ -1,7 +1,7 @@
 # Run it locally
 
 Purse is the authoritative runnable procurement edition. Install the command once
-with `npx -y @runeditrun/rer@0.2.20 cli install`. From this checkout root:
+with `npx -y @runeditrun/rer@0.2.22 cli install`. From this checkout root:
 
 ```sh
 rer install

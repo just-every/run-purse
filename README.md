@@ -8,7 +8,7 @@ Source: [just-every/run-purse](https://github.com/just-every/run-purse).
 Install the RER command once, then run this checkout:
 
 ```sh
-npx -y @runeditrun/rer@0.2.20 cli install
+npx -y @runeditrun/rer@0.2.22 cli install
 rer install
 rer setup
 rer dev

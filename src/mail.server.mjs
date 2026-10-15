@@ -1,19 +1,16 @@
-import { demoEffect } from './modules/demo/index.mjs'
 import { createMailSender } from './modules/mail/index.mjs'
 
-// Dev delivery validates and silently suppresses mail. Demo sends also return
-// the provider success expected by auth, without constructing a transport.
+// Base validates and silently suppresses development mail; its auth module
+// accepts that result in local dev and hosted demos.
 export function operatorMail(env) {
- if (!env.MAIL_PROVIDER && env.RER_DEMO !== '1') return undefined
+ if (!env.MAIL_PROVIDER) return undefined
  return {
   send(message) {
-   return demoEffect(() => {
-    if (env.MAIL_PROVIDER === 'development' && env.AUTH_LOCAL !== 'true') throw new Error('mail_unavailable')
-    return createMailSender({ provider: env.MAIL_PROVIDER, mode: env.MAIL_PROVIDER === 'development' ? 'development' : 'production',
-     ...(env.MAIL_PROVIDER === 'development' ? {} : { apiKey: env.MAIL_API_KEY }),
-     ...(env.MAIL_PROVIDER === 'cloudflare' ? { accountId: env.MAIL_ACCOUNT_ID } : {}),
-    }).send(message)
-   }, () => ({ provider: 'development', status: 'accepted', providerMessageId: null }))
+   if (env.MAIL_PROVIDER === 'development' && env.AUTH_LOCAL !== 'true' && env.RER_DEMO !== '1') throw new Error('mail_unavailable')
+   return createMailSender({ provider: env.MAIL_PROVIDER, mode: env.MAIL_PROVIDER === 'development' ? 'development' : 'production',
+    ...(env.MAIL_PROVIDER === 'development' ? {} : { apiKey: env.MAIL_API_KEY }),
+    ...(env.MAIL_PROVIDER === 'cloudflare' ? { accountId: env.MAIL_ACCOUNT_ID } : {}),
+   }).send(message)
   },
  }
 }
