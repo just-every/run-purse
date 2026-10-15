@@ -48,44 +48,34 @@ They are historical migration records, not refreshed runtime copies. The new
 import-kit reversal-fence and retirement schema arrays. No applied migration is rewritten.
 See `UPGRADING.md` for existing data and same-release archive recovery.
 
-The command runtime is published `@runeditrun/rer` **0.2.0**, exact-pinned and
+The command runtime is published `@runeditrun/rer` **0.2.19**, exact-pinned and
 locked. Conversion used Base's `scripts/export-cli.mjs`, followed by its
-`--to-package ... --version 0.2.0` converter. There is no copied CLI or onboarding
+`--to-package` converter. There is no copied CLI or onboarding
 implementation. Package scripts, operations and documentation invoke `rer`.
 
-## Preserved portability policy hook
+## Portability policy hook
 
-`patches/@runeditrun__rer@0.2.0.patch`, applied by `pnpm.patchedDependencies`,
-preserves the prior authored policy-module hook using the published Base CLI.
-Base 0.2.0 `cli/portability.mjs:11` accepts a JSON policy, and
-`cli/portability.mjs:36` serializes that policy for its worker; functions are lost.
-`cli/portability-worker.mjs:22` cannot load an authored module. These are Base
-upstream gaps for the next round. The same patch preserves the existing exit-2
-`archive_json` refusal when current Base preflight encounters malformed JSON
-(`cli/portability.mjs:25`), using a constant diagnostic with no archive content.
-
-The portability changes add a mutually exclusive `policyModule` option, reject
-function policies that would be serialized away, and load the seed-authored module after
-Base's contained-path/symlink checks. Archives cannot select a module. Container
-transfer explicitly refuses this native-only hook before transfer; it never
-silently drops validation. Archive format, authenticated v2 manifest, migration
-replay, integrity checks, principal guards and atomic apply remain Base machinery.
+`scripts/installer/local.mjs` passes `policyModule:
+'scripts/installer/portability.mjs'` to Base's `localPortability`. Published
+rer includes the hook (Purse carried it as a package patch on 0.2.0): the
+seed-authored module loads after Base's contained-path/symlink checks, function
+policies are refused instead of being serialized away, archives cannot select a
+module, and container transfer refuses this native-only hook before transfer.
+Archive format, authenticated v2 manifest, migration replay, integrity checks,
+principal guards and atomic apply remain Base machinery.
 
 `scripts/installer/portability.mjs` keeps the stable product ID, replaceable
 `p_meta`, excluded `p_import_custody`, required configuration and `validateStaged`.
 The seed validator still runs before atomic restore; checksummed invalid requests,
 orders, receipts, invoices and attachments remain refusal cases. The browser
-archive tests now recompute the v2 archive digest as well as the content digest,
-so those tests continue to reach semantic validation instead of merely failing
-an earlier checksum check.
+archive tests recompute the v2 archive digest as well as the content digest,
+so those tests reach semantic validation instead of merely failing an earlier
+checksum check.
 
-## Package lockfile compatibility
+## Demo runtime
 
-The same patch corrects published 0.2.0 `cli/package-mode.mjs:41–43`: pnpm
-records a patched or peer-qualified importer snapshot while keeping registry
-integrity under the bare package version. The parser removes only complete pnpm
-patch and peer contexts, including nested peers, before looking up that package.
-`cli/inspect.mjs:124` still requires the declared, importer-specifier and resolved
-versions to be exactly equal; registry SHA-512 integrity is still required.
-The exact package pin remains 0.2.0. This parser change is another Base upstream
-gap for the next round, alongside the portability hooks above.
+`src/modules/demo` is Base's `modules/demo` from tag `rer-v0.2.19`
+(`README.md`, `index.mjs`, `index.d.mts`, `sockets.mjs`, `vite.mjs`,
+`vite.d.mts`). Its one adaptation: `index.mjs` imports `./csp.mjs`, Base's
+`modules/operator-auth/csp.mjs` copied beside it, because Purse's operator-auth
+copy keeps its recorded revision. See `DEMO.md`.

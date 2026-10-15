@@ -1,3 +1,4 @@
+import { withDemo } from './modules/demo/index.mjs'
 import start from '@tanstack/react-start/server-entry'
 import { api } from './purse/api'
 import { dispatch } from './base/dispatch'
@@ -6,6 +7,7 @@ import { lobbyResponse } from './base/lobby'
 import { setupStateResponse } from './base/setup-state'
 import { authResponse, runtimeBindings, type Bindings } from './auth.server'
 import { identity } from './identity'
+import { seedDemo } from './demo'
 
 function noTransform(response: Response): Response {
   const headers = new Headers(response.headers), policy = headers.get('cache-control')
@@ -13,7 +15,7 @@ function noTransform(response: Response): Response {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers })
 }
 
-export default {
+const worker = {
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)
     if (asset) return asset
@@ -26,3 +28,6 @@ export default {
     return dispatch(request, () => api.fetch(request, env, execution), async () => noTransform(await start.fetch(request)))
   },
 } satisfies ExportedHandler<Bindings>
+
+// Demo mode only under RER_DEMO=1 (`rer demo`, a hosted demo); otherwise the worker is unchanged.
+export default withDemo(worker, { seed: seedDemo })

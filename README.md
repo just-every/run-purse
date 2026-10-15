@@ -8,7 +8,7 @@ Source: [just-every/run-purse](https://github.com/just-every/run-purse).
 Install the RER command once, then run this checkout:
 
 ```sh
-npx -y @runeditrun/rer@0.2.0 cli install
+npx -y @runeditrun/rer@0.2.19 cli install
 rer install
 rer setup
 rer dev
@@ -31,8 +31,8 @@ finishes first-run setup at `/setup`. Treat the line as a credential.
 `dev --as PERSONA` starts as a persona or signed out. For ordinary outbox
 sign-in, run `rer dev --login`, then `rer outbox`. Open the `/__dev/key`
 `RER_OPEN` link printed by `rer outbox`, then follow the newest sign-in message.
-The pinned rer 0.2.0 `dev --login` link does not open the key gate; use the
-`rer outbox` link until a rer release fixes it. Until first-run completion is stored durably, app routes send the signed-in owner to `/setup`;
+If the `dev --login` link does not open the key gate, use the `rer outbox`
+link. Until first-run completion is stored durably, app routes send the signed-in owner to `/setup`;
 signed-out visitors sign in and return there. Once complete, `/setup` opens the
 app or settings. The local outbox sends no external email.
 

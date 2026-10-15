@@ -1,7 +1,7 @@
 # Run it locally
 
-Install the command once with `npx -y @runeditrun/rer@0.2.0 cli install`.
-This checkout pins `@runeditrun/rer` 0.2.0 as an exact devDependency, locked in
+Install the command once with `npx -y @runeditrun/rer@0.2.19 cli install`.
+This checkout pins `@runeditrun/rer` 0.2.19 as an exact devDependency, locked in
 `pnpm-lock.yaml`. The installed command selects that checkout's package;
 `OPERATIONS.json` and the package scripts both use `rer VERB`.
 
@@ -77,8 +77,8 @@ After `RER_READY`, a seed with dev identity prints `RER_SIGNED_IN EMAIL` and
 the owner, at `/setup` until first-run is finished. For ordinary sign-in, run
 `rer dev --login`, then `rer outbox`. Open the `/__dev/key` `RER_OPEN` link
 printed by `rer outbox`, follow the newest ordinary sign-in message and finish
-first-run setup at `/setup`. The pinned rer 0.2.0 `dev --login` link does not
-open the key gate; use the `rer outbox` link until a rer release fixes it. Until
+first-run setup at `/setup`. If the `dev --login` link does not
+open the key gate, use the `rer outbox` link. Until
 first-run completion is stored durably, app routes send the signed-in owner to
 `/setup`; signed-out visitors sign in and return there. Once complete,
 `/setup` opens the app or settings. The local outbox sends no external email.

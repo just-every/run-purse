@@ -4,6 +4,7 @@ import { fontDocumentResponse } from './base/font-response'
 import { themeFrame } from './base/theme-frame'
 import { createOperatorAuth, createAuthHandler, createSignInHandler, devGate, devNotFound, type AuthConfig } from './modules/operator-auth/index.mjs'
 import { operatorMail } from './mail.server.mjs'
+import { createOwnerClaimHandler } from './modules/owner-claim/index.mjs'
 import { createD1DevelopmentOutbox, createDevelopmentOutboxHandler } from './modules/mail/src/development/index.mjs'
 import branding from './branding.json'
 
@@ -31,6 +32,12 @@ export interface Bindings {
  MAIL_FROM?: string
  MAIL_API_KEY?: string
  MAIL_ACCOUNT_ID?: string
+ /** Base's signed owner claim (a hosted demo's front sets these). */
+ RER_OWNER_CLAIM_ISSUER?: string
+ RER_OWNER_CLAIM_INSTALLATION_ID?: string
+ RER_OWNER_CLAIM_PUBLIC_KEYS?: string
+ /** Demo mode switch (`rer demo`, a hosted demo); `rer deploy` refuses it. */
+ RER_DEMO?: string
 }
 
 export const runtimeBindings = (env: Bindings): Bindings => env.RER_DEV_ORIGIN && env.AUTH_LOCAL === 'true' ? { ...env, AUTH_ORIGIN: env.RER_DEV_ORIGIN } : env
@@ -64,6 +71,11 @@ export async function authResponse(request: Request, original: Bindings): Promis
    links: () => env.MAIL_PROVIDER === 'development' && env.AUTH_LOCAL === 'true' ? [{ href: '/__dev/outbox', label: 'Open the local development outbox' }] : [],
   })(request)
   if (page) return fontDocumentResponse(page)
+ }
+ // Base's signed owner claim, served only where its public keys are configured.
+ if (url.pathname === '/auth/owner-claim' && env.RER_OWNER_CLAIM_PUBLIC_KEYS) {
+  const claim = createOwnerClaimHandler({ db: env.DB, authConfig: authConfig(env), clientIp: request => request.headers.get('CF-Connecting-IP') ?? '', issuer: env.RER_OWNER_CLAIM_ISSUER ?? '', installationId: env.RER_OWNER_CLAIM_INSTALLATION_ID ?? '', appOrigin: env.AUTH_ORIGIN, expectedEmail: env.OWNER_EMAIL.toLowerCase(), publicKeys: JSON.parse(env.RER_OWNER_CLAIM_PUBLIC_KEYS) })
+  return fontDocumentResponse((await claim(request))!)
  }
  if (url.pathname.startsWith('/auth/')) return fontDocumentResponse(await createAuthHandler(operatorAuth(env))(request))
  if (url.pathname === '/setup' || url.pathname === '/app' || url.pathname.startsWith('/app/')) {

@@ -16,7 +16,7 @@ export const api = new Hono<{
 api.get('/health', c => c.json({ status: 'ok', ...deploymentHealth(c.env) }));
 api.use('/api/purse/*', async (c, next) => { c.header('cache-control', 'no-store'); c.header('x-content-type-options', 'nosniff'); await next(); });
 api.onError((e, c) => c.json({ error: e.message }, e instanceof Fault ? e.status as 400 : 400));
-async function command(s: State, a: Actor, op: string, b: Data): Promise<Data> { if (op === 'execute-action') {
+export async function command(s: State, a: Actor, op: string, b: Data): Promise<Data> { if (op === 'execute-action') {
     const p = actionInput(s, a, b);
     const result = await command(s, a, p.action, p.input);
     put(s, 'proposedAction', p.id, { ...p, status: 'executed', executedBy: a.id, at: new Date().toISOString() });

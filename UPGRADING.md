@@ -6,7 +6,7 @@ including an export made with `rer export --output exports/pre-upgrade.rer`.
 The repository has been renamed; package, project, edition, Worker, D1 and
 archive-product identities are unchanged. No repository switch record is needed.
 
-Install the pinned command with `npx -y @runeditrun/rer@0.2.0 cli install`, then
+Install the pinned command with `npx -y @runeditrun/rer@0.2.19 cli install`, then
 run `rer install` and `rer setup` in the existing checkout. Setup preserves the
 saved owner, origin, private settings and purchasing data. The original eleven
 migration files are immutable; migrations 0012–0020 append current Base auth,

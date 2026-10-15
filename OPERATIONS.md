@@ -13,8 +13,7 @@ rer dev
 Use the setup prompt instead of the owner-email flag when entering the real
 mailbox. `rer dev` opens the app as the owner. For ordinary outbox sign-in,
 start with `rer dev --login`, then run `rer outbox` and open its `/__dev/key`
-`RER_OPEN` link. The pinned rer 0.2.0 `dev --login` link does not open the key
-gate. Follow the newest ordinary sign-in message; no external email is sent. Stop `dev` with
+`RER_OPEN` link; it opens the key gate. Follow the newest ordinary sign-in message; no external email is sent. Stop `dev` with
 `rer dev --stop` or Ctrl-C, and stop `preview` with
 `rer preview --stop` before build or verification.
 

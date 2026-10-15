@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "domain": "run-purse.com",
+  "name": "Purse",
+  "settings": {
+    "MAIL_PROVIDER": "development",
+    "MAIL_FROM": "Purse demo <demo@demo.invalid>"
+  },
+  "instanceType": "basic"
+}
