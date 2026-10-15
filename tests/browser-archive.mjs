@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import { makePart, ContentVerifier, ArchiveVerifier } from '@runeditrun/rer/modules/portability/format';
 import { command } from './browser-runtime.mjs';
 import { session, current, api } from './browser-journey.mjs';
-import { readDevKey } from '../src/modules/operator-auth/dev/sign-in-as.mjs';
 
 export const records = async path => (await readFile(path,'utf8')).trim().split('\n').map(line => JSON.parse(line));
 export const rows = archive => archive.filter(r => r.kind === 'part').flatMap(r => r.items);
@@ -69,32 +68,6 @@ export async function restoredContinuation(browser,root,origin,owner,before,evid
  await owner.page.getByText('undone · 45 / 45',{exact:true}).waitFor();
  response=await post(owner.context,'status');const undone=await response.json();assert.equal(undone.job.state,'undone');assert.ok(undone.undo.dispositions.length);
  assert.equal((await current(owner.context,origin)).data.supplier.filter(s=>s.sourceId?.startsWith('continuation-')).length,0);
- // A second genuine native owner gets no cross-owner continuation grant.
- // The local outbox is read through its ordinary authenticated HTML surface.
- const headers={'x-rer-dev-key':await readDevKey(root)};
- const confirmationToken=async email=>{
-  const outbox=await owner.context.request.get(origin+'/__dev/outbox',{headers});
-  assert.equal(outbox.status(),200); const html=await outbox.text();
-  const article=[...html.matchAll(/<article>([\s\S]*?)<\/article>/g)].map(m=>m[1]).find(a=>a.includes(email));assert.ok(article);
-  const path=article.match(/href="([^"]+)"/)[1].replaceAll('&amp;','&');
-  const detail=await owner.context.request.get(origin+path,{headers});assert.equal(detail.status(),200);
-  const link=new URL((await detail.text()).match(/href="([^"]*\/auth\/confirm\?token=[^"]+)"/)[1].replaceAll('&amp;','&'),origin);
-  return link.searchParams.get('token');
- };
- const invitation={email:'other-restored-owner@example.test',displayName:'Other restored owner',role:'owner'};
- response=await owner.context.request.post(origin+'/auth/invite',{headers:{origin},data:invitation});assert.equal(response.status(),403);assert.equal((await response.json()).error,'step_up_required');
- response=await owner.context.request.post(origin+'/auth/step-up',{headers:{origin},data:{action:'owner:transfer'}});assert.equal(response.status(),202);
- response=await owner.context.request.post(origin+'/auth/confirm',{headers:{origin},data:{token:await confirmationToken(ownerActor.email)},maxRedirects:0});assert.equal(response.status(),303);assert.ok(!response.headers()['set-cookie'],'Step-up must preserve the requesting session');
- assert.equal((await current(owner.context,origin)).actor.id,ownerActor.id,'Step-up preserves the claiming owner');
- response=await owner.context.request.post(origin+'/auth/invite',{headers:{origin},data:invitation});assert.equal(response.status(),202);
- // The inviter uses a native local dev session, so Base deliberately tags its
- // invitation as a dev credential too. The receiving client must pass that
- // same real local gate; the invitation still creates a separate operator.
- const other=await browser.newContext({extraHTTPHeaders:headers});
- const accepted=await other.request.post(origin+'/auth/confirm',{headers:{origin},data:{token:await confirmationToken(invitation.email)},maxRedirects:0});assert.equal(accepted.status(),303);
- const otherActor=(await current(other,origin)).actor;assert.equal(otherActor.email,invitation.email);assert.ok(otherActor.roles.includes('owner'));assert.notEqual(otherActor.id,ownerActor.id);
- for(const op of ['claim','status','resume','undo'])assert.notEqual((await post(other,op)).status(),200,'Another owner cannot use claimed job: '+op);
- await other.close();
  const after=(await current(owner.context,origin)).data;assert.ok(after.audit.some(a=>a.action==='claim-restored-import'&&a.record===job.id&&a.originalPrincipal===job.principalId));
  // Old approval actors are history. A deliberate amendment obtains fresh
  // approval from the current native approver, then issues and receives normally.
@@ -109,7 +82,7 @@ export async function restoredContinuation(browser,root,origin,owner,before,evid
  const final=(await current(owner.context,origin)).data;assert.equal(final.order.find(o=>o.id===old.id).issuedAt,old.issuedAt);assert.equal(final.order.find(o=>o.id===old.id).status,'superseded');assert.ok(final.receipt.some(r=>r.order===order.id));assert.ok(final.decision.some(d=>d.request===amended.id&&d.revision===amended.revision));
  const signedOutOwner=await owner.context.request.post(origin+'/auth/signout',{headers:{origin},data:{}});assert.equal(signedOutOwner.status(),204);
  for(const op of ['claim','status','resume','undo'])assert.equal((await post(owner.context,op)).status(),401,'Revoked claiming session cannot '+op);
- return {batch:job.id,restoredStatusResumeUndo:true,denied:['signed-out','receiver','other-owner','revoked-session'],renewedPurchase:order.id};
+ return {batch:job.id,restoredStatusResumeUndo:true,denied:['signed-out','receiver','revoked-session'],renewedPurchase:order.id};
 }
 
 export async function preparedForRestore(browser,root,origin,owner) {

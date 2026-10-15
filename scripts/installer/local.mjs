@@ -26,8 +26,8 @@ export const commandAdapter = createCommandAdapter(lifecycle, {
  // The run site (run-purse.com): the approved homepage, /run and the docs, static; `rer build --site` writes it.
  site: { entry: 'src/site/pages.tsx', output: 'dist/site', declaration: 'deploy-site.json', config: 'vite.site.config.ts' },
  // Local dev identity: the local-only Worker entry, the build output rer build
- // scans for the dev layer, and the kept end-to-end email-link test.
- devIdentity: { entry: 'src/server.dev.ts', output: ['dist'], emailLinkTest: 'tests/email-link.mjs' },
+ // scans for the dev layer, with no deployed dev layer.
+ devIdentity: { entry: 'src/server.dev.ts', output: ['dist'] },
  localOnlyKeys: ['RER_DEV_ORIGIN', 'RER_DEV_IDENTITY'],
  product: model.product.name, input: { names: { email: 'OWNER_EMAIL', name: 'displayName' }, async defaults(root) { const { readFile } = await import('node:fs/promises'); const branding = JSON.parse(await readFile(join(root, 'src/branding.json'), 'utf8')); return { APP_NAME: branding.name, PRIMARY_COLOR: branding.primaryColor }; } },
 });

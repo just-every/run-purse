@@ -48,7 +48,7 @@ They are historical migration records, not refreshed runtime copies. The new
 import-kit reversal-fence and retirement schema arrays. No applied migration is rewritten.
 See `UPGRADING.md` for existing data and same-release archive recovery.
 
-The command runtime is published `@runeditrun/rer` **0.2.19**, exact-pinned and
+The command runtime is published `@runeditrun/rer` **0.2.20**, exact-pinned and
 locked. Conversion used Base's `scripts/export-cli.mjs`, followed by its
 `--to-package` converter. There is no copied CLI or onboarding
 implementation. Package scripts, operations and documentation invoke `rer`.
@@ -74,8 +74,4 @@ checksum check.
 
 ## Demo runtime
 
-`src/modules/demo` is Base's `modules/demo` from tag `rer-v0.2.19`
-(`README.md`, `index.mjs`, `index.d.mts`, `sockets.mjs`, `vite.mjs`,
-`vite.d.mts`). Its one adaptation: `index.mjs` imports `./csp.mjs`, Base's
-`modules/operator-auth/csp.mjs` copied beside it, because Purse's operator-auth
-copy keeps its recorded revision. See `DEMO.md`.
+`src/modules/demo`, `src/modules/operator-auth`, `src/modules/mail` and `src/modules/owner-claim` are refreshed from tag `rer-v0.2.20` (`38aa7efdb3cceec585d2344ed54dd559295b9059`). Their runtime bytes are recorded in `base-copies.json`; applied migrations retain their historical bytes. Demo labels and effects use Base unchanged. Purse suppresses local mail, wraps demo mail with `demoEffect`, and serves no captured-mail viewer. See `DEMO.md`.

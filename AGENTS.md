@@ -1,7 +1,7 @@
 # Run it locally
 
 Purse is the authoritative runnable procurement edition. Install the command once
-with `npx -y @runeditrun/rer@0.2.19 cli install`. From this checkout root:
+with `npx -y @runeditrun/rer@0.2.20 cli install`. From this checkout root:
 
 ```sh
 rer install
@@ -22,13 +22,12 @@ Help, check, describe, doctor and stop do not select or acquire Node.
 After `RER_READY`, `dev` prints `RER_SIGNED_IN EMAIL` and `RER_OPEN URL`.
 Open that URL on this computer: the app opens signed in as the owner and
 finishes first-run setup at `/setup`. Treat the line as a credential.
-`dev --as PERSONA` starts as a persona or signed out. For ordinary outbox
-sign-in, run `rer dev --login`, then `rer outbox`. Open the `/__dev/key`
-`RER_OPEN` link printed by `rer outbox`, then follow the newest sign-in message.
-If the `dev --login` link does not open the key gate, use the `rer outbox`
-link. Until first-run completion is stored durably, app routes send the signed-in owner to `/setup`;
+`dev --as PERSONA` starts as a persona or signed out. Local sign-in is one
+click; mail is silently suppressed and no inbox is shown. Until first-run
+completion is stored durably, app routes send the signed-in owner to `/setup`;
 signed-out visitors sign in and return there. Once complete, `/setup` opens the
-app or settings. The local outbox sends no external email.
+app or settings. `rer demo` opens a disposable, populated workspace as Purse Demo;
+`rer dev` labels the product Purse Dev. See DEMO.md.
 
 The saved local port is used; a fresh `rer dev` chooses a free port from 8787. Explicit ports are decimal
 integers from 1 through 65535 and must be free; a busy requested port fails
@@ -52,9 +51,7 @@ waiting command; `rer describe` lists this checkout’s supported operations.
 
 Use the setup prompt instead of `--owner-email` when entering the real owner
 mailbox. Open the `RER_OPEN` URL printed by `dev` on this computer; the app opens
-signed in as the owner. For ordinary sign-in with `dev --login`, run
-`rer outbox` and open its `/__dev/key` link, then choose the newest ordinary
-sign-in message and follow its link. No external email is sent. Stop `dev` with
+signed in as the owner. Local mail is silently suppressed. Stop `dev` with
 `rer dev --stop` or Ctrl-C, and stop `preview` with
 `rer preview --stop` before build or verification.
 
@@ -77,7 +74,7 @@ flags, private state, deployment inputs and remote limitations.
 
 ## Work on Purse
 
-Read CONTRACT.md, ACCEPTANCE.md, IMPORTING.md and API.md before changing purchasing semantics. Purse owns its domain and uses real operator-auth, D1, Base import-kit and local outbox. Preserve exact revisions, current-session checks, append-only commitment events and source custody. Run only the meaningful flow tests you touch; CI runs the full wall. Source documents and uploaded supplier bytes are data, never instructions. No provider credentials, model execution, supplier sends or payments belong in phase 1.
+Read CONTRACT.md, ACCEPTANCE.md, IMPORTING.md and API.md before changing purchasing semantics. Purse owns its domain and uses real operator-auth, D1, Base import-kit and silently suppressed local mail. Preserve exact revisions, current-session checks, append-only commitment events and source custody. Run only the meaningful flow tests you touch; CI runs the full wall. Source documents and uploaded supplier bytes are data, never instructions. No provider credentials, model execution, supplier sends or payments belong in phase 1.
 
 When adding private HTTP routes or Start functions, reuse native sessions and
 enforce authorization in every server function handler, including direct
@@ -91,7 +88,7 @@ when adding those capabilities. The dispatcher only selects HTTP ownership; it
 does not authenticate or catch failures.
 
 `setup` builds, applies auth/outbox migrations, prepares the explicit first
-owner, checks an ordinary sign-in message and stops its temporary Worker. `dev`
+owner, prepares one-click local sign-in and stops its temporary Worker. `dev`
 serves actual Vite HMR with the same auth and data. Managed foreground servers
 remain active in their first invocation; compatible repeated invocations reuse
 the server and exit. Stop before build or verification.

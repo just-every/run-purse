@@ -8,7 +8,7 @@ Source: [just-every/run-purse](https://github.com/just-every/run-purse).
 Install the RER command once, then run this checkout:
 
 ```sh
-npx -y @runeditrun/rer@0.2.19 cli install
+npx -y @runeditrun/rer@0.2.20 cli install
 rer install
 rer setup
 rer dev
@@ -28,13 +28,12 @@ It uses an installed matching runtime or a checksum-verified copy cached under
 After `RER_READY`, `dev` prints `RER_SIGNED_IN EMAIL` and `RER_OPEN URL`.
 Open that URL on this computer: the app opens signed in as the owner and
 finishes first-run setup at `/setup`. Treat the line as a credential.
-`dev --as PERSONA` starts as a persona or signed out. For ordinary outbox
-sign-in, run `rer dev --login`, then `rer outbox`. Open the `/__dev/key`
-`RER_OPEN` link printed by `rer outbox`, then follow the newest sign-in message.
-If the `dev --login` link does not open the key gate, use the `rer outbox`
-link. Until first-run completion is stored durably, app routes send the signed-in owner to `/setup`;
+`dev --as PERSONA` starts as a persona or signed out. Local sign-in is one
+click; mail is silently suppressed and no inbox is shown. Until first-run
+completion is stored durably, app routes send the signed-in owner to `/setup`;
 signed-out visitors sign in and return there. Once complete, `/setup` opens the
-app or settings. The local outbox sends no external email.
+app or settings. `rer demo` opens a disposable, populated workspace as Purse Demo;
+`rer dev` labels the product Purse Dev. See DEMO.md.
 
 The saved local port is used; a fresh `rer dev` chooses a free port from 8787. Explicit ports are decimal
 integers from 1 through 65535 and must be free; a busy requested port fails
@@ -58,9 +57,7 @@ waiting command; `rer describe` lists this checkout’s supported operations.
 
 Use the setup prompt instead of `--owner-email` when entering the real owner
 mailbox. Open the `RER_OPEN` URL printed by `dev` on this computer; the app opens
-signed in as the owner. For ordinary sign-in with `dev --login`, run
-`rer outbox` and open its `/__dev/key` link, then choose the newest ordinary
-sign-in message and follow its link. No external email is sent. `dev` serves
+signed in as the owner. Local mail is silently suppressed. `dev` serves
 live editing with HMR. It stays in the foreground in a terminal and detaches
 without a terminal. A compatible repeated invocation reuses the server. Stop `dev` with
 `rer dev --stop` or Ctrl-C, and stop `preview` with
@@ -93,7 +90,7 @@ The site is live at https://run-purse.com, deployed from `main` by `.github/work
 
 Purse is an MIT procurement edition for one business and known suppliers. Open `/app` after setup. The owner configures business codes, currencies, members and authority policies in Settings. Add supplier and catalogue records, then use Requests for intake/quotation/approval, Orders for issuance/receiving/invoice evidence, and Preparation for five human-led workflows. Uploaded files retain actual bytes. Downloads include printable PO HTML, preparation text and accounting CSV. No external account is required for native operation.
 
-Use `dev --as requester`, `--as approver`, `--as buyer` or `--as receiver` for real local operators at the corresponding `@dev.localhost` addresses. First save their matching purchasing capabilities in Settings as owner. A native session alone does not grant a purchasing role. Ordinary invited people sign in through real local-outbox links.
+Use `dev --as requester`, `--as approver`, `--as buyer` or `--as receiver` for real local operators at the corresponding `@dev.localhost` addresses. First save their matching purchasing capabilities in Settings as owner. A native session alone does not grant a purchasing role. Production invitations use the configured mail provider.
 
 Quantities support three decimal places. Enter monetary amounts as currency text, for example `1,250.50` for AUD 1,250.50; Purse converts them to integer minor units (100 means AUD 1.00). Each line multiplies quantity by unit price and rounds half-up to the nearest minor unit, once. Supplied freight and tax are stored as integer minor amounts; Purse does not compute tax. Receipts release the proportional total commitment using half-up integer arithmetic; the final receipt/cancellation releases the exact remainder. Unlike currencies remain separate.
 

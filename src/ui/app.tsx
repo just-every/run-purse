@@ -9,7 +9,7 @@ import { Orders } from './orders';
 import { Preparation } from './preparation';
 import { Imports } from './imports';
 /** Mark, name and tagline at left; who is signed in at right. */
-function Masthead({ actor }: { actor?: D }) { return <header className="app-header"><a className="app-brand" href="/app"><img className="app-mark" src="/brand/mark.svg" alt=""/><span className="app-name">Purse</span> <span className="app-tagline">Purchasing, with a clear record</span></a>{actor && <span className="app-who">{actor.email}<span className="app-roles"> · {actor.roles.join(', ')}</span></span>}</header>; }
+function Masthead({ actor }: { actor?: D }) { return <header className="app-header"><a className="app-brand" href="/app"><img className="app-mark" src="/brand/mark.svg" alt=""/><span className="app-name" data-rer-name>Purse</span> <span className="app-tagline">Purchasing, with a clear record</span></a>{actor && <span className="app-who">{actor.email}<span className="app-roles"> · {actor.roles.join(', ')}</span></span>}</header>; }
 export function App() {
     const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState('Overview'), [notice, setNotice] = useState('');
     async function reload() { setState(await call('state')); }
@@ -29,7 +29,7 @@ export function App() {
             {tab === 'Orders' && <Orders data={data} actor={actor} mutate={mutate}/>}
             {tab === 'Suppliers' && <Suppliers data={data} mutate={mutate}/>}
             {tab === 'Catalogue' && <Catalogue data={data} mutate={mutate}/>}
-            {tab === 'Settings' && <><Settings data={data} mutate={mutate}/><section className="panel"><h3>Invite saved member</h3><Form label="Send local invitation" onSubmit={b => call('invite', b)}><Field label="Member email" name="email" type="email"/></Form><p className="quiet">The local outbox receives invitations. Use sign-in links for membership.{actor.dev && <> Dev personas also require saved purchasing roles.</>}</p></section></>}
+            {tab === 'Settings' && <><Settings data={data} mutate={mutate}/><section className="panel"><h3>Invite saved member</h3><Form label="Send invitation" onSubmit={async b => { await call('invite', b); setNotice('Invitation sent.'); }}><Field label="Member email" name="email" type="email"/></Form><p className="quiet">Invite an active saved member to sign in.{actor.dev && <> Dev personas also require saved purchasing roles.</>}</p></section></>}
             {tab === 'Authority' && <Authority data={data} actor={actor} mutate={mutate}/>}
             {tab === 'Preparation' && <Preparation data={data} mutate={mutate}/>}
             {tab === 'Imports' && <Imports reload={reload} jobs={data.importJobs ?? []}/>}
