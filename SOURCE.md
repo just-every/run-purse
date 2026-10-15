@@ -48,7 +48,7 @@ They are historical migration records, not refreshed runtime copies. The new
 import-kit reversal-fence and retirement schema arrays. No applied migration is rewritten.
 See `UPGRADING.md` for existing data and same-release archive recovery.
 
-The command runtime is published `@runeditrun/rer` **0.2.22**, exact-pinned and
+The command runtime is published `@runeditrun/rer` **0.2.24**, exact-pinned and
 locked. Conversion used Base's `scripts/export-cli.mjs`, followed by its
 `--to-package` converter. There is no copied CLI or onboarding
 implementation. Package scripts, operations and documentation invoke `rer`.
@@ -74,6 +74,6 @@ checksum check.
 
 ## Demo runtime
 
-All seven vendored modules (`demo`, `operator-auth`, `owner-claim`, `mail`, `dependencies`, `import-kit` and its `d1-transport` dependency) are refreshed together from tag `rer-v0.2.22` (`1ce15dd8cbb7c8cf2d83ebfde2b4a8a130ff9d74`). Their runtime bytes are recorded in `base-copies.json`; applied migrations retain their historical bytes. Demo labels and effects use Base unchanged. Base mail silently suppresses demo delivery and auth accepts its success result; Purse needs no demo mail wrapper and serves no captured-mail viewer. See `DEMO.md`.
+All seven vendored modules (`demo`, `operator-auth`, `owner-claim`, `mail`, `dependencies`, `import-kit` and its `d1-transport` dependency) are refreshed together from tag `rer-v0.2.24` (`1ee378e41142c673a9098f60af21664c6d8477d1`). Their runtime bytes are recorded in `base-copies.json`; applied migrations retain their historical bytes. Demo labels and effects use Base unchanged. Base mail silently suppresses demo delivery and auth accepts its success result; Purse needs no demo mail wrapper and serves no captured-mail viewer. See `DEMO.md`.
 
 Migration `0022_import_kit_progress.sql` materializes the tag’s additive preparation-step and erasure-progress schema arrays. Earlier applied migrations are unchanged.

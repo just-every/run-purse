@@ -4,7 +4,8 @@
   "name": "Purse",
   "settings": {
     "MAIL_PROVIDER": "development",
-    "MAIL_FROM": "Purse demo <demo@demo.invalid>"
+    "MAIL_FROM": "Northside Studio <alex.morgan@northside-studio.example>"
   },
-  "instanceType": "standard-1"
+  "instanceType": "basic",
+  "ownerEmail": "alex.morgan@northside-studio.example"
 }

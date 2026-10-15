@@ -1,7 +1,7 @@
 # Run it locally
 
-Install the command once with `npx -y @runeditrun/rer@0.2.22 cli install`.
-This checkout pins `@runeditrun/rer` 0.2.22 as an exact devDependency, locked in
+Install the command once with `npx -y @runeditrun/rer@0.2.24 cli install`.
+This checkout pins `@runeditrun/rer` 0.2.24 as an exact devDependency, locked in
 `pnpm-lock.yaml`. The installed command selects that checkout's package;
 `OPERATIONS.json` and the package scripts both use `rer VERB`.
 
