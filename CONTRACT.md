@@ -6,6 +6,18 @@ This is a target contract, not a release verdict: it describes the product Purse
 
 Purse is one product among sibling seeds and keeps the market's separation: [Pantry](https://github.com/just-every/run-pantry) is the general ledger, [Coaster](https://github.com/just-every/run-coaster) owns employee expenses, corporate cards and reimbursements, [Locket](https://github.com/just-every/run-locket) owns contract lifecycle management, [Inkwell](https://github.com/just-every/run-inkwell) owns e-signature, [Pier](https://github.com/just-every/run-pier) owns warehouse inventory, [Easel](https://github.com/just-every/run-easel) owns financial planning, [Auth](https://github.com/just-every/run-auth) is a workforce identity provider and [Linen](https://github.com/just-every/run-linen) is the IT service desk. Purse integrates with each of them, and with their incumbents, rather than rebuilding them.
 
+## Product target — 17 October 2026
+
+Purse is the procurement and purchase-to-pay product a growing US business buys instead of Procurify, Coupa's mid-market purchase-to-pay or Precoro: intake, approvals and budgets, POs that are sent and chased, receiving, invoice capture and matching, payment handoff and ledger sync, with agents that do the follow-through. This contract describes that product, which is what Purse is being built towards, and marks how close the current code is (see [Status](#status)).
+
+| | |
+| --- | --- |
+| Category | Procurement and purchase-to-pay software |
+| Incumbents a buyer switches from | Procurify, Coupa, Precoro |
+| Up-and-comers it must also beat | Zip, Levelpath |
+| First buyer | A US business of 50 to 500 employees across several locations running Procurify (or Coupa mid-market, Precoro, or email and spreadsheets) for requests, approvals, POs, receiving, AP and cards, with books in QuickBooks Online, QuickBooks Desktop, Xero, NetSuite, Sage Intacct, Business Central or Pantry; costs in USD |
+| What switching means | Open POs, deposits, budgets, suppliers and ledger links arrive without re-sending or double posting (`IMPORT-001` to `IMPORT-004`); every weekly and month-end job (intake, approval, comments, PO sending, receiving, matching, deposits, accruals, card reconciliation, payment and sync) has a Purse equivalent |
+
 ## Purchasing core (existing guarantees)
 
 - **PUR-001 — Business setup and scoped capabilities.** One business retains locations, cost centres, projects, currencies and native-session requester, approver, buyer and receiver capabilities. Setup preserves identity and data. The full role model is ACCESS-001's. **Acceptance evidence:** Sign in as genuine members, configure the business and capabilities, re-run setup and restart; each member keeps exactly the configured capabilities and no data is lost (`tests/purse.test.mjs` P01).
@@ -276,7 +288,9 @@ archive directly into the current release.
 
 ## Status
 
-Judged from the code and tests at commit `9f201c0` (16 October 2026), the head of `main`. The supplied code audit was taken at `dc2ae70`; no file under `src/purse`, `src/ui` or `tests/purse.test.mjs` has changed since, and the one-line `tests/browser-journey.mjs` change (sign-in link hint) leaves every status unchanged. `P01`–`P17` name tests in `tests/purse.test.mjs`. A cited local test proves the bounded local behaviour only, never provider receipt or acceptance.
+Judged from the code and tests at commit `9f201c00eba7aecadf9239e1205f6933a0dd1cb6` (16 October 2026).
+
+That commit is the head of `main`. The supplied code audit was taken at `dc2ae70`; no file under `src/purse`, `src/ui` or `tests/purse.test.mjs` has changed since, and the one-line `tests/browser-journey.mjs` change (sign-in link hint) leaves every status unchanged. `P01`–`P17` name tests in `tests/purse.test.mjs`. A cited local test proves the bounded local behaviour only, never provider receipt or acceptance.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
