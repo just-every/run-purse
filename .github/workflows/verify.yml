@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: 22.20.0
       - run: corepack enable
-      - run: npx -y @runeditrun/rer@0.2.24 cli install
+      - run: npx -y @runeditrun/rer@0.2.30 cli install
       - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: rer install
       - run: pnpm exec playwright install --with-deps chromium
