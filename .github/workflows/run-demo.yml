@@ -99,7 +99,7 @@ jobs:
           if (account !== 'b20c0ca9cab0c2b70e13d7cf724b89bd') throw Error('Wrong account');
           const url = `https://api.cloudflare.com/client/v4/accounts/${account}/workers/scripts/procurement-purse-demo-test--demo/tails`;
           const headers = { authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`, 'content-type': 'application/json' };
-          const response = await fetch(url, { method: 'POST', headers, body: '{}' });
+          const response = await fetch(url, { method: 'POST', headers, body: '{}', signal: AbortSignal.timeout(15000) });
           const tail = (await response.json()).result;
           if (!response.ok || !tail?.url) throw Error('Cannot observe admissions');
           const admissions = [];
@@ -110,17 +110,19 @@ jobs:
             const event = JSON.parse(typeof message.data === 'string' ? message.data : new TextDecoder().decode(message.data));
             for (const log of event.logs ?? []) for (const part of log.message ?? []) {
               try { const row = typeof part === 'string' ? JSON.parse(part) : part;
-                if (row.event === 'demo_admitted') { admissions.push(row); lastAdmission = Date.now(); }
+                if (row.event === 'demo_admitted') { admissions.push(row); lastAdmission = Date.now(); console.log(JSON.stringify(row)); }
               } catch {}
             }
           });
           try {
             await new Promise((resolve, reject) => {
-              socket.addEventListener('open', resolve, { once: true });
-              socket.addEventListener('error', () => reject(Error('Cannot connect to tail')), { once: true });
+              const timer = setTimeout(() => reject(Error('Tail connection timed out')), 15000);
+              socket.addEventListener('open', () => { clearTimeout(timer); resolve(); }, { once: true });
+              socket.addEventListener('error', () => { clearTimeout(timer); reject(Error('Cannot connect to tail')); }, { once: true });
             });
             const started = new Date().toISOString();
             lastAdmission = Date.now();
+            console.log('Admission observation connected: ' + started);
             await new Promise((resolve, reject) => {
               const timer = setInterval(() => {
                 if (Date.now() - lastAdmission >= 15 * 60 * 1000) { clearInterval(timer); resolve(); }
@@ -133,9 +135,12 @@ jobs:
             console.log(JSON.stringify(result));
           } finally {
             socket.close();
-            const removed = await fetch(url + '/' + tail.id, { method: 'DELETE', headers });
+            const removed = await fetch(url + '/' + tail.id, { method: 'DELETE', headers, signal: AbortSignal.timeout(15000) });
             if (!removed.ok) throw Error('Tail cleanup failed');
+            console.log('Admission tail deleted: ' + removed.status);
           }
+          // Native WebSocket can retain the process after close; cleanup is complete.
+          process.exit(0);
           JS
       - uses: actions/upload-artifact@v4
         if: inputs.test_only && inputs.observe_test_host && !inputs.remove
