@@ -1,25 +1,12 @@
 Purse is free and open source under the MIT licence. It needs Node 22 or later and pnpm 10.12.4, on macOS, Linux or Windows with WSL2.
 
-## Install rer
-
-`rer` is the Run Edit Run command that installs, starts and looks after Purse. Install it once per computer:
-
-```sh
-curl -fsSL https://runeditrun.com/install.sh | sh
-```
-
-Or with npm:
-
-```sh
-npm install -g @runeditrun/rer
-```
-
 ## Get Purse and start it
 
 ```sh
-git clone https://github.com/just-every/run-purse.git purse
-cd purse && rer dev
+npx -y @runeditrun/rer dev just-every/run-purse
 ```
+
+That one line installs `rer`, the Run Edit Run command that installs, starts and looks after Purse, clones Purse and starts it. To start it again later, run `cd run-purse && rer dev`.
 
 The first `rer dev` installs everything, sets up a local owner and starts Purse. It can take a few minutes. When Purse is ready it prints two lines:
 

@@ -29,8 +29,8 @@ try {
 
   const run = await get('/run')
   assert.equal(run.status, 200)
-  assert.match(run.text, /git clone https:\/\/github\.com\/just-every\/run-purse\.git purse/)
-  assert.match(run.text, /cd purse &amp;&amp; rer dev/)
+  assert.match(run.text, /npx -y @runeditrun\/rer dev just-every\/run-purse/)
+  assert.match(run.text, /cd run-purse &amp;&amp; rer dev/)
 
   const manifest = JSON.parse(await readFile('docs/site.json', 'utf8'))
   const pages = manifest.sections.flatMap(section => section.pages)

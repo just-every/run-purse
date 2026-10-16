@@ -5,10 +5,15 @@ Source: [just-every/run-purse](https://github.com/just-every/run-purse).
 
 ## Run it locally
 
-Install the RER command once, then run this checkout:
+One line installs the RER command, clones Purse and starts it:
 
 ```sh
-npx -y @runeditrun/rer@0.2.24 cli install
+npx -y @runeditrun/rer dev just-every/run-purse
+```
+
+To start it again later, run `cd run-purse && rer dev`. From a checkout, to choose the owner yourself:
+
+```sh
 rer install
 rer setup
 rer dev
