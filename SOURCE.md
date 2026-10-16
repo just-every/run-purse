@@ -5,8 +5,8 @@ Its package remains `@procurement/purse` and its seed identifier remains `purse`
 The durable project and archive-product identity is unchanged in the machine configuration.
 The public release is a clean source snapshot; its earlier authoring history is not included.
 
-The adopted application source is Run Edit Run Base at
-`10e569948863b7050e6645b7219b56007953b232`. `base-copies.json` records the original
+The adopted application source is Run Edit Run Base; every recorded copy now pins tag `rer-v0.2.30`
+(`d434ea67989fe10b6ddff01daba8bb350975e54a`). `base-copies.json` records the original
 paths, immutable revision, file digests and modes for byte-exact copies in Base's
 copy-inventory format. That format identifies source by commit and content,
 without a repository address. Verify against a checkout holding the pinned Base
@@ -33,6 +33,7 @@ verbatim copies in `base-copies.json`:
 | Purse-owned derived file | Base source at the application pin above | Derivation |
 |---|---|---|
 | `SEED-COMMAND-CONTRACT.md` and `RUN-LOCALLY.md` | Base command and local-operation docs | Adapted to Purse’s pinned package command flags, outbox sign-in and same-release backup rule. |
+| `public/brand/band.svg` | `foundation/template/public/brand/band.svg` | Recoloured to Purse's green palette. |
 | `src/base/hydration/README.md` | `foundation/runtime/hydration/README.md` | Adapts only command examples to package mode; hydration implementation remains byte-exact. |
 | `migrations/core/0020_import_kit_retirement.sql` | `modules/import-kit/src/d1/reversal-fence-schema.ts` and `modules/import-kit/src/d1/retirement-schema.ts` | Materializes `d1ReversalFenceSchema`, then `d1RetirementSchema`, as SQL statements in export order, prefixed with the source comments. |
 
@@ -48,7 +49,7 @@ They are historical migration records, not refreshed runtime copies. The new
 import-kit reversal-fence and retirement schema arrays. No applied migration is rewritten.
 See `UPGRADING.md` for existing data and same-release archive recovery.
 
-The command runtime is published `@runeditrun/rer` **0.2.24**, exact-pinned and
+The command runtime is published `@runeditrun/rer` **0.2.30**, exact-pinned and
 locked. Conversion used Base's `scripts/export-cli.mjs`, followed by its
 `--to-package` converter. There is no copied CLI or onboarding
 implementation. Package scripts, operations and documentation invoke `rer`.
@@ -74,6 +75,6 @@ checksum check.
 
 ## Demo runtime
 
-All seven vendored modules (`demo`, `operator-auth`, `owner-claim`, `mail`, `dependencies`, `import-kit` and its `d1-transport` dependency) are refreshed together from tag `rer-v0.2.24` (`1ee378e41142c673a9098f60af21664c6d8477d1`). Their runtime bytes are recorded in `base-copies.json`; applied migrations retain their historical bytes. Demo labels and effects use Base unchanged. Base mail silently suppresses demo delivery and auth accepts its success result; Purse needs no demo mail wrapper and serves no captured-mail viewer. See `DEMO.md`.
+All seven vendored modules (`demo`, `operator-auth`, `owner-claim`, `mail`, `dependencies`, `import-kit` and its `d1-transport` dependency) are refreshed together from tag `rer-v0.2.30` (`d434ea67989fe10b6ddff01daba8bb350975e54a`), with the `src/base` runtime copies, `src/client.tsx`, `src/router.tsx`, the installer seed and fonts, and `.github/workflows/run-demo.yml`. Their runtime bytes are recorded in `base-copies.json`; applied migrations retain their historical bytes. Demo labels and effects use Base unchanged. Base mail silently suppresses demo delivery and auth accepts its success result; Purse needs no demo mail wrapper and serves no captured-mail viewer. See `DEMO.md`.
 
 Migration `0022_import_kit_progress.sql` materializes the tag’s additive preparation-step and erasure-progress schema arrays. Earlier applied migrations are unchanged.
