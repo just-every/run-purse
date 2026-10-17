@@ -16,6 +16,10 @@ function DocsNavList({ current, idPrefix }: { current?: string; idPrefix: string
           </ul>
         </div>
       ))}
+      <div className="docs-nav-group">
+        <p className="docs-nav-section" id={`${idPrefix}-project`}>Project</p>
+        <ul aria-labelledby={`${idPrefix}-project`}><li><a href="/contract">Contract</a></li></ul>
+      </div>
     </>
   )
 }

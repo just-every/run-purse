@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { contractPageHtml } from '../base/contract-page'
 import { runPageHtml, siteNotFoundHtml, type SiteBuild, type SiteContext } from '../base/run-site'
 import { identity } from '../identity'
 import { DocsArticle } from './docs/DocsArticle'
@@ -11,10 +12,10 @@ import './shell/site.css'
 
 /**
  * The run site (run-purse.com), written by `rer build --site`: the landing at `/`, whose Run Purse opens the Run page
- * at `/run`; the docs at `/docs` and `/docs/<slug>`, rendered from docs/site.json and docs/*.md; and the not-found
+ * at `/run`; the docs at `/docs` and `/docs/<slug>`, rendered from docs/site.json and docs/*.md; /contract from CONTRACT.md; and the not-found
  * page. Every page is static, needs no script and links no instance-only route. The installed app's `/` is the Lobby.
  */
-export function sitePages({ styles }: SiteContext): SiteBuild {
+export function sitePages({ styles, contract }: SiteContext): SiteBuild {
   const document = ({ title, description }: { title: string; description: string }, body: ReactElement) => '<!doctype html>' + renderToStaticMarkup(
     <html lang="en">
       <head>
@@ -34,10 +35,11 @@ export function sitePages({ styles }: SiteContext): SiteBuild {
   return {
     pages: [
       { path: '/', html: document({ title: 'Purse — Every purchase, accounted for', description: identity.tagline }, <Landing />) },
-      { path: '/run', html: runPageHtml(identity, run) },
+      { path: '/run', html: runPageHtml(identity, run, contract) },
+      ...(contract ? [{ path: '/contract', html: contractPageHtml(identity, run, contract) }] : []),
       { path: '/docs', html: document(docsHead(), <DocsIndex />) },
       ...docsPages.map(page => ({ path: `/docs/${page.slug}`, html: document(docsHead(page.slug), <DocsArticle slug={page.slug} />) })),
-      { path: '/404', html: siteNotFoundHtml(identity, run) },
+      { path: '/404', html: siteNotFoundHtml(identity, run, contract) },
     ],
     assets: ['rer-theme.css', 'fonts', 'brand'],
   }
