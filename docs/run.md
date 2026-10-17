@@ -1,4 +1,4 @@
-Purse is free and open source under the MIT licence. It needs Node 22 or later and pnpm 10.12.4, on macOS, Linux or Windows with WSL2.
+Purse is free and open source under the MIT licence. It runs on macOS, Linux or Windows with WSL2.
 
 ## Get Purse and start it
 
@@ -6,7 +6,7 @@ Purse is free and open source under the MIT licence. It needs Node 22 or later a
 npx -y @runeditrun/rer dev just-every/run-purse
 ```
 
-That one line installs `rer`, the Run Edit Run command that installs, starts and looks after Purse, clones Purse and starts it. To start it again later, run `cd run-purse && rer dev`.
+That one line installs `rer`, the Run Edit Run command that installs, starts and looks after Purse, clones Purse and starts it. Without Node, `curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-purse` does the same. To start it again later, run `cd run-purse && rer dev`.
 
 The first `rer dev` installs everything, sets up a local owner and starts Purse. It can take a few minutes. When Purse is ready it prints two lines:
 
@@ -21,7 +21,7 @@ Until setup is finished, the front page of your Purse shows **Finish setup**. Af
 
 ## Use your own email as the owner
 
-`rer dev` on its own makes a local owner for trying Purse. To be the owner with your own mailbox, set Purse up first:
+`rer dev` on its own makes a local owner for trying Purse. To be the owner with your own mailbox, run `npx -y @runeditrun/rer install just-every/run-purse`, then set Purse up first from the checkout:
 
 ```sh
 rer setup --owner-email you@example.com

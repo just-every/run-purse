@@ -1,7 +1,6 @@
 # Run it locally
 
-Install the command once with `npx -y @runeditrun/rer@0.2.30 cli install`.
-This checkout pins `@runeditrun/rer` 0.2.30 as an exact devDependency, locked in
+Start Purse from nothing with one line: `npx -y @runeditrun/rer dev just-every/run-purse` (set up only: `npx -y @runeditrun/rer setup just-every/run-purse`; without Node: `curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-purse`). This checkout pins `@runeditrun/rer` 0.2.30 as an exact devDependency, locked in
 `pnpm-lock.yaml`. The installed command selects that checkout's package;
 `OPERATIONS.json` and the package scripts both use `rer VERB`.
 

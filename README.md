@@ -11,10 +11,9 @@ One line installs the RER command, clones Purse and starts it:
 npx -y @runeditrun/rer dev just-every/run-purse
 ```
 
-To start it again later, run `cd run-purse && rer dev`. From a checkout, to choose the owner yourself:
+Without Node, `curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-purse` does the same. To start it again later, run `cd run-purse && rer dev`. To choose the owner yourself, run `npx -y @runeditrun/rer install just-every/run-purse`, then from the checkout:
 
 ```sh
-rer install
 rer setup
 rer dev
 ```

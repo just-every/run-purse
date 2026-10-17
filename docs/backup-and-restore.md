@@ -18,7 +18,7 @@ The archive leaves out sign-in sessions, private settings and the local outbox. 
 Restore only into an empty installation: a new checkout, set up with its own owner and no purchasing records yet.
 
 ```sh
-git clone https://github.com/just-every/run-purse.git purse-restored
+npx -y @runeditrun/rer install just-every/run-purse --dir purse-restored
 cd purse-restored
 rer setup --owner-email you@example.com
 rer import --input exports/installation.rer --yes
