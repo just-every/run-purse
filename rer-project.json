@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "projectId": "just-every/run-purse",
+  "name": "Purse",
+  "sourceRepository": "https://github.com/just-every/run-purse",
+  "license": "MIT"
+}
