@@ -294,7 +294,7 @@ Agents do the follow-through that buyers of Zip and Levelpath expect agents to d
 
 A pre-upgrade export restores only with the Purse release that made it. Restore it
 into an empty installation of that release, upgrade that installation’s source
-in place, run `rer install` and `rer setup`, then export again. Keep the original release
+in place, run `rer install` and `rer setup` inside that existing checkout, then export again. Keep the original release
 and private export until recovery is verified. Never import an older release’s
 archive directly into the current release.
 
