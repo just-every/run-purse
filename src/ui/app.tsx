@@ -6,6 +6,7 @@ import { Settings } from './settings';
 import { Suppliers, Catalogue } from './suppliers';
 import { Requests } from './requests';
 import { Orders } from './orders';
+import { Stockroom } from './stockroom';
 import { Preparation } from './preparation';
 import { Imports } from './imports';
 /** Mark, name and tagline at left; who is signed in at right. */
@@ -28,7 +29,7 @@ export function App() {
             {tab === 'Requests' && <Requests data={data} actor={actor} mutate={mutate}/>}
             {tab === 'Orders' && <Orders data={data} actor={actor} mutate={mutate}/>}
             {tab === 'Suppliers' && <Suppliers data={data} mutate={mutate}/>}
-            {tab === 'Catalogue' && <Catalogue data={data} mutate={mutate}/>}
+            {tab === 'Catalogue' && <><Catalogue data={data} mutate={mutate}/><Stockroom data={data} mutate={mutate}/></>}
             {tab === 'Settings' && <><Settings data={data} mutate={mutate}/><section className="panel"><h3>Invite saved member</h3><Form label="Send invitation" onSubmit={async b => { await call('invite', b); setNotice('Invitation sent.'); }}><Field label="Member email" name="email" type="email"/></Form><p className="quiet">Invite an active saved member to sign in.{actor.dev && <> Dev personas also require saved purchasing roles.</>}</p></section></>}
             {tab === 'Authority' && <Authority data={data} actor={actor} mutate={mutate}/>}
             {tab === 'Preparation' && <Preparation data={data} mutate={mutate}/>}

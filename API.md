@@ -4,7 +4,7 @@ All `/api/purse/*` endpoints use the current native operator session and purchas
 
 `GET /api/purse/state` returns only the actor's scoped workspace. `POST /api/purse/command/:action` accepts structured JSON; the server calculates totals, chooses policy, checks exact revisions and records the authenticated actor. Client actor, role, total and authority fields cannot confer authority. A 409 means state changed or authority is absent: inspect the error and fresh state; there is no automatic retry.
 
-Actions: `business`, `member`, `supplier`, `catalogue`, `policy`, `delegation`, `revoke-delegation`, `request`, `amend`, `submit`, `decision`, `quote`, `attachment`, `convert`, `issue`, `receipt`, `invoice`, `prepare`, `edit-preparation`, `propose-action`, `execute-action`.
+Actions: `business`, `member`, `supplier`, `catalogue`, `stockroom-item`, `stockroom-count`, `policy`, `delegation`, `revoke-delegation`, `request`, `amend`, `submit`, `decision`, `quote`, `attachment`, `convert`, `issue`, `receipt`, `invoice`, `prepare`, `edit-preparation`, `propose-action`, `execute-action`.
 
 Human amount entry accepts currency text on the same command routes:
 
@@ -61,3 +61,9 @@ For `prepare`, provide `workflow` (`intake`, `rfq`, `renewal`, `exception`, `neg
 `POST /api/purse/import/preview` takes `{filename,csv,mapping:{columns,decimal,date,statuses}}`. Commit adds the exact returned `fingerprint`. Status/resume/undo take `{id,mappingVersion}`. `POST /api/purse/import/claim` takes the same body and explicitly takes custody of a batch from a completed archive restore; ordinary other-owner batches cannot be claimed. Status includes original bytes and reversal information and is bound to the importing owner, or the current native owner who explicitly claimed a genuinely restored batch. See `IMPORTING.md`.
 
 Downloads: `/api/purse/download/attachment/:id`, `/api/purse/download/order/:id`, `/api/purse/download/agentRun/:id`, and `/api/purse/accounting`. Every download checks the current session and record scope. PO downloads are actual printable HTML documents; attachments are returned as downloads with their original bytes. Accounting CSV is evidence handoff, not posting.
+
+## Stockroom replenishment (STOCK-001)
+
+A buyer configures `stockroom-item` with `{name,catalogue,location,costCentre,project,reorderPoint,replenishTo,needDate,terms}`; the catalog item must be approved and its supplier preferred. `stockroom-count` takes `{id,count,needDate?}`. Counts and reorder quantities use decimal strings with up to three places; counts may be zero. Below the reorder point, the command creates a normal request draft for `replenishTo - count` at the current catalog price. Repeated counts reuse the outstanding request until fulfillment or cancellation. The native owner reviews and submits it through the ordinary `submit` door; no count submits or approves a request.
+
+Pier remains the warehouse inventory system. A Pier operator can send a replenishment need through the same authenticated `POST /api/purse/command/request` door: supply a title, preferred supplier ID, currency, needDate, configured location and costCentre, supplier terms, and `lines:[{catalogue,quantity,project}]`. This creates a draft under the current requester's identity, for human review and submission. It uses a current native session and same-origin request; scoped connector keys remain API-001's unfinished work.
