@@ -2,7 +2,7 @@ import { canonicalJson } from '@runeditrun/rer/internal/modules/portability/hash
 import { PortabilityError } from '@runeditrun/rer/modules/portability';
 import { validateOrderLinks } from './restore-order-links.mjs';
 
-const kinds = new Set(['business','member','supplier','catalogue','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom']);
+const kinds = new Set(['business','member','supplier','catalogue','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure']);
 export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
 export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
 export const integer = n => Number.isSafeInteger(n) && n >= 0;

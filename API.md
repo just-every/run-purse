@@ -4,7 +4,7 @@ All `/api/purse/*` endpoints use the current native operator session and purchas
 
 `GET /api/purse/state` returns only the actor's scoped workspace. `POST /api/purse/command/:action` accepts structured JSON; the server calculates totals, chooses policy, checks exact revisions and records the authenticated actor. Client actor, role, total and authority fields cannot confer authority. A 409 means state changed or authority is absent: inspect the error and fresh state; there is no automatic retry.
 
-Actions: `business`, `member`, `supplier`, `catalogue`, `stockroom-item`, `stockroom-count`, `policy`, `delegation`, `revoke-delegation`, `request`, `amend`, `submit`, `decision`, `quote`, `attachment`, `convert`, `issue`, `receipt`, `invoice`, `prepare`, `edit-preparation`, `propose-action`, `execute-action`.
+Actions: `business`, `member`, `supplier`, `catalogue`, `stockroom-item`, `stockroom-count`, `policy`, `delegation`, `revoke-delegation`, `request`, `amend`, `submit`, `decision`, `quote`, `attachment`, `convert`, `issue`, `close-order`, `reopen-order`, `receipt`, `invoice`, `prepare`, `edit-preparation`, `propose-action`, `execute-action`.
 
 Human amount entry accepts currency text on the same command routes:
 
@@ -67,3 +67,9 @@ Downloads: `/api/purse/download/attachment/:id`, `/api/purse/download/order/:id`
 A buyer configures `stockroom-item` with `{name,catalogue,location,costCentre,project,reorderPoint,replenishTo,needDate,terms}`; the catalog item must be approved and its supplier preferred. `stockroom-count` takes `{id,count,needDate?}`. Counts and reorder quantities use decimal strings with up to three places; counts may be zero. Below the reorder point, the command creates a normal request draft for `replenishTo - count` at the current catalog price. Repeated counts reuse the outstanding request until fulfillment or cancellation. The native owner reviews and submits it through the ordinary `submit` door; no count submits or approves a request.
 
 Pier remains the warehouse inventory system. A Pier operator can send a replenishment need through the same authenticated `POST /api/purse/command/request` door: supply a title, preferred supplier ID, currency, needDate, configured location and costCentre, supplier terms, and `lines:[{catalogue,quantity,project}]`. This creates a draft under the current requester's identity, for human review and submission. It uses a current native session and same-origin request; scoped connector keys remain API-001's unfinished work.
+
+## Manual PO closure (PO-010)
+
+`close-order` takes `{id,version,reason,line?,quantity?}`. The `version` is the order's `closureVersion` (zero before any closure). Omit line and quantity to close every outstanding balance, select a line to close it, or include its quantity to close part of that line. A buyer and a reason are required. Closure retains supplier issuance, records local closed quantities separately from cancellations, releases the remaining commitment and removes closed quantities from receiving and overdue eligibility; it sends no supplier message. New invoice evidence exceeding a closed balance is saved with `status:"exception"` and a visible closed-balance reason. MATCH-002's broader assignment/resolution workflow remains unfinished.
+
+`reopen-order` takes `{id,version,reason,closure?}`. Omit `closure` to reopen all active balances or choose one ID from `data.orderClosure`. It rechecks native buyer access, current exact-revision approval, supplier eligibility and available budget. It reserves only the newly reopened remainder; stale or competing commands return 409 without changes. Both events retain actor, time and reason in audit history. Reopen existing balances before amending a request.
