@@ -302,7 +302,9 @@ archive directly into the current release.
 
 ## Status
 
-Baseline: code and tests at `9f201c00eba7aecadf9239e1205f6933a0dd1cb6` (16 October 2026); STOCK-001 completed on 19 October 2026. Other rows retain that assessment. `P01`–`P17` name tests in `tests/purse.test.mjs`. A cited local test proves bounded local behavior, never provider receipt or acceptance.
+Judged from the code and tests at commit `9f201c00eba7aecadf9239e1205f6933a0dd1cb6` (16 October 2026).
+
+STOCK-001 was completed on 19 October 2026; other rows retain that baseline assessment. `P01`–`P17` name tests in `tests/purse.test.mjs`. A cited local test proves bounded local behavior, never provider receipt or acceptance.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
