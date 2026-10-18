@@ -1,7 +1,12 @@
 import { check, same, integer, money, quantity, amount, purchasing } from './restore-validation.mjs';
 
 export function validateOrderLinks({get,all}) {
- const orders = all('order'), receipts = all('receipt');
+ const orders = all('order'), receipts = all('receipt'), closures = all('orderClosure');
+ for (const c of closures) {
+  const o=get('order',c.order); check(o.issuedAt && !o.imported && typeof c.active === 'boolean' && typeof c.reason === 'string' && c.reason.trim().length,'closure_order');
+  check(Array.isArray(c.lines) && c.lines.length > 0 && new Set(c.lines.map(l=>l.line)).size === c.lines.length,'closure_lines');
+  for (const l of c.lines) check(o.lines.some(x=>x.id===l.line) && integer(l.q) && l.q>0,'closure_quantity');
+ }
  const position = (o,l) => {
   const events = receipts.filter(e => e.order === o.id && e.line === l.id);
   return { accepted:(l.carriedAccepted ?? 0) + events.reduce((n,e) => n + (e.event === 'receive' ? e.q : e.event === 'return' ? -e.q : 0),0), cancelled:(l.carriedCancelled ?? 0) + events.filter(e => e.event === 'cancel').reduce((n,e) => n + e.q,0) };
@@ -19,7 +24,7 @@ export function validateOrderLinks({get,all}) {
    const prior = get('order',revision.amends); check(prior.request === o.request && prior.revision < o.revision,'order_amendment');
    for (const old of prior.lines) { const line=o.lines.find(l => l.id === old.id), carried=position(prior,old); check(line && line.carriedAccepted === carried.accepted && line.carriedCancelled === carried.cancelled,'order_carry'); }
   }
-  for (const l of o.lines) { const p=position(o,l); check(integer(p.accepted) && integer(p.cancelled) && p.accepted+p.cancelled<=l.q,'receipt_position'); }
+  for (const l of o.lines) { const p=position(o,l), closed=closures.filter(c=>c.order===o.id&&c.active).flatMap(c=>c.lines).filter(c=>c.line===l.id).reduce((n,c)=>n+c.q,0); check(integer(p.accepted) && integer(p.cancelled) && p.accepted+p.cancelled+closed<=l.q,'receipt_position'); }
   if (o.replenishmentStatus) {
    check(['held','reviewed','cancelled'].includes(o.replenishmentStatus),'replenishment_status');
    check(money(o.replenishmentMinor) && (o.replenishmentStatus === 'held' ? o.replenishmentMinor > 0 && ['issued','amendment-pending'].includes(o.status) : o.replenishmentMinor === 0),'replenishment_amount');

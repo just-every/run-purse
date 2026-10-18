@@ -21,4 +21,4 @@ export async function harness(){const messages=[];const socket=createServer();aw
   const invite=nativeRole==='owner'?await send('/auth/invite',{email,displayName:email,role:'owner'},owner):await send('/api/purse/invite',{email},owner);assert.equal(invite.status,nativeRole==='owner'?202:200,JSON.stringify(invite.value));
   const confirmed=await confirmMail(email);assert.ok(confirmed.cookie,'Invitation confirmation must create a native session');return confirmed.cookie;
  };
- return {db,mf,dir,owner,send,command,state,member,async close(){await mf.dispose();await rm(dir,{recursive:true,force:true})}}}catch(error){await mf.dispose();await rm(dir,{recursive:true,force:true});throw error}}
+ return {db,mf,dir,owner,send,command,state,member,messages,async close(){await mf.dispose();await rm(dir,{recursive:true,force:true})}}}catch(error){await mf.dispose();await rm(dir,{recursive:true,force:true});throw error}}

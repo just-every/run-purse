@@ -32,9 +32,14 @@ export function invoice(s: State, a: Actor, b: Data) {
             'Invoice reference already exists for this supplier with different evidence or allocations; review the existing invoice before correction', 409);
         return existing[0];
     }
-    requireThat(o.status === 'issued', 'Issued PO required for new invoice evidence', 409);
+    requireThat(['issued', 'closed'].includes(o.status), 'Issued PO required for new invoice evidence', 409);
+    const closedBalance = allocations.some((x: Data) => {
+        const l = o.lines.find((l: Data) => l.id === x.line);
+        const billed = all(s, 'invoice').filter(i => get(s, 'order', i.order).request === o.request).flatMap(i => i.allocations).filter((z: Data) => z.line === l.id).reduce((n: number, z: Data) => n + z.q, 0);
+        return linePosition(s, o.id, l).closed > 0 && billed + x.q > l.q - linePosition(s, o.id, l).closed;
+    });
     const id = uid();
-    put(s, 'invoice', id, { ...candidate, id, totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total'), actor: a.id, at: new Date().toISOString() });
+    put(s, 'invoice', id, { ...candidate, id, ...(closedBalance ? { status: 'exception', exception: 'Invoice exceeds the closed PO balance' } : {}), totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total'), actor: a.id, at: new Date().toISOString() });
     audit(s, a, 'invoice', id);
     return get(s, 'invoice', id);
 }

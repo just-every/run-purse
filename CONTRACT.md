@@ -302,13 +302,13 @@ archive directly into the current release.
 
 ## Status
 
-Baseline: code and tests at `9f201c00eba7aecadf9239e1205f6933a0dd1cb6` (16 October 2026); STOCK-001 completed on 19 October 2026. Other rows retain that assessment. `P01`–`P17` name tests in `tests/purse.test.mjs`. A cited local test proves bounded local behavior, never provider receipt or acceptance.
+Baseline: code and tests at `9f201c00eba7aecadf9239e1205f6933a0dd1cb6` (16 October 2026); STOCK-001 and PO-010 completed on 19 October 2026. Other rows retain that assessment. `P01`–`P17` name tests in `tests/purse.test.mjs`. A cited local test proves bounded local behavior, never provider receipt or acceptance.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 17 | 0 | 0 | 17 |
-| Target and push further | 2 | 35 | 57 | 94 |
-| All | 19 | 35 | 57 | 111 |
+| Target and push further | 3 | 34 | 57 | 94 |
+| All | 20 | 34 | 57 | 111 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -372,7 +372,7 @@ Baseline: code and tests at `9f201c00eba7aecadf9239e1205f6933a0dd1cb6` (16 Octob
 | `PO-007` | US sales and use tax on purchases | target | partial | `src/purse/requests.ts`; `tests/purse.test.mjs` P05 | Exemption certificates, use-tax flags and Avalara AvaTax rates absent |
 | `PO-008` | Automatic PO creation and sending after approval | target | partial | `src/purse/orders.ts`; `tests/purse.test.mjs` P08 | Automatic creation and sending, waiting for supplier activation, combining several requests' lines into one PO and buyer edits on the Procure page absent |
 | `PO-009` | PO document content, labels and terms | target | partial | `src/purse/documents.ts`; `tests/purse.test.mjs` P08 | Logo, bill-to and ship-to, addresses, deposit terms, per-entity labels and attached terms absent |
-| `PO-010` | Manual PO close and reopen | target | partial | `src/purse/receiving.ts`; `tests/purse.test.mjs` P10 | Whole-PO close with reason, chase stop and reopen absent |
+| `PO-010` | Manual PO close and reopen | target | done | `src/purse/order-closure.ts`; `src/purse/invoices.ts`; `src/ui/order-closure.tsx`; `tests/order-closure.test.mjs` PO-010; `tests/browser-order-closure.mjs` PO-010 at 1440/390 |  |
 | `PO-011` | Deposits and prepayments | target | missing |  | Deposit terms, two-way deposit matching, prepaid posting and deposit credits not built |
 | `PO-012` | Buyer edits at conversion within a price variance limit | target | missing |  | `convert` in `src/purse/orders.ts` takes the approved revision unchanged; buyer price, quantity, SKU and supplier edits, charge lines, per-buyer variance limits, the in-limit revision without re-approval and the beyond-limit amendment route not built |
 | `RECEIVE-001` | Receiver prompts and invoice holds | target | missing |  | Receiver prompts, receipt holds, release and responsible-receiver rules not built |

@@ -26,6 +26,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         const business = get(s, 'business', 'main');
         requireThat(business.locations.includes(r.location) && business.costCentres.includes(r.costCentre) && r.lines.every(l => business.projects.includes(l.project)), 'Use configured location, cost centre and project');
         requireThat(new Set(r.lines.map(l => l.id)).size === r.lines.length, 'Line IDs must be unique');
+        if (old) requireThat(!all(s, 'orderClosure').some(c => c.active && get(s, 'order', c.order).request === old!.id), 'Reopen closed balances before amending this request', 409);
         if (old)
             requireThat(r.lines.every(l => !b.lines.find((x: Data) => x.id === l.id) || old!.lines.some((x: Data) => x.id === l.id)), 'Line ID is outside this request');
         for (const l of r.lines) {

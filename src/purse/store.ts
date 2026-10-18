@@ -8,7 +8,7 @@ export async function save(db: D1Database, a: Actor, before: State, after: State
     if (before.get(k)?.revision === r.revision)
         continue;
     // Fresh grants cover preparation and issuance; issued receiving metadata is physical history.
-    if(r.kind==='order'&&(r.value.status==='prepared'||(r.value.status==='issued'&&before.get(k)?.value.status!=='issued')))q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(r.value.approvalActor,r.value.approvalVersion));
+    if(r.kind==='order'&&(r.value.status==='prepared'||(r.value.status==='issued'&&(before.get(k)?.value.status!=='issued'||r.value.reopenedAt!==before.get(k)?.value.reopenedAt))))q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(r.value.approvalActor,r.value.approvalVersion));
     q.push(db.prepare('INSERT INTO p_records(business,kind,id,revision,value) VALUES(?,?,?,?,?) ON CONFLICT(business,kind,id) DO UPDATE SET revision=excluded.revision,value=excluded.value').bind(r.business, r.kind, r.id, r.revision, JSON.stringify(r.value)));
 } for (const [k, r] of before)
     if (!after.has(k))
