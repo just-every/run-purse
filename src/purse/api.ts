@@ -1,6 +1,7 @@
 import { deploymentHealth } from '../base/deployment-health';
 import { Hono } from 'hono';
 import { operatorAuth, runtimeBindings, type Bindings } from '../auth.server';
+import { auditLog, auditCsv } from './audit-log';
 import { payables } from './payables';
 import { administration } from './admin';
 import { catalogueGrants } from './catalogue-access';
@@ -46,3 +47,6 @@ api.post('/api/purse/invite', async (c) => { const a = await actor(c.req.raw, c.
 api.post('/api/purse/import/:op', async (c) => { const a = await actor(c.req.raw, c.env), { state } = await load(c.env.DB); return c.json(await imports(c.env.DB, state, a, c.req.param('op'), await c.req.json())); });
 api.get('/api/purse/download/:kind/:id', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = download(state, a, c.req.param('kind'), c.req.param('id')); await readFence(c.env.DB, a, revision); return result; });
 api.get('/api/purse/accounting', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = accounting(state, a); await readFence(c.env.DB, a, revision); return result; });
+
+api.get('/api/purse/audit', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const events = auditLog(state, a, c.req.query()); await readFence(c.env.DB, a, revision); return c.json({ events }); });
+api.get('/api/purse/audit.csv', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const response = auditCsv(auditLog(state, a, c.req.query())); await readFence(c.env.DB, a, revision); return response; });

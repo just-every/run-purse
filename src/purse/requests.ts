@@ -100,9 +100,9 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
                 ledger(s, a, r, delta, r.amends ? 'amendment-reservation' : 'reservation');
         }
         const id = uid();
-        put(s, 'decision', id, { request: r.id, revision: r.revision, decision, reason, actor: a.id, email: a.email, owner: a.owner, operatorVersion:a.version, at: new Date().toISOString(), policy: p.id, policyVersion:s.get('policy:'+p.id)!.revision, delegation: delegated?.id ?? null });
+        put(s, 'decision', id, { request: r.id, revision: r.revision, decision, reason, actor: a.id, email: a.email, owner: a.owner, operatorVersion:a.version, at: new Date().toISOString(), policy: p.id, policyVersion:s.get('policy:'+p.id)!.revision, policySnapshot:structuredClone(p), delegation: delegated?.id ?? null });
         put(s, 'request', r.id, { ...r, status: decision });
-        audit(s, a, op, r.id, { revision: r.revision, decision, reason });
+        audit(s, a, op, r.id, { revision: r.revision, decision, reason, decisionId: id });
         return get(s, 'request', r.id);
     }
     if (op === 'quote') {

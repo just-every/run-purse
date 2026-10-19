@@ -1,3 +1,4 @@
+import { AuditLog } from './audit-log';
 import { Authority } from './authority';
 import { useEffect, useState } from 'react';
 import { call, Form, Field, Table, when, type D } from './shared';
@@ -35,7 +36,7 @@ export function App() {
             {tab === 'Authority' && <Authority data={data} actor={actor} mutate={mutate}/>}
             {tab === 'Preparation' && <Preparation data={data} mutate={mutate}/>}
             {tab === 'Imports' && <Imports reload={reload} jobs={data.importJobs ?? []}/>}
-            {tab === 'Audit' && <><h2 className="page-title">Audit history</h2><Table heads={['When', 'Actor', 'Action', 'Record', 'Reason']}>{data.audit.map((e: D) => <tr key={e.id}><td className="figure-cell">{when(e.at)}</td><td className="email-cell">{e.email}</td><td>{e.action}</td><td>{e.record}</td><td>{e.reason ?? ''}</td></tr>)}</Table></>}
+            {tab === 'Audit' && <AuditLog/>}
         </main>
         <footer className="app-footer">Purse · Native purchasing records.</footer>
     </div>;
