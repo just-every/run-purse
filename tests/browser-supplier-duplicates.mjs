@@ -80,7 +80,7 @@ export async function supplierDuplicatesJourney(browser,root,origin,width,eviden
   await owner.page.getByRole('button',{name:'Commit reviewed batch',exact:true}).click()
   await owner.page.getByRole('heading',{name:/^Batch /}).waitFor()
   const imported=(await current(owner.context,origin)).data.supplier.find(s=>s.sourceId==='duplicate-'+tag)
-  assert.deepEqual(imported.matchingOnly,{tin:true,bank:true});assert.ok(imported.sourceRedaction.originalSha256)
+  assert.deepEqual(imported.matchingOnly,{tin:true,bank:true});assert.ok(imported.sourceRedaction.redactedColumns.length);assert.equal(imported.sourceRedaction.originalSha256,undefined)
   const requesterAfter=await session(browser,root,origin,'requester',width)
   try{
    await requesterAfter.page.getByRole('navigation').getByRole('button',{name:'Requests',exact:true}).click()

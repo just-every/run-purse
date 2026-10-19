@@ -56,6 +56,7 @@ test('SUPPLIER-003 duplicate matching, redacted CSV custody and history-preservi
  const {createHash}=await import('node:crypto')
  assert.equal(custody.originalSha256,createHash('sha256').update(sensitiveCsv).digest('hex'))
  assert.equal(custody.retainedSha256,createHash('sha256').update(retained).digest('hex'))
+ assert.ok(!JSON.stringify((await state(requester)).data).includes(custody.originalSha256),'Original sensitive-file digest stays in owner-bound import custody')
  assert.equal((await state(buyer)).data.supplier.find(s=>s.sourceId==='private-1').matching,undefined)
  const tables=(await h.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT GLOB '_*'").all()).results
  for(const {name} of tables){const stored=JSON.stringify((await h.db.prepare('SELECT * FROM "'+name.replaceAll('"','""')+'"').all()).results);for(const raw of ['12-3456789','000123456789'])assert.ok(!stored.includes(raw),'No raw matching-only identity is retained in database rows or import custody')}

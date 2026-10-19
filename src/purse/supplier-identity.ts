@@ -33,8 +33,8 @@ export function matchingInputs(s: State, input: unknown, previous: Data = {}): D
     return result;
 }
 export function supplierPublicValue(supplier: Data): Data {
-    const { matching, ...value } = supplier;
-    return { ...value, matchingOnly: { tin: Boolean(matching?.tin), bank: Boolean(matching?.bank) } };
+    const { matching, sourceRedaction, ...value } = supplier;
+    return { ...value, ...(sourceRedaction ? { sourceRedaction: { redactedColumns: sourceRedaction.redactedColumns } } : {}), matchingOnly: { tin: Boolean(matching?.tin), bank: Boolean(matching?.bank) } };
 }
 export function canonicalSupplier(s: State, id: string) {
     const seen = new Set<string>();
