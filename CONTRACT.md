@@ -304,13 +304,13 @@ archive directly into the current release.
 
 Judged from the code and tests at commit `9f201c00eba7aecadf9239e1205f6933a0dd1cb6` (16 October 2026).
 
-STOCK-001 and PO-010 were completed on 19 October 2026; other rows retain that baseline assessment. `P01`–`P17` name tests in `tests/purse.test.mjs`. A cited local test proves bounded local behavior, never provider receipt or acceptance.
+STOCK-001, PO-010 and SUPPLIER-007 were completed on 19 October 2026; other rows retain that baseline assessment. `P01`–`P17` name tests in `tests/purse.test.mjs`. A cited local test proves bounded local behavior, never provider receipt or acceptance.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 17 | 0 | 0 | 17 |
-| Target and push further | 3 | 34 | 57 | 94 |
-| All | 20 | 34 | 57 | 111 |
+| Target and push further | 4 | 34 | 56 | 94 |
+| All | 21 | 34 | 56 | 111 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
