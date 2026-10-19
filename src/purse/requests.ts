@@ -1,8 +1,10 @@
 import { moneyInput } from './money';
+import { requireCatalogueAccess } from './catalogue-access';
+import { currentPrice, requiredCatalogueFiles } from './catalogue';
 import { all, audit, can, get, put, requireThat, text, minor, quantity, extended, date, uid, own, roles, type Actor, type Data, type State } from './types';
 import { supplier, currency } from './admin';
-export function lines(s: State, input: unknown) { requireThat(Array.isArray(input) && input.length > 0 && input.length <= 100, 'Provide 1–100 lines'); return input.map((x: Data) => { const item = x.catalogue ? get(s, 'catalogue', x.catalogue) : undefined; if (item)
-    requireThat(item.approved, 'Catalogue item is not approved'); const unitMinor = moneyInput(x, 'unitAmount', 'unitMinor', 'Unit price', { fallback: item?.unitMinor }), q = quantity(x.quantity); return { id: x.id ?? uid(), description: text(x.description ?? item?.description, 'Line description'), quantity: x.quantity, q, unitMinor, totalMinor: extended(q, unitMinor), category: text(x.category ?? item?.category, 'Category'), project: text(x.project, 'Project'), catalogue: item?.id ?? null }; }); }
+export function lines(s: State, input: unknown, a: Actor) { requireThat(Array.isArray(input) && input.length > 0 && input.length <= 100, 'Provide 1–100 lines'); return input.map((x: Data) => { const item = x.catalogue ? get(s, 'catalogue', x.catalogue) : undefined; if (item)
+    { requireCatalogueAccess(s, a, item); requireThat(item.approved, 'Catalogue item is not approved'); requireThat(currentPrice(item), 'Catalogue price is outside its validity dates', 409); } const unitMinor = moneyInput(x, 'unitAmount', 'unitMinor', 'Unit price', { fallback: item?.unitMinor }), q = quantity(x.quantity); return { id: x.id ?? uid(), description: text(x.description ?? item?.description, 'Line description'), quantity: x.quantity, q, unitMinor, totalMinor: extended(q, unitMinor), category: text(x.category ?? item?.category, 'Category'), project: text(x.project || item?.project, 'Project'), catalogue: item?.id ?? null, partNumber: item?.partNumber ?? x.partNumber ?? '', unit: item?.unit ?? x.unit ?? 'each', requiredAttachments: item?.requiredAttachments ?? x.requiredAttachments ?? [] }; }); }
 export function requestTotal(r: Data) { const total = r.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0) + r.freightMinor + r.taxMinor; return minor(total, 'Request total'); }
 export function policies(s: State, r: Data) { return all(s, 'policy').filter(p => p.active && p.currency === r.currency && p.limitMinor >= r.totalMinor && r.lines.every((l: Data) => (p.category === '*' || p.category === l.category) && (p.project === '*' || p.project === l.project))).sort((a, b) => a.limitMinor - b.limitMinor || a.id.localeCompare(b.id)); }
 export const reserved = (s: State, policy: string) => all(s, 'commitment').filter(e => e.policy === policy).reduce((n, e) => n + e.amountMinor, 0);
@@ -22,7 +24,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         currency(s, b.currency);
         const id = old?.id ?? uid();
         const supplierSnapshot = { id: counterparty.id, name: counterparty.name, contacts: structuredClone(counterparty.contacts), contractRef: counterparty.contractRef };
-        const r = { id, requester: old?.requester ?? a.id, requesterEmail:old?.requesterEmail??a.email, title: text(b.title, 'Request title'), supplier: b.supplier, supplierSnapshot, currency: b.currency, needDate: date(b.needDate), location: text(b.location, 'Location'), costCentre: text(b.costCentre, 'Cost centre'), lines: lines(s, b.lines), freightMinor: moneyInput(b, 'freightAmount', 'freightMinor', 'Freight', { fallback: 0 }), taxMinor: moneyInput(b, 'taxAmount', 'taxMinor', 'Supplied tax', { fallback: 0 }), terms: text(b.terms, 'Supplier-supplied terms'), revision: (old?.revision ?? 0) + 1, status: 'draft', policy: null, totalMinor: 0 };
+        const r = { id, requester: old?.requester ?? a.id, requesterEmail:old?.requesterEmail??a.email, requesterOwner:old?.requesterOwner??a.owner, title: text(b.title, 'Request title'), supplier: b.supplier, supplierSnapshot, currency: b.currency, needDate: date(b.needDate), location: text(b.location, 'Location'), costCentre: text(b.costCentre, 'Cost centre'), lines: lines(s, b.lines, old && !a.owner ? { ...a, id: old.requester, email: old.requesterEmail, owner: old.requesterOwner === true } : a), freightMinor: moneyInput(b, 'freightAmount', 'freightMinor', 'Freight', { fallback: 0 }), taxMinor: moneyInput(b, 'taxAmount', 'taxMinor', 'Supplied tax', { fallback: 0 }), terms: text(b.terms, 'Supplier-supplied terms'), revision: (old?.revision ?? 0) + 1, status: 'draft', policy: null, totalMinor: 0 };
         const business = get(s, 'business', 'main');
         requireThat(business.locations.includes(r.location) && business.costCentres.includes(r.costCentre) && r.lines.every(l => business.projects.includes(l.project)), 'Use configured location, cost centre and project');
         requireThat(new Set(r.lines.map(l => l.id)).size === r.lines.length, 'Line IDs must be unique');
@@ -76,6 +78,8 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             can(s, a, 'requester');
             requireThat(a.owner || r.requester === a.id || r.requesterEmail===a.email, 'Only requester may submit', 403);
             requireThat(['draft', 'returned', 'rejected'].includes(r.status), 'Request is not a draft', 409);
+            for (const line of r.lines) if (line.catalogue) { const item = get(s, 'catalogue', line.catalogue); requireCatalogueAccess(s, a, item); requireThat(item.approved && currentPrice(item), 'Catalogue item is unapproved or outside price validity; revise the draft', 409); }
+            requiredCatalogueFiles(s, r);
             const p = policies(s, r)[0];
             requireThat(p, 'No amount/category/project authority policy covers this request', 409);
             put(s, 'request', r.id, { ...r, status: 'pending', policy: p.id });
@@ -108,7 +112,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         supplier(s, b.supplier);
         currency(s, b.currency);
         const id = uid();
-        const ls = lines(s, b.lines);
+        const ls = lines(s, b.lines, a);
         const q = { id, request: r.id, revision: r.revision, supplier: b.supplier, currency: b.currency, lines: ls, freightMinor: moneyInput(b, 'freightAmount', 'freightMinor', 'Freight', { optional: true }), taxMinor: moneyInput(b, 'taxAmount', 'taxMinor', 'Supplied tax', { optional: true }), delivery: b.delivery ? date(b.delivery) : null, conditions: b.conditions ? text(b.conditions, 'Conditions') : null, source: text(b.source, 'Quote source evidence'), missing: [] as string[] };
         q.missing = ['freightMinor', 'taxMinor', 'delivery', 'conditions'].filter(k => (q as Data)[k] === null);
         put(s, 'quote', id, q);

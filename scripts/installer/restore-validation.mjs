@@ -3,7 +3,7 @@ import { PortabilityError } from '@runeditrun/rer/modules/portability';
 import { validateOrderLinks } from './restore-order-links.mjs';
 import { validateSupplierPerformance } from './restore-supplier-performance.mjs';
 
-const kinds = new Set(['business','member','supplier','catalogue','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue']);
+const kinds = new Set(['business','member','supplier','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue']);
 export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
 export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
 export const integer = n => Number.isSafeInteger(n) && n >= 0;
@@ -66,6 +66,12 @@ export function validatePurchasingArchive(rows) {
   if (d.delegation) check(get('delegation',d.delegation).policy === d.policy,'decision_delegation');
  }
  for (const kind of ['catalogue','quote']) for (const r of all(kind)) { get('supplier',r.supplier); if (kind === 'quote') { get('revision',r.request + ':' + r.revision); lineAmounts(r,true); } }
+ for (const grant of all('catalogueGrant')) check(get('member',grant.email).email === grant.email && grant.id === grant.email, 'catalogue_grant');
+ for (const record of [...all('catalogue'),...all('catalogueBundle')]) if (record.access) for (const field of ['departments','locations','entities','roles']) check(Array.isArray(record.access[field]) && record.access[field].every(v => typeof v === 'string'), 'catalogue_access');
+ for (const bundle of all('catalogueBundle')) {
+  check(Array.isArray(bundle.items) && bundle.items.length > 0 && bundle.items.length <= 100 && new Set(bundle.items.map(i => i.catalogue)).size === bundle.items.length, 'catalogue_bundle');
+  for (const item of bundle.items) { get('catalogue',item.catalogue); quantity(item.quantity); }
+ }
  for (const d of all('delegation')) get('policy',d.policy);
  for (const e of all('commitment')) { get('revision',e.request + ':' + e.revision); get('policy',e.policy); check(Number.isSafeInteger(e.amountMinor),'commitment_amount'); }
  for (const a of all('attachment')) {

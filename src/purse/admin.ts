@@ -19,17 +19,6 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
         audit(s, a, op, email, { roles: b.roles, active: b.active !== false });
         return get(s, 'member', email);
     }
-    if (op === 'catalogue') {
-        can(s, a, 'buyer');
-        const id = b.id ?? uid();
-        if (b.id)
-            get(s, 'catalogue', id);
-        supplier(s, b.supplier);
-        currency(s, b.currency);
-        put(s, 'catalogue', id, { description: text(b.description, 'Description'), supplier: b.supplier, currency: b.currency, unitMinor: moneyInput(b, 'unitAmount', 'unitMinor', 'Reference price'), category: text(b.category, 'Category'), approved: b.approved === true });
-        audit(s, a, op, id);
-        return get(s, 'catalogue', id);
-    }
     if (op === 'policy') {
         can(s, a, 'owner');
         currency(s, b.currency);
