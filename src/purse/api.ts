@@ -1,6 +1,7 @@
 import { deploymentHealth } from '../base/deployment-health';
 import { Hono } from 'hono';
 import { operatorAuth, runtimeBindings, type Bindings } from '../auth.server';
+import { spendReport } from './spend-report';
 import { auditLog, auditCsv } from './audit-log';
 import { payables } from './payables';
 import { administration } from './admin';
@@ -39,6 +40,7 @@ export async function command(s: State, a: Actor, op: string, b: Data): Promise<
 } const result = payables(s, a, op, b) ?? orderChasing(s, a, op, b) ?? supplierDocuments(s, a, op, b) ?? await suppliers(s, a, op, b) ?? supplierMerge(s, a, op, b) ?? supplierPerformance(s, a, op, b) ?? catalogueGrants(s, a, op, b) ?? catalogue(s, a, op, b) ?? administration(s, a, op, b) ?? catalogueRequests(s, a, op, b) ?? requests(s, a, op, b) ?? orders(s, a, op, b) ?? orderClosure(s, a, op, b) ?? stockroom(s, a, op, b) ?? preparation(s, a, op, b); requireThat(result, 'Unknown action', 404); return result; }
 api.all('/api/purse/supplier-refresh/:token', c => supplierRefresh(c.req.raw, runtimeBindings(c.env), c.req.param('token')));
 api.get('/api/purse/state', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = visible(state, a);if(a.owner) result.data.importJobs = await importJobs(c.env.DB, a); await readFence(c.env.DB, a, revision); return c.json(result); });
+api.get('/api/purse/spend-report', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = spendReport(visible(state, a).data, c.req.query()); await readFence(c.env.DB, a, revision); return c.json(result); });
 api.post('/api/purse/command/:op', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB), before = structuredClone(state); const length = Number(c.req.header('content-length') ?? 0); requireThat(length <= 1600000, 'Request too large', 413); const body = await c.req.json(); const result = await command(state, a, c.req.param('op'), body); await save(c.env.DB, a, before, state, revision); return c.json(result); });
 api.post('/api/purse/supplier-reminders', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); can(state, a, 'buyer'); await readFence(c.env.DB, a, revision); return c.json(await runSupplierReminders(c.env)); });
 api.post('/api/purse/supplier-document-refresh', async c => { const a = await actor(c.req.raw, c.env); const body = await c.req.json(); return c.json(await runSupplierReminders(runtimeBindings(c.env), Date.now(), { document: body.id, actor: a })); });

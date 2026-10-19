@@ -1,3 +1,4 @@
+import { SpendReport } from './spend-report';
 import { AuditLog } from './audit-log';
 import { Authority } from './authority';
 import { useEffect, useState } from 'react';
@@ -21,13 +22,14 @@ export function App() {
     if (!state)
         return <div className="app"><Masthead/><main className="workspace"><h1 className="page-title">Purse</h1>{error ? <p role="alert">{error} · <a href="/signin">Sign in</a></p> : <p className="lead">Opening purchasing workspace…</p>}</main></div>;
     const { data, actor } = state;
-    const tabs = ['Overview', 'Requests', 'Orders', ...(actor.roles.includes('buyer') ? ['Suppliers', 'Catalogue'] : []), 'Preparation', ...(actor.roles.includes('approver') ? ['Authority'] : []), ...(actor.roles.includes('owner') ? ['Settings', 'Imports', 'Audit'] : [])];
+    const tabs = ['Overview', 'Requests', 'Orders', 'Reports', ...(actor.roles.includes('buyer') ? ['Suppliers', 'Catalogue'] : []), 'Preparation', ...(actor.roles.includes('approver') ? ['Authority'] : []), ...(actor.roles.includes('owner') ? ['Settings', 'Imports', 'Audit'] : [])];
     return <div className="app">
         <Masthead actor={actor}/>
         <nav className="app-tabs" aria-label="Workspace">{tabs.map(t => <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => { setTab(t); setNotice(''); }}>{t}</button>)}</nav>
         <main className="workspace">
             <p className="notice" aria-live="polite">{notice}</p>
             {tab === 'Overview' && <Overview data={data} onSetUp={() => setTab('Settings')}/>}
+            {tab === 'Reports' && <SpendReport data={data}/>}
             {tab === 'Requests' && <Requests data={data} actor={actor} mutate={mutate}/>}
             {tab === 'Orders' && <Orders data={data} actor={actor} mutate={mutate} reload={reload}/>}
             {tab === 'Suppliers' && <Suppliers data={data} actor={actor} mutate={mutate} reload={reload}/>}
