@@ -73,3 +73,6 @@ into an empty installation of that release, upgrade that installation’s source
 in place, run `rer install` and `rer setup`, then export again. Keep the original release
 and private export until recovery is verified. Never import an older release’s
 archive directly into the current release.
+
+
+Email request intake optionally uses Resend receiving. Configure the business request address in Requests, route that exact address in the receiving provider, and connect its signed `email.received` webhook to `/api/purse/email-intake/inbound`. Provide `EMAIL_INTAKE_WEBHOOK_SECRET` and `MAIL_API_KEY` as private deployment inputs; do not commit them. The configured outbound provider sends the native sign-in-required draft link. Address configuration is a record, not proof of mailbox delivery. The owner can inspect durable ingestion outcomes in Requests and reconcile uncertain provider messages; automatic replay never repeats a claimed ingestion or send. Source originals use the declared private `ORIGINALS` R2 binding and travel in complete local RER archives.

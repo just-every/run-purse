@@ -1,3 +1,5 @@
+import { emailIntake, sendEmailIntakeLinks } from './email-intake';
+import { emailIntakeApi } from './email-intake-api';
 import { rfq } from './rfq';
 import { rfqApi } from './rfq-api';
 import { invoiceReading } from './invoice-reading';
@@ -43,18 +45,19 @@ export const api = new Hono<{
 api.get('/health', c => c.json({ status: 'ok', ...deploymentHealth(c.env) }));
 api.use('/api/purse/*', async (c, next) => { c.header('cache-control', 'no-store'); c.header('x-content-type-options', 'nosniff'); await next(); });
 api.onError((e, c) => c.json({ error: e.message }, e instanceof Fault ? e.status as 400 : 400));
-export async function command(s: State, a: Actor, op: string, b: Data): Promise<Data> { if (op === 'execute-action') {
+export async function command(s: State, a: Actor, op: string, b: Data, env?: Bindings): Promise<Data> { if (op === 'execute-action') {
     const p = actionInput(s, a, b);
-    const result = await command(s, a, p.action, p.input);
+    const result = await command(s, a, p.action, p.input, env);
     put(s, 'proposedAction', p.id, { ...p, status: 'executed', executedBy: a.id, at: new Date().toISOString() });
     audit(s, a, op, p.id);
     return result;
-} const result = rfq(s, a, op, b) ?? await invoiceReading(s, a, op, b) ?? await quoteReading(s, a, op, b) ?? receiptRouting(s, a, op, b) ?? invoiceReview(s, a, op, b) ?? quoteAwards(s, a, op, b) ?? await poProfiles(s, a, op, b) ?? payables(s, a, op, b) ?? orderChasing(s, a, op, b) ?? supplierDocuments(s, a, op, b) ?? await suppliers(s, a, op, b) ?? supplierMerge(s, a, op, b) ?? supplierPerformance(s, a, op, b) ?? catalogueGrants(s, a, op, b) ?? catalogue(s, a, op, b) ?? administration(s, a, op, b) ?? catalogueRequests(s, a, op, b) ?? requests(s, a, op, b) ?? orders(s, a, op, b) ?? orderClosure(s, a, op, b) ?? stockroom(s, a, op, b) ?? preparation(s, a, op, b); requireThat(result, 'Unknown action', 404); return result; }
+} const result = await emailIntake(s, a, op, b, env) ?? rfq(s, a, op, b) ?? await invoiceReading(s, a, op, b) ?? await quoteReading(s, a, op, b) ?? receiptRouting(s, a, op, b) ?? invoiceReview(s, a, op, b) ?? quoteAwards(s, a, op, b) ?? await poProfiles(s, a, op, b) ?? payables(s, a, op, b) ?? orderChasing(s, a, op, b) ?? supplierDocuments(s, a, op, b) ?? await suppliers(s, a, op, b) ?? supplierMerge(s, a, op, b) ?? supplierPerformance(s, a, op, b) ?? catalogueGrants(s, a, op, b) ?? catalogue(s, a, op, b) ?? administration(s, a, op, b) ?? catalogueRequests(s, a, op, b) ?? requests(s, a, op, b) ?? orders(s, a, op, b) ?? orderClosure(s, a, op, b) ?? stockroom(s, a, op, b) ?? preparation(s, a, op, b); requireThat(result, 'Unknown action', 404); return result; }
 api.route('/',rfqApi);
+api.route('/',emailIntakeApi);
 api.all('/api/purse/supplier-refresh/:token', c => supplierRefresh(c.req.raw, runtimeBindings(c.env), c.req.param('token')));
 api.get('/api/purse/state', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = visible(state, a);if(a.owner) result.data.importJobs = await importJobs(c.env.DB, a); await readFence(c.env.DB, a, revision); return c.json(result); });
 api.get('/api/purse/spend-report', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = spendReport(visible(state, a).data, c.req.query()); await readFence(c.env.DB, a, revision); return c.json(result); });
-api.post('/api/purse/command/:op', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB), before = structuredClone(state); const length = Number(c.req.header('content-length') ?? 0); requireThat(length <= (c.req.param('op') === 'po-profile' ? 4100000 : 1600000), 'Request too large', 413); const body = await c.req.json(); const result = await command(state, a, c.req.param('op'), body); await save(c.env.DB, a, before, state, revision); return c.json(result); });
+api.post('/api/purse/command/:op', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB), before = structuredClone(state); const length = Number(c.req.header('content-length') ?? 0); requireThat(length <= (c.req.param('op') === 'po-profile' ? 4100000 : 1600000), 'Request too large', 413); const body = await c.req.json(); const result = await command(state, a, c.req.param('op'), body, runtimeBindings(c.env)); await save(c.env.DB, a, before, state, revision); if(c.req.param('op').startsWith('email-intake-'))await sendEmailIntakeLinks(runtimeBindings(c.env)); return c.json(result); });
 api.post('/api/purse/supplier-reminders', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); can(state, a, 'buyer'); await readFence(c.env.DB, a, revision); return c.json(await runSupplierReminders(c.env)); });
 api.post('/api/purse/supplier-document-refresh', async c => { const a = await actor(c.req.raw, c.env); const body = await c.req.json(); return c.json(await runSupplierReminders(runtimeBindings(c.env), Date.now(), { document: body.id, actor: a })); });
 api.post('/api/purse/order-chases', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); can(state, a, 'buyer'); await readFence(c.env.DB, a, revision); return c.json(await runOrderChases(runtimeBindings(c.env))); });

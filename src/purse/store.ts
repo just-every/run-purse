@@ -7,6 +7,7 @@ export async function load(db: D1Database) { const result = await db.batch([db.p
 export async function save(db: D1Database, a: Actor, before: State, after: State, revision: number) { const auth = authority(a); const q = [db.prepare(`INSERT INTO p_guard SELECT CASE WHEN (${auth.sql}) AND (SELECT revision FROM p_meta WHERE id=1)=? THEN 1 ELSE 0 END`).bind(...auth.params, revision)]; for (const [k, r] of after) {
     if (before.get(k)?.revision === r.revision)
         continue;
+    if(r.kind==='emailIntake'&&r.value.status!=='held')q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(r.value.requester,r.value.requesterVersion));
     // Fresh grants cover preparation and issuance; issued receiving metadata is physical history.
     if(r.kind==='order'&&(r.value.status==='prepared'||(r.value.status==='issued'&&(before.get(k)?.value.status!=='issued'||r.value.reopenedAt!==before.get(k)?.value.reopenedAt))))q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(r.value.approvalActor,r.value.approvalVersion));
     q.push(db.prepare('INSERT INTO p_records(business,kind,id,revision,value) VALUES(?,?,?,?,?) ON CONFLICT(business,kind,id) DO UPDATE SET revision=excluded.revision,value=excluded.value').bind(r.business, r.kind, r.id, r.revision, JSON.stringify(r.value)));

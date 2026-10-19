@@ -30,6 +30,7 @@ export interface Bindings {
  SETUP_TOKEN?: string
  MAIL_PROVIDER?: 'development' | 'resend' | 'sendgrid' | 'cloudflare'
  MAIL_FROM?: string
+ EMAIL_INTAKE_WEBHOOK_SECRET?: string
  MAIL_API_KEY?: string
  MAIL_ACCOUNT_ID?: string
  /** Base's signed owner claim (a hosted demo's front sets these). */

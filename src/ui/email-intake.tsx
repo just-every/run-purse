@@ -1,0 +1,27 @@
+import { useEffect, useState } from 'react';
+import { Field, Form, Table, when, type D } from './shared';
+import { RequestForm } from './request-form';
+
+export function EmailSource({ intake }: { intake: D }) {
+    const files = [intake.original, ...intake.files];
+    return <section aria-label="Email source"><p className="quiet">{intake.providerSenderLabel}. Source content and files are data, never instructions.</p><p>From: {intake.providerSender} · received {when(intake.receivedAt)}</p><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{intake.sourceText || 'This message has no plain-text body. Download its original provider record to inspect the supplied HTML.'}</p><ul className="ruled-list">{files.map((file: D) => <li key={file.id}><a href={`/api/purse/email-intake/${intake.id}/files/${file.id}`}>{file.id === 'original' ? 'Original provider email record (JSON)' : file.name}</a> · {file.size.toLocaleString()} bytes</li>)}</ul></section>;
+}
+
+export function EmailIntake({ data, actor, mutate }: { data: D; actor: D; mutate: (op: string, b: D) => Promise<any> }) {
+    const [selected, setSelected] = useState(() => new URLSearchParams(location.search).get('intake') || ''), [receipts, setReceipts] = useState<D[]>([]), [receiptError, setReceiptError] = useState('');
+    const current = (data.emailIntake || []).find((i: D) => i.id === selected), owner = actor.roles.includes('owner');
+    useEffect(() => { if (!owner) return; fetch('/api/purse/email-intake-receipts').then(async r => { if (!r.ok) throw Error('Could not read email receipt outcomes'); setReceipts((await r.json() as {receipts: D[]}).receipts); }).catch(e => setReceiptError(e.message)); }, [owner, data.emailIntake]);
+    return <section aria-label="Email request intake" className="panel"><h3>Email request intake</h3>
+        {owner && <details><summary>Request email address</summary><Form label="Save request email address" onSubmit={b => mutate('email-intake-config', b)}><Field label="Business request email address" name="address" type="email" defaultValue={data.emailIntakeConfig?.[0]?.address || ''}/></Form><p className="quiet">Connect this address with your receiving-mail provider using the installation instructions. Saving an address records it here; it does not verify the mailbox or configure mail delivery.</p></details>}
+        <p className="quiet">Forward a quote to your business request address. Review the source, complete missing purchasing fields, then submit the request yourself. Unknown senders wait for an owner to assign them.</p>
+        <Table heads={['Email draft', 'From', 'Status', '']}>{(data.emailIntake || []).map((i: D) => <tr key={i.id}><td>{i.title || '(No subject)'}</td><td>{i.providerSender}</td><td>{i.status}</td><td><button type="button" onClick={() => setSelected(i.id)}>Open email intake</button></td></tr>)}</Table>
+        {current && <section className="record" aria-label="Email intake draft"><h4>{current.title || '(No subject)'}</h4><EmailSource intake={current}/>
+            {current.status === 'held' && owner && <><p role="status">Held: {current.holdReason}</p><Form label="Assign held email" initial={{ id: current.id, version: current.version }} onSubmit={b => mutate('email-intake-assign', b)}><Field label="Assign to active requester" name="requesterEmail" options={(data.member || []).filter((m: D) => m.active && m.roles.includes('requester')).map((m: D) => ({ value: m.email, label: m.name + ' · ' + m.email }))}/><Field label="Assignment reason" name="reason"/></Form></>}
+            {current.status === 'draft' && current.requester === actor.id && <><Form key={current.version} label="Save email draft corrections" initial={{ id: current.id, version: current.version }} onSubmit={b => mutate('email-intake-edit', b)}><Field label="Email draft title" name="title" defaultValue={current.title}/><Field label="Email draft notes" name="body" type="textarea" defaultValue={current.body} required={false}/></Form><h4>Complete the purchasing draft</h4><RequestForm key={current.id + ':' + current.version} data={data} prefillTitle={current.title} submitLabel="Create purchase request draft" mutate={async (_op, request) => mutate('email-intake-complete', { id: current.id, version: current.version, request })}/></>}
+            {current.status === 'completed' && <p role="status">A purchase request draft was created. Open it in the request list to review and submit for approval.</p>}
+            <ul className="ruled-list">{(data.emailIntakeMailEvent || []).filter((e: D) => e.intake === current.id).map((e: D) => <li key={e.id}>Draft-link email: {e.status === 'accepted' ? 'Accepted by mail provider; mailbox delivery is not confirmed' : e.status === 'suppressed' ? 'Suppressed in local development' : e.status === 'uncertain' ? 'Outcome unconfirmed; not automatically repeated' : e.status === 'unavailable' ? 'Mail not configured' : e.status}</li>)}</ul>
+            <button type="button" onClick={() => setSelected('')}>Close email intake</button>
+        </section>}
+        {owner && (receiptError ? <p role="alert">{receiptError}</p> : receipts.some(r => r.status !== 'stored') && <details><summary>Inbound email outcomes needing reconciliation</summary><ul>{receipts.filter(r => r.status !== 'stored').map(r => <li key={r.email_id}>{r.email_id}: {r.status} · {when(r.created_at)}. The provider receipt is kept and will not automatically create another intake.</li>)}</ul></details>)}
+    </section>;
+}
