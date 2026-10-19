@@ -1,3 +1,4 @@
+import { openInvoiceFlags } from './invoice-status';
 import { extended, type Data } from './types';
 
 /** Source-backed line-price savings; no freight, tax, payment or model estimates. */
@@ -26,7 +27,7 @@ export function savingsReport(data: Data) {
     const used = new Map<string, number>();
     for (const invoice of [...data.invoice].sort((a: Data, b: Data) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id))) {
         const order = orderById.get(invoice.order);
-        if (!order?.issuedAt || order.imported || !paidPlanning.has(invoice.id)) continue;
+        if (!order?.issuedAt || order.imported || !paidPlanning.has(invoice.id) || openInvoiceFlags(invoice).length) continue;
         const award = byRevision.get(order.request + ':' + order.revision);
         if (!award || !approved.has(award.request + ':' + award.revision)) continue;
         const first = quotes.get(award.firstQuote)!;

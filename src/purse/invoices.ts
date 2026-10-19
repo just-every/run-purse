@@ -1,3 +1,5 @@
+import { publicInvoice } from './invoice-status';
+import { invoiceEvidence, storeInvoiceOriginal } from './invoice-evidence';
 import { canonicalSupplier } from './supplier-identity';
 import { moneyInput } from './money';
 import { all, audit, can, get, put, requireThat, text, minor, quantity, extended, uid, type Actor, type Data, type State } from './types';
@@ -7,7 +9,7 @@ import { linePosition } from './orders';
 // submitted evidence and normalized allocations, independently of line order.
 function evidence(i: Data) {
     return JSON.stringify({ order: i.order, currency: i.currency, source: i.source,
-        allocations: i.allocations.map((x: Data) => [x.line, x.q, x.amountMinor])
+        evidenceHash: i.evidenceHash ?? null, allocations: i.allocations.map((x: Data) => [x.line, x.q, x.amountMinor])
             .sort((a: any[], b: any[]) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0) });
 }
 
@@ -26,12 +28,13 @@ export function invoice(s: State, a: Actor, b: Data) {
         return { line: l.id, quantity: x.quantity, q, amountMinor: moneyInput(x, 'amount', 'amountMinor', 'Invoice amount'),
             orderedMinor: extended(q, l.unitMinor), receivedQ: linePosition(s, o.id, l).accepted };
     });
-    const candidate = { order: o.id, supplier: o.supplier, reference, source, currency: o.currency, allocations };
+    const candidate: Data = { order: o.id, supplier: o.supplier, reference, source, currency: o.currency, allocations, totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total') };
+    Object.assign(candidate, invoiceEvidence(s, o, candidate, b));
     const existing = all(s, 'invoice').filter(i => canonicalSupplier(s, get(s, 'order', i.order).supplier) === canonicalSupplier(s, o.supplier) && i.reference === reference);
     if (existing.length) {
         requireThat(existing.length === 1 && evidence(existing[0]) === evidence(candidate),
             'Invoice reference already exists for this supplier with different evidence or allocations; review the existing invoice before correction', 409);
-        return existing[0];
+        return publicInvoice(existing[0]);
     }
     requireThat(['issued', 'closed'].includes(o.status), 'Issued PO required for new invoice evidence', 409);
     const closedBalance = allocations.some((x: Data) => {
@@ -41,6 +44,7 @@ export function invoice(s: State, a: Actor, b: Data) {
     });
     const id = uid();
     put(s, 'invoice', id, { ...candidate, id, ...(closedBalance ? { status: 'exception', exception: 'Invoice exceeds the closed PO balance' } : {}), totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total'), actor: a.id, at: new Date().toISOString() });
-    audit(s, a, 'invoice', id);
-    return get(s, 'invoice', id);
+    storeInvoiceOriginal(s, a, get(s, 'invoice', id), b);
+    audit(s, a, 'invoice', id, { flags: candidate.flags.map((f: Data) => f.code) });
+    return publicInvoice(get(s, 'invoice', id));
 }

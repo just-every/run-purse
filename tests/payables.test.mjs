@@ -35,6 +35,7 @@ test('AP-003 terms, ordered due bills, expiring discount and weekly cash obligat
  const termCases=[['Net 15','2026-11-15'],['Net 30','2026-11-30'],['Net 60','2026-12-30'],['Due on receipt','2026-10-31']];
  for(const [term,dueDate] of termCases){
   const order=await purchase('USD',10000),invoice=await cmd('invoice',{order:order.id,reference:term,source:'Original '+term,allocations:[{line:order.lines[0].id,quantity:'10',amountMinor:10000}]},buyer);
+  for(const flag of invoice.flags??[])await cmd('invoice-risk-review',{invoice:invoice.id,flag:flag.id,version:(await state(buyer)).data.invoice.find(i=>i.id===invoice.id).riskVersion,reason:'Distinct approved PO and original supplier reference for this term case'},buyer);
   await cmd('receipt',{order:order.id,line:order.lines[0].id,event:'receive',quantity:'10',reason:'Accepted'},receiver);
   const terms=await cmd('payable-terms',{invoice:invoice.id,version:0,invoiceDate:'2026-10-31',term,reason:'Supplier invoice'},buyer);assert.equal(terms.dueDate,dueDate);assert.equal(terms.discountDate,null);
   await cmd('approve-payable',{invoice:invoice.id,version:1,reason:'Reviewed exact evidence'},buyer);

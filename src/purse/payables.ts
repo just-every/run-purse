@@ -1,3 +1,4 @@
+import { openInvoiceFlags } from './invoice-status';
 import { all, audit, can, date, get, put, requireThat, text, type Actor, type Data, type State } from './types';
 import { discrepancies } from './orders';
 import { termDates } from './payment-terms';
@@ -23,6 +24,7 @@ export function payables(s: State, a: Actor, op: string, b: Data): Data | undefi
         audit(s, a, op, invoice.id, entry);
     } else {
         requireThat(old, 'Record invoice date and payment terms first', 409);
+        requireThat(!openInvoiceFlags(invoice).length, 'Resolve invoice risk flags before cash-planning approval', 409);
         requireThat(!invoice.exception && !discrepancies(s).filter(d => d.invoiceId === invoice.id).some(d => d.priceMismatch || d.quantityMismatch || d.receiptShortfall || d.closedBalance || d.exception), 'Resolve invoice discrepancies before cash-planning approval', 409);
         const entry: Data = { ...old, version: old.version + 1, approvedAt: new Date().toISOString(), approvedBy: a.id, approvalReason: text(b.reason, 'Approval reason'), approvedMinor: invoice.totalMinor };
         put(s, 'payable', invoice.id, entry);

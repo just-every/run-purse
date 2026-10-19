@@ -1,3 +1,4 @@
+import { validateInvoiceRisk } from './restore-invoice-risk.mjs';
 import { validateQuoteAwards } from './restore-quote-awards.mjs';
 import { canonicalJson } from '@runeditrun/rer/internal/modules/portability/hash.mjs';
 import { PortabilityError } from '@runeditrun/rer/modules/portability';
@@ -103,5 +104,5 @@ export function validatePurchasingArchive(rows) {
   check(quantity(stock.reorderPoint) === stock.reorderPointQ && quantity(stock.replenishTo) === stock.replenishToQ && stock.replenishToQ >= stock.reorderPointQ,'stockroom_quantity');
   check(stock.count === null ? stock.countQ === null : typeof stock.count === 'string' && (stock.count === '0' ? stock.countQ === 0 : quantity(stock.count) === stock.countQ),'stockroom_count');
  }
- validateQuoteAwards(all,get,check); validatePayables(all,get,check); validateOrderLinks({get,all}); validateSupplierPerformance({get,all}); validateSupplierDocuments(all,get,check); validatePoDocuments(all,get); validateOrderChasing(all,get,check); return true;
+ validateInvoiceRisk(all,get,check); validateQuoteAwards(all,get,check); validatePayables(all,get,check); validateOrderLinks({get,all}); validateSupplierPerformance({get,all}); validateSupplierDocuments(all,get,check); validatePoDocuments(all,get); validateOrderChasing(all,get,check); return true;
 }

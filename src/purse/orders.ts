@@ -1,3 +1,4 @@
+import { openInvoiceFlags } from './invoice-status';
 import { poProfileSnapshot } from './po-profiles';
 import { currentDecision } from './approval';
 import { all, audit, can, get, put, requireThat, text, extended, uid, type Actor, type Data, type State } from './types';
@@ -63,6 +64,6 @@ export function discrepancies(s: State) {
         const currentLine = current.lines.find((z: Data) => z.id === l.id);
         const orderIds = new Set(lineage.map(p => p.id));
         const totalInvoiced = invoices.filter(z => orderIds.has(z.order)).flatMap(z => z.allocations).filter((z: Data) => z.line === l.id).reduce((n: number, z: Data) => n + z.q, 0);
-        return { invoiceId: i.id, orderId: o.id, lineId: l.id, invoice: i.reference, exception: i.exception ?? null, order: o.number, line: l.description, currency: i.currency, invoiceMinor: x.amountMinor, expectedMinor: x.orderedMinor, priceMismatch: x.amountMinor !== x.orderedMinor, closedBalance: linePosition(s, current.id, currentLine).closed > 0 && totalInvoiced > currentLine.q - linePosition(s, current.id, currentLine).closed, quantityMismatch: totalInvoiced > currentLine.q, receiptShortfall: totalInvoiced > linePosition(s, current.id, currentLine).accepted };
+        return { invoiceId: i.id, orderId: o.id, lineId: l.id, invoice: i.reference, exception: i.exception ?? (openInvoiceFlags(i).length ? 'Unresolved invoice risk flags' : null), order: o.number, line: l.description, currency: i.currency, invoiceMinor: x.amountMinor, expectedMinor: x.orderedMinor, priceMismatch: x.amountMinor !== x.orderedMinor, closedBalance: linePosition(s, current.id, currentLine).closed > 0 && totalInvoiced > currentLine.q - linePosition(s, current.id, currentLine).closed, quantityMismatch: totalInvoiced > currentLine.q, receiptShortfall: totalInvoiced > linePosition(s, current.id, currentLine).accepted };
     }));
 }

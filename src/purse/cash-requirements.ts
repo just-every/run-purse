@@ -1,10 +1,11 @@
+import { openInvoiceFlags } from './invoice-status';
 import { all, can, extended, get, type Actor, type Data, type State } from './types';
 import { linePosition } from './orders';
 import { weekOf } from './payment-terms';
 export function cashRequirements(s: State, a: Actor) {
     can(s, a, 'buyer');
     const payables = all(s, 'payable');
-    const bills = payables.filter(p => p.approvedAt).map((p): Data => {
+    const bills = payables.filter(p => p.approvedAt && !openInvoiceFlags(get(s, 'invoice', p.invoice)).length).map((p): Data => {
         const invoice = get(s, 'invoice', p.invoice), order = get(s, 'order', invoice.order);
         return { ...p, reference: invoice.reference, order: order.id, number: order.number, currency: invoice.currency, amountMinor: p.approvedMinor, week: weekOf(p.dueDate), discountMinor: Number((BigInt(p.approvedMinor) * BigInt(p.discountPercent) + 50n) / 100n) };
     }).sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.reference.localeCompare(b.reference));

@@ -14,6 +14,7 @@ export async function payablesJourney(browser,root,origin,width,evidence){
   const o=await api(buyer.context,origin,'convert',{id:r.id,revision:1});await api(buyer.context,origin,'issue',{id:o.id,revision:1,reason:'Supplier terms confirmed'});
   await api(receiver.context,origin,'receipt',{order:o.id,line:o.lines[0].id,event:'receive',quantity:'10',reason:'Received ten harnesses'});
   const i=await api(buyer.context,origin,'invoice',{order:o.id,reference,source:'Supplier invoice dated 31 October',allocations:[{line:o.lines[0].id,quantity:'6',amountMinor:60000}]});
+  for(const flag of i.flags??[])await api(buyer.context,origin,'invoice-risk-review',{invoice:i.id,flag:flag.id,version:(await current(buyer.context,origin)).data.invoice.find(x=>x.id===i.id).riskVersion,reason:'Separate received PO and distinct supplier reference for '+width+' cash planning'});
   await buyer.page.reload();await buyer.page.getByRole('navigation').getByRole('button',{name:'Orders',exact:true}).click();
   const panel=buyer.page.getByRole('heading',{name:'Payment terms and cash requirements',exact:true}).locator('..');
   await panel.getByText('Record bill terms and cash-planning approval',{exact:true}).click();

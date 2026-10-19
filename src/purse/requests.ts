@@ -1,3 +1,4 @@
+import { checkInvoiceAttachment } from './invoice-evidence';
 import { allocateLineTax } from './po-line-tax';
 import { optionalPoText } from './po-profiles';
 import { moneyInput } from './money';
@@ -147,6 +148,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         const id = uid();
         put(s, 'attachment', id, { kind, record: r.id, ...(b.privateSupplierDocument ? { privateSupplierDocument: true } : {}), name: text(b.name, 'Filename', 200), mediaType: text(b.mediaType ?? 'application/octet-stream', 'Media type', 150), base64: b.base64, size: bytes!.length, actor: a.id, at: new Date().toISOString() });
         audit(s, a, op, r.id, { attachment: id });
+        if (kind === 'invoice') checkInvoiceAttachment(s, a, get(s, 'attachment', id));
         return { id };
     }
 }
