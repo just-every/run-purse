@@ -32,3 +32,15 @@ If more is returned than current authority can replace, the return is still reco
 ## Close the order
 
 **Close order** closes the view and takes you back to the list.
+
+Before generating a new PO, ask the owner to configure its location in Settings →
+PO document profiles: legal name and bill-to logo, bill-to/ship-to details, buyer
+contact, shipping terms and purchase conditions. Category-specific profiles may
+override the location default. Profile and supplier postal identity are frozen at
+conversion. Add line destinations, supplier notes or deposit/prepayment text on
+the request when needed. Textual deposit terms do not create a deposit or payment.
+
+The order offers both its existing HTML download and **Download purchase order
+PDF**. Both retain the configured content and original terms/certificate; the PDF
+also appends and embeds those originals. A quantity amendment shows the numbered
+change order and previous/new values.

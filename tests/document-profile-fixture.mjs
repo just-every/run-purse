@@ -1,0 +1,2 @@
+// Real configuration through the public command door; synthetic test data only.
+export function documentProfileFixture(business,location){return {version:0,location,purchaseType:'*',legalName:business.name,billTo:{name:business.name,address:'1240 Canyon Road, '+location,label:'Bill to'},shipTo:{name:business.name,address:'100 Field Services Avenue, '+location,attention:'Receiving team',label:'Ship to'},buyerContact:'Purchasing · buyer@example.test',shippingTerms:'FOB destination',standardTerms:'Supply only the approved quantities and notify the buyer of any delay.'}}

@@ -30,14 +30,16 @@
     "check": "rer check",
     "deps": "rer install",
     "rer": "rer",
-    "test:purse": "node --test --test-concurrency=1 tests/purse.test.mjs tests/stockroom.test.mjs tests/order-closure.test.mjs tests/supplier-screening.test.mjs tests/supplier-performance.test.mjs tests/catalogue.test.mjs tests/supplier-duplicates.test.mjs tests/supplier-documents.test.mjs tests/order-chasing.test.mjs tests/payables.test.mjs tests/audit-log.test.mjs tests/spend-report.test.mjs",
+    "test:purse": "node --test --test-concurrency=1 tests/purse.test.mjs tests/stockroom.test.mjs tests/order-closure.test.mjs tests/supplier-screening.test.mjs tests/supplier-performance.test.mjs tests/catalogue.test.mjs tests/supplier-duplicates.test.mjs tests/supplier-documents.test.mjs tests/order-chasing.test.mjs tests/payables.test.mjs tests/audit-log.test.mjs tests/spend-report.test.mjs tests/po-documents.test.mjs",
     "test:site": "node tests/run-site.mjs",
     "test:browser": "node tests/browser.mjs"
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "1.1.1",
     "@tanstack/react-router": "1.170.33",
     "@tanstack/react-start": "1.168.50",
     "hono": "4.13.7",
+    "pdf-lib": "1.17.1",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },

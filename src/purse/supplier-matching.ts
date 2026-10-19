@@ -27,9 +27,11 @@ export function supplierPublicProfile(input: Data, previous?: Data) {
         requireThat(typeof value === 'string' && value.length <= max, field + ' must be text');
         return value.trim();
     };
+    const postalState = optional('postalState', 2).toUpperCase();
+    requireThat(!postalState || /^[A-Z]{2}$/.test(postalState), 'Postal state must be a two-letter code');
     requireThat(input.contacts === undefined || Array.isArray(input.contacts), 'Contacts must be a list');
     const contacts = (input.contacts ?? previous?.contacts ?? []).map((c: Data) => ({ name: text(c.name, 'Contact name'), email: text(c.email, 'Contact email') }));
-    return { name: text(input.name, 'Supplier name'), dba: optional('dba', 200), address: optional('address'), phone: optional('phone', 100), contacts };
+    return { name: text(input.name, 'Supplier name'), dba: optional('dba', 200), address: optional('address'), phone: optional('phone', 100), remitTo: optional('remitTo'), postalState, contacts };
 }
 export function duplicateReview(s: State, profile: Data) {
     const matches = supplierMatches(s, profile);

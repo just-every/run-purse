@@ -125,3 +125,22 @@ A buyer saves `order-chase-policy` with `{order,version,enabled,cadenceDays,maxC
 Attempt IDs are deterministic and retained before the real provider call. Each outcome is recorded, including suppressed local, rejected, unavailable and uncertain attempts; no claimed attempt is silently repeated. The final configured attempt triggers one buyer escalation. Chases use the immutable approved order contact and refuse adopted history, superseded/amended or closed POs, zero outstanding balances and current surviving-supplier/compliance holds. Native closure under PO-010 stops an active chase.
 
 Scoped state exposes `orderChaseEvent` and `orderChaseEvidence` only for the actor's visible orders; buyer configuration remains in buyer-only `orderChasePolicy`. Replies and promises are explicitly labelled buyer-recorded evidence; issuance never implies acknowledgment. Policy versions, event evidence and outcomes survive portable archives. PO-001 and PO-002 inherit live acknowledgment and reply integration before shipping.
+
+## PO-009 document profiles and PDF downloads
+
+The owner saves a `po-profile` command before new PO conversion for each location
+(and optionally each line category). Its version guards concurrent edits. The
+Settings screen supplies legal name, PNG/JPEG bill-to logo, labelled bill-to and
+ship-to names/addresses/attention, buyer contact, shipping terms, field labels,
+printed purchase terms and original PDF terms/certificate. Each uploaded file is
+at most 1 MB; this command alone accepts the combined three-file JSON envelope
+(up to 4.1 MB). Ordinary commands retain their existing envelope limit.
+
+`GET /api/purse/order-pdf/:id` downloads the real PDF using the same current
+native-session record scope as `GET /api/purse/download/order/:id` (HTML). Both
+use the immutable profile and supplier snapshot at conversion. The PDF appends
+and embeds original terms/certificate bytes; HTML offers the same originals.
+Profile edits affect future conversions only. Configured state-based certificate
+selection is not tax validation. Deposit/prepayment text is not a deposit posting.
+A missing profile refuses new conversion with the Settings repair path; historical
+fields never recorded are labelled honestly.

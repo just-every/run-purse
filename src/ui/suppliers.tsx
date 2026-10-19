@@ -26,7 +26,7 @@ export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; 
                 <Field label="Supplier name" name="name" defaultValue={selected?.name}/>
                 <Field label="Doing business as" name="dba" required={false} defaultValue={selected?.dba}/>
                 <Field label="Supplier phone" name="phone" required={false} defaultValue={selected?.phone}/>
-                <Field label="Address" name="address" required={false} defaultValue={selected?.address}/>
+                <Field label="Remit-to postal address" name="remitTo" defaultValue={selected?.remitTo} required={false}/><Field label="Supplier postal state (two letters)" name="postalState" defaultValue={selected?.postalState} required={false}/><Field label="Address" name="address" required={false} defaultValue={selected?.address}/>
                 <Field label="Status" name="status" defaultValue={selected?.requestedStatus || selected?.status || 'active'} options={['active', 'preferred', 'blocked'].map(x => ({ value: x, label: x }))}/>
                 <Field label="Reason" name="reason" defaultValue={selected?.reason}/>
                 <Field label="Contact name" name="contactName" required={false} defaultValue={selected?.contacts[0]?.name}/>

@@ -1,12 +1,13 @@
 import { canonicalJson } from '@runeditrun/rer/internal/modules/portability/hash.mjs';
 import { PortabilityError } from '@runeditrun/rer/modules/portability';
+import { validatePoDocuments } from './restore-po-documents.mjs';
 import { validatePayables } from './restore-payables.mjs';
 import { validateOrderLinks } from './restore-order-links.mjs';
 import { validateSupplierPerformance } from './restore-supplier-performance.mjs';
 import { validateOrderChasing } from './restore-order-chasing.mjs';
 import { validateSupplierDocuments } from './restore-supplier-documents.mjs';
 
-const kinds = new Set(['business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation']);
+const kinds = new Set(['business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile']);
 export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
 export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
 export const integer = n => Number.isSafeInteger(n) && n >= 0;
@@ -28,8 +29,8 @@ export function lineAmounts(r, quote = false) {
  check(money(r.freightMinor) && money(r.taxMinor) && money(r.totalMinor), 'total');
  check(r.totalMinor === r.lines.reduce((n,l) => n + l.totalMinor,0) + r.freightMinor + r.taxMinor, 'total');
 }
-const purchaseFields = ['supplier','supplierSnapshot','currency','needDate','lines','freightMinor','taxMinor','totalMinor','terms'];
-export const purchasing = r => Object.fromEntries(purchaseFields.map(k => [k,r[k]]));
+const purchaseFields = ['supplier','supplierSnapshot','currency','needDate','lines','freightMinor','taxMinor','totalMinor','terms','poDetails'];
+export const purchasing = r => Object.fromEntries(purchaseFields.filter(k=>k!=='poDetails'||Object.hasOwn(r,k)).map(k => [k,r[k]]));
 
 // Generic JSON rows have no SQL foreign keys. Validate the complete staged graph
 // read-only before Base writes any destination records or objects.
@@ -101,5 +102,5 @@ export function validatePurchasingArchive(rows) {
   check(quantity(stock.reorderPoint) === stock.reorderPointQ && quantity(stock.replenishTo) === stock.replenishToQ && stock.replenishToQ >= stock.reorderPointQ,'stockroom_quantity');
   check(stock.count === null ? stock.countQ === null : typeof stock.count === 'string' && (stock.count === '0' ? stock.countQ === 0 : quantity(stock.count) === stock.countQ),'stockroom_count');
  }
- validatePayables(all,get,check); validateOrderLinks({get,all}); validateSupplierPerformance({get,all}); validateSupplierDocuments(all,get,check); validateOrderChasing(all,get,check); return true;
+ validatePayables(all,get,check); validateOrderLinks({get,all}); validateSupplierPerformance({get,all}); validateSupplierDocuments(all,get,check); validatePoDocuments(all,get); validateOrderChasing(all,get,check); return true;
 }
