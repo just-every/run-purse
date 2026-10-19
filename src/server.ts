@@ -8,7 +8,7 @@ import { setupStateResponse } from './base/setup-state'
 import { authResponse, runtimeBindings, type Bindings } from './auth.server'
 import { identity } from './identity'
 import { seedDemo } from './demo'
-import { runSupplierReminders } from './purse/supplier-reminders'
+import { runPurchasingSchedule } from './purse/schedule'
 
 function noTransform(response: Response): Response {
   const headers = new Headers(response.headers), policy = headers.get('cache-control')
@@ -17,7 +17,7 @@ function noTransform(response: Response): Response {
 }
 
 const worker = {
-  async scheduled(event, env, ctx) { ctx.waitUntil(runSupplierReminders(env, event.scheduledTime)); },
+  async scheduled(event, env, ctx) { ctx.waitUntil(runPurchasingSchedule(env, event.scheduledTime)); },
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)
     if (asset) return asset

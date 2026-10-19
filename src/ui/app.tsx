@@ -28,7 +28,7 @@ export function App() {
             <p className="notice" aria-live="polite">{notice}</p>
             {tab === 'Overview' && <Overview data={data} onSetUp={() => setTab('Settings')}/>}
             {tab === 'Requests' && <Requests data={data} actor={actor} mutate={mutate}/>}
-            {tab === 'Orders' && <Orders data={data} actor={actor} mutate={mutate}/>}
+            {tab === 'Orders' && <Orders data={data} actor={actor} mutate={mutate} reload={reload}/>}
             {tab === 'Suppliers' && <Suppliers data={data} actor={actor} mutate={mutate} reload={reload}/>}
             {tab === 'Catalogue' && <><Catalogue data={data} mutate={mutate}/><Stockroom data={data} mutate={mutate}/></>}
             {tab === 'Settings' && <><Settings data={data} mutate={mutate}/><section className="panel"><h3>Invite saved member</h3><Form label="Send invitation" onSubmit={async b => { await call('invite', b); setNotice('Invitation sent.'); }}><Field label="Member email" name="email" type="email"/></Form><p className="quiet">Invite an active saved member to sign in.{actor.dev && <> Dev personas also require saved purchasing roles.</>}</p></section></>}
