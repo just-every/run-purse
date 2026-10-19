@@ -39,3 +39,12 @@ Approval binds the exact revision. Nothing changes after approval without a new 
 ## Next
 
 When a request is approved, a buyer chooses **Generate purchase order**. See [Purchase orders and receiving](/docs/orders).
+
+
+## Supplier requests for quotation (SOURCE-001)
+
+A buyer opens an editable request and prepares a supplier RFQ with the exact source revision, scope, quantities, nominated suppliers, questions, reminder time and response deadline. Choose times in your browser time zone; the API requires an explicit offset or UTC and stores UTC instants. Supplier pages show the installation's time zone. The deadline is at most 30 days away and the reminder is at least one hour before it. The first hourly tick at or after the reminder time attempts one reminder for an invited supplier who has not responded, only before the deadline; actual outcomes are retained. A missed deadline is recorded without a late reminder.
+
+Send each invitation or explicitly reissue its private supplier link. A reissue invalidates the old link immediately; the new link expires at the same deadline. The supplier sees only requirements and questions, can submit original quote files and can revise until the deadline. Each response stays in history; the latest version counts in comparison. Supplier originals are buyer/owner-only and links never travel in archives. Mail outcomes describe the actual transport result; local mail is suppressed.
+
+Compare each currency separately. The savings baseline is the first recorded RFQ offer in the awarded currency, including across nominated suppliers. Select the exact latest winning response and record an award reason. Awarding the baseline itself is allowed and creates zero negotiated savings. The selected supplier, prices and terms enter a new ordinary request draft, keeping real supplier/response provenance. Submit that exact revision for fresh approval. Later supplier responses cannot rewrite an already recorded award or approved terms. Only approved awards and received, cash-planning-approved invoice evidence enter the labelled savings report.
