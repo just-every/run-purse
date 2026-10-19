@@ -1,11 +1,15 @@
 import { all, can, get, own, requireThat, qty, roles, type Actor, type Data, type State } from './types';
 import { discrepancies, linePosition } from './orders';
+import { supplierFamilies } from './supplier-merge';
+import { supplierPublicValue } from './supplier-identity';
 import { catalogueAllows } from './catalogue-access';
 import { currentPrice } from './catalogue';
 import { supplierScorecards } from './supplier-performance';
 const escape = (x: unknown) => String(x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 export function visible(s: State, a: Actor) { const capabilities = roles(s, a); requireThat(capabilities.length, 'No active business membership', 403); const staff = capabilities.some(r => ['owner', 'approver', 'buyer', 'receiver'].includes(r)); const requests = all(s, 'request').filter(r => staff || r.requester === a.id || r.requesterEmail === a.email), ids = new Set(requests.map(r => r.id)); const orders = all(s, 'order').filter(o => ids.has(o.request)), orderIds = new Set(orders.map(o => o.id)); const data: Data = {}; for (const kind of ['business', 'supplier', 'catalogue', 'catalogueBundle', 'policy', 'delegation', 'code'])
     data[kind] = all(s, kind);
+    data.supplier = data.supplier.map(supplierPublicValue);
+    data.supplierFamilies = capabilities.includes('buyer') ? supplierFamilies(s) : [];
     const maintainCatalogue = capabilities.includes('buyer');
     const requestable = (item: Data) => item.approved && currentPrice(item) && catalogueAllows(s, a, item);
     data.catalogue = data.catalogue.filter((item: Data) => maintainCatalogue || requestable(item)).map((item: Data) => ({ ...item, requestable: requestable(item) }));

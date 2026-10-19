@@ -1,3 +1,4 @@
+import { canonicalSupplier } from './supplier-identity';
 import { moneyInput } from './money';
 import { all, audit, can, get, put, requireThat, text, minor, quantity, extended, uid, type Actor, type Data, type State } from './types';
 import { linePosition } from './orders';
@@ -26,7 +27,7 @@ export function invoice(s: State, a: Actor, b: Data) {
             orderedMinor: extended(q, l.unitMinor), receivedQ: linePosition(s, o.id, l).accepted };
     });
     const candidate = { order: o.id, supplier: o.supplier, reference, source, currency: o.currency, allocations };
-    const existing = all(s, 'invoice').filter(i => get(s, 'order', i.order).supplier === o.supplier && i.reference === reference);
+    const existing = all(s, 'invoice').filter(i => canonicalSupplier(s, get(s, 'order', i.order).supplier) === canonicalSupplier(s, o.supplier) && i.reference === reference);
     if (existing.length) {
         requireThat(existing.length === 1 && evidence(existing[0]) === evidence(candidate),
             'Invoice reference already exists for this supplier with different evidence or allocations; review the existing invoice before correction', 409);

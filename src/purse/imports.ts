@@ -1,4 +1,5 @@
 import { planD1Import, createD1ImportJob, applyD1ImportBatches, resumeD1Import, undoD1Import, readD1ImportJob, readD1ImportOriginals, readD1ImportUndoReport, type D1ImportContext } from '../modules/import-kit/src/d1/index';
+import { supplierPublicValue } from './supplier-identity';
 import { targets } from './import-target';
 import { mappedSource } from './import-mapping';
 import { authority } from './store';
@@ -10,7 +11,7 @@ export async function imports(db: D1Database, s: State, a: Actor, op: string, b:
     if (op === 'preview' || op === 'commit') {
         const { source, mapping, report } = mappedSource(s, b), ctx = context(mapping.version), plan = await planD1Import(source, mapping, ctx);
         if (op === 'preview')
-            return { plan, report };
+            return { plan: { ...plan, entries: plan.entries.map(entry => ({ ...entry, effects: entry.effects.map(effect => ({ ...effect, value: effect.targetKind === 'supplier' ? supplierPublicValue(effect.value as Data) : effect.value })) })) }, report };
         requireThat(report.unresolved.length === 0 && plan.counts.rejected === 0, 'Resolve import errors first', 409);
         requireThat(b.fingerprint === plan.fingerprint, 'Preview changed; review these exact bytes and mapping again', 409);
         const job = await createD1ImportJob(plan, { ...ctx, reviewedFingerprint: b.fingerprint, operationKey: b.operationKey || b.fingerprint });
