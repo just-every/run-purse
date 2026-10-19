@@ -20,7 +20,9 @@ export async function supplierDuplicatesJourney(browser,root,origin,width,eviden
    await buyer.page.getByLabel('Matching-only TIN',{exact:true}).fill(tin)
    await buyer.page.getByLabel('Matching-only bank routing number',{exact:true}).fill('021000021')
    await buyer.page.getByLabel('Matching-only bank account number',{exact:true}).fill(bankAccount)
+   const preview=buyer.page.waitForResponse(r=>r.url().endsWith('/api/purse/command/supplier-duplicates')&&r.request().method()==='POST')
    await buyer.page.getByRole('button',{name:'Save supplier',exact:true}).click()
+   const previewResponse=await preview;assert.equal(previewResponse.status(),200,await previewResponse.text())
    await buyer.page.getByRole('heading',{name:'Possible duplicate suppliers',exact:true}).waitFor()
   }
   const count=(await current(buyer.context,origin)).data.supplier.length
@@ -35,7 +37,9 @@ export async function supplierDuplicatesJourney(browser,root,origin,width,eviden
   await buyer.page.getByRole('button',{name:'Add another supplier',exact:true}).click()
   await fillCandidate()
   await buyer.page.getByLabel('Why these are separate suppliers',{exact:true}).fill('Separate operating company sharing a purchasing office; buyer reviewed the incorporation evidence '+tag)
+  const created=buyer.page.waitForResponse(r=>r.url().endsWith('/api/purse/command/supplier')&&r.request().method()==='POST')
   await buyer.page.getByRole('button',{name:'Create separate supplier after review',exact:true}).click()
+  const createdResponse=await created;assert.equal(createdResponse.status(),200,await createdResponse.text())
   await buyer.page.getByRole('heading',{name:'Edit '+inputName,exact:true}).waitFor({timeout:90000})
   const separate=(await current(buyer.context,origin)).data.supplier.find(s=>s.name===inputName)
   assert.ok(separate.duplicateReview.matches.some(m=>m.id===original.id))
