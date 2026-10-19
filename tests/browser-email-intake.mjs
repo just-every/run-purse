@@ -8,7 +8,8 @@ export async function emailIntakeJourney(browser,root,origin,width,evidence){
  const owner=await session(browser,root,origin,'owner',width),requester=await session(browser,root,origin,'requester',width);
  try{
   const data=(await current(owner.context,origin)).data,intake=data.emailIntake.find(i=>i.providerEmailId==='browser_unknown_quote_'+width);assert.ok(intake);assert.equal(intake.status,'held');
-  const supplier=data.supplier.find(s=>s.name.startsWith('Canyon lifting equipment'))??await api(owner.context,origin,'supplier',{name:'Canyon lifting equipment',status:'preferred',reason:'Known supplier from retained quotation',contacts:[{name:'Sales',email:'sales@canyon.example.test'}]});
+  let supplier=data.supplier.find(s=>s.name.startsWith('Canyon lifting equipment'));
+  if(!supplier){const profile={name:'Canyon lifting equipment',status:'preferred',reason:'Known supplier from retained quotation',contacts:[{name:'Sales',email:'sales@canyon.example.test'}]};const duplicates=await api(owner.context,origin,'supplier-duplicates',profile);supplier=await api(owner.context,origin,'supplier',{...profile,...(duplicates.matches.length?{duplicateFingerprint:duplicates.fingerprint,duplicateReason:'Distinct lifting-equipment supplier; shared purchasing contact reviewed against the retained quotation'}:{})});}
   await api(owner.context,origin,'policy',{name:'Email equipment '+width,currency:'USD',category:'Email '+width,project:data.business[0].projects[0],approver:'approver@dev.localhost',limitMinor:1000000,budgetMinor:2000000});
   await owner.page.getByRole('navigation').getByRole('button',{name:'Requests',exact:true}).click();
   const ownerRegion=owner.page.getByRole('region',{name:'Email request intake'});await ownerRegion.getByText('Request email address',{exact:true}).click();await ownerRegion.getByLabel('Business request email address',{exact:true}).fill('requests@example.test');
