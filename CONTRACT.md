@@ -304,13 +304,13 @@ archive directly into the current release.
 
 Judged from the code and tests at commit `9f201c00eba7aecadf9239e1205f6933a0dd1cb6` (16 October 2026).
 
-STOCK-001, PO-010 and SUPPLIER-007 were completed on 19 October 2026; other rows retain that baseline assessment. `P01`–`P17` name tests in `tests/purse.test.mjs`. A cited local test proves bounded local behavior, never provider receipt or acceptance.
+STOCK-001, PO-010, SUPPLIER-007 and SUPPLIER-005 were completed on 19 October 2026; other rows retain that baseline assessment. `P01`–`P17` name tests in `tests/purse.test.mjs`. A cited local test proves bounded local behavior, never provider receipt or acceptance.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 17 | 0 | 0 | 17 |
-| Target and push further | 4 | 34 | 56 | 94 |
-| All | 21 | 34 | 56 | 111 |
+| Target and push further | 5 | 33 | 56 | 94 |
+| All | 22 | 33 | 56 | 111 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -346,7 +346,7 @@ STOCK-001, PO-010 and SUPPLIER-007 were completed on 19 October 2026; other rows
 | `SUPPLIER-002` | Bank-detail change controls | target | missing |  | Bank-detail entry, call-back, second approver, Plaid verification and payment hold not built |
 | `SUPPLIER-003` | Duplicate supplier detection | target | missing |  | Duplicate supplier detection and merge not built |
 | `SUPPLIER-004` | Document expiry, compliance refresh and renewal reminders | target | partial | `src/ui/overview.tsx`; `src/purse/admin.ts` | Expiry dates, reminders and refresh requests absent |
-| `SUPPLIER-005` | Supplier performance and issues | target | partial | `src/purse/admin.ts`; `src/purse/types.ts` | Performance measures and issue records absent |
+| `SUPPLIER-005` | Supplier performance and issues | target | done | `tests/supplier-performance.test.mjs` SUPPLIER-005; `tests/browser-supplier-performance.mjs` at 1440/390 | Receipt-backed on-time/quality measures, distinct invoice exceptions, buyer-evidenced acknowledgment speed, currency-separated PO/invoice figures, PO-linked issues with reasoned resolution and source drill-through |
 | `SUPPLIER-006` | 1099 readiness | target | missing |  | 1099 eligibility, box totals and export to each ledger's 1099 fields not built |
 | `SUPPLIER-007` | Restricted-party screening | target | done | `tests/supplier-screening.test.mjs` SUPPLIER-007; `tests/browser-supplier-screening.mjs` at 1440/390 | OFAC SDN via public Commerce CSL; native name/address screening, activation holds, versioned source evidence and owner review; imported/legacy activation requires screening |
 | `SUPPLIER-008` | New-supplier requests and vendor approval | target | missing |  | Requests accept only a register supplier (`src/purse/requests.ts`); new-supplier proposals, pending supplier status, the vendor approval chain and holding POs until activation not built |

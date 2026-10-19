@@ -1,8 +1,9 @@
 import { canonicalJson } from '@runeditrun/rer/internal/modules/portability/hash.mjs';
 import { PortabilityError } from '@runeditrun/rer/modules/portability';
 import { validateOrderLinks } from './restore-order-links.mjs';
+import { validateSupplierPerformance } from './restore-supplier-performance.mjs';
 
-const kinds = new Set(['business','member','supplier','catalogue','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure']);
+const kinds = new Set(['business','member','supplier','catalogue','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue']);
 export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
 export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
 export const integer = n => Number.isSafeInteger(n) && n >= 0;
@@ -82,5 +83,5 @@ export function validatePurchasingArchive(rows) {
   check(quantity(stock.reorderPoint) === stock.reorderPointQ && quantity(stock.replenishTo) === stock.replenishToQ && stock.replenishToQ >= stock.reorderPointQ,'stockroom_quantity');
   check(stock.count === null ? stock.countQ === null : typeof stock.count === 'string' && (stock.count === '0' ? stock.countQ === 0 : quantity(stock.count) === stock.countQ),'stockroom_count');
  }
- validateOrderLinks({get,all}); return true;
+ validateOrderLinks({get,all}); validateSupplierPerformance({get,all}); return true;
 }
