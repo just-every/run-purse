@@ -16,7 +16,7 @@ import { Imports } from './imports';
 /** Mark, name and tagline at left; who is signed in at right. */
 function Masthead({ actor }: { actor?: D }) { return <header className="app-header"><a className="app-brand" href="/app"><img className="app-mark" src="/brand/mark.svg" alt=""/><span className="app-name" data-rer-name>Purse</span> <span className="app-tagline">Purchasing, with a clear record</span></a>{actor && <span className="app-who">{actor.email}<span className="app-roles"> · {actor.roles.join(', ')}</span></span>}</header>; }
 export function App() {
-    const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState('Overview'), [notice, setNotice] = useState(''), [performance, setPerformance] = useState(false);
+    const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState(new URLSearchParams(window.location.search).has('receipt') ? 'Orders' : 'Overview'), [notice, setNotice] = useState(''), [performance, setPerformance] = useState(false);
     async function reload() { setState(await call('state')); }
     useEffect(() => { reload().catch(e => setError(e.message)); }, []);
     async function mutate(op: string, b: D) { const result = await call('command/' + op, b); setNotice('Saved.'); await reload(); return result; }

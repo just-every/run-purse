@@ -7,7 +7,9 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
         const currencies = (b.currencies ?? ['AUD']).map((c: unknown) => text(c, 'Currency'));
         requireThat(currencies.length && currencies.every((c: string) => /^[A-Z]{3}$/.test(c)), 'Use ISO currency codes');
         for(const field of ['locations','costCentres','projects']){requireThat(Array.isArray(b[field])&&b[field].length>0&&b[field].length<=100,field+' requires 1–100 codes');requireThat(b[field].every((v:unknown)=>typeof v==='string'&&v.trim().length>0&&v.length<=200),field+' must contain nonempty names');requireThat(new Set(b[field]).size===b[field].length,field+' contains duplicates')}
-        put(s, 'business', 'main', { name: text(b.name, 'Business name'), currencies, locations: b.locations ?? [], costCentres: b.costCentres ?? [], projects: b.projects ?? [] });
+        const timezone = b.timezone || s.get('business:main')?.value.timezone || 'America/New_York';
+        try { new Intl.DateTimeFormat('en-US',{timeZone:timezone}).format(); } catch { requireThat(false,'Use a valid IANA installation timezone'); }
+        put(s, 'business', 'main', { timezone, name: text(b.name, 'Business name'), currencies, locations: b.locations ?? [], costCentres: b.costCentres ?? [], projects: b.projects ?? [] });
         initializeSupplierMatching(s);
         audit(s, a, op, 'main');
         return get(s, 'business', 'main');

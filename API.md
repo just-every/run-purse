@@ -144,3 +144,11 @@ Profile edits affect future conversions only. Configured state-based certificate
 selection is not tax validation. Deposit/prepayment text is not a deposit posting.
 A missing profile refuses new conversion with the Settings repair path; historical
 fields never recorded are labelled honestly.
+
+## RECEIVE-001 responsible receiving
+
+Buyers save `receipt-rule` with `{id?, version, order? , location, purchaseType, receiver, active, reason}`. Without a PO, select a location and/or the single shared line category (`*` is any). Scope is immutable; updating the same scope requires its current ID/version. PO > location+category > category > location > requester. A current receiver uses `reassign-receipt` for a PO and another active receiver. Reasons and history are retained. Explicit assignments restrict physical receipt writes; the owner can override with an audited reason. The default requester can record their own receipt, while existing receiver-capability members retain unassigned-PO receiving.
+
+Scoped order state supplies `receiverAssignment`, `mayReceive` and `receiptVersion`. UI receipt submissions include `receiptVersion`; a changed order, assignment, membership or receipt position refuses stale confirmation. `GET /app?receipt=ID` only opens the signed-in PO. `receipt` remains the partial/full POST command. Invoice state supplies a live `receiptMatch`: Held for receipt, Matching exception or Ready for matching. Recording receipt clears only the receiving shortfall.
+
+The hourly scheduler and buyer-only `POST /api/purse/receipt-prompts` process due dates and waiting invoices, claiming each order/receiver/reason/local day once. The installation timezone is set in business Settings and defaults to America/New_York. Mail contains PO number, due date and signed-in link only; `receiptPromptEvent` keeps actual provider results and an honest outcome. Closed/fully received/superseded orders are ineligible. Future tracking, channels, deposits and card payment inherit the obligations named in CONTRACT.md.

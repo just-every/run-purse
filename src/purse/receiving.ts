@@ -1,10 +1,12 @@
+import { mayReceive, receiptVersion } from './receipt-routing';
 import { audit, can, get, put, requireThat, text, quantity, uid, type Actor, type Data, type State } from './types';
 import { linePosition, commitment, remainingValue } from './orders';
 import { ledger, reservationAvailable } from './requests';
 
 export function receipt(s: State, a: Actor, b: Data) {
-    can(s, a, 'receiver');
     const o = get(s, 'order', b.order);
+    requireThat(mayReceive(s,a,o), 'Receipt outside your receiver assignment',403);
+    if(b.receiptVersion !== undefined) requireThat(b.receiptVersion === receiptVersion(s,o), 'Receipt position changed; reload before confirming',409);
     requireThat(o.status === 'issued' && !o.imported, 'Only a natively issued PO can be received', 409);
     const l = o.lines.find((l: Data) => l.id === b.line);
     requireThat(l, 'PO line not found', 404);
@@ -27,6 +29,6 @@ export function receipt(s: State, a: Actor, b: Data) {
         if (delta) ledger(s, a, r, delta, event === 'return' ? 'return-reservation' : `${event}-release`);
         if (o.replenishmentStatus === 'held') put(s, 'order', o.id, { ...o, replenishmentStatus: 'cancelled', replenishmentMinor: 0 });
     }
-    audit(s, a, 'receipt', o.id, { event, line: l.id, quantity: b.quantity, replenishmentStatus: held ? 'held' : 'authorized' });
+    audit(s, a, 'receipt', o.id, { event, line: l.id, quantity: b.quantity, ownerOverride: a.owner, replenishmentStatus: held ? 'held' : 'authorized' });
     return get(s, 'receipt', id);
 }

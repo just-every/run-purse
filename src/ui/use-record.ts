@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
 /** Reveal every open action after React commits, including reopening the same row. */
-export function useRecord() {
-    const [id, setId] = useState('');
-    const [opening, setOpening] = useState(0);
+export function useRecord(initial = '') {
+    const [id, setId] = useState(initial);
+    const [opening, setOpening] = useState(initial ? 1 : 0);
     const heading = useRef<HTMLHeadingElement>(null);
     const origin = useRef<HTMLButtonElement | null>(null);
     useEffect(() => {

@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict'
+import {join} from 'node:path'
+import {session,api,current} from './browser-journey.mjs'
+export async function receiptRoutingJourney(browser,root,origin,width,evidence){
+ const owner=await session(browser,root,origin,'owner',width),buyer=await session(browser,root,origin,'buyer',width),requester=await session(browser,root,origin,'requester',width),approver=await session(browser,root,origin,'approver',width),receiver=await session(browser,root,origin,'receiver',width);
+ try{
+  await owner.page.getByRole('navigation').getByRole('button',{name:'Settings',exact:true}).click();await owner.page.getByLabel('Installation timezone',{exact:true}).waitFor();await owner.page.screenshot({path:join(evidence,`RECEIVE-001-timezone-${width}.png`),fullPage:true});
+  const category='Building services '+width+' '+crypto.randomUUID().slice(0,6),business=(await current(owner.context,origin)).data.business[0];
+  if(!business.locations.includes('Denver'))await api(owner.context,origin,'business',{...business,locations:[...business.locations,'Denver']});
+  const state=(await current(buyer.context,origin)).data,supplier=state.supplier.find(s=>s.status==='preferred'&&!s.mergedInto);
+  await api(owner.context,origin,'policy',{name:'Building service authority '+width,currency:'USD',category,project:business.projects[0],approver:'approver@dev.localhost',limitMinor:1000000,budgetMinor:5000000});
+  await buyer.page.reload();await buyer.page.getByRole('navigation').getByRole('button',{name:'Orders',exact:true}).click();await buyer.page.getByText('Responsible receiver rules',{exact:true}).click();
+  const rule=buyer.page.getByRole('button',{name:'Save receiver rule',exact:true}).locator('..').locator('..');
+  await rule.getByLabel('Rule location',{exact:true}).selectOption('Denver');await rule.getByLabel('Purchase category',{exact:true}).fill(category);await rule.getByLabel('Responsible receiver',{exact:true}).selectOption('receiver@dev.localhost');await rule.getByLabel('Rule reason',{exact:true}).fill('Facilities lead receives building services');await Promise.all([buyer.page.waitForResponse(r=>r.url().endsWith('/api/purse/command/receipt-rule')&&r.status()===200),rule.getByRole('button',{name:'Save receiver rule',exact:true}).click()]);await buyer.page.getByText(category,{exact:true}).waitFor();
+  await buyer.page.screenshot({path:join(evidence,`RECEIVE-001-rules-${width}.png`),fullPage:true});
+  const r=await api(requester.context,origin,'request',{title:'Quarterly building maintenance '+width,supplier:supplier.id,currency:'USD',needDate:'2026-10-19',location:'Denver',costCentre:business.costCentres[0],terms:'Net 30',lines:[{description:'Building maintenance visit '+width,quantity:'10',unitMinor:10000,category,project:business.projects[0]}]});
+  await api(requester.context,origin,'submit',{id:r.id,revision:1});await api(approver.context,origin,'decision',{id:r.id,revision:1,decision:'approved',reason:'Quarterly facilities budget'});const o=await api(buyer.context,origin,'convert',{id:r.id,revision:1});await api(buyer.context,origin,'issue',{id:o.id,revision:1,reason:'Maintenance order issued to approved contractor'});
+  const i=await api(buyer.context,origin,'invoice',{order:o.id,reference:'BUILD-'+width+'-'+r.id.slice(0,6),source:'Contractor invoice before completion',allocations:[{line:o.lines[0].id,quantity:'10',amountMinor:100000}]});
+  for(const flag of i.flags??[])await api(buyer.context,origin,'invoice-risk-review',{invoice:i.id,flag:flag.id,version:(await current(buyer.context,origin)).data.invoice.find(x=>x.id===i.id).riskVersion,reason:'Distinct facilities service agreement '+r.id+' and its source invoice reviewed'});
+  const sent=await buyer.context.request.post(origin+'/api/purse/receipt-prompts',{headers:{origin},data:{}});assert.equal(sent.status(),200);assert.ok((await sent.json()).events.some(e=>e.order===o.id&&['suppressed','accepted','unavailable'].includes(e.outcome.status)));
+  await receiver.page.goto(origin+'/app?receipt='+o.id);await receiver.page.getByRole('heading',{name:o.number+' · issued',exact:true}).waitFor();await receiver.page.getByText('Held for receipt',{exact:true}).waitFor();
+  await receiver.page.screenshot({path:join(evidence,`RECEIVE-001-held-${width}.png`),fullPage:true});
+  const partial=receiver.page.getByRole('button',{name:'Record receiving event',exact:true}).locator('..').locator('..');
+  await partial.getByLabel('PO line',{exact:true}).selectOption(o.lines[0].id);await partial.getByLabel('Event',{exact:true}).selectOption('receive');await partial.getByLabel('Quantity',{exact:true}).fill('4');await partial.getByLabel('Reason or service milestone',{exact:true}).fill('Four visits accepted by facilities');await partial.getByRole('button',{name:'Record receiving event',exact:true}).click();
+  await receiver.page.getByText('Received · 4 · Four visits accepted by facilities',{exact:false}).waitFor();assert.equal((await current(receiver.context,origin)).data.invoice.find(x=>x.id===i.id).receiptMatch,'Held for receipt');
+  await receiver.page.getByRole('button',{name:'Confirm remaining 6 · Building maintenance visit '+width,exact:true}).click();await receiver.page.getByText('Ready for matching',{exact:true}).waitFor();
+  assert.equal((await current(receiver.context,origin)).data.order.find(x=>x.id===o.id).positions[0].accepted,10000);
+  await receiver.page.screenshot({path:join(evidence,`RECEIVE-001-released-${width}.png`),fullPage:true});
+  await requester.page.goto(origin+'/app?receipt='+o.id);await requester.page.getByRole('heading',{name:o.number+' · issued',exact:true}).waitFor();assert.equal(await requester.page.getByRole('button',{name:'Record receiving event',exact:true}).count(),0);assert.equal(await requester.page.getByRole('button',{name:/^Confirm remaining/}).count(),0);
+  const denied=await requester.context.request.post(origin+'/api/purse/command/receipt',{headers:{origin},data:{order:o.id,line:o.lines[0].id,event:'receive',quantity:'1',reason:'Requester cannot receive facilities delivery'}});assert.equal(denied.status(),403);
+  for(const page of [buyer.page,receiver.page,requester.page])assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`RECEIVE-001 fits ${width}`);
+  return {clause:'RECEIVE-001',width,order:o.id,invoice:i.id};
+ }catch(error){for(const [name,s] of Object.entries({owner,buyer,receiver,requester}))await s.page.screenshot({path:join(evidence,`RECEIVE-001-failure-${name}-${width}.png`),fullPage:true}).catch(()=>{});throw error;}finally{for(const s of [owner,buyer,requester,approver,receiver])await s.context.close()}
+}
