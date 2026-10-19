@@ -6,11 +6,11 @@ import { audit, get, put, uid, type Actor, type Data, type State } from './types
 export function invoiceEvidence(s: State, order: Data, candidate: Data, input: Data) {
     const risk = invoiceRisk(s, order, candidate, input);
     let evidenceHash: string | null = null;
-    if (['invoiceDate', 'senderEmail', 'remit', 'document'].some(field => input[field] !== undefined)) {
+    if (['invoiceDate', 'senderEmail', 'remit', 'remitTo', 'document'].some(field => input[field] !== undefined)) {
         initializeSupplierMatching(s);
         // Domain-separated keyed digest binds all submitted evidence without retaining bank digits.
         const bank = input.remit ? matchingInputs(s, input.remit).bank : null;
-        const value = { invoiceDate: input.invoiceDate ?? null, sender: risk.sender.email ?? null, bank, document: risk.document ?? null };
+        const value = { invoiceDate: input.invoiceDate ?? null, sender: risk.sender.email ?? null, bank, document: risk.document ?? null, ...(input.remitTo !== undefined ? { remitTo: risk.remitPostal.value } : {}) };
         evidenceHash = createHmac('sha256', Buffer.from(get(s, 'supplierMatchingKey', 'main').secret, 'hex')).update('invoice-evidence:' + JSON.stringify(value)).digest('hex');
     }
     return { ...risk, evidenceHash, flags: risk.flags.map((f: Data) => ({ ...f, id: uid() })), riskVersion: 1, riskReviews: [] };

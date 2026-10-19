@@ -1,3 +1,4 @@
+import { validateInvoiceReadings } from './restore-invoice-reading.mjs';
 import { validateQuoteReadings } from './restore-quote-reading.mjs';
 import { validateReceiptRouting } from './restore-receipt-routing.mjs';
 import { validateInvoiceRisk } from './restore-invoice-risk.mjs';
@@ -11,7 +12,7 @@ import { validateSupplierPerformance } from './restore-supplier-performance.mjs'
 import { validateOrderChasing } from './restore-order-chasing.mjs';
 import { validateSupplierDocuments } from './restore-supplier-documents.mjs';
 
-const kinds = new Set(['business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent']);
+const kinds = new Set(['business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent']);
 export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
 export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
 export const integer = n => Number.isSafeInteger(n) && n >= 0;
@@ -92,7 +93,7 @@ export function validatePurchasingArchive(rows) {
  for (const e of all('commitment')) { get('revision',e.request + ':' + e.revision); get('policy',e.policy); check(Number.isSafeInteger(e.amountMinor),'commitment_amount'); }
  for (const a of all('attachment')) {
   check(a.privateSupplierDocument === undefined || typeof a.privateSupplierDocument === 'boolean' && (!a.privateSupplierDocument || a.kind === 'supplier'),'supplier_document_private');
-  check(['request','supplier','order','invoice'].includes(a.kind),'attachment_kind'); get(a.kind,a.record);
+  check(['request','supplier','order','invoice','invoiceSource'].includes(a.kind),'attachment_kind'); get(a.kind,a.record);
   check(all('audit').some(e => e.action === 'attachment' && e.attachment === a.id && e.record === a.record),'attachment_link');
   check(typeof a.base64 === 'string','attachment_bytes');
   let bytes; try { bytes = atob(a.base64); } catch { check(false,'attachment_bytes'); }
@@ -106,6 +107,7 @@ export function validatePurchasingArchive(rows) {
   check(quantity(stock.reorderPoint) === stock.reorderPointQ && quantity(stock.replenishTo) === stock.replenishToQ && stock.replenishToQ >= stock.reorderPointQ,'stockroom_quantity');
   check(stock.count === null ? stock.countQ === null : typeof stock.count === 'string' && (stock.count === '0' ? stock.countQ === 0 : quantity(stock.count) === stock.countQ),'stockroom_count');
  }
+ validateInvoiceReadings(all,get,check);
  validateQuoteReadings(all,get,check);
  validateReceiptRouting(all,get,check);
  validateInvoiceRisk(all,get,check); validateQuoteAwards(all,get,check); validatePayables(all,get,check); validateOrderLinks({get,all}); validateSupplierPerformance({get,all}); validateSupplierDocuments(all,get,check); validatePoDocuments(all,get); validateOrderChasing(all,get,check); return true;

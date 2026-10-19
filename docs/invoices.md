@@ -39,3 +39,10 @@ Buyers can choose **Download accounting CSV** at the foot of the Orders tab. The
 | price_mismatch, quantity_mismatch, receipt_shortfall | `true` or `false` for each check |
 
 Import it into your bookkeeping the way you import any CSV.
+
+
+## Reading an original (INVOICE-002)
+
+On Orders, open a current issued PO and use **Read invoice document**. Staging retains the exact original privately for owners/buyers, without creating an invoice. Labelled text PDFs and MIME bodies produce review fields. Scans/images can be handed to an external reader you choose: prepare instructions, download the scoped original, run your reader, then upload its source-bound JSON. Purse makes no model call; declared reader execution is unverified. Never put routing/account/TIN values in prepared JSON, quotations or corrections. Remit fields contain payee/postal address only.
+
+Review every field, source page and confidence; correct missing required fields. Values below 95% are highlighted. Map every item once, check exact line/subtotal/freight/tax/total reconciliation and explicitly confirm. Optional missing due dates, terms, sender or remit facts remain unrecorded. Confirmation passes the original, confirmed date/sender/postal remit and optional transient bank comparison to INVOICE-003; it never approves payment. Postal/bank differences hold cash planning for reasoned review. Current inclusive allocations apportion charges by subtotal with remainder cents on the first item; the document breakdown remains in the reading.

@@ -1,6 +1,6 @@
 import { openInvoiceFlags } from '../purse/invoice-status';
 import { Form, Field, when, type D } from './shared';
-const labels: Record<string, string> = { 'near-duplicate': 'Possible duplicate invoice', 'duplicate-document': 'Repeated original document', 'remit-baseline-missing': 'Missing bank comparison baseline', 'remit-mismatch': 'Changed remit details', 'sender-domain': 'Unverified sender domain differs', 'po-balance': 'Invoice exceeds remaining PO value' };
+const labels: Record<string, string> = { 'near-duplicate': 'Possible duplicate invoice', 'duplicate-document': 'Repeated original document', 'remit-baseline-missing': 'Missing bank comparison baseline', 'remit-mismatch': 'Remit details changed', 'remit-details-changed': 'Remit details changed', 'sender-domain': 'Unverified sender domain differs', 'po-balance': 'Invoice exceeds remaining PO value' };
 export function InvoiceRisk({ invoice, data, actor, mutate }: { invoice: D; data: D; actor: D; mutate: (op: string, b: D) => Promise<any> }) {
     const open = openInvoiceFlags(invoice);
     return <section aria-label={'Invoice risk '+invoice.reference}>

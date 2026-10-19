@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { postalRemit } from './invoice-reading-values';
+import { normalizedSupplierText } from './supplier-matching';
 import { canonicalSupplier, matchingInputs } from './supplier-identity';
 import { all, date, get, requireThat, text, type Data, type State } from './types';
 
@@ -28,7 +30,7 @@ function oneEdit(a: string, b: string): boolean {
     return edits + (a.length - i) + (b.length - j) === 1;
 }
 
-function documentMetadata(input: unknown): Data {
+export function documentMetadata(input: unknown): Data {
     requireThat(input !== null && typeof input === 'object' && !Array.isArray(input), 'Invoice document must be an object');
     const document = input as Data;
     const name = text(document.name, 'Invoice document name', 200);
@@ -77,7 +79,15 @@ export function invoiceRisk(s: State, order: Data, candidate: Data, input: Data)
         const fingerprint = matchingInputs(s, { bankRouting: input.remit.bankRouting, bankAccount: input.remit.bankAccount }).bank;
         result.remit.comparison = !supplier.matching?.bank ? 'unavailable' : fingerprint === supplier.matching.bank ? 'matched' : 'mismatched';
         if (!supplier.matching?.bank) flags.push({ code: 'remit-baseline-missing', reason: 'Remit details were supplied but the supplier has no matching-only bank baseline; verification is not established' });
-        else if (fingerprint !== supplier.matching.bank) flags.push({ code: 'remit-mismatch', reason: 'Remit details differ from the supplier matching-only bank baseline; verification is not established' });
+        else if (fingerprint !== supplier.matching.bank) flags.push({ code: 'remit-mismatch', reason: 'Remit details changed: bank evidence differs from the supplier matching-only baseline; verification is not established' });
+    }
+
+    if (input.remitTo !== undefined) {
+        const value = postalRemit(input.remitTo), baseline = supplier.remitTo?.trim() || '';
+        const normalized = normalizedSupplierText(value);
+        const matched = baseline && [baseline, supplier.name + ' ' + baseline, supplier.dba + ' ' + baseline].some(candidate => normalizedSupplierText(candidate) === normalized);
+        result.remitPostal = { value, baseline: baseline ? 'buyer-recorded' : 'missing', comparison: matched ? 'matched' : baseline ? 'mismatched' : 'unavailable', verified: false };
+        if (!matched) flags.push({ code: 'remit-details-changed', reason: 'Remit details changed: payee/postal address differs from the supplier record or has no recorded baseline; verification is not established' });
     }
 
     result.sender = { supplied: input.senderEmail !== undefined, authentication: 'unverified', baseline: 'immutable-po-contacts', comparison: 'not-supplied' };

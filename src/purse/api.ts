@@ -1,3 +1,4 @@
+import { invoiceReading } from './invoice-reading';
 import { quoteReading } from './quote-reading';
 import { receiptRouting } from './receipt-routing';
 import { runReceiptPrompts } from './receipt-prompts';
@@ -46,7 +47,7 @@ export async function command(s: State, a: Actor, op: string, b: Data): Promise<
     put(s, 'proposedAction', p.id, { ...p, status: 'executed', executedBy: a.id, at: new Date().toISOString() });
     audit(s, a, op, p.id);
     return result;
-} const result = await quoteReading(s, a, op, b) ?? receiptRouting(s, a, op, b) ?? invoiceReview(s, a, op, b) ?? quoteAwards(s, a, op, b) ?? await poProfiles(s, a, op, b) ?? payables(s, a, op, b) ?? orderChasing(s, a, op, b) ?? supplierDocuments(s, a, op, b) ?? await suppliers(s, a, op, b) ?? supplierMerge(s, a, op, b) ?? supplierPerformance(s, a, op, b) ?? catalogueGrants(s, a, op, b) ?? catalogue(s, a, op, b) ?? administration(s, a, op, b) ?? catalogueRequests(s, a, op, b) ?? requests(s, a, op, b) ?? orders(s, a, op, b) ?? orderClosure(s, a, op, b) ?? stockroom(s, a, op, b) ?? preparation(s, a, op, b); requireThat(result, 'Unknown action', 404); return result; }
+} const result = await invoiceReading(s, a, op, b) ?? await quoteReading(s, a, op, b) ?? receiptRouting(s, a, op, b) ?? invoiceReview(s, a, op, b) ?? quoteAwards(s, a, op, b) ?? await poProfiles(s, a, op, b) ?? payables(s, a, op, b) ?? orderChasing(s, a, op, b) ?? supplierDocuments(s, a, op, b) ?? await suppliers(s, a, op, b) ?? supplierMerge(s, a, op, b) ?? supplierPerformance(s, a, op, b) ?? catalogueGrants(s, a, op, b) ?? catalogue(s, a, op, b) ?? administration(s, a, op, b) ?? catalogueRequests(s, a, op, b) ?? requests(s, a, op, b) ?? orders(s, a, op, b) ?? orderClosure(s, a, op, b) ?? stockroom(s, a, op, b) ?? preparation(s, a, op, b); requireThat(result, 'Unknown action', 404); return result; }
 api.all('/api/purse/supplier-refresh/:token', c => supplierRefresh(c.req.raw, runtimeBindings(c.env), c.req.param('token')));
 api.get('/api/purse/state', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = visible(state, a);if(a.owner) result.data.importJobs = await importJobs(c.env.DB, a); await readFence(c.env.DB, a, revision); return c.json(result); });
 api.get('/api/purse/spend-report', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = spendReport(visible(state, a).data, c.req.query()); await readFence(c.env.DB, a, revision); return c.json(result); });
