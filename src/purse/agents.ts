@@ -5,7 +5,7 @@ export function preparation(s: State, a: Actor, op: string, b: Data): Data | und
     if (op === 'prepare') {
         requireThat(roles(s,a).length,'Active business capability required',403);
         requireThat(Object.hasOwn(workflows, b.workflow), 'Unknown preparation workflow');
-        const refs = (b.references ?? []).map((ref: Data) => { requireThat(['request', 'supplier', 'order', 'invoice', 'attachment'].includes(ref.kind), 'Unsupported source record'); const row = get(s, ref.kind, ref.id); recordScope(s, a, ref.kind === 'attachment' ? row.kind : ref.kind, ref.kind === 'attachment' ? get(s, row.kind, row.record) : row); return { kind: ref.kind, id: ref.id, version: s.get(`${ref.kind}:${ref.id}`)!.revision }; });
+        const refs = (b.references ?? []).map((ref: Data) => { requireThat(['request', 'supplier', 'order', 'invoice', 'attachment'].includes(ref.kind), 'Unsupported source record'); const row = get(s, ref.kind, ref.id); recordScope(s, a, ref.kind, row); return { kind: ref.kind, id: ref.id, version: s.get(`${ref.kind}:${ref.id}`)!.revision }; });
         const fields = b.fields ?? {};
         const requirements = workflows[b.workflow as keyof typeof workflows];
         const missing = requirements.filter(k => !fields[k]);
