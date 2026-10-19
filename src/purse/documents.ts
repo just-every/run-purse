@@ -1,3 +1,4 @@
+import { visibleQuoteReadings } from './quote-reading';
 import { mayReceive, receiptAssignment, receiptMatch, receiptVersion } from './receipt-routing';
 import { poContent, poHtml } from './po-content';
 import { cashRequirements } from './cash-requirements';
@@ -11,6 +12,7 @@ import { supplierScorecards } from './supplier-performance';
 import { supplierDocumentStatus } from './supplier-documents';
 export function visible(s: State, a: Actor) { const capabilities = roles(s, a); requireThat(capabilities.length, 'No active business membership', 403); const staff = capabilities.some(r => ['owner', 'approver', 'buyer', 'receiver'].includes(r)); const requests = all(s, 'request').filter(r => staff || r.requester === a.id || r.requesterEmail === a.email), ids = new Set(requests.map(r => r.id)); const orders = all(s, 'order').filter(o => ids.has(o.request)), orderIds = new Set(orders.map(o => o.id)); const data: Data = {}; for (const kind of ['business', 'supplier', 'catalogue', 'catalogueBundle', 'policy', 'delegation', 'code'])
     data[kind] = all(s, kind);
+    Object.assign(data,visibleQuoteReadings(s,ids));
     data.supplier = data.supplier.map((v: Data) => ({ ...supplierPublicValue(v), documents: (v.documents ?? []).filter((id: string) => capabilities.includes('buyer') || !s.get('attachment:' + id)?.value.privateSupplierDocument) }));
     data.quoteAward = all(s, 'quoteAward').filter(q => ids.has(q.request));
     data.receiptRule = capabilities.includes('buyer') ? all(s,'receiptRule') : all(s,'receiptRule').filter(r=>r.order&&orderIds.has(r.order));
