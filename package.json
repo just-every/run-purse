@@ -30,7 +30,7 @@
     "check": "rer check",
     "deps": "rer install",
     "rer": "rer",
-    "test:purse": "node --test --test-concurrency=1 tests/purse.test.mjs tests/stockroom.test.mjs tests/order-closure.test.mjs",
+    "test:purse": "node --test --test-concurrency=1 tests/purse.test.mjs tests/stockroom.test.mjs tests/order-closure.test.mjs tests/supplier-screening.test.mjs",
     "test:site": "node tests/run-site.mjs",
     "test:browser": "node tests/browser.mjs"
   },

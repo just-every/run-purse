@@ -19,19 +19,6 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
         audit(s, a, op, email, { roles: b.roles, active: b.active !== false });
         return get(s, 'member', email);
     }
-    if (op === 'supplier') {
-        can(s, a, 'buyer');
-        const id = b.id ?? uid();
-        if (b.id)
-            get(s, 'supplier', id);
-        requireThat(['active', 'preferred', 'blocked'].includes(b.status), 'Choose supplier status');
-        const reason = text(b.reason, 'Reason');
-        requireThat(b.contractRef == null || typeof b.contractRef === 'string', 'Agreement reference must be text');
-        const contacts = (b.contacts ?? []).map((c: Data) => ({ name: text(c.name, 'Contact name'), email: text(c.email, 'Contact email') }));
-        put(s, 'supplier', id, { name: text(b.name, 'Supplier name'), status: b.status, reason, contacts, contractRef: b.contractRef ?? '', renewal: b.renewal ? date(b.renewal) : '', documents: all(s, 'attachment').filter(x => x.record === id).map(x => x.id) });
-        audit(s, a, op, id, { reason, status: b.status });
-        return get(s, 'supplier', id);
-    }
     if (op === 'catalogue') {
         can(s, a, 'buyer');
         const id = b.id ?? uid();
@@ -72,5 +59,5 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
         return { id: b.id };
     }
 }
-export function supplier(s: State, id: string) { const v = get(s, 'supplier', id); requireThat(v.status !== 'blocked', 'Supplier blocked: ' + v.reason, 409); return v; }
+export function supplier(s: State, id: string) { const v = get(s, 'supplier', id); requireThat(v.status !== 'blocked', 'Supplier blocked: ' + v.reason, 409); requireThat(v.status !== 'pending_review', 'Supplier pending OFAC compliance review', 409); requireThat(v.screenings?.length, 'Supplier requires OFAC screening before activation', 409); return v; }
 export function currency(s: State, c: string) { requireThat(get(s, 'business', 'main').currencies.includes(c), 'Currency is not enabled for this business'); }

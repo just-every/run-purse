@@ -348,7 +348,7 @@ STOCK-001 and PO-010 were completed on 19 October 2026; other rows retain that b
 | `SUPPLIER-004` | Document expiry, compliance refresh and renewal reminders | target | partial | `src/ui/overview.tsx`; `src/purse/admin.ts` | Expiry dates, reminders and refresh requests absent |
 | `SUPPLIER-005` | Supplier performance and issues | target | partial | `src/purse/admin.ts`; `src/purse/types.ts` | Performance measures and issue records absent |
 | `SUPPLIER-006` | 1099 readiness | target | missing |  | 1099 eligibility, box totals and export to each ledger's 1099 fields not built |
-| `SUPPLIER-007` | Restricted-party screening | target | missing |  | OFAC SDN screening not built |
+| `SUPPLIER-007` | Restricted-party screening | target | done | `tests/supplier-screening.test.mjs` SUPPLIER-007; `tests/browser-supplier-screening.mjs` at 1440/390 | OFAC SDN via public Commerce CSL; native name/address screening, activation holds, versioned source evidence and owner review; imported/legacy activation requires screening |
 | `SUPPLIER-008` | New-supplier requests and vendor approval | target | missing |  | Requests accept only a register supplier (`src/purse/requests.ts`); new-supplier proposals, pending supplier status, the vendor approval chain and holding POs until activation not built |
 | `SOURCE-001` | RFQ invitations and supplier responses | target | partial | `src/purse/requests.ts`; `src/purse/agents.ts`; `tests/purse.test.mjs` P05, P14 | Supplier invitations and responses absent |
 | `SOURCE-002` | Quote document processing | target | partial | `src/purse/requests.ts`; `tests/purse.test.mjs` P05 | Document reading absent |
