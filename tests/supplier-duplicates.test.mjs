@@ -84,7 +84,7 @@ test('SUPPLIER-003 duplicate matching, redacted CSV custody and history-preservi
  const after=(await state()).data
  assert.equal(after.supplier.find(s=>s.id===separate.id).mergedInto,original.id)
  assert.deepEqual(after.order.find(o=>o.id===sourceOrder.id),sourceOrder);assert.deepEqual(after.order.find(o=>o.id===targetOrder.id),targetOrder)
- assert.deepEqual(after.invoice.find(i=>i.id===sourcePurchase.invoice.id),sourcePurchase.invoice)
+ assert.deepEqual(after.invoice.find(i=>i.id===sourcePurchase.invoice.id),prior.invoice.find(i=>i.id===sourcePurchase.invoice.id))
  const family=after.supplierFamilies.find(f=>f.supplier===original.id)
  assert.deepEqual(new Set(family.members.map(s=>s.id)),new Set([original.id,separate.id]))
  assert.equal(family.orders.length,2);assert.equal(family.invoices.length,2);assert.ok(family.attachments.some(f=>f.id===sourceFile.id));assert.ok(family.merges.some(m=>m.id===merged.id))
