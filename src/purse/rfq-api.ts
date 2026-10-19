@@ -1,3 +1,4 @@
+import { rfqOriginalBytes } from './rfq-originals';
 import { Hono } from 'hono';
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { actor, load, readFence } from './store';
@@ -15,5 +16,5 @@ rfqApi.get('/api/purse/rfq-original/:response/:file', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); can(state, a, 'buyer');
     const response = get(state, 'rfqResponse', c.req.param('response')), file = response.files.find((f: any) => f.id === c.req.param('file'));
     requireThat(file, 'Original file not found', 404); await readFence(c.env.DB, a, revision);
-    return new Response(Uint8Array.from(atob(file.base64), c => c.charCodeAt(0)), { headers: { 'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}"`, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } });
+    return new Response(await rfqOriginalBytes(runtimeBindings(c.env), file), { headers: { 'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}"`, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } });
 });

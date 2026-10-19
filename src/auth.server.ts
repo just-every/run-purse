@@ -15,6 +15,7 @@ export interface Bindings {
  RER_DEPLOY_SOURCE?: string
  RER_DEPLOY_FINGERPRINT?: string
  RER_VERSION?: { id: string }
+ ORIGINALS: R2Bucket
  DB: D1Database
  AUTH_ORIGIN: string
  AUTH_LOCAL?: string

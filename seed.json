@@ -108,7 +108,9 @@
     "status": "explicit local limits",
     "attachmentBytes": 1000000,
     "requestLines": 100,
-    "csvRecordsPerReview": 300
+    "csvRecordsPerReview": 300,
+    "rfqOriginalBytesPerFile": 10000000,
+    "rfqOriginalFiles": 3
   },
   "accessibility": {
     "level": "WCAG 2.2 AA",

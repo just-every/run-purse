@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {harness} from './purse-harness.mjs';
+import {createPortability} from '@runeditrun/rer/modules/portability';
+import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import portability from '../scripts/installer/portability.mjs';
+import {PDFDocument} from 'pdf-lib';
+import {join} from 'node:path';
 import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
 
 test('SOURCE-001 supplier links, immutable revisions, reminders, cross-supplier award and source-backed savings',async t=>{
@@ -20,11 +25,16 @@ test('SOURCE-001 supplier links, immutable revisions, reminders, cross-supplier 
  const respond=(url,body,origin=h.origin)=>fetch(url,{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify(body)});
  assert.equal((await respond(links[0],payload('1000'),'https://foreign.example.test')).status,403);
  assert.equal((await respond(links[0],{...payload('1000'),lines:[{...payload('1000').lines[0],requestLine:'unrelated'}]})).status,400);
- const form=new FormData();for(const [name,value]of Object.entries({currency:'USD',freightAmount:'0',taxAmount:'0',leadTime:'Seven days',validity:'Thirty days',conditions:'Net 30','answer:0':'Yes','price:0':'1000'}))form.set(name,value);form.set('files',new Blob(['Original supplier quotation 1000'],{type:'text/plain'}),'original.txt');const nativeForm=await fetch(links[0],{method:'POST',headers:{origin:h.origin},body:form});assert.equal(nativeForm.status,200,await nativeForm.text());
+ const doc=await PDFDocument.create(),drawing=doc.addPage();drawing.drawText('Supplier quotation 1000 with equipment drawing');drawing.drawRectangle({x:100,y:100,width:250,height:180});const pdf=Buffer.from(await doc.save());
+ const largeFiles=Array.from({length:3},(_,i)=>{const bytes=Buffer.alloc(10_000_000,32);pdf.copy(bytes);bytes.write('\n% Original supplier drawing '+i,pdf.length);return bytes;});
+ const form=new FormData();for(const [name,value]of Object.entries({currency:'USD',freightAmount:'0',taxAmount:'0',leadTime:'Seven days',validity:'Thirty days',conditions:'Net 30','answer:0':'Yes','price:0':'1000'}))form.set(name,value);for(const [index,bytes]of largeFiles.entries())form.append('files',new Blob([bytes],{type:'application/pdf'}),'drawing-'+index+'.pdf');const nativeForm=await fetch(links[0],{method:'POST',headers:{origin:h.origin},body:form});assert.equal(nativeForm.status,200,await nativeForm.text());
  assert.equal((await respond(links[1],payload('950'))).status,200);
  assert.equal((await respond(links[1],payload('900'))).status,200);
  let data=(await h.state(buyer)).data;const first=data.rfqResponse.find(r=>r.rfq===rfq.id&&r.supplier===suppliers[0].id&&r.sequence===1),historical=data.rfqResponse.find(r=>r.rfq===rfq.id&&r.supplier===suppliers[1].id&&r.sequence===1),winner=data.rfqResponse.find(r=>r.rfq===rfq.id&&r.supplier===suppliers[1].id&&r.sequence===2);
- assert.equal(first.lines[0].unitMinor,100000);assert.equal(Buffer.from(first.files[0].base64,'base64').toString(),'Original supplier quotation 1000','Native multipart supplier form retains exact original bytes');assert.equal(historical.lines[0].unitMinor,95000);assert.equal(winner.lines[0].unitMinor,90000);assert.equal(data.request.find(r=>r.id===request.id).revision,1);assert.equal(data.decision.length,0);
+ assert.equal(first.lines[0].unitMinor,100000);assert.equal(first.files.length,3);for(const [index,file]of first.files.entries()){assert.equal(file.base64,undefined);assert.ok(file.key);const download=await fetch(h.origin+`/api/purse/rfq-original/${first.id}/${file.id}`,{headers:{cookie:buyer}});assert.equal(download.status,200);assert.deepEqual(Buffer.from(await download.arrayBuffer()),largeFiles[index],'SOURCE-001 three 10 MB native multipart originals retain exact bytes outside D1');}
+ const responseCount=data.rfqResponse.length,objectCount=(await h.originals.list()).objects.length;
+ for(const files of [[{name:'oversize.pdf',mediaType:'application/pdf',base64:Buffer.alloc(10_000_001).toString('base64')}],Array.from({length:4},()=>payload('950').files[0])]){assert.equal((await respond(links[1],{...payload('950'),files})).status,400);assert.equal((await h.state(buyer)).data.rfqResponse.length,responseCount);assert.equal((await h.originals.list()).objects.length,objectCount,'Refused originals leave no stored files');}
+assert.equal(historical.lines[0].unitMinor,95000);assert.equal(winner.lines[0].unitMinor,90000);assert.equal(data.request.find(r=>r.id===request.id).revision,1);assert.equal(data.decision.length,0);
  assert.equal(data.quote.filter(q=>q.rfq===rfq.id).length,3,'Every actual supplier response reaches PUR-005 comparison before any award');assert.ok(data.quote.filter(q=>q.rfq===rfq.id).every(q=>data.rfqResponse.some(r=>r.id===q.sourceResponse&&r.quote===q.id&&r.supplier===q.supplier)));assert.deepEqual((await h.state(requester)).data.rfqResponse,[]);assert.ok((await h.state(requester)).data.quote.every(q=>!q.rfq),'Private competitive offers remain buyer-only');assert.equal((await h.send('/api/purse/state')).status,401);
  const filePath=`/api/purse/rfq-original/${winner.id}/${winner.files[0].id}`;assert.equal((await h.send(filePath,undefined,requester)).status,403);assert.equal((await h.send(filePath)).status,401);assert.equal((await h.send(filePath,undefined,buyer)).value,'Original supplier quotation 900');
  const before=h.messages.length,tick=async time=>{const r=await h.mf.dispatchFetch(h.origin+'/cdn-cgi/local/scheduled?time='+time);assert.equal(r.status,200,await r.text())};
@@ -52,5 +62,13 @@ test('SOURCE-001 supplier links, immutable revisions, reminders, cross-supplier 
  const offer=(currency,unitAmount)=>({...payload(unitAmount,currency),lines:currencyRfq.lines.map(l=>({...l,requestLine:l.id,unitAmount}))});assert.equal((await respond(currencyLinks[0],offer('CAD','1000'))).status,200);assert.equal((await respond(currencyLinks[1],offer('USD','950'))).status,200);
  const separate=(await h.state(buyer)).data.rfqResponse.filter(r=>r.rfq===currencyRfq.id);assert.deepEqual([...new Set(separate.map(r=>r.currency))].sort(),['CAD','USD']);const usd=separate.find(r=>r.currency==='USD'),cad=separate.find(r=>r.currency==='CAD');await cmd('rfq-award',{rfq:currencyRfq.id,revision:1,firstResponse:cad.id,response:usd.id,reason:'Currencies must not combine'},buyer,400);await cmd('rfq-award',{rfq:currencyRfq.id,revision:1,firstResponse:usd.id,response:usd.id,reason:'USD offer explicitly chosen'},buyer);assert.deepEqual((await report()).totals,[{currency:'USD',negotiatedMinor:100000,realizedMinor:60000}],'Unapproved new-source awards never enter savings');
  assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
- await cmd('rfq-create',{...config,request:singleRequest.id,revision:2,deadline:new Date(Date.now()+1800000).toISOString(),reminderAt:new Date(Date.now()+1000).toISOString()},buyer,400);
+ await cmd('rfq-create',{...config,request:singleRequest.id,revision:2,deadline:new Date(Date.now()+1800000).toISOString(),reminderAt:new Date(Date.now()+1000).toISOString()},buyer,400); const jsonRevision={...payload('900'),lines:uncertainRfq.lines.map(l=>({...l,requestLine:l.id,unitAmount:'900'})),files:[{name:'json-drawing.pdf',mediaType:'application/pdf',base64:largeFiles[0].toString('base64')}]};assert.equal((await respond(newLink.value.url,jsonRevision)).status,200);const jsonResponse=(await h.state(buyer)).data.rfqResponse.find(r=>r.rfq===uncertainRfq.id);const jsonDownload=await fetch(h.origin+`/api/purse/rfq-original/${jsonResponse.id}/${jsonResponse.files[0].id}`,{headers:{cookie:buyer}});assert.deepEqual(Buffer.from(await jsonDownload.arrayBuffer()),largeFiles[0],'SOURCE-001 JSON retains a 10 MB original');
+ const archive=join(h.dir,'supplier-originals.rer'),service=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});
+ await exportArchive(service,archive,[]);
+ const restored=await harness({empty:true});t.after(()=>restored.close());
+ const destination=await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability});await importArchive(destination,archive,[]);
+ const restoredLogin=await restored.send('/auth/bootstrap',{token:'synthetic-local-test-bootstrap-token-0123456789',displayName:'Restored owner'});assert.equal(restoredLogin.status,303);const restoredOwner=restoredLogin.cookie;
+ for(const response of (await h.state(buyer)).data.rfqResponse)for(const file of response.files){const r=await restored.send(`/api/purse/rfq-original/${response.id}/${file.id}`,undefined,restoredOwner);assert.equal(r.status,200);const original=await h.originals.get(file.key),copy=await restored.originals.get(file.key);assert.deepEqual(Buffer.from(await copy.arrayBuffer()),Buffer.from(await original.arrayBuffer()),'SOURCE-001 complete archive preserves every R2 original');}
+ assert.equal((await restored.db.prepare('SELECT count(*) AS n FROM p_rfq_links').first()).n,0,'SOURCE-001 bearer authority is not restored');
+
 });

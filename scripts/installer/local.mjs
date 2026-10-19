@@ -21,7 +21,7 @@ export const adapter = lifecycle;
 export const { install } = lifecycle;
 export const commandAdapter = createCommandAdapter(lifecycle, {
  dev: developmentTarget, preview: previewTarget, verify: ['pnpm', ['run', 'verify:app']], deploy: ownerDeploy('deploy.json', lifecycle),
- portability: localPortability({ database: 'foundation', policyModule: 'scripts/installer/portability.mjs', transient: ['local runtime caches and logs'] }),
+ portability: localPortability({ database: 'foundation', buckets: { ORIGINALS: 'ORIGINALS' }, policyModule: 'scripts/installer/portability.mjs', transient: ['local runtime caches and logs'] }),
  setup: { manifestFile: 'rer-setup.json' }, browserModule: 'scripts/installer/ui/seed.mjs',
  // The run site (run-purse.com): the approved homepage, /run and the docs, static; `rer build --site` writes it.
  site: { entry: 'src/site/pages.tsx', output: 'dist/site', declaration: 'deploy-site.json', config: 'vite.site.config.ts' },
