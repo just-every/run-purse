@@ -3,7 +3,7 @@ import { PortabilityError } from '@runeditrun/rer/modules/portability';
 import { validateOrderLinks } from './restore-order-links.mjs';
 import { validateSupplierPerformance } from './restore-supplier-performance.mjs';
 
-const kinds = new Set(['business','member','supplier','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue']);
+const kinds = new Set(['business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue']);
 export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
 export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
 export const integer = n => Number.isSafeInteger(n) && n >= 0;
@@ -66,6 +66,14 @@ export function validatePurchasingArchive(rows) {
   if (d.delegation) check(get('delegation',d.delegation).policy === d.policy,'decision_delegation');
  }
  for (const kind of ['catalogue','quote']) for (const r of all(kind)) { get('supplier',r.supplier); if (kind === 'quote') { get('revision',r.request + ':' + r.revision); lineAmounts(r,true); } }
+ for (const supplier of all('supplier')) if (supplier.mergedInto) {
+  const seen = new Set([supplier.id]); let target = get('supplier',supplier.mergedInto);
+  while (target.mergedInto) { check(!seen.has(target.id),'supplier_merge_cycle'); seen.add(target.id); target = get('supplier',target.mergedInto); }
+  check(!seen.has(target.id) && supplier.status === 'merged' && all('supplierMerge').some(m => m.source === supplier.id && m.target === supplier.mergedInto),'supplier_merge_alias');
+ }
+ for (const merge of all('supplierMerge')) { check(get('supplier',merge.source).mergedInto === merge.target,'supplier_merge_link');get('supplier',merge.target);check(typeof merge.reason === 'string' && merge.reason.trim() && typeof merge.actor === 'string' && Number.isFinite(Date.parse(merge.at)),'supplier_merge'); }
+ for (const matchingKey of all('supplierMatchingKey')) check(matchingKey.id === 'main' && /^[a-f0-9]{64}$/.test(matchingKey.secret), 'supplier_matching_key');
+ for (const supplier of all('supplier')) if (supplier.matching && Object.keys(supplier.matching).length) { get('supplierMatchingKey','main'); check(Object.entries(supplier.matching).every(([k,v]) => ['tin','bank'].includes(k) && typeof v === 'string' && /^[a-f0-9]{64}$/.test(v)), 'supplier_matching'); }
  for (const grant of all('catalogueGrant')) check(get('member',grant.email).email === grant.email && grant.id === grant.email, 'catalogue_grant');
  for (const record of [...all('catalogue'),...all('catalogueBundle')]) if (record.access) for (const field of ['departments','locations','entities','roles']) check(Array.isArray(record.access[field]) && record.access[field].every(v => typeof v === 'string'), 'catalogue_access');
  for (const bundle of all('catalogueBundle')) {

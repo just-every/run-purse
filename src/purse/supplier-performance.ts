@@ -1,3 +1,4 @@
+import { canonicalSupplier } from './supplier-identity';
 import { discrepancies } from './orders';
 import { all, audit, can, date, get, key, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
@@ -36,9 +37,9 @@ export function supplierPerformance(s: State, a: Actor, op: string, b: Data): Da
     }
     if (op === 'supplier-issue') {
         const supplier = get(s, 'supplier', b.supplier), order = issuedOrder(s, b.order);
-        requireThat(order.supplier === supplier.id, 'PO belongs to another supplier', 409);
+        requireThat(canonicalSupplier(s, order.supplier) === canonicalSupplier(s, supplier.id), 'PO belongs to another supplier', 409);
         requireThat(['late', 'damaged', 'wrong-item', 'billing'].includes(b.category), 'Choose late, damaged, wrong item or billing');
-        const issue = { supplier: supplier.id, order: order.id, category: b.category,
+        const issue = { supplier: order.supplier, order: order.id, category: b.category,
             description: text(b.description, 'Issue description'), status: 'open', actor: a.id, at: new Date().toISOString() };
         const id = uid();
         put(s, 'supplierIssue', id, issue);
@@ -62,8 +63,8 @@ export function supplierScorecards(s: State, a: Actor): Data[] {
     const orders = all(s, 'order').filter(o => !o.imported), receipts = all(s, 'receipt').filter(r => !r.imported);
     const invoices = all(s, 'invoice').filter(i => !i.imported), evidence = all(s, 'supplierOrderEvidence');
     const issues = all(s, 'supplierIssue'), matches = discrepancies(s);
-    return all(s, 'supplier').map(supplier => {
-        const supplierOrders = orders.filter(o => o.supplier === supplier.id);
+    return all(s, 'supplier').filter(supplier => !supplier.mergedInto).map(supplier => {
+        const supplierOrders = orders.filter(o => canonicalSupplier(s, o.supplier) === supplier.id);
         const issued = supplierOrders.filter(o => o.issuedAt), orderIds = new Set(issued.map(o => o.id));
         const orderRows = supplierOrders.map(o => ({ orderId: o.id, number: o.number, requestId: o.request, revision: o.revision,
             status: o.status, issuedAt: o.issuedAt, currency: o.currency, totalMinor: o.totalMinor,
@@ -106,7 +107,7 @@ export function supplierScorecards(s: State, a: Actor): Data[] {
             return { currency, orderedCommittedMinor: total(currencyOrders.filter(o => o.included), 'amountMinor'),
                 invoicedEvidenceMinor: total(currencyInvoices, 'amountMinor'), orders: currencyOrders, invoices: currencyInvoices };
         });
-        const issueRows: Data[] = issues.filter(i => i.supplier === supplier.id).map(i => ({ ...i, issueId: i.id, orderId: i.order }));
+        const issueRows: Data[] = issues.filter(i => canonicalSupplier(s, i.supplier) === supplier.id).map(i => ({ ...i, issueId: i.id, orderId: i.order }));
         return { supplier: supplier.id, supplierName: supplier.name, orders: orderRows,
             delivery: { onTime, late, unknownPromise: deliveryRows.length - onTime - late, measured: onTime + late, rate: rate(onTime, onTime + late),
                 basis: 'Accepted receipt events against the current recorded supplier promise, using the UTC receipt date; unknown promises excluded', rows: deliveryRows },

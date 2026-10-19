@@ -5,6 +5,7 @@ import { administration } from './admin';
 import { catalogueGrants } from './catalogue-access';
 import { catalogue } from './catalogue';
 import { catalogueRequests } from './catalogue-requests';
+import { supplierMerge } from './supplier-merge';
 import { suppliers } from './suppliers';
 import { supplierPerformance } from './supplier-performance';
 import { requests } from './requests';
@@ -29,7 +30,7 @@ export async function command(s: State, a: Actor, op: string, b: Data): Promise<
     put(s, 'proposedAction', p.id, { ...p, status: 'executed', executedBy: a.id, at: new Date().toISOString() });
     audit(s, a, op, p.id);
     return result;
-} const result = await suppliers(s, a, op, b) ?? supplierPerformance(s, a, op, b) ?? catalogueGrants(s, a, op, b) ?? catalogue(s, a, op, b) ?? administration(s, a, op, b) ?? catalogueRequests(s, a, op, b) ?? requests(s, a, op, b) ?? orders(s, a, op, b) ?? orderClosure(s, a, op, b) ?? stockroom(s, a, op, b) ?? preparation(s, a, op, b); requireThat(result, 'Unknown action', 404); return result; }
+} const result = await suppliers(s, a, op, b) ?? supplierMerge(s, a, op, b) ?? supplierPerformance(s, a, op, b) ?? catalogueGrants(s, a, op, b) ?? catalogue(s, a, op, b) ?? administration(s, a, op, b) ?? catalogueRequests(s, a, op, b) ?? requests(s, a, op, b) ?? orders(s, a, op, b) ?? orderClosure(s, a, op, b) ?? stockroom(s, a, op, b) ?? preparation(s, a, op, b); requireThat(result, 'Unknown action', 404); return result; }
 api.get('/api/purse/state', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = visible(state, a);if(a.owner) result.data.importJobs = await importJobs(c.env.DB, a); await readFence(c.env.DB, a, revision); return c.json(result); });
 api.post('/api/purse/command/:op', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB), before = structuredClone(state); const length = Number(c.req.header('content-length') ?? 0); requireThat(length <= 1600000, 'Request too large', 413); const body = await c.req.json(); const result = await command(state, a, c.req.param('op'), body); await save(c.env.DB, a, before, state, revision); return c.json(result); });
 api.post('/api/purse/invite', async (c) => { const a = await actor(c.req.raw, c.env), { state } = await load(c.env.DB); can(state, a, 'owner'); const b = await c.req.json(), m = get(state, 'member', b.email); requireThat(m.active, 'Member is inactive'); return c.json(await operatorAuth(runtimeBindings(c.env)).invite(c.req.raw, { email: m.email, displayName: m.name, role: 'member', returnTo: '/app' })); });

@@ -1,3 +1,4 @@
+import { canonicalSupplier } from './supplier-identity';
 import { all, audit, can, get, put, quantity, requireThat, text, uid, type Actor, type Data, type State } from './types';
 import { commitment, linePosition, remainingValue } from './orders';
 import { ledger } from './requests';
@@ -29,7 +30,7 @@ export function orderClosure(s: State, a: Actor, op: string, b: Data): Data | un
         audit(s, a, op, o.id, { closure: id, reason, lines });
     } else {
         requireThat(r.status === 'approved' && r.revision === o.revision, 'Current request approval required', 409);
-        supplier(s, o.supplier);
+        supplier(s, canonicalSupplier(s, o.supplier));
         const approval = currentDecision(s, r);
         requireThat(o.replenishmentStatus !== 'held', 'Replenishment is held; renew approval', 409);
         const closures = all(s, 'orderClosure').filter(c => c.order === o.id && c.active && (!b.closure || c.id === b.closure));

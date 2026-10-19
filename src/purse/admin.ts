@@ -1,3 +1,4 @@
+import { initializeSupplierMatching } from './supplier-identity';
 import { moneyInput } from './money';
 import { all, audit, can, get, put, requireThat, text, date, uid, type Actor, type Data, type State } from './types';
 export function administration(s: State, a: Actor, op: string, b: Data): Data | undefined {
@@ -7,6 +8,7 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
         requireThat(currencies.length && currencies.every((c: string) => /^[A-Z]{3}$/.test(c)), 'Use ISO currency codes');
         for(const field of ['locations','costCentres','projects']){requireThat(Array.isArray(b[field])&&b[field].length>0&&b[field].length<=100,field+' requires 1–100 codes');requireThat(b[field].every((v:unknown)=>typeof v==='string'&&v.trim().length>0&&v.length<=200),field+' must contain nonempty names');requireThat(new Set(b[field]).size===b[field].length,field+' contains duplicates')}
         put(s, 'business', 'main', { name: text(b.name, 'Business name'), currencies, locations: b.locations ?? [], costCentres: b.costCentres ?? [], projects: b.projects ?? [] });
+        initializeSupplierMatching(s);
         audit(s, a, op, 'main');
         return get(s, 'business', 'main');
     }
@@ -48,5 +50,5 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
         return { id: b.id };
     }
 }
-export function supplier(s: State, id: string) { const v = get(s, 'supplier', id); requireThat(v.status !== 'blocked', 'Supplier blocked: ' + v.reason, 409); requireThat(v.status !== 'pending_review', 'Supplier pending OFAC compliance review', 409); requireThat(v.screenings?.length, 'Supplier requires OFAC screening before activation', 409); return v; }
+export function supplier(s: State, id: string) { const v = get(s, 'supplier', id); requireThat(!v.mergedInto, 'Supplier merged; choose the surviving supplier and renew purchasing authority', 409); requireThat(v.status !== 'blocked', 'Supplier blocked: ' + v.reason, 409); requireThat(v.status !== 'pending_review', 'Supplier pending OFAC compliance review', 409); requireThat(v.screenings?.length, 'Supplier requires OFAC screening before activation', 409); return v; }
 export function currency(s: State, c: string) { requireThat(get(s, 'business', 'main').currencies.includes(c), 'Currency is not enabled for this business'); }
