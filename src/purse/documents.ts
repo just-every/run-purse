@@ -1,3 +1,4 @@
+import { cashRequirements } from './cash-requirements';
 import { all, can, get, own, requireThat, qty, roles, type Actor, type Data, type State } from './types';
 import { discrepancies, linePosition } from './orders';
 import { supplierFamilies } from './supplier-merge';
@@ -10,6 +11,9 @@ const escape = (x: unknown) => String(x).replace(/[&<>"']/g, c => ({ '&': '&amp;
 export function visible(s: State, a: Actor) { const capabilities = roles(s, a); requireThat(capabilities.length, 'No active business membership', 403); const staff = capabilities.some(r => ['owner', 'approver', 'buyer', 'receiver'].includes(r)); const requests = all(s, 'request').filter(r => staff || r.requester === a.id || r.requesterEmail === a.email), ids = new Set(requests.map(r => r.id)); const orders = all(s, 'order').filter(o => ids.has(o.request)), orderIds = new Set(orders.map(o => o.id)); const data: Data = {}; for (const kind of ['business', 'supplier', 'catalogue', 'catalogueBundle', 'policy', 'delegation', 'code'])
     data[kind] = all(s, kind);
     data.supplier = data.supplier.map((v: Data) => ({ ...supplierPublicValue(v), documents: (v.documents ?? []).filter((id: string) => capabilities.includes('buyer') || !s.get('attachment:' + id)?.value.privateSupplierDocument) }));
+    data.payable = capabilities.includes('buyer') ? all(s, 'payable') : [];
+    data.cashExpectation = capabilities.includes('buyer') ? all(s, 'cashExpectation') : [];
+    data.cashRequirements = capabilities.includes('buyer') ? cashRequirements(s, a) : null;
     data.orderChasePolicy = capabilities.includes('buyer') ? all(s, 'orderChasePolicy').filter(p => orderIds.has(p.order)) : [];
     data.orderChaseEvent = all(s, 'orderChaseEvent').filter(e => orderIds.has(e.order));
     data.orderChaseEvidence = all(s, 'supplierOrderEvidence').filter(e => orderIds.has(e.order));
