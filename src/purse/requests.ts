@@ -117,7 +117,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         currency(s, b.currency);
         const id = uid();
         const ls = lines(s, b.lines, a);
-        const q = { id, request: r.id, revision: r.revision, supplier: b.supplier, currency: b.currency, lines: ls, freightMinor: moneyInput(b, 'freightAmount', 'freightMinor', 'Freight', { optional: true }), taxMinor: moneyInput(b, 'taxAmount', 'taxMinor', 'Supplied tax', { optional: true }), delivery: b.delivery ? date(b.delivery) : null, conditions: b.conditions ? text(b.conditions, 'Conditions') : null, source: text(b.source, 'Quote source evidence'), missing: [] as string[] };
+        const q = { id, at: new Date().toISOString(), sequence: all(s, 'quote').filter(q => q.request === r.id && q.revision === r.revision).length + 1, request: r.id, revision: r.revision, supplier: b.supplier, currency: b.currency, lines: ls, freightMinor: moneyInput(b, 'freightAmount', 'freightMinor', 'Freight', { optional: true }), taxMinor: moneyInput(b, 'taxAmount', 'taxMinor', 'Supplied tax', { optional: true }), delivery: b.delivery ? date(b.delivery) : null, conditions: b.conditions ? text(b.conditions, 'Conditions') : null, source: text(b.source, 'Quote source evidence'), missing: [] as string[] };
         q.missing = ['freightMinor', 'taxMinor', 'delivery', 'conditions'].filter(k => (q as Data)[k] === null);
         put(s, 'quote', id, q);
         audit(s, a, op, r.id, { quote: id });

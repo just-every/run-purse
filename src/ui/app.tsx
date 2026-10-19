@@ -1,3 +1,4 @@
+import { PerformanceReport } from './performance-report';
 import { SpendReport } from './spend-report';
 import { AuditLog } from './audit-log';
 import { Authority } from './authority';
@@ -15,7 +16,7 @@ import { Imports } from './imports';
 /** Mark, name and tagline at left; who is signed in at right. */
 function Masthead({ actor }: { actor?: D }) { return <header className="app-header"><a className="app-brand" href="/app"><img className="app-mark" src="/brand/mark.svg" alt=""/><span className="app-name" data-rer-name>Purse</span> <span className="app-tagline">Purchasing, with a clear record</span></a>{actor && <span className="app-who">{actor.email}<span className="app-roles"> · {actor.roles.join(', ')}</span></span>}</header>; }
 export function App() {
-    const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState('Overview'), [notice, setNotice] = useState('');
+    const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState('Overview'), [notice, setNotice] = useState(''), [performance, setPerformance] = useState(false);
     async function reload() { setState(await call('state')); }
     useEffect(() => { reload().catch(e => setError(e.message)); }, []);
     async function mutate(op: string, b: D) { const result = await call('command/' + op, b); setNotice('Saved.'); await reload(); return result; }
@@ -29,7 +30,7 @@ export function App() {
         <main className="workspace">
             <p className="notice" aria-live="polite">{notice}</p>
             {tab === 'Overview' && <Overview data={data} onSetUp={() => setTab('Settings')}/>}
-            {tab === 'Reports' && <SpendReport data={data}/>}
+            {tab === 'Reports' && <>{actor.roles.includes('buyer') && <button onClick={() => setPerformance(!performance)}>{performance ? 'Spend and commitments' : 'Procurement performance'}</button>}{performance && actor.roles.includes('buyer') ? <PerformanceReport data={data}/> : <SpendReport data={data}/>}</>}
             {tab === 'Requests' && <Requests data={data} actor={actor} mutate={mutate}/>}
             {tab === 'Orders' && <Orders data={data} actor={actor} mutate={mutate} reload={reload}/>}
             {tab === 'Suppliers' && <Suppliers data={data} actor={actor} mutate={mutate} reload={reload}/>}

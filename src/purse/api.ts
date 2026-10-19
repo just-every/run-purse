@@ -1,3 +1,6 @@
+import { quoteAwards } from './quote-awards';
+import { performanceMetrics } from './performance-metrics';
+import { savingsReport } from './savings-report';
 import { deploymentHealth } from '../base/deployment-health';
 import { Hono } from 'hono';
 import { operatorAuth, runtimeBindings, type Bindings } from '../auth.server';
@@ -39,7 +42,7 @@ export async function command(s: State, a: Actor, op: string, b: Data): Promise<
     put(s, 'proposedAction', p.id, { ...p, status: 'executed', executedBy: a.id, at: new Date().toISOString() });
     audit(s, a, op, p.id);
     return result;
-} const result = await poProfiles(s, a, op, b) ?? payables(s, a, op, b) ?? orderChasing(s, a, op, b) ?? supplierDocuments(s, a, op, b) ?? await suppliers(s, a, op, b) ?? supplierMerge(s, a, op, b) ?? supplierPerformance(s, a, op, b) ?? catalogueGrants(s, a, op, b) ?? catalogue(s, a, op, b) ?? administration(s, a, op, b) ?? catalogueRequests(s, a, op, b) ?? requests(s, a, op, b) ?? orders(s, a, op, b) ?? orderClosure(s, a, op, b) ?? stockroom(s, a, op, b) ?? preparation(s, a, op, b); requireThat(result, 'Unknown action', 404); return result; }
+} const result = quoteAwards(s, a, op, b) ?? await poProfiles(s, a, op, b) ?? payables(s, a, op, b) ?? orderChasing(s, a, op, b) ?? supplierDocuments(s, a, op, b) ?? await suppliers(s, a, op, b) ?? supplierMerge(s, a, op, b) ?? supplierPerformance(s, a, op, b) ?? catalogueGrants(s, a, op, b) ?? catalogue(s, a, op, b) ?? administration(s, a, op, b) ?? catalogueRequests(s, a, op, b) ?? requests(s, a, op, b) ?? orders(s, a, op, b) ?? orderClosure(s, a, op, b) ?? stockroom(s, a, op, b) ?? preparation(s, a, op, b); requireThat(result, 'Unknown action', 404); return result; }
 api.all('/api/purse/supplier-refresh/:token', c => supplierRefresh(c.req.raw, runtimeBindings(c.env), c.req.param('token')));
 api.get('/api/purse/state', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = visible(state, a);if(a.owner) result.data.importJobs = await importJobs(c.env.DB, a); await readFence(c.env.DB, a, revision); return c.json(result); });
 api.get('/api/purse/spend-report', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = spendReport(visible(state, a).data, c.req.query()); await readFence(c.env.DB, a, revision); return c.json(result); });
@@ -55,3 +58,5 @@ api.get('/api/purse/accounting', async (c) => { const a = await actor(c.req.raw,
 
 api.get('/api/purse/audit', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const events = auditLog(state, a, c.req.query()); await readFence(c.env.DB, a, revision); return c.json({ events }); });
 api.get('/api/purse/audit.csv', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const response = auditCsv(auditLog(state, a, c.req.query())); await readFence(c.env.DB, a, revision); return response; });
+
+api.get('/api/purse/performance-report', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); can(state, a, 'buyer'); const data = visible(state, a).data; const result = { ...performanceMetrics(data), savings: savingsReport(data) }; await readFence(c.env.DB, a, revision); return c.json(result); });
