@@ -1,6 +1,8 @@
 import { currentDecision } from './approval';
 import { all, audit, can, get, put, requireThat, text, extended, uid, type Actor, type Data, type State } from './types';
 import { supplier } from './admin';
+import { lapsedSupplierDocuments } from './supplier-documents';
+const documentHold = (s: State, id: string) => requireThat(!lapsedSupplierDocuments(s, id).length, 'Required supplier document has lapsed; refresh and review it before a new PO', 409);
 import { ledger, policies, approvalAmount } from './requests';
 import { invoice } from './invoices';
 import { receipt } from './receiving';
@@ -13,6 +15,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         const r = get(s, 'request', b.id);
         requireThat(r.revision === b.revision && r.status === 'approved' && !r.imported, 'Exact current revision must have native approval', 409);
         supplier(s, r.supplier);
+        documentHold(s, r.supplier);
         requireThat(r.supplierSnapshot?.id === r.supplier, 'Supplier identity missing; amend the request and renew approval', 409);
         const approval=currentDecision(s, r);
         requireThat(!all(s, 'order').some(o => o.request === r.id && o.revision === r.revision), 'Approved lines already allocated to a PO', 409);
@@ -28,6 +31,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         can(s, a, 'buyer');
         const o = get(s, 'order', b.id), r = get(s, 'request', o.request);
         supplier(s, o.supplier);
+        documentHold(s, o.supplier);
         requireThat(o.supplierSnapshot?.id === o.supplier, 'Approved supplier identity is missing; amend the request and renew approval', 409);
         requireThat(o.status === 'prepared' && r.status === 'approved' && r.revision === o.revision && b.revision === o.revision && !o.imported, 'PO document or authority is stale', 409);
         requireThat(policies(s, r).some(p => p.id === r.policy), 'Approval policy changed', 409);

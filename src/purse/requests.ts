@@ -123,6 +123,8 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         const kind = text(b.kind, 'Record kind');
         requireThat(['request', 'supplier', 'order', 'invoice'].includes(kind), 'Unsupported attachment record');
         const r = get(s, kind, b.record);
+        requireThat(b.privateSupplierDocument === undefined || typeof b.privateSupplierDocument === 'boolean', 'Private supplier document flag must be boolean');
+        requireThat(!b.privateSupplierDocument || kind === 'supplier', 'Private compliance evidence belongs to a supplier');
         if (kind === 'request') {
             can(s, a, 'requester');
             own(s, a, r);
@@ -139,7 +141,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         }
         requireThat(bytes!.length<=1000000,'Attachment must contain up to 1 MB of bytes');
         const id = uid();
-        put(s, 'attachment', id, { kind, record: r.id, name: text(b.name, 'Filename', 200), mediaType: text(b.mediaType ?? 'application/octet-stream', 'Media type', 150), base64: b.base64, size: bytes!.length, actor: a.id, at: new Date().toISOString() });
+        put(s, 'attachment', id, { kind, record: r.id, ...(b.privateSupplierDocument ? { privateSupplierDocument: true } : {}), name: text(b.name, 'Filename', 200), mediaType: text(b.mediaType ?? 'application/octet-stream', 'Media type', 150), base64: b.base64, size: bytes!.length, actor: a.id, at: new Date().toISOString() });
         audit(s, a, op, r.id, { attachment: id });
         return { id };
     }

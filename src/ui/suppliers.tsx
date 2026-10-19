@@ -3,6 +3,7 @@ import { DuplicateSupplierReview } from './supplier-duplicates';
 import { SupplierMerge, SupplierHistory } from './supplier-merge';
 import { SupplierScreening } from './supplier-screening';
 import { SupplierPerformance } from './supplier-performance';
+import { SupplierDocuments } from './supplier-documents';
 import { Form, Field, Table, Attachments, Chip, call, type D } from './shared';
 
 export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; mutate: (op: string, b: D) => Promise<any>; reload: () => Promise<void> }) {
@@ -43,7 +44,7 @@ export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; 
         {duplicate && <DuplicateSupplierReview review={duplicate.review} input={duplicate.input} mutate={mutate} onSaved={s => open(s.id)} onOpen={async id => { try { await reload(); open(id); setOpenError(''); } catch (e) { setOpenError((e as Error).message); } }}/>}
         {openError && <p role="alert">{openError}</p>}
         {selected && <>
-            {!selected.mergedInto && <><SupplierPerformance key={selected.id} supplier={selected} data={data} mutate={mutate}/><SupplierScreening supplier={selected} owner={actor.roles.includes('owner')} mutate={mutate}/><Attachments data={data} kind="supplier" record={selected.id} mutate={mutate}/><SupplierMerge key={selected.id} supplier={selected} data={data} mutate={mutate} onMerged={() => setDuplicate(undefined)}/></>}
+            {!selected.mergedInto && <><SupplierPerformance key={selected.id} supplier={selected} data={data} mutate={mutate}/><SupplierScreening supplier={selected} owner={actor.roles.includes('owner')} mutate={mutate}/><Attachments data={data} kind="supplier" record={selected.id} mutate={mutate}/><SupplierDocuments key={selected.id + ":documents"} supplier={selected} data={data} mutate={mutate} reload={reload}/><SupplierMerge key={selected.id} supplier={selected} data={data} mutate={mutate} onMerged={() => setDuplicate(undefined)}/></>}
             <SupplierHistory supplier={selected} data={data}/>
             <button onClick={() => open()}>Add another supplier</button>
         </>}
