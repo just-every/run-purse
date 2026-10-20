@@ -5,7 +5,10 @@ import {session,api,current} from './browser-journey.mjs'
 export async function orderChasingJourney(browser,root,origin,width,evidence){
  const buyer=await session(browser,root,origin,'buyer',width),requester=await session(browser,root,origin,'requester',width),approver=await session(browser,root,origin,'approver',width),owner=await session(browser,root,origin,'owner',width)
  try{
-  const tag=width+' '+crypto.randomUUID().slice(0,6),day=offset=>new Date(Date.now()+offset*86400000).toISOString().slice(0,10)
+  const tag=width+' '+crypto.randomUUID().slice(0,6)
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(Date.now())
+  const today=['year','month','day'].map(type=>parts.find(part=>part.type===type).value).join('-')
+  const day=offset=>new Date(Date.parse(today+'T00:00:00Z')+offset*86400000).toISOString().slice(0,10)
   const input={name:'Canyon Industrial Supply '+tag,status:'preferred',reason:'Approved field equipment supplier',contacts:[{name:'Casey Morgan',email:'orders@canyon-'+width+'.example.test'}]}
   const duplicate=await api(buyer.context,origin,'supplier-duplicates',input)
   const supplier=await api(buyer.context,origin,'supplier',{...input,duplicateFingerprint:duplicate.fingerprint,duplicateReason:'Separate operating division and approved order contact '+tag})
