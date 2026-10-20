@@ -81,7 +81,7 @@ export async function integrationTokensJourney(browser, root, origin, width, evi
         const requestId = created.request.id;
         await requester.page.reload();
         await requester.page.getByRole('navigation').getByRole('button', { name: 'Requests', exact: true }).click();
-        const requestRow = requester.page.getByRole('row').filter({ hasText: title });
+        const requestRow = requester.page.getByRole('article').filter({ hasText: title });
         await requestRow.getByText('draft · v1', { exact: true }).waitFor();
         await requestRow.getByRole('button', { name: 'Open request', exact: true }).click();
         await requester.page.getByRole('heading', { name: title + ' · revision 1', exact: true }).waitFor();

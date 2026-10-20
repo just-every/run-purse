@@ -1,81 +1,101 @@
-/* Purse's tokens, defined once (SPEC §2): the app (/purse.css), the run site,
-   the Lobby, sign-in and /setup all read them. Paper, ink and one accent:
-   duplicate-book rose. On the run site rose stays inside the drawings; inside
-   the product it marks labels, record identity and the primary action. */
+/* Purse's tokens, defined once: the app (/purse.css), sign-in, /setup, the Lobby and the
+   run site all read them. The look is the approved hero's: crisp white, ink line work,
+   Purse blue for actions, tangelo for the second heading line and pending, kelly green
+   only for done, cerise only on the one exception a screen has. Bitter Black is the slab
+   for headings and the wordmark; Figtree, with tabular figures, carries everything else. */
 @import url('/fonts/fonts.css');
 
 :root {
-  --purse-paper: #f7f5f0;
-  --purse-sheet: #fbfaf6;
-  --purse-ink: #1c2020;
-  --purse-muted: #4f5553;
-  --purse-faint: #6b706d;
-  --purse-rule: #d9d6cf;
+  --purse-paper: #ffffff;
+  --purse-sheet: #ffffff;
+  --purse-ink: #101519;
+  --purse-text: #23282d;
+  --purse-muted: #5a6168;
+  --purse-faint: #6b7178;
+  --purse-rule: #e3e6ea;
+  --purse-field: #c9d0da;
+  --purse-bubble: #eef1f6;
+  --purse-blue: #0067db;
+  --purse-blue-deep: #0052b0;
+  --purse-blue-wash: #eaf3fd;
+  --purse-blue-line: #b7d3f5;
+  --purse-tangelo: #fd6008;
+  --purse-tangelo-ink: #c44300;
+  --purse-tangelo-pale: #fed3b7;
+  --purse-tangelo-wash: #fff2e8;
+  --purse-green: #13803a;
+  --purse-green-wash: #e5f7e8;
+  --purse-cerise: #e0005e;
+  --purse-cerise-wash: #fde8f1;
+  --purse-shadow: 0 1px 2px rgb(16 21 25 / 0.05), 0 4px 12px rgb(16 21 25 / 0.05);
+  --purse-radius: 10px;
+  --purse-slab: Bitter, 'Bitter Fallback', Georgia, serif;
+  --purse-font: Figtree, 'Figtree Fallback', 'Helvetica Neue', Arial, sans-serif;
+  --purse-figures: tabular-nums lining-nums;
+
+  --rer-font-body: var(--purse-font);
+  --rer-font-heading: var(--purse-slab);
+  --rer-page: var(--purse-paper);
+  --rer-surface: var(--purse-sheet);
+  --rer-text: var(--purse-text);
+  --rer-muted: var(--purse-muted);
+  --rer-border: var(--purse-field);
+  --rer-focus: var(--purse-blue);
+  --rer-link: var(--purse-blue);
+  --rer-accent: var(--purse-blue);
+  --rer-accent-text: #ffffff;
+  --rer-radius: var(--purse-radius);
+  --rer-button-radius: var(--purse-radius);
+  --rer-wordmark-weight: 900;
+  --rer-logo: url('/brand/mark.svg');
+
+  /* The run site's drawings on main (src/site/landing/drawings, docs) still read these;
+     the approved homepage on br/page replaces them. Nothing in the app uses them. */
   --purse-rose: #b03058;
   --purse-rose-deep: #9a2a4e;
   --purse-rose-wash: #f6e9eb;
   --purse-rose-line: #e3c9ce;
   --purse-dup-pink: #ecd0d4;
   --purse-dup-cream: #f0e4d0;
-  --purse-font: Outfit, 'Outfit Fallback', Arial, sans-serif;
-  --purse-figures: tabular-nums lining-nums;
-
-  --rer-font-body: var(--purse-font);
-  --rer-font-heading: var(--purse-font);
-  --rer-page: var(--purse-paper);
-  --rer-surface: var(--purse-sheet);
-  --rer-text: var(--purse-ink);
-  --rer-muted: var(--purse-muted);
-  --rer-border: var(--purse-rule);
-  --rer-focus: var(--purse-ink);
-  --rer-link: var(--purse-rose-deep);
-  --rer-accent: var(--purse-rose-deep);
-  --rer-accent-text: var(--purse-sheet);
-  --rer-radius: 6px;
-  --rer-button-radius: 6px;
-  --rer-wordmark-weight: 500;
-  --rer-logo: url('/brand/mark.svg');
 }
 
-/* Sign-in (operator-auth) and first-run /setup: Base's no-script frames wear
-   the theme through these rules. A paper sheet, left-aligned, no shadow; rose
-   labels and the rose action, as the 12ui picks draw them. */
-html.rer-themed body { background: var(--purse-paper); font-family: var(--purse-font); }
-html.rer-themed body main { width: 100%; max-width: 620px; padding: 56px 52px; background: var(--purse-sheet); border: 1px solid var(--purse-rule); border-radius: 4px; box-shadow: none; }
-html.rer-themed body h1 { font-size: 56px; line-height: 1.05; font-weight: 700; letter-spacing: -0.025em; margin: 0 0 20px; color: var(--purse-ink); }
-html.rer-themed body p { color: var(--purse-muted); font-size: 19px; line-height: 1.45; }
+/* Sign-in (operator-auth), first-run /setup and the other Base frames wear the theme
+   through these rules: the app's white card with a hairline and soft shadow, the slab
+   heading, thin quiet fields with a blue focus ring, and the blue action. */
+html.rer-themed body { background: var(--purse-paper); color: var(--purse-text); font-family: var(--purse-font); }
+html.rer-themed body main { width: 100%; max-width: 560px; padding: 44px 48px 48px; background: var(--purse-sheet); border: 1px solid var(--purse-rule); border-radius: 14px; box-shadow: var(--purse-shadow); }
+html.rer-themed body h1 { font: 900 40px/1.05 var(--purse-slab); letter-spacing: -0.015em; margin: 0 0 16px; color: var(--purse-ink); }
+html.rer-themed body p { color: var(--purse-muted); font-size: 17px; line-height: 1.5; }
 html.rer-themed body .brand,
-html.rer-themed body .rer-brand { gap: 12px; margin: 0 0 32px; color: var(--purse-ink); font-size: 26px; font-weight: 500; letter-spacing: -0.01em; }
+html.rer-themed body .rer-brand { gap: 10px; margin: 0 0 28px; color: var(--purse-ink); font: 900 28px/1 var(--purse-slab); letter-spacing: -0.02em; }
 html.rer-themed body .brand::before,
-html.rer-themed body .rer-brand::before { width: 30px; height: 30px; }
-html.rer-themed body label { color: var(--purse-rose-deep); font-size: 17px; font-weight: 500; }
-html.rer-themed body label:has(input[type=checkbox]) { color: var(--purse-ink); }
-html.rer-themed body input:not([type=checkbox]):not([type=hidden]) { min-height: 56px; font-size: 18px; border: 1px solid color-mix(in srgb, var(--purse-rose) 55%, transparent); border-radius: 6px; background: var(--purse-sheet); color: var(--purse-ink); }
-html.rer-themed body input[type=checkbox] { accent-color: var(--purse-rose-deep); width: 20px; height: 20px; flex: none; }
+html.rer-themed body .rer-brand::before { width: 36px; height: 36px; }
+html.rer-themed body label { color: var(--purse-ink); font-size: 15px; font-weight: 600; }
+html.rer-themed body input:not([type=checkbox]):not([type=hidden]) { min-height: 46px; font-size: 16px; border: 1px solid var(--purse-field); border-radius: 8px; background: #fff; color: var(--purse-ink); }
+html.rer-themed body input:not([type=checkbox]):not([type=hidden]):focus-visible { outline: 3px solid color-mix(in srgb, var(--purse-blue) 30%, transparent); outline-offset: 0; border-color: var(--purse-blue); }
+html.rer-themed body input[type=checkbox] { accent-color: var(--purse-blue); width: 20px; height: 20px; flex: none; }
 html.rer-themed body button,
-html.rer-themed body .action { min-height: 54px; border: 1px solid var(--purse-rose-deep); border-radius: 6px; background: var(--purse-rose-deep); color: var(--purse-sheet); font-size: 18px; font-weight: 500; }
+html.rer-themed body .action { min-height: 48px; border: 1px solid var(--purse-blue); border-radius: var(--purse-radius); background: var(--purse-blue); color: #fff; font: 700 16px/1.2 var(--purse-font); }
 html.rer-themed body button:hover,
-html.rer-themed body .action:hover { background: #84213f; box-shadow: none; }
-html.rer-themed body button.secondary { background: transparent; color: var(--purse-rose-deep); border-color: var(--purse-rose-deep); }
-html.rer-themed body .notice { border-left: 3px solid var(--purse-rose); color: var(--purse-ink); }
-html.rer-themed body .secondary-link a { color: var(--purse-rose-deep); }
-html.rer-themed body :focus-visible { outline: 3px solid var(--purse-ink); outline-offset: 3px; }
-/* /setup: the owner as a two-row ruled form (the <dl>), then the checkbox row. */
-html.rer-themed body dl { grid-template-columns: 160px minmax(0, 1fr); gap: 0; margin: 0 0 12px; border: 1px solid color-mix(in srgb, var(--purse-rose) 55%, transparent); border-radius: 4px; }
+html.rer-themed body .action:hover { background: var(--purse-blue-deep); border-color: var(--purse-blue-deep); box-shadow: none; }
+html.rer-themed body button.secondary { background: #fff; color: var(--purse-blue); border-color: var(--purse-blue); }
+html.rer-themed body .notice { border-left: 3px solid var(--purse-blue); color: var(--purse-ink); }
+html.rer-themed body .secondary-link a { color: var(--purse-blue); }
+html.rer-themed body :focus-visible { outline: 3px solid var(--purse-blue); outline-offset: 3px; }
+/* /setup: the owner as a two-row ruled list (the <dl>), then the checkbox row. */
+html.rer-themed body dl { grid-template-columns: 140px minmax(0, 1fr); gap: 0; margin: 0 0 12px; border: 1px solid var(--purse-rule); border-radius: var(--purse-radius); overflow: hidden; }
 html.rer-themed body dt,
-html.rer-themed body dd { padding: 16px 22px; font-size: 18px; }
-html.rer-themed body dt { background: var(--purse-rose-wash); color: var(--purse-muted); border-right: 1px solid var(--purse-rose-line); }
+html.rer-themed body dd { padding: 14px 18px; font-size: 16px; overflow-wrap: anywhere; }
+html.rer-themed body dt { background: #f7f8fa; color: var(--purse-muted); border-right: 1px solid var(--purse-rule); }
 html.rer-themed body dt:not(:first-of-type),
-html.rer-themed body dt:not(:first-of-type) + dd { border-top: 1px solid var(--purse-rose-line); }
-html.rer-themed body form label:has(input[type=checkbox]) { align-items: center; padding: 16px 22px; border: 1px solid color-mix(in srgb, var(--purse-rose) 55%, transparent); border-radius: 4px; font-size: 16px; }
+html.rer-themed body dt:not(:first-of-type) + dd { border-top: 1px solid var(--purse-rule); }
+html.rer-themed body form label:has(input[type=checkbox]) { align-items: center; padding: 14px 18px; border: 1px solid var(--purse-rule); border-radius: var(--purse-radius); font-size: 15px; font-weight: 500; }
 @media (max-width: 600px) {
-  html.rer-themed body { padding: 24px 20px; }
-  html.rer-themed body main { padding: 28px 0; background: transparent; border: 0; }
-  html.rer-themed body h1 { font-size: 38px; }
-  html.rer-themed body p { font-size: 17px; }
-  html.rer-themed body label { font-size: 16px; }
-  html.rer-themed body input:not([type=checkbox]):not([type=hidden]) { min-height: 52px; }
-  html.rer-themed body dl { grid-template-columns: 96px minmax(0, 1fr); }
+  html.rer-themed body { padding: 24px 16px; }
+  html.rer-themed body main { padding: 28px 20px 32px; }
+  html.rer-themed body h1 { font-size: 32px; }
+  html.rer-themed body p { font-size: 16px; }
+  html.rer-themed body dl { grid-template-columns: 92px minmax(0, 1fr); }
   html.rer-themed body dt,
-  html.rer-themed body dd { padding: 12px 14px; font-size: 16px; }
+  html.rer-themed body dd { padding: 12px 14px; font-size: 15px; }
 }

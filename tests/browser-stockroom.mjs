@@ -20,8 +20,8 @@ export async function stockroomJourney(browser,root,origin,width,evidence,suppli
   assert.equal(request.status,'draft');assert.equal(request.lines[0].quantity,'10');assert.equal(request.lines[0].unitMinor,4250);assert.equal(data.decision.filter(d=>d.request===request.id).length,0);
   await buyer.page.screenshot({path:join(evidence,`STOCK-001-draft-${width}.png`),fullPage:true});
   await owner.page.reload();await owner.page.getByRole('navigation').getByRole('button',{name:'Requests',exact:true}).click();
-  await owner.page.getByRole('row').filter({hasText:request.title}).getByRole('button',{name:'Open request',exact:true}).click();
-  await owner.page.getByRole('button',{name:'Submit for approval',exact:true}).click();await owner.page.getByRole('row').filter({hasText:request.title}).getByText('pending',{exact:false}).waitFor();
+  await owner.page.getByRole('article').filter({hasText:request.title}).getByRole('button',{name:'Open request',exact:true}).click();
+  await owner.page.getByRole('button',{name:'Submit for approval',exact:true}).click();await owner.page.getByRole('article').filter({hasText:request.title}).locator('[data-status=pending]').waitFor();
   await owner.page.screenshot({path:join(evidence,`STOCK-001-submitted-${width}.png`),fullPage:true});
   assert.equal((await current(owner.context,origin)).data.request.find(r=>r.id===request.id).status,'pending');
   for(const page of [buyer.page,owner.page])assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`STOCK-001 fits ${width}px`);
