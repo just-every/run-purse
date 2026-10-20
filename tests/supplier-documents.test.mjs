@@ -6,7 +6,9 @@ test('SUPPLIER-004 dated evidence, clock-driven supplier/owner reminders, lapse 
  let rejectMail=false
  const h=await harness({mail:()=>rejectMail?Response.json({message:'Recipient rejected'},{status:422}):Response.json({id:crypto.randomUUID()})});t.after(()=>h.close())
  const {command:cmd,state,send}=h
- const day=offset=>new Date(Date.now()+offset*86400000).toISOString().slice(0,10)
+ const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(Date.now())
+ const today=['year','month','day'].map(type=>parts.find(part=>part.type===type).value).join('-')
+ const day=offset=>new Date(Date.parse(today+'T00:00:00Z')+offset*86400000).toISOString().slice(0,10)
  await cmd('business',{name:'Summit civil works',currencies:['USD'],locations:['Denver'],costCentres:['Field'],projects:['Site']})
  const buyer=await h.member('buyer@example.test',['buyer']),requester=await h.member('requester@example.test',['requester']),approver=await h.member('approver@example.test',['approver']),receiver=await h.member('receiver@example.test',['receiver'])
  const supplier=await cmd('supplier',{name:'Summit lifting equipment',status:'preferred',reason:'Approved lifting provider',contacts:[{name:'Casey',email:'compliance@summit.example.test'}]},buyer)
