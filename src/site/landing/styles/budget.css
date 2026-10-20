@@ -48,7 +48,7 @@
 @media (max-width: 1180px) {
   .budget { grid-template-columns: minmax(0, 1fr); }
   .budget-tapes { order: 2; margin-top: 56px; }
-  .budget-tapes ul { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .budget-tapes ul { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
   .budget-halves { gap: 0 24px; }
 }
 @media (max-width: 760px) {
