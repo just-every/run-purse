@@ -23,7 +23,7 @@ export async function searchPurchasing(h) {
  const source=await cmd('invoice-source',{order:order.id,document:{name:'source-invoice.pdf',mediaType:'application/pdf',base64:Buffer.from(await pdf.save()).toString('base64')}},buyer),reading=await cmd('invoice-extract',{source:source.id},buyer);assert.equal(reading.status,'review',reading.reason);
  const catalogue=await cmd('catalogue',{description:'Restricted field instrument',supplier:supplier.id,currency:'USD',unitAmount:'50.00',category:'Equipment',approved:true,access:{departments:['Field']}},buyer);
  const csv=await readFile(new URL('../public/fixtures/procurify-shape.csv',import.meta.url),'utf8'),mapping={columns:{},decimal:'.',date:'YYYY-MM-DD',statuses:{active:'active',approved:'historical-approved',issued:'historical-issued',received:'historical-received'}};
- const preview=await h.send('/api/purse/import/preview',{csv,filename:'historical.csv',mapping});assert.equal(preview.status,200,JSON.stringify(preview.value));const imported=await h.send('/api/purse/import/commit',{csv,filename:'historical.csv',mapping,fingerprint:preview.value.plan.fingerprint});assert.equal(imported.status,200,JSON.stringify(imported.value));
+ const preview=await h.send('/api/purse/import/preview',{csv,filename:'historical.csv',mapping},h.owner);assert.equal(preview.status,200,JSON.stringify(preview.value));const imported=await h.send('/api/purse/import/commit',{csv,filename:'historical.csv',mapping,fingerprint:preview.value.plan.fingerprint},h.owner);assert.equal(imported.status,200,JSON.stringify(imported.value));
  return {requester,other,approver,buyer,supplier,request,outside,order,invoice,reading,source,received,catalogue};
 }
 

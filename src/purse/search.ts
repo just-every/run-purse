@@ -80,11 +80,12 @@ function queryParts(filters: SearchFilters, current: SearchContext) {
     return { prefix: ctes.length ? 'WITH ' + ctes.join(',') + ' ' : '', from, params: [...candidateParams, ...params] };
 }
 
-function result(row: Data) {
+function result(row: Data, query: string) {
     const kind = String(row.kind), id = String(row.id);
     const recordKind = ['invoice', 'receipt', 'invoiceReading'].includes(kind) ? 'order' : kind === 'quoteReading' ? 'request' : kind === 'supplierDocument' ? 'supplier' : kind;
     const recordId = ['invoice', 'receipt', 'invoiceReading'].includes(kind) ? row.orderId : kind === 'quoteReading' ? row.requestId : kind === 'supplierDocument' ? row.supplierId : id;
-    return { kind, id, title: row.title, ...(row.number ? { number: row.number } : {}), ...(row.supplierName ? { supplier: row.supplierName } : {}), ...(row.currency ? { currency: row.currency } : {}), ...(row.amountMinor !== null ? { amountMinor: row.amountMinor } : {}), ...(row.date ? { date: row.date } : {}), ...(row.status ? { status: row.status } : {}), url: '/app?search=1&open=' + encodeURIComponent(kind + ':' + id), ...(row.body ? { excerpt: String(row.body).trim().slice(0, 240) } : {}), recordKind, recordId };
+    const body=String(row.body??'').trim(),at=query?body.toLowerCase().indexOf(query.toLowerCase()):-1;const excerpt=body.slice(Math.max(0,at-80),Math.max(0,at-80)+240);
+    return { kind, id, title: row.title, ...(row.number ? { number: row.number } : {}), ...(row.supplierName ? { supplier: row.supplierName } : {}), ...(row.currency ? { currency: row.currency } : {}), ...(row.amountMinor !== null ? { amountMinor: row.amountMinor } : {}), ...(row.date ? { date: row.date } : {}), ...(row.status ? { status: row.status } : {}), url: '/app?search=1&open=' + encodeURIComponent(kind + ':' + id), ...(body ? { excerpt } : {}), ...(row.sourceAttachment ? { sourceUrl:'/api/purse/download/attachment/'+encodeURIComponent(row.sourceAttachment) } : {}), recordKind, recordId };
 }
 
 searchApi.get('/api/purse/search/meta', async c => {
@@ -97,8 +98,8 @@ searchApi.get('/api/purse/search', async c => {
     const query = queryParts(filters, current);
     const [count, found] = await c.env.DB.batch<Data>([
         c.env.DB.prepare(query.prefix + 'SELECT count(*) AS total ' + query.from).bind(...query.params),
-        c.env.DB.prepare(query.prefix + `SELECT s.*,supplier.title AS supplierName ${query.from} ORDER BY s.date DESC,s.kind,s.id LIMIT ? OFFSET ?`).bind(...query.params, filters.limit, filters.offset),
+        c.env.DB.prepare(query.prefix + `SELECT s.*,supplier.title AS supplierName,(SELECT json_extract(value,'$.sourceDescriptor.attachment') FROM p_records source WHERE source.business=s.business AND source.kind=s.kind AND source.id=s.id AND s.kind IN ('invoiceReading','quoteReading')) AS sourceAttachment ${query.from} ORDER BY s.date DESC,s.kind,s.id LIMIT ? OFFSET ?`).bind(...query.params, filters.limit, filters.offset),
     ]);
     await readFence(c.env.DB, current.actor, current.revision);
-    return c.json({ results: found.results.map(result), total: Number(count.results[0].total), limit: filters.limit, offset: filters.offset });
+    return c.json({ results: found.results.map(row=>result(row,filters.q)), total: Number(count.results[0].total), limit: filters.limit, offset: filters.offset });
 });
