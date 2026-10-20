@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import {join} from 'node:path'
 import {session,api,current} from './browser-journey.mjs'
 
-export async function agreementsJourney(browser,root,origin,width,evidence){
+export async function agreementsJourney(browser,root,origin,width,evidence,{siteOrigin}={}){
  const owner=await session(browser,root,origin,'owner',width),buyer=await session(browser,root,origin,'buyer',width),requester=await session(browser,root,origin,'requester',width),approver=await session(browser,root,origin,'approver',width);
  try{
   const tag=width+'-'+crypto.randomUUID().slice(0,6),name='Annual maintenance '+tag,reference='AGR-'+tag;
@@ -22,7 +22,7 @@ export async function agreementsJourney(browser,root,origin,width,evidence){
   const before=(await current(owner.context,origin)).data.agreement.length;
   await owner.page.getByRole('button',{name:'Confirm agreement terms',exact:true}).click();assert.equal((await current(owner.context,origin)).data.agreement.length,before,'CONTRACT-001 nothing saved without explicit owner confirmation');
   await owner.page.screenshot({path:join(evidence,`CONTRACT-001-confirm-${width}.png`),fullPage:true});
-  await owner.page.getByRole('checkbox',{name:/I confirm these terms/}).check();let savedResponse=owner.page.waitForResponse(r=>r.url().endsWith('/command/agreement'));
+  await owner.page.getByLabel('Owner confirmation',{exact:true}).selectOption('confirm');let savedResponse=owner.page.waitForResponse(r=>r.url().endsWith('/command/agreement'));
   await owner.page.getByRole('button',{name:'Confirm agreement terms',exact:true}).click();assert.equal((await savedResponse).status(),200);await owner.page.getByRole('heading',{name:name+' · version 1',exact:true}).waitFor();
   const agreement=(await current(owner.context,origin)).data.agreement.find(a=>a.reference===reference);assert.ok(agreement);assert.equal(agreement.noticeDeadline,'2026-12-01');
   const region=owner.page.getByRole('region',{name:'Agreement detail'});await region.getByRole('link',{name:'Locket · LOCK-'+tag,exact:true}).waitFor();await region.getByText(/owner-recorded; not provider-verified/).waitFor();
@@ -31,15 +31,15 @@ export async function agreementsJourney(browser,root,origin,width,evidence){
   assert.equal((await current(owner.context,origin)).data.agreement.find(a=>a.id===agreement.id).spend.totals[0].amountMinor,60000);
   assert.equal(await owner.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'CONTRACT-001 agreement/detail/source fits '+width);
   await owner.page.screenshot({path:join(evidence,`CONTRACT-001-detail-${width}.png`),fullPage:true});
-  await fill('Notice days',90);await fill('Confirmation or correction reason','Corrected notice period from original '+tag);await owner.page.getByRole('checkbox',{name:/I confirm these terms/}).check();savedResponse=owner.page.waitForResponse(r=>r.url().endsWith('/command/agreement'));await owner.page.getByRole('button',{name:'Confirm agreement terms',exact:true}).click();assert.equal((await savedResponse).status(),200);await owner.page.getByRole('heading',{name:name+' · version 2',exact:true}).waitFor();
-  await region.getByText(/90-day notice · deadline 2026-11-01/).waitFor();await region.getByText('Confirmation and correction history',{exact:true}).click();await region.getByText('Owner reviewed agreement terms '+tag,{exact:false}).waitFor();
+  await fill('Notice days',90);await fill('Confirmation or correction reason','Corrected notice period from original '+tag);await owner.page.getByLabel('Owner confirmation',{exact:true}).selectOption('confirm');savedResponse=owner.page.waitForResponse(r=>r.url().endsWith('/command/agreement'));await owner.page.getByRole('button',{name:'Confirm agreement terms',exact:true}).click();assert.equal((await savedResponse).status(),200);await owner.page.getByRole('heading',{name:name+' · version 2',exact:true}).waitFor();
+  await region.getByText('Auto-renewal: Yes · 90-day notice · deadline 2026-11-01',{exact:true}).waitFor();await region.getByText('Confirmation and correction history',{exact:true}).click();await region.getByText('Owner reviewed agreement terms '+tag,{exact:false}).waitFor();
   await owner.page.screenshot({path:join(evidence,`CONTRACT-001-correction-${width}.png`),fullPage:true});
   await buyer.page.goto(origin+'/app?agreement='+agreement.id);await buyer.page.getByRole('heading',{name:name+' · version 2',exact:true}).waitFor();assert.equal(await buyer.page.getByRole('button',{name:'Confirm agreement terms',exact:true}).count(),0,'Buyer cannot confirm owner agreement terms');assert.equal(await buyer.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await buyer.page.screenshot({path:join(evidence,`CONTRACT-001-buyer-${width}.png`),fullPage:true});
   assert.equal((await current(requester.context,origin)).data.agreement.length,0);assert.equal(await requester.page.getByRole('navigation').getByRole('button',{name:'Agreements',exact:true}).count(),0);
   await buyer.page.goto(origin+'/app?search=1');await buyer.page.getByRole('heading',{name:'Search purchasing records',exact:true}).waitFor();await buyer.page.getByLabel('Number, supplier or text',{exact:true}).fill(reference);await buyer.page.getByLabel('Record type',{exact:true}).selectOption('agreement');await buyer.page.getByRole('button',{name:'Search records',exact:true}).click();await buyer.page.getByRole('link',{name,exact:true}).waitFor();await buyer.page.getByRole('link',{name,exact:true}).click();await buyer.page.getByRole('region',{name:'Purchasing record'}).waitFor();
   await buyer.page.screenshot({path:join(evidence,`CONTRACT-001-search-${width}.png`),fullPage:true});
-  const contract=await owner.context.newPage();const response=await contract.goto(origin+'/contract');assert.equal(response.status(),200);await contract.getByText('CONTRACT-001',{exact:true}).first().waitFor();await contract.screenshot({path:join(evidence,`CONTRACT-001-contract-${width}.png`),fullPage:true});await contract.close();
+  assert.ok(siteOrigin,'CONTRACT-001 uses rer dev’s declared run-site preview');const contract=await owner.context.newPage();const response=await contract.goto(siteOrigin+'/contract?q=CONTRACT-001#clauses');assert.equal(response.status(),200);const clause=contract.locator('[data-id="CONTRACT-001"]');await clause.waitFor();assert.equal(await clause.getAttribute('data-status'),'partial');await clause.scrollIntoViewIfNeeded();assert.equal(await contract.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Contract fits '+width);await contract.screenshot({path:join(evidence,`CONTRACT-001-contract-${width}.png`)});await clause.screenshot({path:join(evidence,`CONTRACT-001-contract-row-${width}.png`)});await contract.close();
   return {clause:'CONTRACT-001',slice:'Round A, partial',width,agreement:agreement.id,invoice:invoice.id,order:order.id};
  }catch(error){await owner.page.screenshot({path:join(evidence,`CONTRACT-001-failure-${width}.png`),fullPage:true});throw error;}finally{await owner.context.close();await buyer.context.close();await requester.context.close();await approver.context.close()}
 }
