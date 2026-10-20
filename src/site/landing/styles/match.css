@@ -67,7 +67,7 @@
   .r-text { position: relative; }
   .mrow-r1 .r-text::after { content: ""; position: absolute; left: -22px; right: 2.9em; top: calc(50% + 15px); height: 2px; background: var(--blue); }
   .note-back { position: absolute; right: 2px; bottom: -6px; }
-  .note-last { position: absolute; right: 14px; bottom: 2px; }
+  .note-last { position: absolute; right: 14px; bottom: -8px; }
   .mrow-r3 { height: 56px; font-size: 20px; }
   .cursor-luis { position: absolute; right: 14px; top: 26px; }
   .cursor-luis svg { transform: scaleX(-1); order: 2; }
@@ -97,6 +97,10 @@
   .match-results { grid-template-columns: minmax(0, 1fr); max-width: 640px; margin-inline: auto; gap: 34px; }
   .result-arrow { left: calc(50% - 12px); top: -32px; width: 24px; height: 24px; transform: rotate(90deg); }
 }
+@media (min-width: 1024px) and (max-width: 1339px) {
+  .mrow-r1, .mrow-r2 { align-items: flex-start; flex-direction: column; justify-content: center; white-space: normal; }
+  .mrow-r1 .r-text::after { display: none; }
+}
 @media (min-width: 1024px) and (max-width: 1439px) {
   .fan span { padding: 10px 6px; font-size: 13px; writing-mode: vertical-rl; text-align: left; }
 }
@@ -104,8 +108,7 @@
   .mdoc { padding: 0 16px; font-size: 15px; }
   .mdoc-title { font-size: clamp(24px, 2.4vw, 38px); }
   .mdoc-po .mdoc-meta, .mdoc-invoice .mdoc-meta { font-size: 14px; }
-  .mrow-r1, .mrow-r2 { align-items: flex-start; flex-direction: column; justify-content: center; white-space: normal; font-size: 14px; }
-  .mrow-r1 .r-text::after { display: none; }
+  .mrow-r1, .mrow-r2 { font-size: 14px; }
   .mrow-r3 { font-size: 18px; }
   .cursor-pill { padding: 3px 11px; font-size: 14px; }
   .cursor-luis { right: 10px; }

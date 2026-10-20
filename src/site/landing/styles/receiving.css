@@ -5,6 +5,7 @@
 .receiving .section-head .lead { max-width: 880px; }
 .dock-prompt { grid-area: prompt; justify-self: start; display: flex; align-items: center; gap: 14px; margin-top: 22px; padding: 12px 22px; border-radius: 12px; font-size: 18px; }
 .dock-prompt .dot { width: 18px; height: 18px; }
+.dock-prompt b { text-wrap: balance; }
 .dock-bays { grid-area: bays; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 18px; margin: 18px 0 0; padding: 0; list-style: none; }
 .bay { display: flex; flex-direction: column; min-width: 0; }
 .bay-art { display: block; width: 100%; height: auto; }

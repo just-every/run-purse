@@ -1,4 +1,4 @@
-/* 04 · Budget & approval: the "Same morning" tapes in a 300 px margin at left, the fork in the main column. The fork
+/* 04 · Budget & approval: the "Same morning" tapes in a 300 px margin at left (under the fork to 1380 px), the fork in the main column. The fork
    and the join are dotted kingfisher lines drawn with borders; the bars are to scale. */
 .budget { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 0 40px; align-items: start; }
 .budget-tapes { margin-top: 60px; }
@@ -46,7 +46,7 @@
 .budget-po .check { width: 22px; height: 22px; vertical-align: -4px; }
 .budget-note { margin-top: 22px; color: var(--muted); font-size: 17px; text-align: center; }
 
-@media (max-width: 1180px) {
+@media (max-width: 1380px) {
   .budget { grid-template-columns: minmax(0, 1fr); }
   .budget-tapes { order: 2; margin-top: 56px; }
   .budget-tapes ul { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
