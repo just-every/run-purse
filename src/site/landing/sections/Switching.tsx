@@ -3,7 +3,7 @@ import { Check } from '../parts/icons'
 import { SectionHead } from '../parts/SectionHead'
 import '../styles/switching.css'
 
-const before = [<>Tue Sep 22 ·<br />issued in Procurify</>, <>Wed Sep 23 ·<br />acknowledged</>, <>Tue Sep 29 ·<br />8 of 20 received</>]
+const before = [<>Tue Sep 22<br />issued in Procurify</>, <>Wed Sep 23<br />acknowledged</>, <>Tue Sep 29<br />8 of 20 received</>]
 const after = [<>Thu Oct 8 · 12 received at Columbus in Purse · <span className="nb">20 of 20<Check /></span></>, <>Fri Oct 9 · Uline invoice 7719320, $4,380.00, matched to <span className="nb">PO 3052<Check /></span></>, <>Bill linked to the QuickBooks PO Procurify had synced · one PO in <span className="nb">QuickBooks<Check /></span></>]
 
 /** 11 · Switching: PO 3052's life as one strip crossing the dashed Sat Oct 3 line, grey in Procurify and kingfisher in

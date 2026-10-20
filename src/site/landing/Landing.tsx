@@ -15,7 +15,7 @@ import { Switching } from './sections/Switching'
 
 /** The run site's homepage (run-purse.com), page-s1: Redbud Outdoor Co.'s four teams through two weeks of buying,
  *  one stage per section (intake, request, budget, new supplier, orders, receiving, the match and hold, the interlude,
- *  the books, the switch), the closing and the footer. Static; no script. */
+ *  the books, the switch), the closing and the footer. Static; keep-together.ts adds the one script. */
 export function Landing() {
   return (
     <>

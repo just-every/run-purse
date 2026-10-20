@@ -21,16 +21,16 @@
 .now li::before { background: var(--blue); }
 .now li::after { content: ""; position: absolute; top: -10px; left: calc(50% + 6px); width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; background: #1aa34a url('/site/check-white.svg') center / 14px no-repeat; }
 .switch-side .check { width: 18px; height: 18px; vertical-align: -3px; }
-.switch-foot { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.7fr) minmax(0, 1.1fr); gap: 36px; align-items: center; margin-top: 64px; }
+.switch-foot { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.66fr) minmax(0, 1.1fr); gap: 36px; align-items: center; margin-top: 64px; }
 .switch-foot > p { display: flex; gap: 18px; font-size: 19px; line-height: 1.45; }
 .switch-foot > p + p { padding-left: 36px; border-left: 1px solid var(--hair); }
 .switch-foot .dot { margin-top: 3px; width: 30px; height: 30px; }
-.terminal { padding: 18px 24px 20px; border-radius: 12px; background: #121820; color: #e8edf2; }
+.terminal { padding: 18px 20px 20px; border-radius: 12px; background: #121820; color: #e8edf2; }
 .terminal-lights { display: flex; gap: 8px; }
 .terminal-lights i { width: 13px; height: 13px; border-radius: 50%; background: #ff5f57; }
 .terminal-lights i:nth-child(2) { background: #febc2e; }
 .terminal-lights i:nth-child(3) { background: #28c840; }
-.terminal pre { margin: 14px 0 0; font: 500 16px/1.75 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; }
+.terminal pre { margin: 14px 0 0; font: 500 14.5px/1.75 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; }
 .terminal .prompt { color: #9aa4ae; }
 .terminal .ready { color: #4ade80; }
 

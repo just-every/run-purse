@@ -19,7 +19,7 @@ export function Request() {
         Nikhil asked in Teams. The agent found the laptop Engineering always buys, coded it and showed who would decide. Nikhil submitted.
       </SectionHead>
       <div className="request-thread card" aria-label="Microsoft Teams thread">
-        <p className="request-thread-head"><Glyph team="engineering" /><b>Engineering</b> · Teams · Nikhil Rao</p>
+        <p className="request-thread-head"><Glyph team="engineering" /><span><b>Engineering</b> · Teams · Nikhil Rao</span></p>
         <ol>
           {thread.map((message, index) => (
             <li key={index} className={message.who === 'Purse agent' ? 'bubble agent' : 'bubble'}>
@@ -31,9 +31,9 @@ export function Request() {
       </div>
       <div className="request-draft card">
         <p className="draft-title"><Glyph team="engineering" /><span>Draft · <span className="nb">Nikhil Rao · Engineering</span></span></p>
-        <p className="draft-row draft-line"><span className="draft-tie" aria-hidden="true" />3 × Laptop 14-inch, 32 GB · KT-L14-32 · Keystone Tech · <span className="nb">$1,489.00 each</span> = <b>$4,467.00</b><span className="src src-above"><span className="dot" aria-hidden="true" />catalog item KT-L14-32</span><span className="src src-below"><span className="dot" aria-hidden="true" />4 past orders, Aug 3 – Oct 5</span></p>
+        <p className="draft-row draft-line"><span className="draft-tie" aria-hidden="true" />3 × Laptop 14-inch, 32 GB · KT-L14-32 · Keystone Tech · <span className="nb">$1,489.00 each</span> = <b>$4,467.00</b><span className="src src-above"><span className="dot" aria-hidden="true" /><span>catalog item KT-L14-32</span></span><span className="src src-below"><span className="dot" aria-hidden="true" /><span>4 past orders, Aug 3 – Oct 5</span></span></p>
         <p className="draft-row">GL 6420 Computer equipment · <span className="nb"><Glyph team="engineering" /> Engineering</span> · Austin office</p>
-        <p className="draft-row draft-need"><span className="draft-tie" aria-hidden="true" />Need by Wed Oct 28 · ship to Austin office<span className="src src-mid"><span className="dot" aria-hidden="true" />start date in your message, Mon Nov 2</span></p>
+        <p className="draft-row draft-need"><span className="draft-tie" aria-hidden="true" />Need by Wed Oct 28 · ship to Austin office<span className="src src-mid"><span className="dot" aria-hidden="true" /><span>start date in your message, Mon Nov 2</span></span></p>
         <p className="draft-row">Budget: <span className="nb"><Glyph team="engineering" /> Engineering Q4 equipment</span> · <span className="nb">fits<Check /></span></p>
         <p className="draft-row">Decides: Sam Okafor · <span className="nb"><Glyph team="engineering" /> Engineering,</span> under $5,000</p>
       </div>

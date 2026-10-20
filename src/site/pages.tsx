@@ -14,7 +14,8 @@ import './shell/site.css'
 /**
  * The run site (run-purse.com), written by `rer build --site`: the landing at `/`, whose Run Purse opens the Run page
  * at `/run`; the docs at `/docs` and `/docs/<slug>`, rendered from docs/site.json and docs/*.md; /contract from CONTRACT.md; and the not-found
- * page. Every page is static, needs no script and links no instance-only route. The installed app's `/` is the Lobby.
+ * page. Every page is static and links no instance-only route; the homepage's one inline script only hides a "·" that a
+ * line break leaves at a line's end. The installed app's `/` is the Lobby.
  */
 export function sitePages({ styles, contract }: SiteContext): SiteBuild {
   const document = ({ title, description }: { title: string; description: string }, body: ReactElement) => '<!doctype html>' + renderToStaticMarkup(

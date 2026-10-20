@@ -10,8 +10,8 @@ const halves: { team: Team; label: string; budget: string; total: number; parts:
 ]
 const money = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2 })
 const tapes = [
-  { title: <>Ana’s booth kit · <span className="nb">Marketing Q4 events</span></>, sum: <>$60,000.00 − $41,200.00 − $3,940.00 = <span className="nb">$14,860.00 left<Check /></span></>, foot: <>Carla Mendes · Slack · <Done>9:58 am</Done></> },
-  { title: <>Nikhil’s laptops · <span className="nb">Engineering Q4 equipment</span></>, sum: <span className="nb">$7,113.00 left<Check /></span>, foot: <>Sam Okafor · Teams · <Done>10:12 am</Done></> },
+  { title: <>Ana’s booth kit · <span className="nb">Marketing Q4 events</span></>, sum: <>$60,000.00 − $41,200.00 − $3,940.00 = <span className="nb">$14,860.00 left<Check /></span></>, foot: <span>Carla Mendes · Slack · <Done>9:58 am</Done></span> },
+  { title: <>Nikhil’s laptops · <span className="nb">Engineering Q4 equipment</span></>, sum: <span className="nb">$7,113.00 left<Check /></span>, foot: <span>Sam Okafor · Teams · <Done>10:12 am</Done></span> },
   { title: <>Kim’s gloves · <span className="nb">Columbus operating supplies</span></>, foot: <><span>Ray Dawson · phone · <Done>9:38 am</Done></span><span>PO 3104 9:41 am</span></> },
 ]
 
@@ -52,7 +52,7 @@ export function Budget() {
                     {half.parts.map(([kind, n]) => <span key={kind} className={`bar-${kind}`} style={{ width: `${(n / half.total) * 100}%` }} />)}
                     <span className="bar-left" style={{ width: `${((half.total - used) / half.total) * 100}%` }} />
                   </div>
-                  <p className="half-sums">{half.parts.map(([kind, n]) => <span key={kind}>{kind} {money(n)} · </span>)}<span className="nb">left {half.left}<Check /></span></p>
+                  <p className="half-sums"><span>actual {money(half.parts[0][1])} · committed {money(half.parts[1][1])}</span> <span>this {money(half.parts[2][1])} · <span className="nb">left {half.left}<Check /></span></span></p>
                 </div>
                 <p className="half-approver card"><span className={`dot ${half.dot}`} aria-hidden="true" /><span><b>{half.approver}</b> · {half.channel} · <Done>{half.time}</Done></span></p>
               </div>

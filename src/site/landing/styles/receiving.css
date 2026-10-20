@@ -1,20 +1,20 @@
 /* 07 · Receiving: the 3 × 3 bay grid at left with the receive card beside it, the Austin strip along the foot. Each
    bay's label card overlaps the front of its yellow-marked floor. */
-.receiving { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); grid-template-areas: "head head" "prompt prompt" "bays card" "foot foot"; gap: 0 32px; }
+.receiving { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 320px); grid-template-areas: "head head" "prompt prompt" "bays card" "foot foot"; gap: 0 28px; }
 .receiving .section-head { grid-area: head; }
 .receiving .section-head .lead { max-width: 880px; }
 .dock-prompt { grid-area: prompt; justify-self: start; display: flex; align-items: center; gap: 14px; margin-top: 22px; padding: 12px 22px; border-radius: 12px; font-size: 18px; }
 .dock-prompt .dot { width: 18px; height: 18px; }
-.dock-bays { grid-area: bays; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 22px; margin: 18px 0 0; padding: 0; list-style: none; }
+.dock-bays { grid-area: bays; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 18px; margin: 18px 0 0; padding: 0; list-style: none; }
 .bay { display: flex; flex-direction: column; min-width: 0; }
 .bay-art { display: block; width: 100%; height: auto; }
-.bay-label { display: flex; gap: 12px; margin-top: -14px; padding: 12px 14px 12px 12px; border-radius: 10px; font-size: 15px; line-height: 1.38; }
-.bay-label .glyph { width: 44px; height: 44px; margin-top: 2px; }
+.bay-label { display: flex; gap: 10px; margin-top: -14px; padding: 12px 12px 12px 10px; border-radius: 10px; font-size: 14px; line-height: 1.4; }
+.bay-label .glyph { width: 34px; height: 34px; margin-top: 2px; }
 .bay-label .pill { margin-top: 4px; font-size: 14px; }
-.receive-card { grid-area: card; align-self: center; padding: 26px 26px 22px; border-radius: 16px; font-size: 18px; }
+.receive-card { grid-area: card; align-self: center; padding: 24px 22px 20px; border-radius: 16px; font-size: 17px; }
 .receive-card > p:not(.receive-title) { padding: 16px 0; border-top: 1px solid var(--hair); }
-.receive-title { display: flex; align-items: center; gap: 16px; padding-bottom: 22px; font: 900 22px/1.25 var(--site-slab); color: var(--ink); }
-.receive-title .glyph { width: 60px; height: 60px; }
+.receive-title { display: flex; align-items: center; gap: 14px; padding-bottom: 20px; font: 900 21px/1.25 var(--site-slab); color: var(--ink); }
+.receive-title .glyph { width: 52px; height: 52px; }
 .receive-saved { font-size: 21px; font-weight: 700; }
 .dock-foot { grid-area: foot; display: flex; align-items: center; justify-content: space-between; gap: 16px 24px; margin-top: 26px; padding: 12px 12px 12px 22px; border-radius: 14px; font-size: 17px; line-height: 1.45; }
 .dock-foot .dot { margin-right: 10px; width: 18px; height: 18px; vertical-align: -3px; }
@@ -24,7 +24,7 @@
 @media (max-width: 1300px) {
   .dock-foot { flex-direction: column; align-items: flex-start; }
 }
-@media (max-width: 1180px) {
+@media (max-width: 1399px) {
   .receiving { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "prompt" "bays" "card" "foot"; }
   .receive-card { margin-top: 28px; justify-self: start; width: min(100%, 520px); }
 }

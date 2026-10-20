@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { Arrow, Done } from '../parts/icons'
 import { Plate } from '../parts/Plate'
 import { SiteHeader } from '../../shell/SiteHeader'
@@ -10,6 +11,13 @@ function Shelves() {
   )
   return <span className="hero-shelves">{shelf(false)}{shelf(true)}</span>
 }
+
+// The phone crops of each scene (canvas units of its plate, 640 or 578 × 1024): the dock as two crops, so its painted
+// carton labels ("Operations / nitrile gloves", "Facilities / wire shelving") draw at 13 px or more at 390.
+const crops = {
+  dock: { width: 640, boxes: [[18, 300, 316, 286], [176, 726, 316, 286]] },
+  office: { width: 578, boxes: [[96, 84, 482, 560]] },
+} as const
 
 const cards = [
   { id: 'dock', scene: 'dock', dot: '', lines: [<><b>Columbus dock</b> · <b>Thu Oct 22</b></>, '9 deliveries for 4 teams'] },
@@ -33,7 +41,8 @@ function HeroCard({ card }: { card: (typeof cards)[number] }) {
  * The approved hero B: the Columbus dock and the Austin office on Thu Oct 22 around the white centre column. The plate
  * is 12ui's clean redraw of hero-1536.png (no text); the header, headline, subhead, the free line, the actions and the
  * five cards are HTML. From 1280 px the section is the image's own 1536 × 1024 canvas (--u is one canvas pixel) with
- * every piece at its drawn place; narrower, the copy comes first and the two scenes follow, each with its own cards.
+ * every piece at its drawn place; narrower, the copy comes first and the two scenes follow, each with its own cards; phones show the scenes as
+ * full-width crops under the cards.
  */
 export function Hero() {
   return (
@@ -55,7 +64,12 @@ export function Hero() {
         </div>
         {(['dock', 'office'] as const).map(scene => (
           <div key={scene} className={`hero-scene hero-scene-${scene}`}>
-            <Plate className="hero-scene-art" name={`hero-${scene}`} widths={scene === 'dock' ? [400, 640, 960, 1280] : [400, 580, 870, 1156]} sizes="(max-width: 760px) 50vw, 46vw" width={scene === 'dock' ? 640 : 578} height={1024} />
+            <Plate className="hero-scene-art" name={`hero-${scene}`} widths={scene === 'dock' ? [400, 640, 960, 1280] : [400, 580, 870, 1156]} sizes="46vw" width={scene === 'dock' ? 640 : 578} height={1024} />
+            {crops[scene].boxes.map(([x, y, w, h]) => (
+              <div key={y} className="hero-crop" style={{ '--iw': crops[scene].width, '--x': x, '--y': y, '--w': w, '--h': h } as CSSProperties}>
+                <Plate name={`hero-${scene}`} widths={scene === 'dock' ? [400, 640, 960, 1280] : [400, 580, 870, 1156]} sizes={`${Math.ceil(crops[scene].width / w * 100)}vw`} width={crops[scene].width} height={1024} />
+              </div>
+            ))}
             <ul className="hero-cards" aria-label={scene === 'dock' ? 'Columbus dock, Thu Oct 22' : 'Austin office, Thu Oct 22'}>
               {cards.filter(card => card.scene === scene).map(card => <HeroCard key={card.id} card={card} />)}
             </ul>

@@ -4,10 +4,10 @@ import { Plate } from '../parts/Plate'
 import '../styles/scenes.css'
 
 const teams: { team: Team; first: string; second: string }[] = [
-  { team: 'marketing', first: 'Booth up in Houston ·', second: 'Thu Nov 12' },
-  { team: 'engineering', first: '3 new engineers ·', second: 'laptops ready Mon Nov 2' },
-  { team: 'facilities', first: '12 of 12 shelving units ·', second: '8 of 8 desks' },
-  { team: 'operations', first: '40 boxes of gloves ·', second: 'on the shelves in aisle 14' },
+  { team: 'marketing', first: 'Booth up in Houston', second: 'Thu Nov 12' },
+  { team: 'engineering', first: '3 new engineers', second: 'laptops ready Mon Nov 2' },
+  { team: 'facilities', first: '12 of 12 shelving units', second: '8 of 8 desks' },
+  { team: 'operations', first: '40 boxes of gloves', second: 'on the shelves in aisle 14' },
 ]
 
 /** 12 · Closing: Redbud's booth at the Gulf Coast Outdoor Expo in Houston on Thu Nov 12 (a vignette), four team cards

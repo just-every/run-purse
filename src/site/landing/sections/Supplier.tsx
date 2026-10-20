@@ -49,7 +49,7 @@ export function Supplier() {
         <div className="record-head">
           <span className="dot" aria-hidden="true" />
           <div>
-            <p className="record-name">Lone Star Displays LLC · <span className="nb">Dallas, TX</span></p>
+            <p className="record-name">Lone Star Displays LLC · <span className="record-place">Dallas, TX</span></p>
             <p className="record-added"><span>added Tue Oct 20 · Marketing</span><Glyph team="marketing" /></p>
           </div>
         </div>

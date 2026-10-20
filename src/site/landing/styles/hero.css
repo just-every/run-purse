@@ -1,7 +1,7 @@
 /* The hero (page-01, hero B). From 1280 px: the 1536 x 1024 canvas, --u = one canvas pixel, every piece at its drawn
    place (headline y 120-300, Run Purse at y 556, so it sits above the fold at 1440 x 900). 761-1279: header bar, copy
    centred, then the dock and the office side by side, each scene over its own cards. Phones: copy, the five cards
-   stacked whole, then the two scenes as a two-column stack. */
+   stacked whole, then the scenes one per row as full-width crops (the dock as two, so its carton labels read). */
 .hero { container-type: inline-size; }
 .hero-canvas { position: relative; }
 .hero-card { display: flex; gap: 10px; align-items: flex-start; padding: 12px 18px 13px 14px; list-style: none; color: var(--text); font-size: 15px; line-height: 1.32; }
@@ -16,8 +16,9 @@
 .hero-shelves { display: flex; gap: 8px; align-self: center; margin-left: 10px; }
 .hero-shelves svg { width: 30px; height: 44px; }
 .hero-cards { margin: 0; padding: 0; list-style: none; }
+.hero-crop { display: none; }
 .hero h1 { font: 900 64px/0.9 var(--site-slab); letter-spacing: -0.022em; word-spacing: 0.03em; color: var(--ink); }
-.hero h1 span { display: block; }
+.hero h1 > span { display: block; }
 .hero h1 .l2 { color: var(--tang); }
 .hero-sub { color: var(--text); text-wrap: pretty; }
 .hero-free { color: var(--text); }
@@ -36,7 +37,7 @@
   .hero-header nav a { font-size: calc(17 * var(--u)); }
   .hero-copy { position: absolute; top: calc(122 * var(--u)); left: calc(498 * var(--u)); width: calc(560 * var(--u)); text-align: center; }
   .hero h1 { font-size: calc(63 * var(--u)); line-height: 0.98; }
-  .hero h1 .l2 { letter-spacing: -0.04em; white-space: nowrap; }
+  .hero h1 .l2 { font-size: 0.955em; letter-spacing: -0.05em; white-space: nowrap; }
   .hero-sub { margin: calc(30 * var(--u)) auto 0; width: calc(470 * var(--u)); font-size: calc(21 * var(--u)); line-height: 1.34; }
   .hero-free { margin: calc(22 * var(--u)) auto 0; font-size: calc(20 * var(--u)); line-height: 1.4; }
   .hero-free .names { display: block; }
@@ -83,6 +84,8 @@
   .hero-links .text-link { font-size: 17px; }
   .hero-scene { display: contents; }
   .hero-cards { grid-column: 1 / -1; order: 1; margin-bottom: 12px; }
-  .hero-scene-art { order: 2; margin-top: 12px; }
+  .hero-scene-art { display: none; }
+  .hero-crop { display: block; grid-column: 1 / -1; order: 2; position: relative; margin-top: 12px; overflow: hidden; aspect-ratio: var(--w) / var(--h); border-radius: 14px; }
+  .hero-crop img { position: absolute; top: 0; left: 0; display: block; max-width: none; width: calc(var(--iw) / var(--w) * 100%); height: auto; transform: translate(calc(var(--x) / var(--iw) * -100%), calc(var(--y) / 1024 * -100%)); }
   .hero-card { font-size: 15px; }
 }

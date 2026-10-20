@@ -1,11 +1,11 @@
 /* 10 · Books: the zipper (Purse bill, tie, QuickBooks bill, grey side note) over the green tie-out bar and the accrual. */
-.zipper { display: grid; grid-template-columns: minmax(0, 1fr) 56px minmax(0, 430px) 236px; column-gap: 0; row-gap: 16px; margin-top: 44px; }
+.zipper { display: grid; grid-template-columns: minmax(0, 1fr) 48px minmax(0, 400px) 220px; column-gap: 0; row-gap: 16px; margin-top: 44px; }
 .zip-col { font: 900 30px/1.2 var(--site-slab); color: var(--ink); }
 .zip-col-qbo { grid-column: 3; }
 .zip-row { display: contents; }
 .zip-purse { grid-column: 1; display: flex; align-items: center; gap: 18px; padding: 16px 22px; font-size: 17.5px; line-height: 1.45; }
 .zip-purse > .dot { align-self: flex-start; margin-top: 6px; width: 18px; height: 18px; }
-.zip-purse > .glyph { width: 76px; height: 76px; }
+.zip-purse > .glyph { width: 64px; height: 64px; }
 .zip-purse .split .glyph { width: 26px; height: 26px; margin-right: 6px; vertical-align: -7px; }
 .zip-tie { grid-column: 2; align-self: center; position: relative; height: 4px; margin: 0 4px; background: var(--blue); border-radius: 2px; }
 .zip-tie::before, .zip-tie::after { content: ""; position: absolute; top: -5px; width: 14px; height: 14px; border-radius: 50%; background: var(--blue); }
@@ -14,8 +14,8 @@
 .zip-qbo { grid-column: 3; display: flex; align-items: center; gap: 16px; padding: 16px 22px; font-size: 18px; }
 .zip-qbo .dot { width: 18px; height: 18px; }
 .zip-qbo .check { width: 22px; height: 22px; vertical-align: -4px; }
-.zip-note { grid-column: 4; align-self: center; position: relative; margin-left: 46px; color: var(--muted); font-size: 14.5px; line-height: 1.38; }
-.zip-note::before { content: ""; position: absolute; left: -42px; top: 10px; width: 36px; border-top: 1.5px solid #9aa1a8; transform: rotate(-26deg); transform-origin: right; }
+.zip-note { grid-column: 4; align-self: center; position: relative; margin-left: 40px; color: var(--muted); font-size: 14.5px; line-height: 1.38; }
+.zip-note::before { content: ""; position: absolute; left: -38px; top: 10px; width: 36px; border-top: 1.5px solid #9aa1a8; transform: rotate(-26deg); transform-origin: right; }
 .tieout { display: flex; align-items: center; gap: 16px; margin-top: 26px; padding: 14px 22px; border-color: #bfe3c9; background: #f1faf3; font-size: 18px; line-height: 1.45; }
 .tieout .dot { width: 18px; height: 18px; }
 .tieout .check { width: 22px; height: 22px; vertical-align: -4px; }

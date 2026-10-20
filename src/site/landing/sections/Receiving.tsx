@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { Bay, type Delivery } from '../drawings/Bay'
 import { Glyph, teamName, type Team } from '../parts/Glyph'
 import { Check, Done } from '../parts/icons'
@@ -35,7 +36,7 @@ export function Receiving() {
               <div>
                 <p><b>PO {bay.po} · {teamName[bay.team]}</b></p>
                 <p>{bay.supplier}</p>
-                <p>{bay.what} · {bay.open ? <span className="nb">{bay.time}</span> : <Done>{bay.time}</Done>}</p>
+                <p>{bay.what.split(', ').map((part, index) => <Fragment key={part}>{index > 0 && ', '}<span className="nb">{part}</span></Fragment>)} · {bay.open ? <span className="nb">{bay.time}</span> : <Done>{bay.time}</Done>}</p>
                 {bay.open && <p><span className="pill">{bay.open}</span></p>}
               </div>
             </div>
@@ -49,7 +50,7 @@ export function Receiving() {
         <p className="done receive-saved">Saved 10:32 am<Check /></p>
       </div>
       <div className="dock-foot card">
-        <p><span className="dot" aria-hidden="true" /><b>Austin office</b> · Megan Foster · PO 3108 desks 8 of 8 <Done>11:05 am</Done> · PO 3109 booth kit <Done>1:30 pm</Done> · PO 3107 laptops 3 of 3 <Done>2:10 pm</Done></p>
+        <p><span className="dot" aria-hidden="true" /><b>Austin office</b> · Megan Foster · PO 3108 desks 8 of 8 · <Done>11:05 am</Done> · PO 3109 booth kit · <Done>1:30 pm</Done> · PO 3107 laptops 3 of 3 · <Done>2:10 pm</Done></p>
         <p className="dock-total">Columbus 9 of 9 deliveries checked in · <span className="nb">Austin 3 of 3<Check /></span></p>
       </div>
     </section>

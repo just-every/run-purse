@@ -33,7 +33,7 @@ export function Orders() {
         <p className="po-company">Redbud Outdoor Co.</p>
         <p className="po-number"><b>Purchase order 3107</b> · Mon Oct 19</p>
         <p className="po-block"><b>To</b> Keystone Tech, order desk<br /><b>Ship to</b> Redbud Outdoor Co., Austin office</p>
-        <p className="po-block">KT-L14-32 · Laptop 14-inch, 32 GB ·<br />3 × $1,489.00 = $4,467.00</p>
+        <p className="po-block">KT-L14-32 · Laptop 14-inch, 32 GB<br />3 × $1,489.00 = $4,467.00</p>
         <p className="po-block"><b>Need by</b> Wed Oct 28 · Net 30</p>
         <p className="po-total"><b>Total</b><b className="po-sum">$4,467.00</b></p>
         <p className="po-ack">Acknowledge this order <Arrow /></p>

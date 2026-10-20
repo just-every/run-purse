@@ -5,10 +5,10 @@ import { SectionHead } from '../parts/SectionHead'
 import '../styles/books.css'
 
 const bills: { team: Team; purse: ReactNode; qbo: ReactNode; note?: string }[] = [
-  { team: 'operations', purse: <><p>Amazon Business · invoice 1WQK-3NVR-7HTD ·</p><p>PO 3104 · Operations · $980.00 · matched Thu Oct 22</p></>, qbo: <>Bill 4812 · PO 3104 · PDF attached</>, note: 'Fri Oct 23, 8:10 am · the same invoice arrived again as a PDF · not entered twice' },
+  { team: 'operations', purse: <><p>Amazon Business · invoice 1WQK-3NVR-7HTD</p><p>PO 3104 · Operations · $980.00 · matched Thu Oct 22</p></>, qbo: <>Bill 4812 · PO 3104 · PDF attached</>, note: 'Fri Oct 23, 8:10 am · the same invoice arrived again as a PDF · not entered twice' },
   { team: 'facilities', purse: <><p>Brazos Office Furniture · BOF-7731 · PO 3108 · $3,296.00</p><p className="split"><span className="nb"><Glyph team="marketing" />Marketing $1,648.00</span> · <span className="nb"><Glyph team="engineering" />Engineering $1,648.00</span></p><p>matched Fri Oct 23</p></>, qbo: <>Bill 4813 · 2 lines, coded to each department</> },
-  { team: 'engineering', purse: <><p>Keystone Tech · K-55120 · PO 3107 ·</p><p>Engineering · $4,467.00 · matched Fri Oct 23</p></>, qbo: <>Bill 4815 · PO 3107 · PDF attached</> },
-  { team: 'facilities', purse: <><p>Hartwell Supply · HS-88412 · PO 3081 ·</p><p>Facilities · $2,364.00 · matched Tue Oct 27</p></>, qbo: <>Bill 4821 · paid by ACH Fri Oct 30</>, note: 'Tue 10:45 am · QuickBooks timed out · retried 10:46 · still one bill' },
+  { team: 'engineering', purse: <><p>Keystone Tech · K-55120 · PO 3107</p><p>Engineering · $4,467.00 · matched Fri Oct 23</p></>, qbo: <>Bill 4815 · PO 3107 · PDF attached</> },
+  { team: 'facilities', purse: <><p>Hartwell Supply · HS-88412 · PO 3081</p><p>Facilities · $2,364.00 · matched Tue Oct 27</p></>, qbo: <>Bill 4821 · paid by ACH Fri Oct 30</>, note: 'Tue 10:45 am · QuickBooks timed out · retried 10:46 · still one bill' },
 ]
 
 /** 10 · Books: four Purse bills zipped to their QuickBooks Online bills with grey side notes for the repeat PDF and the
