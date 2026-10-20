@@ -129,7 +129,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
     }
     if (op === 'attachment') {
         const kind = text(b.kind, 'Record kind');
-        requireThat(['request', 'supplier', 'order', 'invoice'].includes(kind), 'Unsupported attachment record');
+        requireThat(['request', 'supplier', 'order', 'invoice', 'agreement'].includes(kind), 'Unsupported attachment record');
         const r = get(s, kind, b.record);
         requireThat(b.privateSupplierDocument === undefined || typeof b.privateSupplierDocument === 'boolean', 'Private supplier document flag must be boolean');
         requireThat(!b.privateSupplierDocument || kind === 'supplier', 'Private compliance evidence belongs to a supplier');
@@ -138,7 +138,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             own(s, a, r);
         }
         else
-            can(s, a, kind === 'supplier' ? 'buyer' : kind === 'invoice' ? 'buyer' : 'receiver');
+            can(s, a, kind === 'agreement' ? 'owner' : kind === 'supplier' ? 'buyer' : kind === 'invoice' ? 'buyer' : 'receiver');
         requireThat(typeof b.base64 === 'string' && b.base64.length > 0 && b.base64.length <= 1400000, 'Attachment must contain up to 1 MB of bytes');
         let bytes;
         try {

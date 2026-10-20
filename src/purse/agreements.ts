@@ -1,6 +1,8 @@
+import { confirmAgreementReading } from './agreement-reading';
+import { moneyInput } from './money';
 import { canonicalSupplier } from './supplier-identity';
 import { currency } from './admin';
-import { all, audit, can, date, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
+import { all, audit, can, date, get, put, requireThat, text, uid, quantity, extended, minor, type Actor, type Data, type State } from './types';
 
 const integer = (v: unknown, label: string, min: number, max: number) => {
     requireThat(Number.isSafeInteger(v) && Number(v) >= min && Number(v) <= max, `${label} must be an integer from ${min} to ${max}`);
@@ -24,7 +26,7 @@ export const noticeDeadline = (endDate: string, noticeDays: number) => new Date(
 export function agreementDay(s: State, now: number) {
     return new Intl.DateTimeFormat('en-CA', { timeZone: get(s,'business','main').timezone || 'America/New_York' }).format(new Date(now));
 }
-/** Round A stores confirmed terms, not a monetary value or an extracted/awarded price. */
+/** Only explicit current-owner confirmation creates a versioned agreement. */
 export function agreements(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if (!['agreement','agreement-invoice'].includes(op)) return;
     can(s,a,'owner');
@@ -38,7 +40,7 @@ export function agreements(s: State, a: Actor, op: string, b: Data): Data | unde
         requireThat(Number.isSafeInteger(row.amountMinor), 'Invoice total is too large');
         put(s,'agreementInvoice',row.id,row);audit(s,a,op,agreement.id,{ attribution: row.id, invoice: invoice.id, order: order.id, reason: row.reason });return row;
     }
-    for (const field of ['value','valueMinor','totalMinor','firstOffer','awardedPrice','reading']) requireThat(!Object.hasOwn(b,field),'Agreement value, extraction and savings are not available yet');
+    requireThat(b.priceLines==null||Array.isArray(b.priceLines),'Price schedule must be an array');
     const previous = b.id ? get(s,'agreement',b.id) : undefined;
     requireThat(b.version === (previous?.version ?? 0),'Agreement changed; reload before confirming',409);
     requireThat(b.confirmed === true,'The owner must explicitly confirm these agreement terms');
@@ -51,9 +53,18 @@ export function agreements(s: State, a: Actor, op: string, b: Data): Data | unde
     const noticeDays = integer(b.noticeDays,'Notice days',0,3650), deadline = noticeDeadline(endDate,noticeDays);
     requireThat(Array.isArray(b.reminderDays) && b.reminderDays.length > 0 && b.reminderDays.length <= 12,'Configure 1–12 reminder intervals');
     const reminderDays = [...new Set(b.reminderDays.map((n: unknown)=>integer(n,'Reminder days before notice deadline',1,365)))].sort((a,b)=>b-a);
+    const valueMinor = moneyInput(!Object.hasOwn(b,'valueAmount')&&!Object.hasOwn(b,'valueMinor')?{valueMinor:null}:b,'valueAmount','valueMinor','Agreement value',{optional:true});
+    const firstOfferMinor = moneyInput(!Object.hasOwn(b,'firstOfferAmount')&&!Object.hasOwn(b,'firstOfferMinor')?{firstOfferMinor:null}:b,'firstOfferAmount','firstOfferMinor','First offered agreement price',{optional:true});
+    const firstOfferSource = firstOfferMinor === null ? null : text(b.firstOfferSource,'First-offer source');
+    const awardSource = firstOfferMinor === null ? null : text(b.awardSource,'Awarded-price source');
+    requireThat(firstOfferMinor === null || valueMinor !== null,'Confirm the awarded agreement value with its first offer');
+    const priceLines = b.priceLines == null ? null : b.priceLines.map((l:Data)=>({description:text(l.description,'Price item'),quantity:String(l.quantity),q:quantity(l.quantity),unit:text(l.unit??'each','Price unit'),partNumber:l.partNumber?text(l.partNumber,'Price SKU'):null,firstUnitMinor:minor(l.firstUnitMinor,'First unit price'),awardedUnitMinor:minor(l.awardedUnitMinor,'Awarded unit price')}));
+    requireThat(priceLines===null || Array.isArray(b.priceLines)&&priceLines.length>0&&priceLines.length<=100,'Confirm 1–100 price schedule lines');
+    if(priceLines) requireThat(priceLines.reduce((n:number,l:Data)=>n+extended(l.q,l.firstUnitMinor),0)===firstOfferMinor && priceLines.reduce((n:number,l:Data)=>n+extended(l.q,l.awardedUnitMinor),0)===valueMinor,'Price schedule totals must equal the confirmed first offer and awarded agreement value');
+    const reading = b.reading ? confirmAgreementReading(s,a,{...b,valueMinor,firstOfferMinor},previous) : null;
     const id = previous?.id ?? uid(), now = new Date().toISOString();
     const revision = { version: (previous?.version ?? 0)+1, name: text(b.name,'Agreement name',300), reference: text(b.reference,'Agreement reference',300), supplier: supplier.id, currency: b.currency,
-        parties: text(b.parties,'Parties'), startDate, endDate, autoRenew: b.autoRenew, noticeDays, noticeDeadline: deadline,
+        searchText: reading ? get(s,'agreementReading',reading.id).searchText??'' : '', valueMinor, firstOfferMinor, priceLines, firstOfferSource, awardSource, reading, totalMinor:valueMinor, parties: text(b.parties,'Parties'), startDate, endDate, autoRenew: b.autoRenew, noticeDays, noticeDeadline: deadline,
         paymentTerms: text(b.paymentTerms,'Payment terms'), owner: a.id, ownerEmail: a.email, reminderDays, remindersEnabled: b.remindersEnabled,
         clm: reference(b.clm,'CLM'), signature: reference(b.signature,'Signature',true), reason: text(b.reason,'Confirmation or correction reason'), confirmedBy: a.id, at: now };
     const result = { ...revision, id, createdAt: previous?.createdAt ?? now, history: [...(previous?.history ?? []),revision] };
@@ -69,5 +80,5 @@ export function agreementSpend(s: State, id: string) {
 }
 export function visibleAgreements(s: State, a: Actor) {
     can(s,a,'buyer');
-    return { agreement: all(s,'agreement').map(r=>({ ...r, spend: agreementSpend(s,r.id) })), agreementInvoice: all(s,'agreementInvoice'), agreementReminder: all(s,'agreementReminder') };
+    return { agreement: all(s,'agreement').map(r=>({ ...r, spend: agreementSpend(s,r.id) })), agreementInvoice: all(s,'agreementInvoice'), agreementReminder: all(s,'agreementReminder'), agreementAward: all(s,'agreementAward') };
 }

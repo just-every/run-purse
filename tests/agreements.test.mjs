@@ -18,7 +18,7 @@ test('CONTRACT-001 round A owner-confirmed agreement history, exact invoice attr
  await cmd('agreement',{...base,confirmed:false},h.owner,400);
  for(const cookie of [requester,buyer,approver,receiver])await cmd('agreement',base,cookie,403);
  await cmd('agreement',base,'',401);
- for(const invalid of [{endDate:'2026-02-30'},{startDate:'2027-02-01'},{noticeDays:-1},{noticeDays:0.5},{reminderDays:[0]},{reminderDays:[]},{clm:{...base.clm,url:'javascript:alert(1)'}},{signature:{...base.signature,status:'verified'}},{valueMinor:100000}])await cmd('agreement',{...base,...invalid},h.owner,400);
+ for(const invalid of [{endDate:'2026-02-30'},{startDate:'2027-02-01'},{noticeDays:-1},{noticeDays:0.5},{reminderDays:[0]},{reminderDays:[]},{clm:{...base.clm,url:'javascript:alert(1)'}},{signature:{...base.signature,status:'verified'}},{valueMinor:-1}])await cmd('agreement',{...base,...invalid},h.owner,400);
  assert.deepEqual((await h.state()).data.agreement,before.agreement);
  const cross=await h.mf.dispatchFetch(h.origin+'/api/purse/command/agreement',{method:'POST',headers:{origin:'https://outside.test',cookie:h.owner,'content-type':'application/json'},body:JSON.stringify(base)});assert.equal(cross.status,403);
  let agreement=await cmd('agreement',base);assert.equal(agreement.noticeDeadline,'2026-12-01');assert.equal(agreement.history.length,1);assert.equal(agreement.signature.provenance,'owner-recorded; not provider-verified');assert.equal(agreement.owner,(await h.state()).actor.id);
@@ -43,7 +43,7 @@ test('CONTRACT-001 round A owner-confirmed agreement history, exact invoice attr
  const count=()=>h.messages.filter(m=>m.subject==='Agreement notice deadline: AGR-2026-42').length;
  await tick('2026-11-01T06:59:00Z');assert.equal(count(),0,'Not due until November 1 in installation timezone');
  await Promise.all([tick('2026-11-01T07:00:00Z'),tick('2026-11-01T07:00:00Z')]);assert.equal(count(),1,'Concurrent real scheduled handlers claim once');
- const mail=h.messages.find(m=>m.subject==='Agreement notice deadline: AGR-2026-42');assert.deepEqual(mail.to,['owner@example.test']);assert.match(mail.text,/USD 600.00/);assert.match(mail.text,/2026-12-01/);assert.match(mail.text,/Agreement value is not available yet/);
+ const mail=h.messages.find(m=>m.subject==='Agreement notice deadline: AGR-2026-42');assert.deepEqual(mail.to,['owner@example.test']);assert.match(mail.text,/USD 600.00/);assert.match(mail.text,/2026-12-01/);assert.match(mail.text,/Agreement value not recorded/);
  await tick('2026-11-02T12:00:00Z');assert.equal(count(),1);
  let events=(await h.state()).data.agreementReminder;assert.equal(events.length,1);assert.equal(events[0].outcome.status,'accepted');assert.equal(events[0].spend.rows[0].invoice,i.id);
  // Correction shifts the deadline and retains its exact earlier terms and reminder receipt.
