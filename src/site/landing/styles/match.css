@@ -97,7 +97,7 @@
   .match-results { grid-template-columns: minmax(0, 1fr); max-width: 640px; margin-inline: auto; gap: 34px; }
   .result-arrow { left: calc(50% - 12px); top: -32px; width: 24px; height: 24px; transform: rotate(90deg); }
 }
-@media (min-width: 1024px) and (max-width: 1339px) {
+@media (min-width: 1024px) and (max-width: 1399px) {
   .mrow-r1, .mrow-r2 { align-items: flex-start; flex-direction: column; justify-content: center; white-space: normal; }
   .mrow-r1 .r-text::after { display: none; }
 }
