@@ -21,7 +21,7 @@ integrationRequestsApi.post('/api/purse/integration/requests', async c => {
     requireThat(token, 'Integration bearer unavailable', 401);
     const { state, revision } = await load(c.env.DB), before = structuredClone(state);
     const requester = await activeIntakeRequester(c.env.DB, state, token.requester_email);
-    requireThat(requester?.id === token.requester, 'Bound requester is no longer active', 403);
+    requireThat(requester && requester.id === token.requester, 'Bound requester is no longer active', 403);
     const key = c.req.header('idempotency-key'); requireThat(key && /^[\x21-\x7e]{1,200}$/.test(key), 'Idempotency-Key required (1–200 visible ASCII characters)');
     const raw = await readStream(c.req.raw.body, 1_600_000);
     let source: string; try { source = new TextDecoder('utf-8', { fatal: true }).decode(raw); } catch { throw new Fault(400, 'Invalid request UTF-8'); }
@@ -36,7 +36,7 @@ integrationRequestsApi.post('/api/purse/integration/requests', async c => {
     requireThat(body && typeof body === 'object' && !Array.isArray(body) && !body.id, 'Supply fields for a new purchase request');
     const a: Actor = { id: requester.id, email: requester.email, version: requester.version, owner: requester.role === 'owner', session: '', dev: false };
     const draft = requests(state, a, 'request', body)!;
-    const request = { ...draft, integration: { id: token.id, name: token.name } };
+    const request: Data = { ...draft, integration: { id: token.id, name: token.name } };
     put(state, 'request', request.id, request); put(state, 'revision', `${request.id}:${request.revision}`, { ...request, request: request.id });
     const queries = [fence];
     for (const [key, row] of state) if (before.get(key)?.revision !== row.revision) queries.push(insertRfqRecord(c.env.DB, row.kind, row.value));

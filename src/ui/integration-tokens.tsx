@@ -11,7 +11,7 @@ async function request(path = '', input?: D) {
         method: 'POST', headers: { 'content-type': 'application/json', origin: window.location.origin },
         body: JSON.stringify(input),
     } : undefined);
-    const body = await response.json();
+    const body = await response.json() as D;
     if (!response.ok) throw new Error(body.error || 'Unable to manage integration tokens.');
     return body;
 }
