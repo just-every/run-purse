@@ -311,8 +311,8 @@ STOCK-001, PO-010, SUPPLIER-007, SUPPLIER-005, CATALOG-001, SUPPLIER-003, SUPPLI
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 17 | 0 | 0 | 17 |
-| Target and push further | 20 | 24 | 50 | 94 |
-| All | 37 | 24 | 50 | 111 |
+| Target and push further | 21 | 24 | 50 | 95 |
+| All | 38 | 24 | 50 | 112 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
