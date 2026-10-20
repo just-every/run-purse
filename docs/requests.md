@@ -1,10 +1,10 @@
-The **Requests** tab lists every request with its need-by date, status and amount. Open one to see its lines, quotes, decisions and history.
+**Requests** is everyone's home: a thread of requests as they come in, each the requester's own words with the card Purse coded from them (quantity × unit price = total, supplier, category, project, location and need-by date) and the checks Purse runs before approval: **in budget ✓** under the covering policy and **known supplier ✓**. A card that waits on you ends in your verb (**Approve** and **Ask** for an approver, **Submit** for its requester, **Raise PO** for a buyer), and **Waiting on you** counts them. Filter by team (cost centre) and by channel (web, email or an integration's name, such as Slack or Teams). Decided requests fold into **Earlier**; the last one decided stays as a grey line. When requests waiting on one policy would together overfill its budget, the thread draws that budget to scale under them, says which approvals fit, and offers the approver **Approve** for those and **Ask** for the rest. Choose **Open request** to see a request's lines, quotes, decisions and history in place.
 
 ## Draft a request
 
-Enter prices and amounts as currency text, for example `1,250.50` for AUD 1,250.50.
+Enter prices and amounts as currency text, for example `1,250.50` for $1,250.50.
 
-Choose **New purchase request** and fill in:
+Type what you need into **Ask Purse for something to buy…** at the foot of the thread (or choose **Ask Purse** in the top bar) and send it. It opens **New purchase request** with your words as the title; fill in:
 
 - **Request title**, **Supplier**, **Currency** and **Need date**.
 - **Location** and **Cost centre**, from your business codes.
@@ -22,11 +22,11 @@ To compare suppliers, choose **Add supplied quotation** for each one. The **Quot
 
 ## Submit for approval
 
-When the request is ready, choose **Submit for approval**. Its status becomes `pending`, and the approver its policy names sees it.
+When the request is ready, choose **Submit** on its card or **Submit for approval** in the open request. Its status becomes `pending`, and the approver its policy names sees it.
 
 ## Approve, return or reject
 
-The approver opens the request, chooses a **Decision** (approved, returned or rejected), gives a **Decision reason** and chooses **Record decision**. The decision is kept with the revision it was made on, the person, the time and any delegation.
+The approver chooses **Approve** on the card, or **Ask** to return it to the requester with a question. For a reject, or a reason of their own, the approver opens the request, chooses a **Decision** (approved, returned or rejected), gives a **Decision reason** and chooses **Record decision**. The decision is kept with the revision it was made on, the person, the time and any delegation.
 
 A returned or rejected request can be revised and submitted again. Its earlier decisions stay in the **Decision history**.
 

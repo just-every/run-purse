@@ -28,7 +28,7 @@ function PurchasingApp() {
     const tabs = workspaceTabs(actor.roles), current = tabs.includes(tab) ? tab : 'Requests', business = data.business[0];
     const open = (t: string) => { setTab(t); setNotice(''); };
     return <div className="app">
-        <TopBar actor={actor} business={business?.name} tab={current} onTab={open} onAsk={() => { open('Requests'); focusComposer(); }}/>
+        <TopBar actor={actor} business={business?.name} tab={current} onTab={open} onAsk={business ? () => { open('Requests'); focusComposer(); } : undefined}/>
         <main className="workspace" data-tab={current}>
             <p className="notice" aria-live="polite">{notice}</p>
             {current === 'Requests' && (business ? <Requests data={data} actor={actor} mutate={mutate}/> : <EmptyWorkspace owner={actor.roles.includes('owner')} onSetUp={() => open('Settings')}/>)}

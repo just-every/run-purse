@@ -1,13 +1,13 @@
 ## The Overview
 
-The **Overview** is the first tab everyone sees. Under the business name it shows:
+The **Overview** tab sits beside Requests, everyone's home. Under the business name it shows:
 
 - **Outstanding commitments**, one card per currency: what's approved and ordered but not yet received or cancelled.
 - **Awaiting approval**: how many requests are pending.
 - **Overdue receiving**: issued orders past their need date with something still outstanding.
 - **Supplier renewals**, soonest first.
 
-Before the business is set up it shows **Your purchasing workspace** and **Set up business**, which opens Settings.
+Before the business is set up, Requests and the Overview show **Set up business**, which opens Settings for the owner.
 
 ## Preparation
 

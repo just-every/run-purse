@@ -39,6 +39,7 @@ export function nextStep(data: D, actor: D, r: D) {
     const you = (email: string) => email === actor.email ? 'You' : personName(data, email);
     if (['draft', 'returned'].includes(r.status)) return `${you(r.requesterEmail)} ${r.requesterEmail === actor.email ? 'submit' : 'submits'}`;
     if (r.status === 'pending') { const p = data.policy.find((x: D) => x.id === r.policy); if (!p) return 'Approver to confirm'; const delegate = data.delegation.find((d: D) => d.policy === p.id && d.from === p.approver && d.active && Date.parse(d.expires) > Date.now()); return `${you(p.approver)} ${p.approver === actor.email ? 'decide' : 'decides'}${delegate ? ` · ${you(delegate.delegate)} covering` : ''}`; }
+    if (r.status === 'approved' && !orderOf(data, r) && actor.roles.includes('buyer')) return 'You raise the PO';
     if (r.status === 'approved' && !orderOf(data, r)) { const buyers = (data.people ?? []).filter((m: D) => m.roles.includes('buyer')); return buyers.length === 1 ? `${you(buyers[0].email)} ${buyers[0].email === actor.email ? 'raise' : 'raises'} the PO` : 'A buyer raises the PO'; }
     return '';
 }

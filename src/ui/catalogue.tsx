@@ -1,6 +1,6 @@
 import { CatalogueAccessFields, accessInput } from './catalogue-access';
 import { useState } from 'react';
-import { Form, Field, Table, Chip, options, money, amountText, type D } from './shared';
+import { Form, Field, Table, Chip, options, money, amountText, calendarDay, type D } from './shared';
 
 const csv = (value: string) => value.split(',').map(s => s.trim()).filter(Boolean);
 export function Catalogue({ data, mutate }: { data: D; mutate: (op: string, b: D) => Promise<any> }) {
@@ -8,7 +8,7 @@ export function Catalogue({ data, mutate }: { data: D; mutate: (op: string, b: D
     const business = data.business[0] ?? {};
     return <><h2 className="page-title">Approved catalogue</h2>
         <Table heads={['Item / service', 'Supplier', 'Reference price', 'Validity', 'Status']} figures={['Reference price']}>
-            {data.catalogue.map((c: D) => <tr key={c.id}><td>{c.description}<br/>{c.partNumber} · {c.unit ?? 'each'}</td><td>{data.supplier.find((s: D) => s.id === c.supplier)?.name}</td><td className="figure">{money(c.unitMinor, c.currency)}</td><td>{c.validFrom ?? 'No start'} – {c.validUntil ?? 'No end'}</td><td><span className="cell-with-action"><Chip>{c.approved ? 'Approved' : 'Unapproved'}</Chip> <button onClick={() => setSelected(c)}>Edit item</button></span></td></tr>)}
+            {data.catalogue.map((c: D) => <tr key={c.id}><td>{c.description}<br/>{c.partNumber} · {c.unit ?? 'each'}</td><td>{data.supplier.find((s: D) => s.id === c.supplier)?.name}</td><td className="figure">{money(c.unitMinor, c.currency)}</td><td>{c.validFrom ? calendarDay(c.validFrom) : 'No start'} – {c.validUntil ? calendarDay(c.validUntil) : 'No end'}</td><td><span className="cell-with-action"><Chip>{c.approved ? 'Approved' : 'Unapproved'}</Chip> <button onClick={() => setSelected(c)}>Edit item</button></span></td></tr>)}
         </Table>
         <Form key={selected?.id ?? 'new'} initial={{ id: selected?.id }} label="Save catalogue item" onSubmit={b => mutate('catalogue', { ...b, approved: b.approved === 'true', access: accessInput(b), requiredAttachments: csv(b.requiredAttachments) })}>
             <Field label="Item or service description" name="description" defaultValue={selected?.description}/>

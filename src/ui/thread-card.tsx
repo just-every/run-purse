@@ -49,7 +49,7 @@ export function ThreadItem({ r, at, data, actor, mutate, decided, together, open
                 </ul>
             </div>
             <div className="card-verbs">
-                {verb === 'approve' && <><button type="button" className="btn-primary" disabled={busy} onClick={() => run('decision', { id: r.id, revision: r.revision, decision: 'approved', reason })}>Approve</button><button type="button" disabled={busy} aria-expanded={asking} onClick={() => setAsking(!asking)}>Ask</button></>}
+                {verb === 'approve' && <>{!chips.some(c => c.label === 'over budget') && <button type="button" className="btn-primary" disabled={busy} onClick={() => run('decision', { id: r.id, revision: r.revision, decision: 'approved', reason })}>Approve</button>}<button type="button" disabled={busy} aria-expanded={asking} onClick={() => setAsking(!asking)}>Ask</button></>}
                 {verb === 'submit' && <button type="button" className="btn-primary" disabled={busy} onClick={() => run('submit', { id: r.id, revision: r.revision })}>Submit</button>}
                 {verb === 'convert' && <button type="button" className="btn-primary" disabled={busy} onClick={() => run('convert', { id: r.id, revision: r.revision })}>Raise PO</button>}
                 {!opened && <button type="button" className="btn-quiet" onClick={e => onOpen(e.currentTarget)}>Open request</button>}

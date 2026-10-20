@@ -6,11 +6,11 @@ Under **Business and authority**, fill in:
 
 | Field | What it holds | Example |
 | --- | --- | --- |
-| Business name | The name at the top of the Overview | Northside Studio |
-| currencies (comma separated) | Every currency you buy in | AUD, USD |
-| locations (comma separated) | Where things are delivered | Sydney, Melbourne |
-| costCentres (comma separated) | Who pays | Operations, Marketing |
-| projects (comma separated) | What it's for | Fitout, Office |
+| Business name | The name in the top bar and at the top of the Overview | Redbud Outdoor Co. |
+| currencies (comma separated) | Every currency you buy in | USD |
+| locations (comma separated) | Where things are delivered | Austin, TX, Columbus, OH |
+| costCentres (comma separated) | Who pays: the teams the request thread filters by | Operations, Marketing |
+| projects (comma separated) | What it's for; each policy budget covers one or more | Operations, Marketing |
 
 Choose **Save business**. Requests pick from these lists, so add a code here before anyone needs it.
 

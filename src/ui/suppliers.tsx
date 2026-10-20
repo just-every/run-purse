@@ -4,7 +4,7 @@ import { SupplierMerge, SupplierHistory } from './supplier-merge';
 import { SupplierScreening } from './supplier-screening';
 import { SupplierPerformance } from './supplier-performance';
 import { SupplierDocuments } from './supplier-documents';
-import { Form, Field, Table, Attachments, Chip, call, type D } from './shared';
+import { Form, Field, Table, Attachments, Chip, call, calendarDay, type D } from './shared';
 
 export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; mutate: (op: string, b: D) => Promise<any>; reload: () => Promise<void> }) {
     const [selectedId, setSelectedId] = useState<string>(), [duplicate, setDuplicate] = useState<D>(), [openError, setOpenError] = useState('');
@@ -12,7 +12,7 @@ export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; 
     const open = (id?: string) => { setSelectedId(id); setDuplicate(undefined); };
     return <><h2 className="page-title">Known suppliers</h2>
         <Table heads={['Supplier', 'Status', 'Reason', 'Renewal', '']}>{data.supplier.map((s: D) => <tr key={s.id}>
-            <td className="record-name">{s.name}</td><td><Chip>{s.status}</Chip></td><td>{s.reason}</td><td className="figure-cell">{s.renewal || '—'}</td>
+            <td className="record-name">{s.name}</td><td><Chip>{s.status}</Chip></td><td>{s.reason}</td><td className="figure-cell">{calendarDay(s.renewal)}</td>
             <td className="row-action"><button onClick={() => open(s.id)}>Open</button></td>
         </tr>)}</Table>
         {selected?.mergedInto ? <section className="panel"><h3>Merged supplier history · {selected.name}</h3><p>This supplier is no longer purchasable. Its original records remain intact.</p><button onClick={() => open(data.supplierFamilies.find((f: D) => f.members.some((m: D) => m.id === selected.id)).supplier)}>Open surviving supplier</button></section> : <>

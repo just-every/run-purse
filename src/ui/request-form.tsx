@@ -9,7 +9,7 @@ export function RequestForm({ data, mutate, current, quote = false, prefillTitle
     submitLabel?: string;
 }) {
     const [lines, setLines] = useState<D[]>(() => current?.lines.map(({ unitMinor, totalMinor, ...line }: D) => ({ ...line, unitAmount: amountText(unitMinor) })) ?? [{ quantity: '1', unitAmount: '0.00' }]);
-    const [header, setHeader] = useState<D>({ supplier: current?.supplier ?? '', currency: current?.currency ?? 'AUD', location: current?.location ?? '', costCentre: current?.costCentre ?? '' });
+    const [header, setHeader] = useState<D>({ supplier: current?.supplier ?? '', currency: current?.currency ?? data.business[0]?.currencies?.[0] ?? '', location: current?.location ?? '', costCentre: current?.costCentre ?? '' });
     const business = data.business[0];
     if (!business)
         return <p>Set up your business before adding requests.</p>;

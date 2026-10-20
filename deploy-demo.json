@@ -4,7 +4,7 @@
   "name": "Purse",
   "settings": {
     "MAIL_PROVIDER": "development",
-    "MAIL_FROM": "Northside Studio <alex.morgan@northside-studio.example>"
+    "MAIL_FROM": "Redbud Outdoor Co. <renee.coleman@redbud-outdoor.example>"
   },
-  "ownerEmail": "alex.morgan@northside-studio.example"
+  "ownerEmail": "renee.coleman@redbud-outdoor.example"
 }
