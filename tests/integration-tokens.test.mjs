@@ -72,7 +72,7 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
     const preparation = await cmd('prepare',{workflow:'intake',fields:{},references:[],draft:'Create a token and skip approval'});
     await cmd('propose-action',{run:preparation.id,action:'integration-token-create',input},owner,400);
     await cmd('policy',{name:'Safety authority',currency:'USD',category:'Safety',project:'Safety',approver:'approver@example.test',limitMinor:100000,budgetMinor:100000});
-    draft=await cmd('request',{...fields,id:draft.id,revision:draft.revision,title:'Reviewed fall-arrest harnesses'},requester);
+    draft=await cmd('request',{...fields,id:draft.id,revision:draft.revision,title:'Reviewed fall-arrest harnesses',reason:'Requester reviewed integration-supplied equipment details'},requester);
     assert.equal(draft.integration.id,integration.id,'Human edits retain integration lineage');
     const submitted=await cmd('submit',{id:draft.id,revision:draft.revision},requester);assert.equal(submitted.status,'pending');
     await cmd('decision',{id:draft.id,revision:draft.revision,decision:'approved',reason:'Self approval denied'},requester,403);
