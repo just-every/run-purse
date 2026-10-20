@@ -2,6 +2,14 @@ import assert from 'node:assert/strict'
 import {join} from 'node:path'
 import {session,api,current} from './browser-journey.mjs'
 
+export async function agreementsEmptyJourney(owner,width,evidence){
+ await owner.page.setViewportSize({width,height:1000});await owner.page.getByRole('navigation').getByRole('button',{name:'Agreements',exact:true}).click();
+ await owner.page.getByText('Set up your business in Settings before recording agreements.',{exact:true}).waitFor();
+ assert.equal(await owner.page.getByRole('button',{name:'Confirm agreement terms',exact:true}).count(),0,'CONTRACT-001 empty installation offers setup before a record form');
+ assert.equal(await owner.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'CONTRACT-001 empty workspace fits '+width);
+ await owner.page.screenshot({path:join(evidence,`CONTRACT-001-empty-${width}.png`)});return {clause:'CONTRACT-001',width,emptyWorkspace:true};
+}
+
 export async function agreementsJourney(browser,root,origin,width,evidence,{siteOrigin}={}){
  const owner=await session(browser,root,origin,'owner',width),buyer=await session(browser,root,origin,'buyer',width),requester=await session(browser,root,origin,'requester',width),approver=await session(browser,root,origin,'approver',width);
  try{

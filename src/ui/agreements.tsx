@@ -4,6 +4,7 @@ import { Field, Form, Table, Details, money, options, when, type D } from './sha
 export function Agreements({ data, actor, mutate }: { data: D; actor: D; mutate: (op: string,b: D)=>Promise<any> }) {
     const [selected,setSelected] = useState<string | undefined>(new URLSearchParams(window.location.search).get('agreement') ?? undefined);
     const agreement = data.agreement.find((r: D)=>r.id===selected), owner = actor.roles.includes('owner');
+    if (!data.business.length) return <><h1 className="page-title">Agreements</h1><p>Set up your business in Settings before recording agreements.</p></>;
     return <><h1 className="page-title">Agreements</h1><p className="lead">Confirmed terms, renewal dates and the invoice evidence attributed to each agreement.</p>
         <p className="quiet">Agreement values, PDF reading and agreement savings are not available yet.</p>
         <Table heads={['Agreement','Supplier','Notice deadline','Owner','']}>
