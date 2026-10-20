@@ -54,30 +54,19 @@ function queryParts(filters: SearchFilters, current: SearchContext) {
     if (filters.requester) clauses.push(`(r.requesterId=${bind(filters.requester)} OR lower(r.requesterEmail)=lower(${bind(filters.requester)}))`);
     if (filters.coding) clauses.push(`s.coding LIKE ${bind(likeText(filters.coding))} ESCAPE '\\' COLLATE NOCASE`);
 
-    const ctes: string[] = [], candidateParams: unknown[] = [];
     if (filters.q) {
-        const expression = searchExpression(filters.q);
-        const candidates: string[] = [];
-        if (expression) { candidates.push('SELECT rowid FROM p_search_fts WHERE p_search_fts MATCH ?'); candidateParams.push(expression); }
-        candidates.push("SELECT rowid FROM p_search WHERE business='main' AND number LIKE ? ESCAPE '\\' COLLATE NOCASE"); candidateParams.push(likeText(filters.q));
-        if (current.normalized) {
-            ctes.push("matched_suppliers AS (SELECT id FROM p_search WHERE business='main' AND kind='supplier' AND namesKey LIKE ? ESCAPE '\\')");
-            candidateParams.unshift(likeText(current.normalized));
-            candidates.push("SELECT rowid FROM p_search WHERE business='main' AND namesKey LIKE ? ESCAPE '\\'"); candidateParams.push(likeText(current.normalized));
-            ctes.push("supplier_records AS (SELECT rowid,id,kind FROM p_search WHERE business='main' AND supplierId IN (SELECT id FROM matched_suppliers))");
-            candidates.push('SELECT rowid FROM supplier_records');
-            candidates.push("SELECT rowid FROM p_search WHERE business='main' AND orderId IN (SELECT id FROM supplier_records WHERE kind='order')");
-            candidates.push("SELECT rowid FROM p_search WHERE business='main' AND requestId IN (SELECT id FROM supplier_records WHERE kind='request')");
-        }
-        ctes.push(`candidates AS (${candidates.join(' UNION ')})`);
-        clauses.push('s.rowid IN (SELECT rowid FROM candidates)');
+        const alternatives: string[] = [], expression=searchExpression(filters.q);
+        if(expression)alternatives.push(`s.rowid IN (SELECT rowid FROM p_search_fts WHERE p_search_fts MATCH ${bind(expression)})`);
+        alternatives.push(`s.number LIKE ${bind(likeText(filters.q))} ESCAPE '\\' COLLATE NOCASE`);
+        if(current.normalized){const match=likeText(current.normalized);alternatives.push(`s.namesKey LIKE ${bind(match)} ESCAPE '\\'`);alternatives.push(`supplier.namesKey LIKE ${bind(match)} ESCAPE '\\'`);}
+        clauses.push('('+alternatives.join(' OR ')+')');
     }
     const from = `FROM p_search s
         LEFT JOIN p_search o ON o.business=s.business AND o.kind='order' AND o.id=s.orderId
         LEFT JOIN p_search r ON r.business=s.business AND r.kind='request' AND r.id=CASE WHEN s.kind='request' THEN s.id ELSE coalesce(nullif(s.requestId,''),o.requestId) END
         LEFT JOIN p_search supplier ON supplier.business=s.business AND supplier.kind='supplier' AND supplier.id=coalesce(nullif(s.supplierId,''),nullif(o.supplierId,''),r.supplierId)
         WHERE ${clauses.join(' AND ')}`;
-    return { prefix: ctes.length ? 'WITH ' + ctes.join(',') + ' ' : '', from, params: [...candidateParams, ...params] };
+    return { prefix: '', from, params };
 }
 
 function result(row: Data, query: string) {
