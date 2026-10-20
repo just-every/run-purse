@@ -26,7 +26,7 @@ integrationRequestsApi.post('/api/purse/integration/requests', async c => {
     const key = c.req.header('idempotency-key'); requireThat(key && /^[\x21-\x7e]{1,200}$/.test(key), 'Idempotency-Key required (1–200 visible ASCII characters)');
     const raw = await readStream(c.req.raw.body, 1_600_000);
     let source: string; try { source = new TextDecoder('utf-8', { fatal: true }).decode(raw); } catch { throw new Fault(400, 'Invalid request UTF-8'); }
-    const bodyHash = await hashRfqToken(source);
+    const bodyHash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', raw as BufferSource))].map(byte => byte.toString(16).padStart(2, '0')).join('');
     const previous = async () => c.env.DB.prepare('SELECT body_hash,response FROM p_integration_requests WHERE integration=? AND idempotency_key=?').bind(token.id, key).first<Data>();
     const replay = (receipt: Data) => { requireThat(receipt.body_hash === bodyHash, 'Idempotency-Key already used with a different body', 409); return c.json({ request: JSON.parse(receipt.response), duplicate: true }); };
     const existing = await previous();

@@ -61,6 +61,7 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
     let data=(await state()).data;assert.equal(data.request.length,1);assert.equal(data.order.length,0);assert.equal(data.decision.length,0);assert.equal(data.commitment.length,0);assert.equal(h.messages.length,mailBefore,'Draft creation sends no mail');
     assert.equal((await state(other)).data.request.length,0);assert.equal((await state(requester)).data.request[0].id,draft.id);
     assert.equal((await integrationRequest(token,'linen-asset-42',{...fields,title:'Changed body'})).status,409);
+    assert.equal((await integrationRequest(token,'linen-asset-42','\ufeff'+JSON.stringify(fields))).status,409,'INTAKE-007 body identity uses exact bytes, including a UTF-8 BOM');
     const changedRace = await Promise.all([integrationRequest(token,'conflicting',fields),integrationRequest(token,'conflicting',{...fields,title:'Conflicting request'})]);
     assert.deepEqual(changedRace.map(r=>r.status).sort(),[200,409]);assert.equal((await state()).data.request.length,2);
     // Bearer auth is deliberately not accepted at any native/agent/source/approval/admin public door.
