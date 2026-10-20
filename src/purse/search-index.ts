@@ -1,7 +1,7 @@
 import { date, requireThat } from './types';
 import { moneyInput } from './money';
 
-export const searchKinds = ['request', 'order', 'invoice', 'receipt', 'supplier', 'catalogue', 'quoteReading', 'invoiceReading', 'supplierDocument'] as const;
+export const searchKinds = ['request', 'order', 'invoice', 'receipt', 'supplier', 'catalogue', 'quoteReading', 'invoiceReading', 'supplierDocument', 'agreement'] as const;
 export type SearchFilters = ReturnType<typeof searchFilters>;
 
 function bounded(value: string | undefined, label: string, max = 300) {

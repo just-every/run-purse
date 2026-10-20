@@ -45,7 +45,7 @@ function queryParts(filters: SearchFilters, current: SearchContext) {
         }
     }
     const own = staff ? '1' : `(r.requesterId=${bind(current.actor.id)} OR r.requesterEmail=${bind(current.actor.email)})`;
-    clauses.push(`(s.kind='supplier' OR (s.kind='catalogue' AND (${catalogue})) OR (s.kind='supplierDocument' AND ${buyer ? '1' : '0'}) OR (s.kind='invoiceReading' AND ${buyer ? '1' : '0'} AND o.id IS NOT NULL AND r.id IS NOT NULL) OR (s.kind IN ('request','order','invoice','receipt','quoteReading') AND r.id IS NOT NULL AND (${own})))`);
+    clauses.push(`(s.kind='supplier' OR (s.kind='catalogue' AND (${catalogue})) OR (s.kind IN ('supplierDocument','agreement') AND ${buyer ? '1' : '0'}) OR (s.kind='invoiceReading' AND ${buyer ? '1' : '0'} AND o.id IS NOT NULL AND r.id IS NOT NULL) OR (s.kind IN ('request','order','invoice','receipt','quoteReading') AND r.id IS NOT NULL AND (${own})))`);
     if (filters.kind) clauses.push(`s.kind=${bind(filters.kind)}`);
     if (filters.id) clauses.push(`s.id=${bind(filters.id)}`);
     if (filters.currency) clauses.push(`s.currency=${bind(filters.currency)}`);

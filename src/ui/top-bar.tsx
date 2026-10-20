@@ -1,6 +1,6 @@
 import type { D } from './shared';
 /** The workspace screens a person can open, in top-bar order; the Requests thread is home. */
-export function workspaceTabs(roles: string[]) { return ['Requests', 'Overview', 'Orders', 'Search', 'Reports', ...(roles.includes('buyer') ? ['Suppliers', 'Catalogue'] : []), 'Preparation', ...(roles.includes('approver') ? ['Authority'] : []), ...(roles.includes('owner') ? ['Settings', 'Imports', 'Audit'] : [])]; }
+export function workspaceTabs(roles: string[]) { return ['Requests', 'Overview', 'Orders', 'Search', 'Reports', ...(roles.includes('buyer') ? ['Suppliers', 'Catalogue', 'Agreements'] : []), 'Preparation', ...(roles.includes('approver') ? ['Authority'] : []), ...(roles.includes('owner') ? ['Settings', 'Imports', 'Audit'] : [])]; }
 /** One white top bar: the mark and slab wordmark, the business, search, and Ask Purse; under a hairline,
  * the workspace tabs and who is signed in. Ask Purse and the thread's composer are one control. */
 export function TopBar({ actor, business, tab, onTab, onAsk, search = true }: { actor?: D; business?: string; tab?: string; onTab?: (tab: string) => void; onAsk?: () => void; search?: boolean }) {

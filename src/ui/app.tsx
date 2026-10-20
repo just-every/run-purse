@@ -1,3 +1,4 @@
+import { Agreements } from './agreements';
 import { SearchWorkspace } from './search';
 import { PerformanceReport } from './performance-report';
 import { SpendReport } from './spend-report';
@@ -16,7 +17,7 @@ import { Preparation } from './preparation';
 import { Imports } from './imports';
 import { TopBar, workspaceTabs } from './top-bar';
 export function App() { return new URLSearchParams(window.location.search).has('search') ? <SearchWorkspace/> : <PurchasingApp/>; }
-function firstTab() { const query = new URLSearchParams(window.location.search); return query.has('receipt') ? 'Orders' : query.has('intake') ? 'Requests' : query.get('tab') || 'Requests'; }
+function firstTab() { const query = new URLSearchParams(window.location.search); return query.has('agreement') ? 'Agreements' : query.has('receipt') ? 'Orders' : query.has('intake') ? 'Requests' : query.get('tab') || 'Requests'; }
 function PurchasingApp() {
     const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState(firstTab), [notice, setNotice] = useState(''), [performance, setPerformance] = useState(false);
     async function reload() { setState(await call('state')); }
@@ -36,6 +37,7 @@ function PurchasingApp() {
             {current === 'Reports' && <>{actor.roles.includes('buyer') && <button className="report-switch" onClick={() => setPerformance(!performance)}>{performance ? 'Spend and commitments' : 'Procurement performance'}</button>}{performance && actor.roles.includes('buyer') ? <PerformanceReport data={data}/> : <SpendReport data={data}/>}</>}
             {current === 'Orders' && <Orders data={data} actor={actor} mutate={mutate} reload={reload}/>}
             {current === 'Suppliers' && <Suppliers data={data} actor={actor} mutate={mutate} reload={reload}/>}
+            {current === 'Agreements' && <Agreements data={data} actor={actor} mutate={mutate}/>}
             {current === 'Catalogue' && <><Catalogue data={data} mutate={mutate}/><Stockroom data={data} mutate={mutate}/></>}
             {current === 'Settings' && <><Settings data={data} mutate={mutate}/><section className="panel"><h3>Invite saved member</h3><Form label="Send invitation" onSubmit={async b => { await call('invite', b); setNotice('Invitation sent.'); }}><Field label="Member email" name="email" type="email"/></Form><p className="quiet">Invite an active saved member to sign in.{actor.dev && <> Dev personas also require saved purchasing roles.</>}</p></section></>}
             {current === 'Authority' && <Authority data={data} actor={actor} mutate={mutate}/>}

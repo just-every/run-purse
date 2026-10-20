@@ -1,3 +1,4 @@
+import { visibleAgreements } from './agreements';
 import { visibleEmailIntakes } from './email-intake';
 import { visibleRfqs } from './rfq';
 import { visibleInvoiceReadings } from './invoice-reading';
@@ -17,6 +18,7 @@ export function visible(s: State, a: Actor) { const capabilities = roles(s, a); 
     data[kind] = all(s, kind);
     Object.assign(data,visibleEmailIntakes(s,a),visibleRfqs(s,a),visibleQuoteReadings(s,ids),visibleInvoiceReadings(s,capabilities.includes('buyer')));
     data.supplier = data.supplier.map((v: Data) => ({ ...supplierPublicValue(v), documents: (v.documents ?? []).filter((id: string) => capabilities.includes('buyer') || !s.get('attachment:' + id)?.value.privateSupplierDocument) }));
+    Object.assign(data, capabilities.includes('buyer') ? visibleAgreements(s,a) : {agreement:[], agreementInvoice:[], agreementReminder:[]});
     data.quoteAward = all(s, 'quoteAward').filter(q => ids.has(q.request));
     data.receiptRule = capabilities.includes('buyer') ? all(s,'receiptRule') : all(s,'receiptRule').filter(r=>r.order&&orderIds.has(r.order));
     data.receivers = capabilities.some(r=>['buyer','receiver'].includes(r)) ? all(s,'member').filter(m=>m.active&&m.roles.includes('receiver')).map(m=>({id:m.email,email:m.email,name:m.name})) : [];

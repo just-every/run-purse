@@ -1,6 +1,6 @@
 /** A portable search projection cannot add a source, invent an owner or expose a different record's metadata. */
 export function validateSearchProjection(rows,index,check) {
- const supported=new Set(['request','order','invoice','receipt','supplier','catalogue','quoteReading','invoiceReading']);
+ const supported=new Set(['request','order','invoice','receipt','supplier','catalogue','quoteReading','invoiceReading','agreement']);
  const records=new Map(rows.map(row=>[row.kind+':'+row.id,{...row,value:JSON.parse(row.value)}]));
  const expected=rows.filter(row=>supported.has(row.kind)||row.kind==='supplierDocument'&&JSON.parse(row.value).type==='agreement');
  check(index.length===expected.length,'search_projection_count');const seen=new Set();
