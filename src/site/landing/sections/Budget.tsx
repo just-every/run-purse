@@ -10,7 +10,7 @@ const halves: { team: Team; label: string; budget: string; total: number; parts:
 ]
 const money = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2 })
 const tapes = [
-  { title: <>Ana’s booth kit · <span className="nb">Marketing Q4 events</span></>, sum: <>$60,000.00 − $41,200.00 − <span className="nb">$3,940.00 = $14,860.00 left<Check /></span></>, foot: <span>Carla Mendes · Slack · <Done>9:58 am</Done></span> },
+  { title: <>Ana’s booth kit · <span className="nb">Marketing Q4 events</span></>, sum: <>$60,000.00 − $41,200.00 <span className="nb">− $3,940.00 = $14,860.00 left<Check /></span></>, foot: <span>Carla Mendes · Slack · <Done>9:58 am</Done></span> },
   { title: <>Nikhil’s laptops · <span className="nb">Engineering Q4 equipment</span></>, sum: <span className="nb">$7,113.00 left<Check /></span>, foot: <span>Sam Okafor · Teams · <Done>10:12 am</Done></span> },
   { title: <>Kim’s gloves · <span className="nb">Columbus operating supplies</span></>, foot: <><span>Ray Dawson · phone · <Done>9:38 am</Done></span><span>PO 3104 9:41 am</span></> },
 ]
@@ -60,7 +60,7 @@ export function Budget() {
           })}
         </div>
         <div className="budget-join" aria-hidden="true" />
-        <p className="budget-po card"><span className="dot" aria-hidden="true" /><span><b>10:33 am</b> · <b>PO 3108 sent to Brazos Office Furniture</b> · <b>one line, two codings</b><Check /></span></p>
+        <p className="budget-po card"><span className="dot" aria-hidden="true" /><span><b>10:33 am</b> · <b>PO 3108 sent to Brazos Office Furniture</b> · <b>one line, two codings<Check /></b></span></p>
         <p className="budget-note">Each half went to its own team’s head, because the desks are coded to two departments.</p>
       </div>
     </section>
