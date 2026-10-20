@@ -1,3 +1,4 @@
+import { searchApi } from './search';
 import { integrationRefusals } from './integration-audit';
 import { integrationTokensApi } from './integration-tokens';
 import { integrationRequestsApi } from './integration-requests';
@@ -60,6 +61,7 @@ api.route('/',integrationTokensApi);
 api.route('/',integrationRequestsApi);
 api.route('/',rfqApi);
 api.route('/',emailIntakeApi);
+api.route('/',searchApi);
 api.all('/api/purse/supplier-refresh/:token', c => supplierRefresh(c.req.raw, runtimeBindings(c.env), c.req.param('token')));
 api.get('/api/purse/state', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = visible(state, a);if(a.owner) result.data.importJobs = await importJobs(c.env.DB, a); await readFence(c.env.DB, a, revision); return c.json(result); });
 api.get('/api/purse/spend-report', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = spendReport(visible(state, a).data, c.req.query()); await readFence(c.env.DB, a, revision); return c.json(result); });

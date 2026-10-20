@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { performance } from 'node:perf_hooks';
+import { harness } from './purse-harness.mjs';
+import { searchPurchasing,addSearchScale,pdfPhrase,bankNumber } from './search-fixtures.mjs';
+
+test('SEARCH-001 public search in 100000 real D1 records finds exact purchasing sources under one second and enforces current scope and protected-field exclusion',async t=>{
+ const h=await harness();t.after(()=>h.close());const f=await searchPurchasing(h);await addSearchScale(h);
+ async function find(params,cookie=f.buyer){const query=new URLSearchParams(params),at=performance.now(),response=await h.send('/api/purse/search?'+query,undefined,cookie);const elapsed=performance.now()-at;assert.equal(response.status,200,JSON.stringify(response.value));assert.ok(elapsed<1000,`SEARCH-001 query completed in ${elapsed.toFixed(1)}ms`);return response.value;}
+ for(const [q,kind,id]of [['OLD-42','order','procurify:order:p1'],['VENDOR-2026-0889','invoice',f.invoice.id],['smith jones co','supplier',f.supplier.id],['$1,234.56','order',f.order.id],[pdfPhrase,'invoiceReading',f.reading.id]]){const result=await find({q});assert.ok(result.results.some(row=>row.kind===kind&&row.id===id),q+': '+JSON.stringify(result));for(const row of result.results)assert.match(row.url,/^\/app\?search=1&open=/);}
+ const partial=await find({q:'0889'});assert.ok(partial.results.some(row=>row.id===f.invoice.id));
+ const range=await find({kind:'request',amountMin:'1234.56',amountMax:'1234.56',currency:'USD',status:'approved',requester:'requester@example.test',coding:'Safety'});assert.ok(range.results.some(row=>row.id===f.request.id));assert.ok(!(await find({amountMin:'1234.57',amountMax:'1300',kind:'request'})).results.some(row=>row.id===f.request.id));
+ const dated=await find({kind:'invoice',dateFrom:'2026-10-19',dateTo:'2026-10-19'});assert.ok(dated.results.some(row=>row.id===f.invoice.id));assert.ok(!(await find({kind:'invoice',dateFrom:'2026-10-20'})).results.some(row=>row.id===f.invoice.id));
+ assert.equal((await find({q:f.outside.title},f.requester)).total,0,'Another department/requester purchase stays outside current requester scope');assert.equal((await find({q:pdfPhrase},f.requester)).total,0,'Private invoice text is buyer-only');assert.equal((await find({kind:'invoiceReading',id:f.reading.id},f.requester)).total,0);
+ for(const cookie of [h.owner,f.buyer,f.requester,f.approver])assert.equal((await find({q:bankNumber},cookie)).total,0,'Bank account numbers never enter the searchable projection');
+ assert.equal((await find({q:'Restricted field instrument'},f.requester)).total,0,'Catalog access applies to search');
+ const record=await find({kind:'order',id:f.order.id},f.requester);assert.equal(record.results.length,1);assert.equal(record.results[0].id,f.order.id);
+ for(const route of ['/api/purse/search?q=Canyon','/api/purse/search/meta'])assert.equal((await h.send(route,undefined,'')).status,401);
+ const revoked=await h.send('/auth/signout',{},f.requester);assert.equal(revoked.status,204);assert.equal((await h.send('/api/purse/search?q=Canyon',undefined,f.requester)).status,401);
+});

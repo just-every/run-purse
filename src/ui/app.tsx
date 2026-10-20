@@ -1,3 +1,4 @@
+import { SearchWorkspace } from './search';
 import { PerformanceReport } from './performance-report';
 import { SpendReport } from './spend-report';
 import { AuditLog } from './audit-log';
@@ -15,7 +16,8 @@ import { Preparation } from './preparation';
 import { Imports } from './imports';
 /** Mark, name and tagline at left; who is signed in at right. */
 function Masthead({ actor }: { actor?: D }) { return <header className="app-header"><a className="app-brand" href="/app"><img className="app-mark" src="/brand/mark.svg" alt=""/><span className="app-name" data-rer-name>Purse</span> <span className="app-tagline">Purchasing, with a clear record</span></a>{actor && <span className="app-who">{actor.email}<span className="app-roles"> · {actor.roles.join(', ')}</span></span>}</header>; }
-export function App() {
+export function App() { return new URLSearchParams(window.location.search).has('search') ? <SearchWorkspace/> : <PurchasingApp/>; }
+function PurchasingApp() {
     const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState(new URLSearchParams(window.location.search).has('receipt') ? 'Orders' : new URLSearchParams(window.location.search).has('intake') ? 'Requests' : 'Overview'), [notice, setNotice] = useState(''), [performance, setPerformance] = useState(false);
     async function reload() { setState(await call('state')); }
     useEffect(() => { reload().catch(e => setError(e.message)); }, []);
@@ -23,10 +25,10 @@ export function App() {
     if (!state)
         return <div className="app"><Masthead/><main className="workspace"><h1 className="page-title">Purse</h1>{error ? <p role="alert">{error} · <a href="/signin">Sign in</a></p> : <p className="lead">Opening purchasing workspace…</p>}</main></div>;
     const { data, actor } = state;
-    const tabs = ['Overview', 'Requests', 'Orders', 'Reports', ...(actor.roles.includes('buyer') ? ['Suppliers', 'Catalogue'] : []), 'Preparation', ...(actor.roles.includes('approver') ? ['Authority'] : []), ...(actor.roles.includes('owner') ? ['Settings', 'Imports', 'Audit'] : [])];
+    const tabs = ['Overview', 'Requests', 'Orders', 'Search', 'Reports', ...(actor.roles.includes('buyer') ? ['Suppliers', 'Catalogue'] : []), 'Preparation', ...(actor.roles.includes('approver') ? ['Authority'] : []), ...(actor.roles.includes('owner') ? ['Settings', 'Imports', 'Audit'] : [])];
     return <div className="app">
         <Masthead actor={actor}/>
-        <nav className="app-tabs" aria-label="Workspace">{tabs.map(t => <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => { setTab(t); setNotice(''); }}>{t}</button>)}</nav>
+        <nav className="app-tabs" aria-label="Workspace">{tabs.map(t => <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => { if(t==='Search')window.location.assign('/app?search=1');else setTab(t); setNotice(''); }}>{t}</button>)}</nav>
         <main className="workspace">
             <p className="notice" aria-live="polite">{notice}</p>
             {tab === 'Overview' && <Overview data={data} onSetUp={() => setTab('Settings')}/>}
