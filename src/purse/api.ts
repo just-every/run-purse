@@ -1,3 +1,8 @@
+import { agreements } from './agreements';
+import { searchApi } from './search';
+import { integrationRefusals } from './integration-audit';
+import { integrationTokensApi } from './integration-tokens';
+import { integrationRequestsApi } from './integration-requests';
 import { emailIntake, sendEmailIntakeLinks } from './email-intake';
 import { emailIntakeApi } from './email-intake-api';
 import { rfq } from './rfq';
@@ -44,6 +49,7 @@ export const api = new Hono<{
 }>();
 api.get('/health', c => c.json({ status: 'ok', ...deploymentHealth(c.env) }));
 api.use('/api/purse/*', async (c, next) => { c.header('cache-control', 'no-store'); c.header('x-content-type-options', 'nosniff'); await next(); });
+api.use('/api/purse/*', integrationRefusals);
 api.onError((e, c) => c.json({ error: e.message }, e instanceof Fault ? e.status as 400 : 400));
 export async function command(s: State, a: Actor, op: string, b: Data, env?: Bindings): Promise<Data> { if (op === 'execute-action') {
     const p = actionInput(s, a, b);
@@ -51,9 +57,12 @@ export async function command(s: State, a: Actor, op: string, b: Data, env?: Bin
     put(s, 'proposedAction', p.id, { ...p, status: 'executed', executedBy: a.id, at: new Date().toISOString() });
     audit(s, a, op, p.id);
     return result;
-} const result = await emailIntake(s, a, op, b, env) ?? rfq(s, a, op, b) ?? await invoiceReading(s, a, op, b) ?? await quoteReading(s, a, op, b) ?? receiptRouting(s, a, op, b) ?? invoiceReview(s, a, op, b) ?? quoteAwards(s, a, op, b) ?? await poProfiles(s, a, op, b) ?? payables(s, a, op, b) ?? orderChasing(s, a, op, b) ?? supplierDocuments(s, a, op, b) ?? await suppliers(s, a, op, b) ?? supplierMerge(s, a, op, b) ?? supplierPerformance(s, a, op, b) ?? catalogueGrants(s, a, op, b) ?? catalogue(s, a, op, b) ?? administration(s, a, op, b) ?? catalogueRequests(s, a, op, b) ?? requests(s, a, op, b) ?? orders(s, a, op, b) ?? orderClosure(s, a, op, b) ?? stockroom(s, a, op, b) ?? preparation(s, a, op, b); requireThat(result, 'Unknown action', 404); return result; }
+} const result = agreements(s, a, op, b) ?? await emailIntake(s, a, op, b, env) ?? rfq(s, a, op, b) ?? await invoiceReading(s, a, op, b) ?? await quoteReading(s, a, op, b) ?? receiptRouting(s, a, op, b) ?? invoiceReview(s, a, op, b) ?? quoteAwards(s, a, op, b) ?? await poProfiles(s, a, op, b) ?? payables(s, a, op, b) ?? orderChasing(s, a, op, b) ?? supplierDocuments(s, a, op, b) ?? await suppliers(s, a, op, b) ?? supplierMerge(s, a, op, b) ?? supplierPerformance(s, a, op, b) ?? catalogueGrants(s, a, op, b) ?? catalogue(s, a, op, b) ?? administration(s, a, op, b) ?? catalogueRequests(s, a, op, b) ?? requests(s, a, op, b) ?? orders(s, a, op, b) ?? orderClosure(s, a, op, b) ?? stockroom(s, a, op, b) ?? preparation(s, a, op, b); requireThat(result, 'Unknown action', 404); return result; }
+api.route('/',integrationTokensApi);
+api.route('/',integrationRequestsApi);
 api.route('/',rfqApi);
 api.route('/',emailIntakeApi);
+api.route('/',searchApi);
 api.all('/api/purse/supplier-refresh/:token', c => supplierRefresh(c.req.raw, runtimeBindings(c.env), c.req.param('token')));
 api.get('/api/purse/state', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = visible(state, a);if(a.owner) result.data.importJobs = await importJobs(c.env.DB, a); await readFence(c.env.DB, a, revision); return c.json(result); });
 api.get('/api/purse/spend-report', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = spendReport(visible(state, a).data, c.req.query()); await readFence(c.env.DB, a, revision); return c.json(result); });

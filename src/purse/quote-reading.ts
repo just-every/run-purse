@@ -1,3 +1,4 @@
+import { purchasingSearchText } from './search-text';
 import { proposedQuoteReading, quoteReadingInstructions, quoteSourceDescriptor } from './quote-reading-proposal';
 import { all, audit, get, put, requireThat, roles, text, uid, type Actor, type Data, type State } from './types';
 import { requests } from './requests';
@@ -37,7 +38,7 @@ export async function quoteReading(s: State, a: Actor, op: string, b: Data): Pro
         const id = uid(), reading: Data = { id, request: request.id, revision: request.revision, attachment: attachment.id, attachmentRevision, sourceDescriptor, sourceName: attachment.name, version: 1, status: 'review', parser: 'deterministic labelled quote parser', actor: a.id, at: new Date().toISOString(), lines: [] };
         let source;
         try { source = await readQuoteSource(attachment); } catch (error) { reading.status = 'unsupported'; reading.reason = (error as Error).message; }
-        if (source) { Object.assign(reading, parseQuoteFields(source, attachment.id)); reading.sourceText = source; const oversized = reading.lines.length > 100 || [...headers.map(key => reading[key]), ...reading.lines.flatMap((line: Data) => itemFields.map(key => line[key]))].some(field => typeof field.value === 'string' && field.value.length > 2000); if (oversized) { reading.status = 'unsupported'; reading.reason = 'Quote exceeds 100 items or 2,000 characters in a field; the whole extraction was refused without truncation.'; reading.lines = []; } if (!reading.lines.length && !oversized) { reading.status = 'unsupported'; reading.reason = 'No recognizable item lines. Supply a text quote with item/quantity/unit-price labels or a labelled table; no revision was changed.'; } }
+        if (source) { Object.assign(reading, parseQuoteFields(source, attachment.id)); reading.sourceText = source; reading.searchText = purchasingSearchText(source); const oversized = reading.lines.length > 100 || [...headers.map(key => reading[key]), ...reading.lines.flatMap((line: Data) => itemFields.map(key => line[key]))].some(field => typeof field.value === 'string' && field.value.length > 2000); if (oversized) { reading.status = 'unsupported'; reading.reason = 'Quote exceeds 100 items or 2,000 characters in a field; the whole extraction was refused without truncation.'; reading.lines = []; } if (!reading.lines.length && !oversized) { reading.status = 'unsupported'; reading.reason = 'No recognizable item lines. Supply a text quote with item/quantity/unit-price labels or a labelled table; no revision was changed.'; } }
         put(s, 'quoteReading', id, reading); event(s, a, reading, 'quote-extract', { snapshot: structuredClone(reading) }); return reading;
     }
     const reading = structuredClone(prior!);
