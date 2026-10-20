@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { Bindings } from '../auth.server';
+import { runtimeBindings, type Bindings } from '../auth.server';
 import { readStream } from '../inbound-mail.server.mjs';
 import { activeIntakeRequester } from './email-intake';
 import { guardedBatch } from './integration-tokens';
@@ -11,8 +11,9 @@ import { Fault, put, requireThat, uid, type Actor, type Data } from './types';
 export const integrationRequestsApi = new Hono<{ Bindings: Bindings }>();
 integrationRequestsApi.post('/api/purse/integration/requests', async c => {
     // No native cookie, URL token, agent action or client identity is a grant at this door.
-    requireThat(new URL(c.req.url).origin === c.env.AUTH_ORIGIN, 'Invalid host', 403);
-    requireThat(!c.req.header('origin') || c.req.header('origin') === c.env.AUTH_ORIGIN, 'Invalid origin', 403);
+    const env = runtimeBindings(c.env);
+    requireThat(new URL(c.req.url).origin === env.AUTH_ORIGIN, 'Invalid host', 403);
+    requireThat(!c.req.header('origin') || c.req.header('origin') === env.AUTH_ORIGIN, 'Invalid origin', 403);
     requireThat(c.req.header('sec-fetch-site') !== 'cross-site', 'Invalid origin', 403);
     const bearer = c.req.header('authorization')?.match(/^Bearer ([A-Za-z0-9_-]{43})$/)?.[1];
     requireThat(bearer, 'Integration bearer required', 401);
