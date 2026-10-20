@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
+import { records, rows } from './browser-archive.mjs';
 import { createPortability } from '@runeditrun/rer/modules/portability';
 import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
@@ -83,6 +84,9 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
     // Full archive round trip: retain purchasing/audit evidence, exclude both active and revoked credentials.
     const archive=join(h.dir,'integration-tokens.rer');
     const source=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});await exportArchive(source,archive,[]);
+    const archived=rows(await records(archive));
+    assert.ok(!archived.some(row=>['p_integration_tokens','p_integration_requests'].includes(row.table)),'INTAKE-007 archives exclude token and replay authority');
+    for(const credential of [token,live.value.token,stored.hash])assert.ok(!JSON.stringify(archived).includes(credential),'INTAKE-007 archive contains no bearer material');
     const restored=await harness({empty:true});t.after(()=>restored.close());
     const target=await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability});await importArchive(target,archive,[]);
     assert.equal((await restored.db.prepare('SELECT COUNT(*) n FROM p_integration_tokens').first()).n,0);assert.equal((await restored.db.prepare('SELECT COUNT(*) n FROM p_integration_requests').first()).n,0);
