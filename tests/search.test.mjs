@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { performance } from 'node:perf_hooks';
+import { join } from 'node:path';
+import { createPortability } from '@runeditrun/rer/modules/portability';
+import { exportArchive,importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import portability from '../scripts/installer/portability.mjs';
 import { harness } from './purse-harness.mjs';
 import { searchPurchasing,addSearchScale,pdfPhrase,bankNumber } from './search-fixtures.mjs';
 
@@ -17,4 +21,10 @@ test('SEARCH-001 public search in 100000 real D1 records finds exact purchasing 
  const record=await find({kind:'order',id:f.order.id},f.requester);assert.equal(record.results.length,1);assert.equal(record.results[0].id,f.order.id);
  for(const route of ['/api/purse/search?q=Canyon','/api/purse/search/meta'])assert.equal((await h.send(route,undefined,'')).status,401);
  const revoked=await h.send('/auth/signout',{},f.requester);assert.equal(revoked.status,204);assert.equal((await h.send('/api/purse/search?q=Canyon',undefined,f.requester)).status,401);
+});
+
+
+test('SEARCH-001 complete archive restore preserves source-bound search and rebuilds full-text lookup before readiness',async t=>{
+ const h=await harness();t.after(()=>h.close());const f=await searchPurchasing(h),archive=join(h.dir,'search.rer'),service=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});await exportArchive(service,archive,[]);
+ const restored=await harness({empty:true});t.after(()=>restored.close());const target=await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability});await importArchive(target,archive,[]);const boot=await restored.send('/auth/bootstrap',{token:'synthetic-local-test-bootstrap-token-0123456789',displayName:'Restored owner'});assert.equal(boot.status,303);const ready=await restored.send('/api/purse/search/meta',undefined,boot.cookie);assert.equal(ready.status,200);const found=await restored.send('/api/purse/search?'+new URLSearchParams({q:pdfPhrase}),undefined,boot.cookie);assert.equal(found.status,200);assert.ok(found.value.results.some(row=>row.kind==='invoiceReading'&&row.id===f.reading.id));assert.equal((await restored.send('/api/purse/search?'+new URLSearchParams({q:bankNumber}),undefined,boot.cookie)).value.total,0);
 });
