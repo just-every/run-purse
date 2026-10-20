@@ -306,7 +306,7 @@ archive directly into the current release.
 
 Judged from the code and tests at commit `9f201c00eba7aecadf9239e1205f6933a0dd1cb6` (16 October 2026).
 
-STOCK-001, PO-010, SUPPLIER-007, SUPPLIER-005, CATALOG-001, SUPPLIER-003, SUPPLIER-004, PO-003, AP-003, AUDIT-001, REPORT-001, PO-009, REPORT-003, INVOICE-003, RECEIVE-001 and SOURCE-002 were completed on 19 October 2026; INVOICE-002 and SOURCE-001 were completed in r9; INTAKE-004 was completed in r10 and SOURCE-001 originals expanded to 10 MB each; other rows retain that baseline assessment. `P01`–`P17` name tests in `tests/purse.test.mjs`. A cited local test proves bounded local behavior, never provider receipt or acceptance.
+STOCK-001, PO-010, SUPPLIER-007, SUPPLIER-005, CATALOG-001, SUPPLIER-003, SUPPLIER-004, PO-003, AP-003, AUDIT-001, REPORT-001, PO-009, REPORT-003, INVOICE-003, RECEIVE-001 and SOURCE-002 were completed on 19 October 2026; INVOICE-002 and SOURCE-001 were completed in r9; INTAKE-004 was completed in r10 and SOURCE-001 originals expanded to 10 MB each; INTAKE-007 adds create-only integration tokens in r11; other rows retain that baseline assessment. `P01`–`P17` name tests in `tests/purse.test.mjs`. A cited local test proves bounded local behavior, never provider receipt or acceptance.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
