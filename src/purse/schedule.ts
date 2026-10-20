@@ -1,3 +1,4 @@
+import { runAgreementReminders } from './agreement-reminders';
 import { sendEmailIntakeLinks } from './email-intake';
 import { runRfqReminders } from './rfq-api';
 import type { Bindings } from '../auth.server';
@@ -11,5 +12,6 @@ export async function runPurchasingSchedule(env: Bindings, now: number) {
     const orders = await runOrderChases(env, now);
     const rfqs = await runRfqReminders(env,now);
     const receipts = await runReceiptPrompts(env, now);
-    return { documents, orders, receipts, rfqs };
+    const agreements = await runAgreementReminders(env, now);
+    return { documents, orders, receipts, rfqs, agreements };
 }
