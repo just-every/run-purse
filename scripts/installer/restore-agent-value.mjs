@@ -93,24 +93,28 @@ export function validateAgentValue(all, get, check, rows) {
    fail(nonempty(ref.version) && ref.value?.id === current.id, 'source_version');
    let candidate = current;
    if (ref.fields) {
-    const allowed = ref.kind === 'invoice' ? ['id','order','currency','totalMinor','allocations','exception','flags','riskReviews','at'] : ref.kind === 'payable' ? ['id','invoice','version','approvedAt'] : ref.kind === 'attachment' ? ['id','kind','record','name','mediaType','size','actor','at'] : [];
+    const allowed = ref.kind === 'invoice' ? ['id','order','currency','totalMinor','allocations','exception','flags','riskReviews','at'] : ref.kind === 'payable' ? ['id','invoice','version','approvedAt'] : ref.kind === 'attachment' ? ['id','kind','record','name','mediaType','size','actor','at'] : ref.kind === 'quote' ? ['id','request','revision','supplier','currency','lines'] : ref.kind === 'agreementAward' ? ['id','request','revision','supplier','currency','agreement','agreementVersion','lines'] : [];
     fail(equal(ref.fields,allowed), 'source_private_fields');
     candidate = Object.fromEntries(allowed.filter(k => current[k] !== undefined).map(k=>[k,ref.kind === 'invoice' && k === 'flags' ? current.flags.map(f=>({id:f.id,code:f.code})) : ref.kind === 'invoice' && k === 'riskReviews' ? current.riskReviews.map(r=>({flag:r.flag,actor:r.actor,at:r.at})) : current[k]]));
    }
    if (ref.version === revisions.get(ref.kind+':'+ref.id) || ['attachment','receipt','revision','decision','valueSeatImport','quoteAward','agreementAward','quote'].includes(ref.kind)) fail(equal(ref.value,candidate), 'source_exact');
+   fail(['request','revision','valuePolicy','decision','order','receipt','supplierIssue','valueSeatImport','attachment','quoteAward','agreementAward','quote','invoice','payable'].includes(ref.kind), 'source_kind');
    if (ref.kind === 'request') fail(ref.id === input.request && ref.value.revision === input.revision && ref.value.requester === input.requester && equal(ref.value.valuePromise,input.promise) && ref.value.status === 'approved', 'source_request');
    if (ref.kind === 'revision') fail(ref.value.request === input.request && ref.value.revision <= input.revision, 'source_revision');
    if (ref.kind === 'decision') fail(ref.value.request === input.request && ref.value.revision <= input.revision, 'source_decision');
    if (ref.kind === 'order') fail(ref.value.request === input.request && ref.value.revision <= input.revision && ref.value.issuedAt && !ref.value.imported, 'source_order');
    if (['receipt','supplierIssue'].includes(ref.kind)) fail(input.sources.some(s=>s.kind === 'order' && s.id === ref.value.order), 'source_order_link');
    if (ref.kind === 'valueSeatImport') fail(ref.value.request === input.request && ref.value.revision === input.revision && keys.includes('attachment:'+ref.value.attachment), 'source_usage_link');
+   if (['quote','quoteAward','agreementAward'].includes(ref.kind)) fail(ref.value.request === input.request && ref.value.revision <= input.revision, 'source_award_scope');
+   if (ref.kind === 'invoice') fail(input.sources.some(s=>s.kind === 'order' && s.id === ref.value.order), 'source_invoice_scope');
+   if (ref.kind === 'payable') fail(input.sources.some(s=>s.kind === 'invoice' && s.id === ref.value.invoice), 'source_payable_scope');
    if (ref.kind === 'valuePolicy') fail(current.history.some(h=>h.version === ref.value.version && h.enabled === ref.value.enabled), 'source_policy_history');
   }
   const fingerprintInput = Object.fromEntries(['request','revision','requester','promise','sources','assessment','mode','model','provider'].map(k=>[k,input[k]]));
   fail(input.fingerprint === digest(canonical(fingerprintInput)), 'fingerprint');
   const assessment = input.assessment;
+  fail(assessment && assessment.kind === input.promise.kind && ['evidence','no-evidence'].includes(assessment.status) && (assessment.status !== 'no-evidence' || assessment.statement === 'no evidence yet'), 'assessment');
   validateAssessment(input,fail);
-  fail(assessment && assessment.kind === input.promise.kind, 'assessment');
   if (input.promise.kind === 'seats') {
    const usages = input.sources.filter(s=>s.kind === 'valueSeatImport').map(s=>s.value).sort((a,b)=>a.periodEnd.localeCompare(b.periodEnd)||a.at.localeCompare(b.at)||a.id.localeCompare(b.id));
    const latest = usages.at(-1);

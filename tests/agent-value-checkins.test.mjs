@@ -50,13 +50,24 @@ test('AGENT-005 real scheduled 30/90-day requester check-ins claim once concurre
  assert.equal(event.report.activeSeats,31);assert.equal(event.report.shortfall,19)
  const seatSource=event.sources.find(s=>s.kind==='valueSeatImport'&&s.id===usage.id),bytesSource=event.sources.find(s=>s.kind==='attachment'&&s.id===attachment.id)
  assert.equal(seatSource.value.sha256,createHash('sha256').update(original).digest('hex'))
- assert.equal(Buffer.from(bytesSource.value.base64,'base64').toString(),original)
+ assert.ok(bytesSource)
+ const run=data.agentRun.find(r=>r.id===event.run)
+ assert.ok(!JSON.stringify(event.inputs).includes('"base64"'),'Check-in inputs retain attachment descriptors without original bytes')
+ assert.ok(!JSON.stringify(run.inputs).includes('"base64"'),'Report inputs retain attachment descriptors without original bytes')
+ const originalUrl=h.origin+'/api/purse/download/attachment/'+attachment.id
+ assert.equal((await h.mf.dispatchFetch(originalUrl)).status,401,'Original bytes require a native session')
+ const downloaded=await h.mf.dispatchFetch(originalUrl,{headers:{cookie:requester}})
+ assert.equal(downloaded.status,200)
+ const downloadedBytes=Buffer.from(await downloaded.arrayBuffer())
+ assert.deepEqual(downloadedBytes,Buffer.from(original),'Native requester download preserves exact provider original bytes')
+ assert.equal(createHash('sha256').update(downloadedBytes).digest('hex'),seatSource.value.sha256)
  for(const source of event.sources) {
   const current=await h.db.prepare("SELECT revision,value FROM p_records WHERE business='main' AND kind=? AND id=?").bind(source.kind,source.id).first()
   assert.equal(source.version,current.revision)
-  assert.deepEqual(source.value,JSON.parse(current.value),'Source snapshots preserve exact recorded evidence')
+  const value=JSON.parse(current.value),expected=source.fields?Object.fromEntries(source.fields.filter(field=>Object.hasOwn(value,field)).map(field=>[field,value[field]])):value
+  assert.deepEqual(source.value,expected,'Source snapshots preserve exact recorded evidence within their declared field projection')
  }
- assert.equal(data.agentRun.find(r=>r.id===event.run).inputs.fingerprint,event.inputs.fingerprint)
+ assert.equal(run.inputs.fingerprint,event.inputs.fingerprint)
  assert.ok(data.proposedAction.some(p=>p.run===event.run&&p.action==='value-confirm'))
  assert.ok(data.audit.some(a=>a.action==='value-checkin'&&a.checkin===event.id&&a.outcome==='accepted'))
  const answer={id:event.run,version:1,request:request.id,revision:request.revision,fingerprint:event.inputs.fingerprint,usefulness:true,notes:'Useful to the requesting team'}

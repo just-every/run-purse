@@ -53,6 +53,7 @@ test('AGENT-005 exact approved promises, original provider-reported 50/31/19 evi
  const source=run.sources.find(s=>s.kind==='attachment'&&s.id===attachment.id);assert.equal(source.value.id,attachment.id);assert.equal(source.value.size,Buffer.byteLength(original));assert.equal(source.value.base64,undefined);
  const originalDownload=await h.mf.dispatchFetch(h.origin+usage.originalLocation,{headers:{cookie:requester}});assert.equal(originalDownload.status,200);assert.equal(await originalDownload.text(),original);
  assert.equal((await h.state(other)).data.valueRun.length,0);
+ const staffRun=await cmd('value-report',{request:request.id,revision:request.revision},buyer);assert.equal(staffRun.actor,(await h.state(buyer)).actor.id);const staffProposal=(await h.state(requester)).data.proposedAction.find(p=>p.run===staffRun.id);assert.equal(staffProposal.actor,request.requester);await cmd('execute-action',{id:staffProposal.id,usefulness:true,notes:'Requester confirms a buyer-prepared report'},requester);
  const proposal=(await h.state(requester)).data.proposedAction.find(p=>p.run===run.id);
  for(const cookie of [other,approver,buyer,h.owner])await cmd('execute-action',{id:proposal.id,usefulness:true,notes:''},cookie,403);
  // User input cannot replace immutable proposal request/run/fingerprint/actor fields.
@@ -88,7 +89,8 @@ test('AGENT-005 exact approved promises, original provider-reported 50/31/19 evi
 });
 
 test('AGENT-005 receipt need-date and confirmed quoted-saving evidence reuse REPORT-003 amounts without manufacturing unsigned savings',async t=>{
- const {h,requester,buyer,base,approve,report,answer}=await fixture(t),cmd=h.command;
+ const {h,requester,buyer,approver,base,approve,report,answer}=await fixture(t),cmd=h.command;
+ const financialReport=request=>cmd('value-report',{request:request.id,revision:request.revision},buyer);
  const issue=async request=>{const order=await cmd('convert',{id:request.id,revision:request.revision},buyer);await cmd('issue',{id:order.id,revision:request.revision,reason:'Issue approved software'},buyer);return order};
  const dated=await approve(await cmd('request',{...base,valuePromise:{kind:'need-date'}},requester));
  assert.equal((await report(dated)).report.status,'no-evidence');const delivered=await issue(dated);
@@ -97,21 +99,32 @@ test('AGENT-005 receipt need-date and confirmed quoted-saving evidence reuse REP
  const receiptRun=await report(dated);assert.equal(receiptRun.report.complete,true);assert.equal(receiptRun.report.receipts[0].id,receipt.id);assert.ok(receiptRun.sources.some(s=>s.kind==='supplierIssue'&&s.id===issueRecord.id));
  await cmd('value-confirm',answer(receiptRun),requester);
  const promise={kind:'quoted-saving',amountMinor:100000,currency:'USD'},line={description:'Software bundle',quantity:'10',unitMinor:90000,category:'Software',project:'Operations'};
- const unsigned=await approve(await cmd('request',{...base,title:'Unsigned saving claim',lines:[line],valuePromise:promise},requester)),noAward=await report(unsigned);
+ const unsigned=await approve(await cmd('request',{...base,title:'Unsigned saving claim',lines:[line],valuePromise:promise},requester)),noAward=await financialReport(unsigned);
  assert.equal(noAward.report.realizedMinor,0);assert.equal(noAward.report.negotiatedMinor,0);assert.equal(noAward.report.status,'no-evidence');await cmd('value-confirm',answer(noAward),requester);
  const request=await cmd('request',{...base,lines:[line],valuePromise:promise},requester);
  const first=await cmd('quote',{...base,request:request.id,lines:[{...line,unitMinor:100000}],source:'Exact original first offer'},requester),winner=await cmd('quote',{...base,request:request.id,lines:[line],source:'Exact awarded offer'},requester);
  const award=await cmd('quote-award',{request:request.id,revision:request.revision,firstQuote:first.id,awardedQuote:winner.id,reason:'Buyer selected source-backed discount',lines:[{requestLine:request.lines[0].id,firstLine:first.lines[0].id,awardedLine:winner.lines[0].id}]},buyer);
  await approve(request);const order=await issue(request);await cmd('receipt',{order:order.id,line:order.lines[0].id,event:'receive',quantity:'6',reason:'Six accepted'});
  const invoice=await cmd('invoice',{order:order.id,reference:'VALUE-SIX',source:'Original six-bundle invoice',allocations:[{line:order.lines[0].id,quantity:'6',amountMinor:540000}]},buyer);
- assert.equal((await report(request)).report.realizedMinor,0,'Unapproved invoice evidence is not realized savings');
+ assert.equal((await financialReport(request)).report.realizedMinor,0,'Unapproved invoice evidence is not realized savings');
  await cmd('payable-terms',{invoice:invoice.id,version:0,invoiceDate:'2026-10-20',term:'Net 30',reason:'Original invoice terms'},buyer);await cmd('approve-payable',{invoice:invoice.id,version:1,reason:'Cash planning approval'},buyer);
- let run=await report(request);assert.equal(run.report.negotiatedMinor,100000);assert.equal(run.report.realizedMinor,60000);assert.equal(run.report.rows[0].award,award.id);assert.equal(run.report.rows[0].invoice,invoice.id);
+ let run=await financialReport(request);assert.equal(run.report.negotiatedMinor,100000);assert.equal(run.report.realizedMinor,60000);assert.equal(run.report.rows[0].award,award.id);assert.equal(run.report.rows[0].invoice,invoice.id);assert.equal(run.sources.find(s=>s.kind==='quote'&&s.id===first.id).value.source,undefined,'Private source prose stays behind the existing quote/source door');
+ const receiver=await h.member('receiver@example.test',['receiver']);
+ for(const cookie of [requester,approver,receiver]){
+  const restricted=await cmd('value-report',{request:request.id,revision:request.revision},cookie);
+  assert.equal(restricted.report.status,'restricted');assert.equal(restricted.report.promisedMinor,promise.amountMinor);assert.equal(restricted.report.realizedMinor,undefined);assert.equal(restricted.report.negotiatedMinor,undefined);assert.equal(restricted.report.rows,undefined);
+  assert.equal(typeof restricted.inputs.fingerprint,'string');
+  for(const source of restricted.sources.filter(s=>['quote','quoteAward','agreementAward','invoice','payable'].includes(s.kind))){assert.equal(source.value,undefined);assert.equal(source.restricted,true);}
+  const visible=(await h.state(cookie)).data;
+  for(const projected of [...visible.valueRun,...visible.agentRun].filter(r=>r.id===run.id)){assert.equal(projected.report.status,'restricted');assert.equal(projected.inputs.assessment.realizedMinor,undefined);assert.equal(projected.inputs.fingerprint,run.inputs.fingerprint);}
+ }
+ const requesterDownload=await h.send('/api/purse/download/agentRun/'+run.id,undefined,requester);assert.equal(requesterDownload.status,200);const downloaded=typeof requesterDownload.value==='string'?JSON.parse(requesterDownload.value):requesterDownload.value;assert.equal(downloaded.report.status,'restricted');assert.equal(downloaded.inputs.assessment.realizedMinor,undefined);
+ await cmd('edit-preparation',{id:run.id,version:run.version,draft:'Replace the deterministic report'},buyer,409);await cmd('propose-action',{run:run.id,action:'submit',input:{id:request.id,revision:request.revision}},buyer,409);
  let performance=await h.send('/api/purse/performance-report',undefined,buyer);assert.equal(performance.value.savings.totals[0].realizedMinor,60000);assert.equal(performance.value.savings.realizedRows[0].outcomeConfirmations?.length??0,0);
- const confirmation=await cmd('value-confirm',answer(run),requester);performance=await h.send('/api/purse/performance-report',undefined,buyer);
+ const confirmation=await cmd('value-confirm',answer(run),requester);assert.equal(confirmation.inputs.assessment.status,'restricted');assert.equal(confirmation.inputs.assessment.realizedMinor,undefined);assert.equal(confirmation.fingerprint,run.inputs.fingerprint);performance=await h.send('/api/purse/performance-report',undefined,buyer);
  assert.equal(performance.value.savings.totals[0].realizedMinor,60000);assert.ok(performance.value.savings.realizedRows[0].outcomeConfirmations.some(c=>c.id===confirmation.id));
  assert.equal(Object.hasOwn(run.inputs.sources.find(s=>s.kind==='invoice'&&s.id===invoice.id).value,'remit'),false,'Value invoice inputs exclude private remit fields');
- const stale=await report(request);await cmd('receipt',{order:order.id,line:order.lines[0].id,event:'return',quantity:'1',reason:'One returned'});await cmd('value-confirm',answer(stale),requester,409);
- run=await report(request);assert.equal(run.report.realizedMinor,50000,'Returns use the established received-quantity cap');
+ const stale=await financialReport(request);await cmd('receipt',{order:order.id,line:order.lines[0].id,event:'return',quantity:'1',reason:'One returned'});await cmd('value-confirm',answer(stale),requester,409);
+ run=await financialReport(request);assert.equal(run.report.realizedMinor,50000,'Returns use the established received-quantity cap');
  const records=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(records),true);
 });

@@ -54,7 +54,7 @@ export async function agentValue(s: State, a: Actor, op: string, b: Data): Promi
             at: new Date().toISOString(), authority: { actor: a.id, operatorVersion: a.version, roles: roles(s, a) } });
         put(s, 'proposedAction', proposalId, { run: id, runVersion: 1, actor: request.requester, action: 'value-confirm', input, status: 'proposed', references: inputs.references });
         audit(s, a, op, request.id, { run: id, revision: request.revision, fingerprint: inputs.fingerprint, proposal: proposalId });
-        return get(s, 'agentRun', id);
+        return projectValueRecord(s, a, get(s, 'agentRun', id));
     }
     const run = get(s, 'agentRun', b.id);
     requireThat(run.workflow === 'value-realization', 'Value report required', 409);
@@ -79,14 +79,30 @@ export async function agentValue(s: State, a: Actor, op: string, b: Data): Promi
     put(s, 'proposedAction', proposals[0].id, { ...proposals[0], status: 'executed', executedBy: a.id, at, confirmation: id });
     put(s, 'agentRun', run.id, { ...run, outcomes: [...(run.outcomes ?? []), { status: 'confirmed', confirmation: id, actor: a.id, at }] });
     audit(s, a, op, request.id, { confirmation: id, run: run.id, revision: run.revision, fingerprint: fresh.fingerprint, usefulness: b.usefulness });
-    return get(s, 'valueConfirmation', id);
+    return projectValueRecord(s, a, get(s, 'valueConfirmation', id));
 }
 
 export function visibleAgentValue(s: State, a: Actor, visibleRequestIds: Set<string>): Data {
     requireThat(roles(s, a).length, 'Active business capability required', 403);
     return { valuePolicy: all(s, 'valuePolicy'),
-        valueRun: all(s, 'agentRun').filter(v => v.workflow === 'value-realization' && visibleRequestIds.has(v.request)),
+        valueRun: all(s, 'agentRun').filter(v => v.workflow === 'value-realization' && visibleRequestIds.has(v.request)).map(v => projectValueRecord(s,a,v)),
         valueSeatImport: all(s, 'valueSeatImport').filter(v => visibleRequestIds.has(v.request)),
-        valueConfirmation: all(s, 'valueConfirmation').filter(v => visibleRequestIds.has(v.request)),
-        valueCheckin: all(s, 'valueCheckin').filter(v => visibleRequestIds.has(v.request)) };
+        valueConfirmation: all(s, 'valueConfirmation').filter(v => visibleRequestIds.has(v.request)).map(v => projectValueRecord(s,a,v)),
+        valueCheckin: all(s, 'valueCheckin').filter(v => visibleRequestIds.has(v.request)).map(v => projectValueRecord(s,a,v)) };
+}
+
+/** Stored financial provenance retains REPORT-003's buyer-only scope on every read. */
+export function projectValueRecord(s: State, a: Actor, row: Data): Data {
+    if (row.inputs?.promise?.kind !== 'quoted-saving' || roles(s, a).includes('buyer')) return row;
+    const projected = structuredClone(row), restricted = new Set(['quote', 'quoteAward', 'agreementAward', 'invoice', 'payable']);
+    const sources = (values: Data[]) => values.map(source => restricted.has(source.kind)
+        ? { kind: source.kind, id: source.id, version: source.version, restricted: true } : source);
+    const assessment = { kind: 'quoted-saving', status: 'restricted', promisedMinor: row.inputs.promise.amountMinor,
+        currency: row.inputs.promise.currency,
+        statement: 'Financial evidence is available in buyer-only procurement performance; requester confirms usefulness' };
+    projected.inputs.assessment = assessment;
+    projected.inputs.sources = sources(projected.inputs.sources);
+    if (projected.sources) projected.sources = sources(projected.sources);
+    if (projected.report) projected.report = assessment;
+    return projected;
 }

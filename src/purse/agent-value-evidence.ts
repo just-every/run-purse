@@ -16,7 +16,7 @@ export function approvedValueRequest(s: State, request: Data, revision: number) 
     requireThat(!request.imported && request.revision === revision && request.status === 'approved', 'Current exact approved request revision required', 409);
     const approved = get(s, 'revision', `${request.id}:${revision}`);
     requireThat(approved.valuePromise && canonicalValue(approved.valuePromise) === canonicalValue(request.valuePromise), 'This approved revision has no matching value promise', 409);
-    requireThat(all(s, 'decision').some(d => d.request === request.id && d.revision === revision && d.decision === 'approved'), 'Native exact-revision approval required', 409);
+    requireThat(all(s, 'decision').some(d => !d.imported && d.request === request.id && d.revision === revision && d.decision === 'approved'), 'Native exact-revision approval required', 409);
     return approved;
 }
 export function parseSeatOriginal(attachment: Data): { seats: { id: string; active: boolean }[]; bytes: Uint8Array } {
@@ -40,17 +40,17 @@ export async function buildValueSnapshot(s: State, request: Data, revision: numb
     const add = (kind: string, id: string) => {
         const row = s.get(key(kind, id)); requireThat(row, 'Value source missing', 409);
         const value = get(s, kind, id);
-        if (kind === 'attachment') {
-            const fields = ['id', 'kind', 'record', 'name', 'mediaType', 'size', 'actor', 'at'];
+        if (['attachment', 'quote', 'agreementAward'].includes(kind)) {
+            const fields = kind === 'attachment' ? ['id', 'kind', 'record', 'name', 'mediaType', 'size', 'actor', 'at'] : kind === 'quote' ? ['id', 'request', 'revision', 'supplier', 'currency', 'lines'] : ['id', 'request', 'revision', 'supplier', 'currency', 'agreement', 'agreementVersion', 'lines'];
             selected.set(key(kind, id), { kind, id, version: row.revision, fields, value: Object.fromEntries(fields.map(k => [k, value[k]])) });
         } else selected.set(key(kind, id), { kind, id, version: row.revision, value: structuredClone(value) });
     };
     add('request', request.id); add('revision', `${request.id}:${revision}`);
     if (s.has('valuePolicy:main')) add('valuePolicy', 'main');
     for (const d of all(s, 'decision').filter(d => d.request === request.id && d.revision <= revision)) add('decision', d.id);
-    const orders = all(s, 'order').filter(o => o.request === request.id && o.revision === revision && o.issuedAt && !o.imported), orderIds = new Set(orders.map(o => o.id));
+    const orders = all(s, 'order').filter(o => o.request === request.id && o.revision === revision && o.issuedAt && !o.imported).sort((a,b) => a.id.localeCompare(b.id)), orderIds = new Set(orders.map(o => o.id));
     for (const order of orders) add('order', order.id);
-    const receipts = all(s, 'receipt').filter(r => orderIds.has(r.order) && !r.imported);
+    const receipts = all(s, 'receipt').filter(r => orderIds.has(r.order) && !r.imported).sort((a,b) => a.id.localeCompare(b.id));
     for (const receipt of receipts) add('receipt', receipt.id);
     const issues = all(s, 'supplierIssue').filter(i => orderIds.has(i.order));
     for (const issue of issues) add('supplierIssue', issue.id);
@@ -77,7 +77,7 @@ export async function buildValueSnapshot(s: State, request: Data, revision: numb
         const data: Data = {};
         for (const kind of ['quote', 'revision', 'quoteAward', 'agreementAward', 'decision', 'order', 'payable', 'invoice']) data[kind] = all(s, kind);
         data.order = data.order.map((o: Data) => ({ ...o, positions: o.lines.map((line: Data) => ({ line: line.id, ...linePosition(s, o.id, line) })) }));
-        const savings = savingsReport(data), rows = savings.realizedRows.filter(r => r.request === request.id && r.revision === revision), negotiated = savings.rows.filter(r => r.request === request.id && r.revision === revision);
+        const savings = savingsReport(data), rows = savings.realizedRows.filter(r => r.request === request.id && r.revision === revision).map(({ firstOfferSource, awardSource, reading, ...row }) => row), negotiated = savings.rows.filter(r => r.request === request.id && r.revision === revision);
         // Use the established report arithmetic; source originals retain their existing private doors.
         for (const award of [...all(s, 'quoteAward'), ...all(s, 'agreementAward')].filter(a => a.request === request.id && a.revision <= revision)) {
             add('revision', `${request.id}:${award.revision}`);

@@ -18,6 +18,7 @@ export function preparation(s: State, a: Actor, op: string, b: Data): Data | und
     if (op === 'edit-preparation') {
         requireThat(roles(s,a).length,'Active business capability required',403);
         const run = get(s, 'agentRun', b.id);
+        requireThat(run.workflow!=='value-realization','Value reports are immutable; prepare a new report for changed evidence',409);
         requireThat(a.owner || run.actor === a.id, 'Preparation outside your scope', 403);
         requireThat(run.version === b.version, 'Preparation changed', 409);
         put(s, 'agentRun', run.id, { ...run, draft: text(b.draft, 'Draft', 20000), version: run.version + 1 });
@@ -27,6 +28,7 @@ export function preparation(s: State, a: Actor, op: string, b: Data): Data | und
     if (op === 'propose-action') {
         requireThat(roles(s,a).length,'Active business capability required',403);
         const run = get(s, 'agentRun', b.run);
+        requireThat(run.workflow!=='value-realization','Value reports propose requester confirmation only',409);
         requireThat(run.actor === a.id || a.owner, 'Preparation outside your scope', 403);
         requireThat(['submit', 'decision', 'convert', 'issue', 'receipt'].includes(b.action), 'Unsupported action');
         requireThat(b.input && typeof b.input === 'object', 'Action input required');
