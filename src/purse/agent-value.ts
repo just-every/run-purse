@@ -1,6 +1,6 @@
-import { approvedValueRequest, buildValueSnapshot, canonicalValue, parseSeatOriginal, valueDigest, valueMode } from './agent-value-evidence';
+import { approvedValueRequest, buildValueSnapshot, canonicalValue, parseSeatOriginal, valueDigest, valueMode, valueDelivery } from './agent-value-evidence';
 import { all, audit, can, date, get, key, own, put, requireThat, roles, text, uid, type Actor, type Data, type State } from './types';
-export { buildValueSnapshot } from './agent-value-evidence';
+export { buildValueSnapshot, valueDelivery } from './agent-value-evidence';
 
 function enabled(s: State) {
     const policy = s.get('valuePolicy:main')?.value;
@@ -32,14 +32,17 @@ export async function agentValue(s: State, a: Actor, op: string, b: Data): Promi
         const request = currentRequest(s, a, b), attachment = get(s, 'attachment', b.attachment);
         // Identical scope to the existing request-attachment command, with no identity grants.
         requireThat(attachment.kind === 'request' && attachment.record === request.id, 'Seat original belongs to another request', 403);
+        const delivery = valueDelivery(s, request, request.revision);
+        requireThat(delivery, 'Seat usage requires an accepted native receipt for this exact approved revision', 409);
         const provider = text(b.provider, 'Reported provider', 200), periodStart = date(b.periodStart, 'Usage period start'), periodEnd = date(b.periodEnd, 'Usage period end');
         requireThat(periodStart <= periodEnd, 'Usage period end must follow its start');
+        requireThat(periodEnd >= delivery.date, 'Usage period end must be on or after the native delivery date');
         requireThat(b.activeRule === 'active-true', 'Declare active-true: only active === true counts');
         const { seats, bytes } = parseSeatOriginal(attachment), sha256 = await valueDigest(bytes);
         requireThat(!all(s, 'valueSeatImport').some(u => u.request === request.id && u.revision === request.revision && u.attachment === attachment.id && u.provider === provider && u.periodStart === periodStart && u.periodEnd === periodEnd), 'This usage original and period were already imported', 409);
         const id = uid();
         put(s, 'valueSeatImport', id, { request: request.id, revision: request.revision, attachment: attachment.id,
-            attachmentVersion: s.get(key('attachment', attachment.id))!.revision, provider, periodStart, periodEnd, activeRule: 'active-true',
+            deliveryReceipt: delivery.receipt, deliveryAt: delivery.at, attachmentVersion: s.get(key('attachment', attachment.id))!.revision, provider, periodStart, periodEnd, activeRule: 'active-true',
             sha256, originalLocation: `/api/purse/download/attachment/${attachment.id}`, seatCount: seats.length, activeSeats: seats.filter(seat => seat.active === true).length,
             provenance: 'provider-reported, unverified', actor: a.id, operatorVersion: a.version, at: new Date().toISOString() });
         audit(s, a, op, request.id, { usage: id, revision: request.revision, attachment: attachment.id, sha256 });

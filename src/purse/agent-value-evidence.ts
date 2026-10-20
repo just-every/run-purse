@@ -34,6 +34,27 @@ export function parseSeatOriginal(attachment: Data): { seats: { id: string; acti
     return { seats: parsed.seats, bytes: bytes! };
 }
 
+/** Issued amendments retain the real receipt ancestry of carried accepted lines. */
+function deliveryEvidence(s: State, request: Data, revision: number) {
+    const current = all(s, 'order').filter(o => o.request === request.id && o.revision === revision && o.issuedAt && !o.imported), orders = new Map<string, Data>(), receipts = new Map<string, Data>(), seen = new Set<string>();
+    const visit = (order: Data, line: Data) => {
+        const id = `${order.id}:${line.id}`; if (seen.has(id)) return; seen.add(id); orders.set(order.id, order);
+        for (const receipt of all(s, 'receipt').filter(r => r.order === order.id && r.line === line.id && !r.imported)) receipts.set(receipt.id, receipt);
+        if (!(line.carriedAccepted > 0)) return;
+        const source = get(s, 'revision', `${request.id}:${order.revision}`);
+        requireThat(source.amends, 'Carried delivery requires its original amendment lineage', 409);
+        const prior = get(s, 'order', source.amends), priorLine = prior.lines.find((l: Data) => l.id === line.id);
+        requireThat(prior.request === request.id && prior.revision < order.revision && prior.issuedAt && !prior.imported && priorLine, 'Carried delivery source is outside this request lineage', 409);
+        visit(prior, priorLine);
+    };
+    for (const order of current) { orders.set(order.id, order); for (const line of order.lines) visit(order, line); }
+    const sources = [...receipts.values()].sort((a,b) => a.id.localeCompare(b.id));
+    const first = sources.filter(r => r.event === 'receive' && r.q > 0).sort((a,b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id))[0];
+    return { current, orders: [...orders.values()].sort((a,b) => a.id.localeCompare(b.id)), receipts: sources,
+        delivery: first ? { receipt: first.id, order: first.order, at: first.at, date: first.at.slice(0,10) } : null };
+}
+export function valueDelivery(s: State, request: Data, revision: number): Data | null { return deliveryEvidence(s, request, revision).delivery; }
+
 /** No source prose is interpreted; facts derive only from typed native fields. */
 export async function buildValueSnapshot(s: State, request: Data, revision: number): Promise<Data> {
     const approved = approvedValueRequest(s, request, revision), selected = new Map<string, Data>();
@@ -48,22 +69,25 @@ export async function buildValueSnapshot(s: State, request: Data, revision: numb
     add('request', request.id); add('revision', `${request.id}:${revision}`);
     if (s.has('valuePolicy:main')) add('valuePolicy', 'main');
     for (const d of all(s, 'decision').filter(d => d.request === request.id && d.revision <= revision)) add('decision', d.id);
-    const orders = all(s, 'order').filter(o => o.request === request.id && o.revision === revision && o.issuedAt && !o.imported).sort((a,b) => a.id.localeCompare(b.id)), orderIds = new Set(orders.map(o => o.id));
-    for (const order of orders) add('order', order.id);
-    const receipts = all(s, 'receipt').filter(r => orderIds.has(r.order) && !r.imported).sort((a,b) => a.id.localeCompare(b.id));
+    const evidence = deliveryEvidence(s, request, revision), orders = evidence.current, receipts = evidence.receipts, orderIds = new Set(evidence.orders.map(o => o.id));
+    for (const order of evidence.orders) { add('order', order.id); add('revision', `${request.id}:${order.revision}`); }
     for (const receipt of receipts) add('receipt', receipt.id);
     const issues = all(s, 'supplierIssue').filter(i => orderIds.has(i.order));
     for (const issue of issues) add('supplierIssue', issue.id);
     const usage = all(s, 'valueSeatImport').filter(u => u.request === request.id && u.revision === revision).sort((a, b) => a.periodEnd.localeCompare(b.periodEnd) || a.at.localeCompare(b.at) || a.id.localeCompare(b.id));
     for (const source of usage) { add('valueSeatImport', source.id); add('attachment', source.attachment); }
-    const promise = structuredClone(approved.valuePromise), latest = usage.at(-1);
+    const promise = structuredClone(approved.valuePromise), delivery = evidence.delivery;
+    const latest = delivery ? usage.filter(u => {
+        const source = receipts.find(r => r.id === u.deliveryReceipt && r.event === 'receive' && r.q > 0);
+        return source && u.deliveryAt === source.at && u.periodEnd >= delivery.date && Date.parse(u.at) >= Date.parse(source.at);
+    }).at(-1) : undefined;
     let assessment: Data;
     if (promise.kind === 'seats') assessment = latest ? {
-        kind: 'seats', status: 'evidence', promisedSeats: promise.seats, activeSeats: latest.activeSeats,
+        kind: 'seats', status: 'evidence', delivery, promisedSeats: promise.seats, activeSeats: latest.activeSeats,
         shortfall: Math.max(0, promise.seats - latest.activeSeats), usage: latest.id,
         statement: `${promise.seats} promised seats; ${latest.activeSeats} provider-reported active seats; ${Math.max(0, promise.seats - latest.activeSeats)} seat shortfall`,
         basis: 'Provider-reported imported JSON; active === true; unverified',
-    } : { kind: 'seats', status: 'no-evidence', promisedSeats: promise.seats, activeSeats: null, shortfall: null, statement: 'no evidence yet' };
+    } : { kind: 'seats', status: 'no-evidence', delivery, promisedSeats: promise.seats, activeSeats: null, shortfall: null, statement: 'no evidence yet' };
     else if (promise.kind === 'need-date') {
         const accepted = receipts.filter(r => r.event === 'receive');
         const positions = orders.flatMap(o => o.lines.map((line: Data) => ({ order: o.id, line: line.id, requiredQ: line.q,

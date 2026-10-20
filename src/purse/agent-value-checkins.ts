@@ -1,6 +1,6 @@
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { operatorMail } from '../mail.server.mjs';
-import { buildValueSnapshot } from './agent-value';
+import { buildValueSnapshot, valueDelivery } from './agent-value';
 import { load } from './store';
 import { all, key, uid, type Data, type State } from './types';
 
@@ -23,7 +23,7 @@ function membership(s: State, request: Data) {
 function message(env: Bindings, request: Data, intervalDays: number, confirmationUrl: string) {
     return { from: env.MAIL_FROM ?? '', to: [request.requesterEmail.toLowerCase()],
         subject: `Usefulness check-in: ${request.title}`,
-        text: `${intervalDays}-day requester check-in for approved request revision ${request.revision}.\nPlease confirm whether this purchase was useful and review the exact evidence: ${confirmationUrl}\nDeterministic v1, model/provider: none. Missing evidence remains unknown; this request does not establish realized savings.`,
+        text: `${intervalDays}-day requester check-in after the first recorded delivery for approved request revision ${request.revision}.\nPlease confirm whether this purchase was useful and review the exact evidence: ${confirmationUrl}\nDeterministic v1, model/provider: none. Missing evidence remains unknown; this request does not establish realized savings.`,
         html: '', headers: {} };
 }
 
@@ -39,8 +39,11 @@ async function send(env: Bindings, event: Data, now: number): Promise<Data> {
     const suppressed = { recipient: event.requesterEmail, status: 'suppressed' };
     const fresh = await load(env.DB), request = fresh.state.get(key('request', event.request))?.value;
     const decision = request && approved(fresh.state, request);
+    const delivery = request && valueDelivery(fresh.state, request, request.revision);
     if (!request || !decision || request.revision !== event.revision || decision.id !== event.approvedDecision
         || decision.at !== event.approvedAt || now < Date.parse(event.dueAt)) return { ...suppressed, code: 'obsolete' };
+    if (!delivery || delivery.receipt !== event.deliveryReceipt || delivery.at !== event.deliveredAt || delivery.order !== event.order
+        || event.dueAt !== new Date(Date.parse(delivery.at) + event.intervalDays * day).toISOString()) return { ...suppressed, code: 'delivery-changed' };
     const policy = fresh.state.get(key('valuePolicy', 'main'))?.value;
     if (!policy?.enabled || policy.version !== event.policyVersion) return { ...suppressed, code: 'paused-or-policy-changed' };
     const member = membership(fresh.state, request);
@@ -67,7 +70,8 @@ async function attempt(env: Bindings, requestId: string, requestRevision: number
     const { state, revision } = await load(env.DB), request = state.get(key('request', requestId))?.value;
     if (!request || request.revision !== requestRevision) return;
     const decision = approved(state, request);
-    if (!decision || now < Date.parse(decision.at) + intervalDays * day) return;
+    const delivery = valueDelivery(state, request, request.revision);
+    if (!decision || !delivery || now < Date.parse(delivery.at) + intervalDays * day) return;
     const id = `${request.id}:${request.revision}:${intervalDays}`;
     if (state.has(key('valueCheckin', id))) return;
     const inputs = await buildValueSnapshot(state, request, request.revision);
@@ -75,7 +79,8 @@ async function attempt(env: Bindings, requestId: string, requestRevision: number
     url.searchParams.set('valueRequest', request.id);
     url.searchParams.set('valueRevision', String(request.revision));
     const event: Data = { id, request: request.id, revision: request.revision, intervalDays,
-        approvedDecision: decision.id, approvedAt: decision.at, dueAt: new Date(Date.parse(decision.at) + intervalDays * day).toISOString(),
+        approvedDecision: decision.id, approvedAt: decision.at, deliveryReceipt: delivery.receipt, deliveredAt: delivery.at, order: delivery.order,
+        dueAt: new Date(Date.parse(delivery.at) + intervalDays * day).toISOString(),
         policyVersion: state.get(key('valuePolicy', 'main'))?.value.version ?? null,
         requester: request.requester, requesterEmail: request.requesterEmail.toLowerCase(), at: new Date(now).toISOString(),
         run: `value-checkin:${id}`, inputs, sources: inputs.sources, report: inputs.assessment, references: inputs.references,
@@ -112,7 +117,7 @@ async function attempt(env: Bindings, requestId: string, requestRevision: number
     return event;
 }
 
-/** Exact elapsed UTC durations from the approved revision's decision; each interval is consumed once, including while paused. */
+/** Exact elapsed UTC durations from the approved revision's first native delivery; each interval is consumed once, including while paused. */
 export async function runValueCheckins(original: Bindings, now = Date.now()): Promise<{ events: Data[] }> {
     const env = runtimeBindings(original), initial = await load(env.DB), events: Data[] = [];
     for (const request of all(initial.state, 'request')) {

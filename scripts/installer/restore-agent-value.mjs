@@ -9,13 +9,29 @@ const nonempty = v => typeof v === 'string' && v.trim().length > 0;
 const timestamp = v => typeof v === 'string' && Number.isFinite(Date.parse(v));
 const calendar = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v;
 
+function deliverySources(records, request, revision, fail) {
+ const current=records('order').filter(o=>o.request===request&&o.revision===revision&&o.issuedAt&&!o.imported),orders=new Map(),receipts=new Map(),seen=new Set();
+ const visit=(order,line)=>{
+  const id=order.id+':'+line.id;if(seen.has(id))return;seen.add(id);orders.set(order.id,order);
+  for(const receipt of records('receipt').filter(r=>r.order===order.id&&r.line===line.id&&!r.imported))receipts.set(receipt.id,receipt);
+  if(!(line.carriedAccepted>0))return;
+  const source=records('revision').find(r=>r.request===request&&r.revision===order.revision),prior=source?.amends&&records('order').find(o=>o.id===source.amends),priorLine=prior?.lines.find(l=>l.id===line.id);
+  fail(prior&&prior.request===request&&prior.revision<order.revision&&prior.issuedAt&&!prior.imported&&priorLine,'delivery_lineage');visit(prior,priorLine);
+ };
+ for(const order of current){orders.set(order.id,order);for(const line of order.lines)visit(order,line);}
+ const sources=[...receipts.values()],first=sources.filter(r=>r.event==='receive'&&r.q>0).sort((a,b)=>a.at.localeCompare(b.at)||a.id.localeCompare(b.id))[0];
+ return {orders:[...orders.values()],receipts:sources,delivery:first?{receipt:first.id,order:first.order,at:first.at,date:first.at.slice(0,10)}:null};
+}
+
 function validateAssessment(input, fail) {
  const records=kind=>input.sources.filter(s=>s.kind===kind).map(s=>s.value), assessment=input.assessment;
  const source=(kind,id)=>{const value=records(kind).find(r=>r.id===id);fail(value,'assessment_link');return value;};
  const orders=records('order'),receipts=records('receipt');
  const accepted=(order,line)=>(line.carriedAccepted??0)+receipts.filter(r=>r.order===order.id&&r.line===line.id).reduce((n,r)=>n+(r.event==='receive'?r.q:r.event==='return'?-r.q:0),0);
+ const delivery=deliverySources(records,input.request,input.revision,fail).delivery;
+ if(input.promise.kind==='seats')fail(equal(assessment.delivery,delivery),'assessment_delivery');
  if(input.promise.kind==='need-date'){
-  const received=receipts.filter(r=>r.event==='receive'),positions=orders.flatMap(o=>o.lines.map(l=>({order:o.id,line:l.id,requiredQ:l.q,acceptedQ:accepted(o,l)})));
+  const received=receipts.filter(r=>r.event==='receive'),positions=orders.filter(o=>o.revision===input.revision).flatMap(o=>o.lines.map(l=>({order:o.id,line:l.id,requiredQ:l.q,acceptedQ:accepted(o,l)})));
   fail(assessment.needDate===input.promise.needDate&&assessment.status===(received.length?'evidence':'no-evidence')&&equal(assessment.receipts,received.map(r=>({id:r.id,at:r.at,onTime:r.at.slice(0,10)<=input.promise.needDate})))&&equal(assessment.positions,positions)&&assessment.complete===(positions.length?positions.every(p=>p.acceptedQ>=p.requiredQ):null),'assessment_need_date');
  }
  if(input.promise.kind!=='quoted-saving')return;
@@ -73,6 +89,9 @@ export function validateAgentValue(all, get, check, rows) {
  for (const usage of all('valueSeatImport')) {
   approved(usage.request,usage.revision);
   const attachment = get('attachment',usage.attachment);
+  const delivered=get('receipt',usage.deliveryReceipt),order=get('order',delivered.order);
+  const ancestry=deliverySources(all,usage.request,usage.revision,fail);
+  fail(ancestry.delivery&&ancestry.receipts.some(r=>r.id===delivered.id)&&!delivered.imported&&delivered.event==='receive'&&delivered.q>0&&order.issuedAt&&!order.imported&&order.request===usage.request&&order.revision<=usage.revision&&usage.deliveryAt===delivered.at&&Date.parse(usage.at)>=Date.parse(delivered.at)&&usage.periodEnd>=ancestry.delivery.date,'usage_delivery');
   fail(attachment.kind === 'request' && attachment.record === usage.request && usage.attachmentVersion === revisions.get('attachment:'+attachment.id), 'usage_scope');
   const bytes = Buffer.from(attachment.base64,'base64'); let original;
   try { original = JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)); } catch { fail(false,'usage_json'); }
@@ -117,7 +136,8 @@ export function validateAgentValue(all, get, check, rows) {
   validateAssessment(input,fail);
   if (input.promise.kind === 'seats') {
    const usages = input.sources.filter(s=>s.kind === 'valueSeatImport').map(s=>s.value).sort((a,b)=>a.periodEnd.localeCompare(b.periodEnd)||a.at.localeCompare(b.at)||a.id.localeCompare(b.id));
-   const latest = usages.at(-1);
+   const delivery=input.assessment.delivery;
+   const latest = delivery ? usages.filter(u=>u.periodEnd>=delivery.date&&input.sources.some(s=>s.kind==='receipt'&&s.id===u.deliveryReceipt&&s.value.event==='receive'&&s.value.q>0&&s.value.at===u.deliveryAt&&Date.parse(u.at)>=Date.parse(u.deliveryAt))).at(-1) : undefined;
    fail(assessment.promisedSeats === input.promise.seats && (latest ? assessment.status === 'evidence' && assessment.usage === latest.id && assessment.activeSeats === latest.activeSeats && assessment.shortfall === Math.max(0,input.promise.seats-latest.activeSeats) : assessment.status === 'no-evidence' && assessment.activeSeats === null && assessment.shortfall === null && assessment.statement === 'no evidence yet'), 'assessment_seats');
   }
   if (input.promise.kind === 'quoted-saving') {
@@ -152,7 +172,9 @@ export function validateAgentValue(all, get, check, rows) {
  }
  for (const event of all('valueCheckin')) {
   const run=get('agentRun',event.run),source=approved(event.request,event.revision),decision=get('decision',event.approvedDecision),request=get('request',event.request);
-  fail([30,90].includes(event.intervalDays) && event.id === event.request+':'+event.revision+':'+event.intervalDays && decision.request === event.request && decision.revision === event.revision && decision.decision === 'approved' && decision.at === event.approvedAt && event.dueAt === new Date(Date.parse(decision.at)+event.intervalDays*86400000).toISOString() && timestamp(event.at) && Date.parse(event.at)>=Date.parse(event.dueAt), 'checkin_interval');
+  fail([30,90].includes(event.intervalDays) && event.id === event.request+':'+event.revision+':'+event.intervalDays && decision.request === event.request && decision.revision === event.revision && decision.decision === 'approved' && decision.at === event.approvedAt && event.dueAt === new Date(Date.parse(event.deliveredAt)+event.intervalDays*86400000).toISOString() && timestamp(event.at) && Date.parse(event.at)>=Date.parse(event.dueAt), 'checkin_interval');
+  const delivery=deliverySources(all,event.request,event.revision,fail).delivery;
+  fail(delivery&&event.deliveryReceipt===delivery.receipt&&event.deliveredAt===delivery.at&&event.order===delivery.order&&event.inputs.sources.some(s=>s.kind==='receipt'&&s.id===delivery.receipt),'checkin_delivery');
   fail(event.requester === request.requester && event.requesterEmail === request.requesterEmail.toLowerCase() && source.valuePromise && run.checkin === event.id && run.actor === event.requester && equal(event.inputs,run.inputs) && equal(event.sources,run.sources) && equal(event.report,run.report) && equal(event.references,run.references) && event.mode === run.mode && event.model === 'none' && event.provider === 'none', 'checkin_sources');
   let url;try {url=new URL(event.confirmationUrl);}catch{fail(false,'checkin_url');}
   fail(url.pathname === '/app' && url.searchParams.get('valueRequest') === event.request && url.searchParams.get('valueRevision') === String(event.revision) && !url.username && !url.password && equal(event.message.to,[event.requesterEmail]) && typeof event.message.text === 'string' && event.message.text.includes(event.confirmationUrl) && run.messages.some(m=>equal(m,event.message)), 'checkin_message');
