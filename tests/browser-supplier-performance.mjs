@@ -33,7 +33,7 @@ export async function supplierPerformanceJourney(browser,root,origin,width,evide
   const invoice=await api(buyer.context,origin,'invoice',{order:order.id,reference:'SR-82-'+width,source:'Supplier invoice PDF SR-82',allocations:[{line:order.lines[0].id,quantity:'2',amountMinor:8500}]})
   await buyer.page.reload();await buyer.page.getByRole('navigation').getByRole('button',{name:'Suppliers',exact:true}).click();await buyer.page.getByRole('row').filter({hasText:supplier.name}).getByRole('button',{name:'Open',exact:true}).click()
   await panel.getByLabel('Issue purchase order',{exact:true}).selectOption(order.id);await panel.getByLabel('Issue category',{exact:true}).selectOption('damaged');await panel.getByLabel('Issue description',{exact:true}).fill('Broken connector; supplier replacement requested '+width)
-  await panel.getByRole('button',{name:'Save supplier issue',exact:true}).click()
+  const saved=buyer.page.waitForResponse(r=>r.url().endsWith('/api/purse/command/supplier-issue'));await panel.getByRole('button',{name:'Save supplier issue',exact:true}).click();assert.equal((await saved).status(),200)
   const issue=(await current(buyer.context,origin)).data.supplierScorecards.find(s=>s.supplier===supplier.id).issues.rows.find(i=>i.orderId===order.id)
   assert.ok(issue)
   for(const summary of await panel.locator(':scope > details > summary').all())await summary.click()

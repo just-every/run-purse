@@ -88,7 +88,7 @@ export async function supplierDuplicatesJourney(browser,root,origin,width,eviden
   const requesterAfter=await session(browser,root,origin,'requester',width)
   try{
    await requesterAfter.page.getByRole('navigation').getByRole('button',{name:'Requests',exact:true}).click()
-   await requesterAfter.page.getByText('New purchase request',{exact:true}).click()
+   await requesterAfter.page.getByRole('button',{name:'New purchase request',exact:true}).click()
    assert.equal(await requesterAfter.page.locator('select[name="supplier"] option[value="'+separate.id+'"]').count(),0)
    await requesterAfter.page.screenshot({path:join(evidence,`SUPPLIER-003-alias-not-purchasable-${width}.png`),fullPage:true})
   }finally{await requesterAfter.context.close()}
