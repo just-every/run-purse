@@ -1,0 +1,73 @@
+/* 04 · Budget & approval: the "Same morning" tapes in a 300 px margin at left, the fork in the main column. The fork
+   and the join are dotted kingfisher lines drawn with borders; the bars are to scale. */
+.budget { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 0 40px; align-items: start; }
+.budget-tapes { margin-top: 60px; }
+.budget-tapes h3 { font: 900 34px/1.1 var(--site-slab); letter-spacing: -0.02em; color: var(--ink); }
+.budget-tapes ul { display: grid; gap: 28px; margin: 18px 0 0; padding: 0; list-style: none; }
+.tape { margin-bottom: 8px; padding: 18px 22px 20px; border: 0; border-radius: 6px 6px 0 0; box-shadow: none; filter: drop-shadow(0 0 0.6px rgb(16 21 25 / 0.45)) drop-shadow(0 8px 10px rgb(16 21 25 / 0.08)); font-size: 16px; line-height: 1.4; }
+.tape::after { content: ""; position: absolute; left: 0; right: 0; bottom: -8px; height: 8px; background: conic-gradient(from -45deg at 50% 100%, #fff 90deg, #0000 0) bottom / 14px 8px repeat-x; transform: scaleY(-1); }
+.tape-title { font: 800 19px/1.3 var(--site-slab); color: var(--ink); }
+.tape-sum { margin-top: 8px; font-size: 17px; }
+.tape-foot { display: grid; gap: 4px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--hair); font-size: 15.5px; }
+.tape-foot .done { color: var(--text); font-weight: 400; }
+.tape-foot .done .check { color: var(--green); }
+
+.budget-main { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.budget-request { display: flex; align-items: center; gap: 18px; margin-top: 30px; padding: 18px 26px 18px 20px; font-size: 18px; line-height: 1.45; }
+.budget-request > .dot { align-self: flex-start; margin-top: 8px; width: 18px; height: 18px; }
+.budget-request .glyph { width: 78px; height: 78px; }
+.slab { font: 900 22px/1.2 var(--site-slab); letter-spacing: -0.01em; }
+.budget-fork, .budget-join { position: relative; width: 63%; height: 36px; }
+.budget-fork { border: 2px dotted var(--blue); border-bottom: 0; border-radius: 6px 6px 0 0; margin-top: 18px; }
+.budget-fork::before { content: ""; position: absolute; left: 50%; top: -20px; height: 18px; border-left: 2px dotted var(--blue); }
+.budget-join::after { content: ""; position: absolute; width: 10px; height: 10px; border: solid var(--blue); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.budget-halves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 64px; width: 100%; margin-top: 6px; }
+.half { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.half-glyph { width: 104px; height: 104px; }
+.half-label { margin-top: 10px; font-size: 18px; text-align: center; text-wrap: balance; }
+.half-budget { width: 100%; margin-top: 12px; padding: 18px 20px 16px; }
+.half-name { display: flex; align-items: center; gap: 12px; font-size: 19px; }
+.bar { display: flex; height: 28px; margin-top: 14px; border: 1.5px solid #b9c0c8; border-radius: 7px; overflow: hidden; }
+.bar span { display: block; height: 100%; }
+.bar-actual { background: #1b2026; }
+.bar-committed { background: var(--blue); }
+.bar-this { background: var(--tang); }
+.bar-left { background: #fff; }
+.half-sums { margin-top: 12px; font-size: 15px; line-height: 1.45; }
+.half-sums .check { width: 18px; height: 18px; vertical-align: -3px; }
+.half-approver { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 12px 22px; font-size: 18px; }
+.half-approver .done { color: var(--text); font-weight: 400; }
+.half-approver .done .check { color: var(--green); }
+.budget-join { border: 2px dotted var(--blue); border-top: 0; border-radius: 0 0 6px 6px; }
+.budget-join::before { content: ""; position: absolute; left: 50%; bottom: -20px; height: 18px; border-left: 2px dotted var(--blue); }
+.budget-join::after { left: calc(50% - 5px); bottom: -22px; }
+.budget-po { display: flex; align-items: center; gap: 14px; margin-top: 30px; padding: 16px 26px; font-size: 19px; line-height: 1.35; }
+.budget-po .check { width: 22px; height: 22px; vertical-align: -4px; }
+.budget-note { margin-top: 22px; color: var(--muted); font-size: 17px; text-align: center; }
+
+@media (max-width: 1180px) {
+  .budget { grid-template-columns: minmax(0, 1fr); }
+  .budget-tapes { order: 2; margin-top: 56px; }
+  .budget-tapes ul { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .budget-halves { gap: 0 24px; }
+}
+@media (max-width: 760px) {
+  .budget-request { flex-wrap: wrap; padding: 14px 16px; font-size: 16px; gap: 12px; }
+  .budget-request .glyph { width: 52px; height: 52px; }
+  .slab { font-size: 18px; }
+  .budget-fork, .budget-join { width: 2px; height: 32px; border-left: 2px dotted var(--blue); border-right: 0; border-radius: 0; }
+  .budget-fork::before, .budget-join::before { display: none; }
+  .budget-join::after { left: -6px; bottom: -2px; }
+  .budget-halves { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .half-glyph { width: 64px; height: 64px; }
+  .half-label { font-size: 16px; }
+  .half-budget { padding: 14px 14px 12px; }
+  .half-name { font-size: 16px; align-items: flex-start; }
+  .half-name .dot { margin-top: 4px; }
+  .half-sums { font-size: 14px; }
+  .half-approver { padding: 10px 14px; font-size: 16px; }
+  .budget-po { padding: 14px 16px; font-size: 16px; }
+  .budget-note { font-size: 15px; }
+  .budget-tapes ul { grid-template-columns: minmax(0, 1fr); }
+  .tape { font-size: 15px; }
+}

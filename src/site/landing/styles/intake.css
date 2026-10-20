@@ -1,0 +1,72 @@
+/* 02 · Intake. Desktop: the ribbon at --rib, one row per request (--row), each card hung beside its tick by a dotted
+   lead (an elbow when the card is dropped --drop rows below it). Under 1181 px: the 390 plan, one ribbon down the left
+   gutter, cards in the stream at their times. */
+.intake-legend { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 16px 40px; margin-top: 36px; }
+.intake-teams { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 34px; margin: 0; padding: 0; list-style: none; }
+.intake-teams li { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 500; }
+.intake-teams .glyph { width: 50px; height: 50px; }
+.intake-channels { padding-left: 40px; border-left: 2px solid var(--hair); font-size: 18px; font-weight: 500; }
+
+.ribbon { --rib: 42%; --row: 37px; --gap-l: 92px; --label: 272px; position: relative; margin-top: 40px; }
+.ribbon-end { position: relative; z-index: 1; width: 72px; margin-left: calc(var(--rib) - 36px); padding: 5px 0; border-radius: 999px; background: var(--blue); color: #fff; font-size: 17px; font-weight: 700; text-align: center; }
+.ribbon-ticks { position: relative; margin: 0; padding: 6px 0; list-style: none; }
+.ribbon-ticks::before { content: ""; position: absolute; top: -12px; bottom: -12px; left: calc(var(--rib) - 2px); width: 4px; background: var(--blue); }
+.tick { position: relative; height: var(--row); }
+.tick-dot { position: absolute; top: calc(var(--row) / 2 - 8px); left: calc(var(--rib) - 8px); width: 16px; height: 16px; border: 3px solid var(--blue); border-radius: 50%; background: #fff; }
+.tick-label { position: absolute; top: 0; left: calc(var(--rib) + 22px); display: flex; align-items: center; gap: 10px; height: var(--row); white-space: nowrap; font-size: 15px; color: var(--text); }
+.tick-label time { min-width: 40px; font-weight: 700; color: var(--ink); }
+.tick-label .glyph { width: 24px; height: 24px; }
+
+.intake-card { display: flex; gap: 18px; padding: 18px 22px 18px 20px; font-size: 18px; line-height: 1.4; }
+.intake-card p { text-wrap: pretty; }
+.intake-who { margin-bottom: 2px; font-size: 18.5px; }
+.intake-card .glyph { width: 64px; height: 64px; }
+.intake-card .pill { margin-top: 6px; font-size: 17px; }
+.intake-total { max-width: 960px; margin: 40px auto 0; padding: 16px 32px; border-radius: 12px; font-size: 20px; text-align: center; text-wrap: balance; }
+
+@media (min-width: 1181px) {
+  .tick.has-card .intake-card { position: absolute; top: calc(var(--drop, 0) * var(--row) + var(--row) / 2 - 44px); }
+  .card-left .intake-card { right: calc(100% - var(--rib) + var(--gap-l)); width: min(540px, calc(var(--rib) - var(--gap-l))); }
+  .card-right .intake-card { left: calc(var(--rib) + var(--label)); right: 0; max-width: 520px; }
+  .intake-lead { position: absolute; top: calc(44px - var(--drop, 0) * var(--row)); height: calc(var(--drop, 0) * var(--row)); }
+  .intake-lead::before, .intake-lead::after { content: ""; position: absolute; border: 0 dotted #3b4652; }
+  .intake-lead::before { top: 0; bottom: 0; border-top-width: 2px; }
+  .intake-lead::after { bottom: -2px; border-top-width: 2px; }
+  .card-left .intake-lead { left: 100%; width: calc(var(--gap-l) - 10px); }
+  .card-left .intake-lead::before { left: 50%; right: 0; border-left-width: 2px; }
+  .card-left .intake-lead::after { left: 0; width: 50%; }
+  .card-right .intake-lead { right: 100%; width: 26px; }
+  .card-right .intake-lead::before { left: 0; right: 50%; border-right-width: 2px; }
+  .card-right .intake-lead::after { left: 50%; right: 0; }
+}
+@media (max-width: 1180px) {
+  .ribbon { --rib: 26px; max-width: 760px; margin-inline: auto; }
+  .ribbon-end { margin-left: 0; width: 64px; font-size: 15px; }
+  .tick { height: auto; min-height: var(--row); }
+  .tick-label { position: relative; left: 0; padding-left: 64px; }
+  .tick.has-card { padding: 6px 0 10px; }
+  .tick.has-card .tick-dot { top: 22px; }
+  .tick.has-card .tick-label { position: absolute; top: 5px; left: 0; height: 34px; padding-left: 0; }
+  .tick.has-card .tick-label time { position: absolute; left: 40px; font-size: 14px; color: var(--blue); }
+  .tick.has-card .tick-label .glyph, .tick.has-card .tick-label > span { display: none; }
+  .intake-card { margin-left: 92px; }
+  .intake-lead { position: absolute; top: 22px; right: 100%; width: 42px; border-top: 2px dotted #3b4652; }
+}
+@media (max-width: 760px) {
+  .intake-legend { flex-direction: column; gap: 14px; margin-top: 26px; }
+  .intake-teams { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
+  .intake-teams li { flex-direction: column; gap: 6px; font-size: 14px; }
+  .intake-teams .glyph { width: 44px; height: 44px; }
+  .intake-channels { padding: 0; border: 0; font-size: 17px; }
+  .ribbon { --rib: 10px; --row: 40px; margin-top: 24px; }
+  .ribbon-end { width: 52px; margin-left: -12px; padding: 3px 0; font-size: 14px; }
+  .tick-label { padding-left: 30px; font-size: 16px; gap: 10px; }
+  .tick-label time { min-width: 44px; }
+  .tick.has-card .tick-label time { left: 22px; font-size: 13px; }
+  .intake-card { margin-left: 62px; padding: 14px 14px 14px 12px; gap: 12px; font-size: 15px; }
+  .intake-who { font-size: 16px; }
+  .intake-card .glyph { width: 44px; height: 44px; }
+  .intake-card .pill { font-size: 14px; }
+  .intake-lead { width: 14px; }
+  .intake-total { margin-top: 28px; padding: 14px 16px; font-size: 16px; }
+}

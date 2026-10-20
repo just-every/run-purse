@@ -1,0 +1,55 @@
+/* 06 · Orders: the PO as a tall document with a folded corner, its email thread clipped to its right edge (slips set
+   square; the chase slip outlined in tangelo with the hand note), and a stack of perforated tickets. */
+.orders { display: grid; grid-template-columns: minmax(0, 0.94fr) minmax(0, 0.9fr) minmax(0, 0.66fr); grid-template-areas: "head head head" "doc thread tickets"; gap: 0 26px; align-items: start; }
+.orders .section-head { grid-area: head; margin-bottom: 30px; }
+.orders .section-head .lead { max-width: 1140px; }
+.po-doc { grid-area: doc; position: relative; padding: 46px 36px 34px; border: 1.5px solid #2b3036; border-radius: 6px; background: #fff; box-shadow: var(--card-shadow); clip-path: polygon(0 0, calc(100% - 50px) 0, 100% 50px, 100% 100%, 0 100%); font-size: 20px; line-height: 1.5; }
+.po-doc::after { content: ""; position: absolute; top: -1px; right: -1px; width: 50px; height: 50px; background: linear-gradient(225deg, transparent 50%, #e9ecef 50%, #fff 100%); border-left: 1.5px solid #2b3036; border-bottom: 1.5px solid #2b3036; border-bottom-left-radius: 2px; }
+.po-company { font: 900 36px/1.1 var(--site-slab); letter-spacing: -0.02em; color: var(--ink); }
+.po-number { margin-top: 16px; font-size: 21px; }
+.po-block { margin-top: 22px; padding-top: 22px; border-top: 1.5px solid #c9ced4; }
+.po-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 22px; padding-top: 22px; border-top: 1.5px solid #c9ced4; }
+.po-sum { font-size: 28px; }
+.po-ack { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 28px; min-height: 64px; border: 1.5px solid #0a3c7a; border-radius: 8px; background: var(--blue); color: #fff; font-size: 22px; font-weight: 700; }
+.po-thread { grid-area: thread; position: relative; margin-left: -46px; }
+.po-thread ol { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.slip { display: flex; gap: 14px; padding: 12px 18px; border-color: #c9ced4; border-radius: 10px; font-size: 16.5px; line-height: 1.42; }
+.slip .dot { margin-top: 4px; width: 16px; height: 16px; }
+.slip.chase { border: 2px solid var(--tang); }
+.slip .done { font-weight: 600; }
+.po-note { position: absolute; top: 120px; right: -6px; width: 110px; color: var(--tang); transform: rotate(-8deg); text-align: center; }
+.po-settings { margin-top: 14px; color: var(--muted); font-size: 15.5px; }
+.po-tickets { grid-area: tickets; display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
+.ticket { display: flex; gap: 16px; padding: 22px 20px 16px; border-radius: 6px; font-size: 16.5px; line-height: 1.38; }
+.ticket::before { content: ""; position: absolute; top: 7px; left: 10px; right: 10px; height: 6px; background: radial-gradient(circle at 50% 0, #fff 3.2px, transparent 3.7px) 0 0 / 12px 6px repeat-x, linear-gradient(#8a9097, #8a9097) 0 0 / 100% 1px no-repeat; }
+.ticket .glyph { width: 72px; height: 72px; }
+.ticket-po { font: 900 21px/1.2 var(--site-slab); color: var(--ink); }
+.ticket-for { font-weight: 700; color: var(--ink); }
+.ticket .done .check { width: 18px; height: 18px; }
+
+@media (min-width: 1181px) {
+  .po-thread ol { padding-right: 112px; }
+}
+@media (max-width: 1180px) {
+  .orders { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "head head" "doc thread" "tickets tickets"; gap: 24px; }
+  .po-thread { margin-left: 0; }
+  .po-note { position: static; width: auto; margin-top: 12px; transform: none; text-align: left; }
+  .po-tickets { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+}
+@media (max-width: 900px) {
+  .orders { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "doc" "thread" "tickets"; max-width: 640px; }
+}
+@media (max-width: 760px) {
+  .po-doc { padding: 34px 18px 22px; font-size: 16px; clip-path: polygon(0 0, calc(100% - 36px) 0, 100% 36px, 100% 100%, 0 100%); }
+  .po-doc::after { width: 36px; height: 36px; }
+  .po-company { font-size: 27px; }
+  .po-number { font-size: 17px; }
+  .po-block, .po-total { margin-top: 16px; padding-top: 16px; }
+  .po-sum { font-size: 22px; }
+  .po-ack { min-height: 54px; font-size: 18px; }
+  .slip { padding: 10px 12px; font-size: 15px; gap: 10px; }
+  .po-settings { font-size: 14px; }
+  .po-tickets { grid-template-columns: minmax(0, 1fr); }
+  .ticket { font-size: 15px; }
+  .ticket .glyph { width: 52px; height: 52px; }
+}

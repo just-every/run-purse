@@ -1,0 +1,37 @@
+/* 09 and 12, the two painted vignettes: never full-bleed, held to 1440 px and fading to white at every edge (the
+   plates already fade; the frame's mask finishes it). 09's tag sits on its white foot; 12's cards overlap its foot. */
+.scene-frame { position: relative; max-width: 1440px; margin: 0 auto; }
+.scene-art img { display: block; width: 100%; height: auto; }
+.scene-tag { position: absolute; right: 4.3%; bottom: 5.4%; display: flex; align-items: center; gap: 12px; padding: 14px 22px; border-radius: 12px; font-size: 19px; }
+.scene-tag .check { width: 20px; height: 20px; vertical-align: -3px; }
+.closing-frame .scene-art img { -webkit-mask: linear-gradient(#000 82%, #0000); mask: linear-gradient(#000 82%, #0000); }
+.closing-cards { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; max-width: 1440px; margin: -50px auto 0; list-style: none; }
+.closing-cards li { display: flex; align-items: center; gap: 14px; padding: 18px 16px; border-radius: 12px; font-size: 17px; line-height: 1.35; }
+.closing-cards .glyph { width: 58px; height: 58px; }
+.closing-team { font: 900 23px/1.2 var(--site-slab); color: var(--ink); }
+.closing-cards .check { width: 20px; height: 20px; vertical-align: -3px; }
+.closing-copy { margin-top: 44px; text-align: center; }
+.closing-copy h2 { font: 900 var(--h2)/0.98 var(--site-slab); letter-spacing: -0.018em; word-spacing: 0.04em; color: var(--ink); }
+.closing-copy h2 span { display: block; text-wrap: balance; }
+.closing-copy h2 .l2 { color: var(--tang); }
+.closing-free { margin-top: 26px; font-size: 24px; }
+.closing-actions { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 20px 40px; margin-top: 34px; }
+
+@media (max-width: 1180px) {
+  .closing-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: -24px; }
+  .scene-tag { position: static; width: fit-content; margin: -10px auto 0; }
+}
+@media (max-width: 760px) {
+  .interlude .scene-art img { width: 160%; max-width: none; margin-left: -6%; }
+  .closing-frame .scene-art img { width: 170%; max-width: none; margin-left: -35%; }
+  .scene-art { display: block; overflow: hidden; }
+  .scene-tag { flex-wrap: wrap; margin: -6px 16px 0; padding: 12px 14px; font-size: 15px; gap: 8px; }
+  .closing-cards { grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: -12px; }
+  .closing-cards li { padding: 14px 16px; font-size: 16px; }
+  .closing-cards .glyph { width: 52px; height: 52px; }
+  .closing-team { font-size: 20px; }
+  .closing-copy { margin-top: 36px; }
+  .closing-free { margin-top: 18px; font-size: 18px; }
+  .closing-actions { flex-direction: column; align-items: stretch; }
+  .closing-actions .text-link { align-self: center; }
+}

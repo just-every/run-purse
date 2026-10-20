@@ -1,0 +1,74 @@
+/* The homepage's shared look (page-s1): crisp white, no grid and no tinted bands; headings in the slab on two short
+   lines (ink, then tangelo) at one size; kingfisher caps eyebrows; white rounded cards with a hairline and a soft
+   shadow, each led by a small filled dot; kelly green only for done states, cerise only on 08's hold. */
+.landing {
+  --blue: #0067db;
+  --blue-pale: #e8f1fc;
+  --blue-soft: #8fc0f5;
+  --tang: #fd6008;
+  --tang-pale: #fff0e6;
+  --ink: #040404;
+  --line: #101519;
+  --text: #23282d;
+  --muted: #5a6168;
+  --hair: #e3e6ea;
+  --green: #0f8a3c;
+  --cerise: #e0115f;
+  --yellow: #fccb17;
+  --card-shadow: 0 1px 2px rgb(16 21 25 / 0.06), 0 10px 26px -12px rgb(16 21 25 / 0.18);
+  --h2: clamp(32px, 4.2vw + 12px, 74px);
+  --gutter: 64px;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.wrap { max-width: 1440px; margin: 0 auto; padding: 0 var(--gutter); }
+.landing > section { scroll-margin-top: 24px; }
+.landing > section + section { margin-top: 152px; }
+
+.section-head .eyebrow { color: var(--blue); font: 700 15px/1.4 var(--site-sans); letter-spacing: 0.14em; text-transform: uppercase; text-wrap: balance; }
+.section-head h2 { margin-top: 16px; font: 900 var(--h2)/0.98 var(--site-slab); letter-spacing: -0.018em; word-spacing: 0.04em; color: var(--ink); }
+.section-head h2 span { display: block; text-wrap: balance; }
+.section-head h2 .l2 { color: var(--tang); }
+.section-head .lead { margin-top: 22px; max-width: 840px; color: var(--text); font-size: 22px; line-height: 1.45; text-wrap: pretty; }
+.section-head.centred { text-align: center; }
+.section-head.centred .lead { margin-inline: auto; }
+
+.card { position: relative; background: #fff; border: 1px solid var(--hair); border-radius: 14px; box-shadow: var(--card-shadow); }
+.dot { display: inline-block; flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--blue); }
+.dot.tang { background: var(--tang); }
+.dot.pale { background: var(--blue-soft); }
+.dot.green { background: #1aa34a; }
+.dot.cerise { background: var(--cerise); }
+.glyph { flex: none; width: 44px; height: 44px; }
+.done { color: var(--green); font-weight: 650; white-space: nowrap; }
+.check { display: inline-block; width: 1em; height: 1em; margin-left: 0.25em; vertical-align: -0.12em; color: var(--green); }
+.done .check { color: inherit; }
+.arrow { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -0.16em; }
+.pill { display: inline-block; padding: 2px 10px; border: 1px solid var(--tang); border-radius: 7px; background: var(--tang-pale); color: var(--tang); font-weight: 600; white-space: nowrap; }
+.hand { font: 600 26px/1.1 Caveat, 'Bradley Hand', cursive; }
+.nb { white-space: nowrap; }
+b, strong { font-weight: 700; color: var(--ink); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 58px; padding: 0 44px; border-radius: 9px; background: var(--blue); color: #fff; font: 700 20px/1 var(--site-sans); text-decoration: none; box-shadow: 0 10px 22px -12px rgb(0 103 219 / 0.7); transition: background 0.15s; }
+.btn:hover { background: #0058bd; }
+.btn .arrow { width: 22px; height: 22px; transition: transform 0.15s; }
+.btn:hover .arrow { transform: translateX(3px); }
+.text-link { color: var(--blue); font-weight: 600; font-size: 18px; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 5px; }
+.text-link:hover { text-decoration-thickness: 2.5px; }
+@media (prefers-reduced-motion: reduce) { .btn, .btn .arrow { transition: none; } .btn:hover .arrow { transform: none; } }
+
+@media (max-width: 1180px) {
+  .landing { --gutter: 40px; }
+  .landing > section + section { margin-top: 120px; }
+  .section-head .lead { font-size: 20px; }
+}
+@media (max-width: 760px) {
+  .landing { --gutter: 16px; }
+  .landing > section + section { margin-top: 88px; }
+  .section-head .eyebrow { font-size: 13px; letter-spacing: 0.1em; }
+  .section-head h2 { margin-top: 12px; line-height: 1.02; }
+  .section-head .lead { margin-top: 16px; font-size: 17px; }
+  .section-head.centred { text-align: left; }
+  .glyph { width: 36px; height: 36px; }
+  .btn { min-height: 54px; font-size: 18px; }
+  .hand { font-size: 23px; }
+}

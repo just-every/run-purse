@@ -1,0 +1,65 @@
+/* 11 · Switching: one PO's life crossing the dashed switch line, grey in Procurify and kingfisher in Purse; under it
+   what came over, the other sources and the page's one dark card, the terminal. */
+.switch { position: relative; margin-top: 40px; }
+.switch::before { content: ""; position: absolute; left: 50%; top: 34px; bottom: -6px; border-left: 2px dashed #2b3036; }
+.switch-label { position: relative; text-align: center; font-size: 18px; }
+.switch-po { position: relative; z-index: 1; display: flex; align-items: center; gap: 22px; width: fit-content; max-width: 100%; margin: 24px auto 0; padding: 18px 28px; font-size: 20px; line-height: 1.4; }
+.switch-po .glyph { width: 60px; height: 60px; }
+.switch-adopted { position: relative; z-index: 1; width: fit-content; max-width: 100%; margin: 12px auto 0; padding: 7px 14px; border: 1px solid var(--hair); border-radius: 8px; background: #fff; font-size: 16px; text-align: center; }
+.switch-line { display: grid; grid-template-columns: 1fr 1fr; margin-top: 28px; }
+.switch-side-name { margin: 0 auto 18px; font-size: 26px; font-weight: 700; text-align: center; }
+.was .switch-side-name { color: #6b7279; }
+.now .switch-side-name { color: var(--blue); }
+.switch-side ol { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+.switch-side ol::before { content: ""; position: absolute; top: 12px; height: 6px; border-radius: 3px; }
+.was ol::before { left: 12%; right: 0; background: #8f959b; }
+.now ol::before { left: 0; right: 12%; background: var(--blue); }
+.now ol::after { content: ""; position: absolute; top: 4px; left: -11px; width: 22px; height: 22px; border-radius: 50%; background: var(--blue); }
+.switch-side li { position: relative; padding-top: 44px; font-size: 17px; line-height: 1.38; text-align: center; text-wrap: balance; }
+.switch-side li::before { content: ""; position: absolute; top: 0; left: calc(50% - 15px); width: 30px; height: 30px; border-radius: 50%; }
+.was li::before { background: #8f959b; }
+.now li::before { background: var(--blue); }
+.now li::after { content: ""; position: absolute; top: -10px; left: calc(50% + 6px); width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; background: #1aa34a url('/site/check-white.svg') center / 14px no-repeat; }
+.switch-side .check { width: 18px; height: 18px; vertical-align: -3px; }
+.switch-foot { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.7fr) minmax(0, 1.1fr); gap: 36px; align-items: center; margin-top: 64px; }
+.switch-foot > p { display: flex; gap: 18px; font-size: 19px; line-height: 1.45; }
+.switch-foot > p + p { padding-left: 36px; border-left: 1px solid var(--hair); }
+.switch-foot .dot { margin-top: 3px; width: 30px; height: 30px; }
+.terminal { padding: 18px 24px 20px; border-radius: 12px; background: #121820; color: #e8edf2; }
+.terminal-lights { display: flex; gap: 8px; }
+.terminal-lights i { width: 13px; height: 13px; border-radius: 50%; background: #ff5f57; }
+.terminal-lights i:nth-child(2) { background: #febc2e; }
+.terminal-lights i:nth-child(3) { background: #28c840; }
+.terminal pre { margin: 14px 0 0; font: 500 16px/1.75 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; }
+.terminal .prompt { color: #9aa4ae; }
+.terminal .ready { color: #4ade80; }
+
+@media (max-width: 1380px) {
+  .switch-foot { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .terminal { grid-column: 1 / -1; }
+}
+@media (max-width: 1180px) {
+  .switch-side li { font-size: 16px; }
+}
+@media (max-width: 960px) {
+  .switch::before { left: 15px; top: 30px; }
+  .switch-label { text-align: left; padding-left: 30px; font-size: 16px; }
+  .switch-po { margin: 16px 0 0; padding: 14px 14px; gap: 12px; font-size: 16px; }
+  .switch-po .glyph { width: 44px; height: 44px; }
+  .switch-adopted { margin: 10px 0 0 30px; font-size: 14px; text-align: left; }
+  .switch-line { grid-template-columns: minmax(0, 1fr); gap: 26px; margin-top: 22px; }
+  .switch-side-name { margin: 0 0 12px 30px; font-size: 21px; text-align: left; }
+  .switch-side ol { grid-template-columns: minmax(0, 1fr); gap: 14px; padding-left: 30px; }
+  .switch-side ol::before, .now ol::after { display: none; }
+  .switch-side li { padding: 0 0 0 40px; text-align: left; font-size: 15px; }
+  .switch-side li::before { top: 0; left: 0; width: 24px; height: 24px; }
+  .now li::after { top: -6px; left: 14px; width: 18px; height: 18px; background-size: 11px; }
+}
+@media (max-width: 760px) {
+  .switch-foot { grid-template-columns: minmax(0, 1fr); gap: 20px; margin-top: 40px; }
+  .switch-foot > p { font-size: 16px; gap: 12px; }
+  .switch-foot > p + p { padding-left: 0; border-left: 0; }
+  .switch-foot .dot { width: 22px; height: 22px; }
+  .terminal { padding: 14px 14px 16px; }
+  .terminal pre { font-size: 13px; }
+}

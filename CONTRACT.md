@@ -292,6 +292,52 @@ Agents do the follow-through that buyers of Zip and Levelpath expect agents to d
 - **US first.** Currencies other than USD stay separate and are supported for foreign suppliers, but VAT, GST, e-invoicing mandates outside the US and non-US tax forms are not in this edition.
 - **Owner inputs still required.** An anonymized real purchasing case, an actual Procurify account's Export Data CSVs or API access (IMPORT-001) and a current-process cost and attention baseline come from the owner; acceptance that depends on them stays open until supplied. Existing installations keep applied migrations and use the forward upgrade in `UPGRADING.md`.
 
+## Homepage claims
+
+Every capability the homepage (run-purse.com, `src/site/landing/`) shows, against the code today. The page follows
+Redbud Outdoor Co., sample data, and may show the product Purse is being built toward; the clause column names the
+target clause and the status table below says how far each one is. "code" is shipped and tested, "partly" is shipped in
+part, "contract, not yet in code" is the target only.
+
+| Section | Claim on the page | Clauses | Backed by |
+| --- | --- | --- | --- |
+| Hero, 12 | 100% free and open source, MIT licensed; one line starts it on your computer | PUR-015 | code: `LICENSE`; `package.json`; `tests/run-site.mjs` |
+| Hero | Requests held to budget, POs sent and chased, invoices matched to order and delivery | BUDGET-001, PO-001, PO-003, MATCH-001 | partly: `src/purse/requests.ts`; `src/purse/order-chasing.ts`; `src/purse/orders.ts` (sending from Purse and automatic matching are contract, not yet in code) |
+| Hero, 10 | Each matched bill synced to QuickBooks Online once | SYNC-001, SYNC-005 | contract, not yet in code (today: accounting CSV, PUR-011 `src/purse/invoices.ts`) |
+| 02 | Requests from a phone and the web | MOBILE-001, INTAKE-001 | code: `src/ui/requests.tsx`; `tests/browser-journey.mjs` |
+| 02 | Requests from Slack and Microsoft Teams | INTAKE-002, INTAKE-003 | contract, not yet in code |
+| 02 | Copy a past order into a new request | INTAKE-001 | contract, not yet in code |
+| 02, 04 | Every request coded to its team and budget | CODING-001, BUDGET-001 | partly: `src/purse/requests.ts` (one coding per line; split codings are contract) |
+| 03 | The agent finds the catalog item and past orders, codes the line and drafts the request; the requester submits | AGENT-001, CATALOG-001 | partly: catalog `src/purse/catalogue.ts` (code); agent proposals `src/purse/agents.ts` (no agent execution yet) |
+| 03, 04 | Budget check and who decides, by team and amount | BUDGET-001, APPROVAL-001, PUR-006 | partly: `src/purse/approval.ts`; `tests/purse.test.mjs` P06 (one approver per policy) |
+| 03, 04 | Approvals given in Slack or Teams | APPROVAL-003 | partly: web approval `src/ui/requests.tsx`; Slack and Teams approval are contract |
+| 04 | One line split across two departments, each half checked and approved on its own budget | CODING-001, APPROVAL-001 | contract, not yet in code |
+| 02, 04 | POs created and sent after approval; lines from two requests combined on one PO | PO-008 | partly: `src/purse/orders.ts` (numbered POs once, PUR-008); automatic sending and combining are contract |
+| 05 | A new supplier proposed in a request; the supplier fills in its own W-9, bank and insurance through a link | SUPPLIER-008, SUPPLIER-001 | contract, not yet in code |
+| 05 | Bank details checked by call-back and a second approver; account name matched with Plaid | SUPPLIER-002 | contract, not yet in code |
+| 05 | OFAC screening and the duplicate-supplier check | SUPPLIER-007, SUPPLIER-003 | code: `src/purse/screening.ts`; `src/purse/supplier-matching.ts`; `tests/supplier-screening.test.mjs`; `tests/supplier-duplicates.test.mjs` |
+| 05 | Insurance certificate kept with its expiry | SUPPLIER-004 | code: `src/purse/supplier-documents.ts`; `tests/supplier-documents.test.mjs` |
+| 05 | EIN and bank details masked | SECURITY-001 | contract, not yet in code |
+| 06 | Each PO emailed from the business's own address with an acknowledgment link | PO-001, PO-002 | contract, not yet in code (PO documents are code: PO-009) |
+| 06 | PO document with lines, need date, terms and total | PO-009 | code: `src/purse/po-content.ts`; `src/purse/po-pdf.ts`; `tests/po-documents.test.mjs` |
+| 06 | Unacknowledged POs chased on a set schedule (1 a day, at most 3) | PO-003, AGENT-003 | partly: `src/purse/order-chasing.ts`; `tests/order-chasing.test.mjs` (the agent's chase message is contract) |
+| 06 | Amazon Business orders by cXML PunchOut | PUNCHOUT-001 | contract, not yet in code |
+| 06 | Carrier tracking on the PO | PO-006 | contract, not yet in code |
+| 06 | The requester told in Teams when the PO is acknowledged | NOTIFY-001, INTAKE-003 | contract, not yet in code |
+| 07 | Receivers prompted for the day's deliveries; partial receipts keep the rest open on the PO | RECEIVE-001, PUR-010 | code: `src/purse/receipt-prompts.ts`; `src/purse/receiving.ts`; `tests/receipt-routing.test.mjs` |
+| 07 | Scanning deliveries at the dock on a phone | MOBILE-002 | contract, not yet in code (receiving on a phone's web browser is MOBILE-001, code) |
+| 08 | An invoice billed for more than was received is held until the rest arrives, then matched | RECEIVE-001, MATCH-001 | partly: invoice holds `src/purse/receipt-routing.ts` (code); automatic three-way matching on arrival is contract |
+| 08 | Invoices arriving at an AP address | INVOICE-001 | contract, not yet in code |
+| 08 | Invoice fields read with confidence and confirmed by AP | INVOICE-002 | code: `src/purse/invoice-reading.ts`; `tests/invoice-reading.test.mjs` |
+| 08 | The agent asks the supplier for the back-order date and records the answer on the PO | AGENT-003 | contract, not yet in code |
+| 08, 10 | Paid by ACH in QuickBooks, with the status back in Purse | AP-002 | contract, not yet in code |
+| 10 | A repeated invoice never entered twice | INVOICE-003, PUR-011 | code: `src/purse/invoice-risk.ts`; `tests/invoice-risk.test.mjs` |
+| 10 | A sync timeout retried without a second bill; the month's tie-out against QuickBooks | SYNC-005 | contract, not yet in code |
+| 10 | Received-not-billed accrual posted as a reversing journal | REPORT-004 | contract, not yet in code |
+| 11 | Moved from Procurify with open POs adopted under their own numbers, not re-sent | IMPORT-001, IMPORT-003 | partly: `src/purse/imports.ts`; `src/purse/import-mapping.ts`; `tests/purse.test.mjs` P13 |
+| 11 | Suppliers, approval routes, budgets and history brought over; bills linked to the POs already in QuickBooks | IMPORT-001, BUDGET-002, IMPORT-004 | partly: suppliers and history by reviewed CSV (PUR-013, code); budgets and ledger links are contract |
+| 11 | Also moves in from Coupa, Precoro and spreadsheets | IMPORT-002, PUR-013 | partly: spreadsheets by reviewed CSV move-in `src/purse/imports.ts` (code); Coupa and Precoro importers are contract |
+
 ## Backup and upgrade
 
 A pre-upgrade export restores only with the Purse release that made it. Restore it

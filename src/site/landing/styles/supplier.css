@@ -1,0 +1,72 @@
+/* 05 · New supplier: copy and the onboarding form at left (the form's filled fields are hairline boxes with a green
+   check, never thick form fields); the three-day rail and the supplier record at right on one baseline grid. */
+.supplier { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 500px); grid-template-areas: "head side" "form side"; gap: 0 48px; align-items: start; }
+.supplier-side { grid-area: side; }
+.supplier .section-head { grid-area: head; }
+.supplier .section-head .lead { max-width: 800px; }
+.onboarding { grid-area: form; margin-top: 34px; padding: 28px 30px 26px; border-radius: 16px; }
+.onboarding-title { font: 900 34px/1.15 var(--site-slab); letter-spacing: -0.02em; color: var(--ink); }
+.onboarding-sub { margin-top: 6px; color: var(--muted); font-size: 17px; }
+.onboarding-steps { display: grid; gap: 18px; margin: 22px 0 0; padding: 0; list-style: none; }
+.step-name { display: flex; align-items: center; gap: 18px; font: 900 21px/1.2 var(--site-slab); color: var(--ink); }
+.step-num { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--blue); color: #fff; font: 700 17px/1 var(--site-sans); }
+.field { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: center; gap: 0 16px; margin: 10px 0 0 52px; }
+.field-label { color: var(--text); font-size: 17px; }
+.field-value { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 8px 16px; border: 1px solid #ccd3da; border-radius: 6px; background: #fff; font-size: 17px; }
+.field-value .check { flex: none; width: 22px; height: 22px; margin: 0; }
+.field:not(:has(.field-label)) { grid-template-columns: minmax(0, 1fr); }
+.doc-icon { width: 20px; height: 24px; margin-right: 14px; vertical-align: -6px; }
+.certified { display: flex; align-items: center; gap: 10px; margin: 12px 0 0 218px; font-size: 17px; }
+.certified .check { width: 20px; height: 20px; margin: 0; }
+.tick-box { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 4px; background: #1aa34a; }
+.tick-box .check { color: #fff; width: 18px; height: 18px; }
+.onboarding-submit { display: flex; align-items: center; flex-wrap: wrap; gap: 14px 22px; margin-top: 22px; }
+.submit-used { display: inline-grid; place-items: center; min-width: 180px; min-height: 50px; border-radius: 8px; background: #a8b4c4; color: #fff; font-size: 19px; font-weight: 700; }
+.onboarding-submit .done { font-size: 17px; font-weight: 600; }
+
+.supplier-rail { display: grid; gap: 22px; margin: 0; padding: 0; list-style: none; }
+.supplier-rail h3 { font: 900 24px/1.2 var(--site-slab); color: var(--ink); }
+.supplier-rail ul { display: grid; gap: 14px; margin: 12px 0 0; padding: 0 0 4px 34px; list-style: none; border-left: 3px solid var(--blue); margin-left: 12px; }
+.supplier-rail ul li { position: relative; font-size: 16.5px; line-height: 1.45; }
+.supplier-rail ul li::before { content: ""; position: absolute; left: -44px; top: 5px; width: 14px; height: 14px; border-radius: 50%; background: var(--blue); }
+.supplier-rail time { color: var(--blue); font-weight: 700; }
+.supplier-rail .check { width: 18px; height: 18px; vertical-align: -3px; }
+.supplier-record { margin-top: 30px; padding: 24px 26px 10px; border-radius: 16px; }
+.record-head { display: flex; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--hair); }
+.record-head > .dot { width: 32px; height: 32px; margin-top: 2px; }
+.record-name { font: 900 26px/1.15 var(--site-slab); letter-spacing: -0.015em; color: var(--ink); }
+.record-added { display: flex; align-items: center; gap: 12px; margin-top: 8px; font-size: 17px; }
+.record-added .glyph { width: 40px; height: 40px; }
+.supplier-record ul { margin: 0; padding: 0; list-style: none; }
+.supplier-record li { display: flex; align-items: center; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--hair); font-size: 17px; }
+.supplier-record li:last-child { border-bottom: 0; }
+.supplier-record li > .check { width: 20px; height: 20px; margin-left: 4px; }
+.ok { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; background: #1aa34a; }
+.ok .check { margin: 0; width: 20px; height: 20px; color: #fff; }
+
+@media (max-width: 1399px) {
+  .supplier { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "form" "side"; max-width: 820px; }
+  .supplier-side { margin-top: 40px; }
+}
+@media (max-width: 760px) {
+  .onboarding { padding: 18px 14px 18px; }
+  .onboarding-title { font-size: 24px; }
+  .onboarding-sub { font-size: 15px; }
+  .step-name { gap: 12px; font-size: 18px; }
+  .step-num { width: 28px; height: 28px; font-size: 15px; }
+  .field { grid-template-columns: minmax(0, 1fr); gap: 4px; margin: 10px 0 0; }
+  .field-label { font-size: 14px; color: var(--muted); }
+  .field-value { min-height: 42px; padding: 8px 12px; font-size: 16px; }
+  .certified { margin-left: 0; font-size: 15px; }
+  .submit-used { min-width: 130px; font-size: 17px; }
+  .onboarding-submit .done { font-size: 15px; }
+  .supplier-rail h3 { font-size: 21px; }
+  .supplier-rail ul { padding-left: 24px; }
+  .supplier-rail ul li { font-size: 15px; }
+  .supplier-rail ul li::before { left: -32px; width: 12px; height: 12px; }
+  .supplier-record { padding: 18px 14px 6px; }
+  .record-name { font-size: 21px; }
+  .record-head > .dot { width: 22px; height: 22px; }
+  .supplier-record li { font-size: 15px; gap: 12px; }
+  .ok { width: 26px; height: 26px; }
+}
