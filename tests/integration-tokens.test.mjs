@@ -11,7 +11,13 @@ import { harness } from './purse-harness.mjs';
 // Real native authentication, HTTP, workerd/D1 and portable archive; only mail/screening edges are faked.
 test('INTAKE-007 owner-bound create-only bearer: idempotency, native human approval, scope, revocation, audit and archive exclusion', async t => {
     const h = await harness(); t.after(() => h.close());
-    const { command: cmd, send, state, owner } = h;
+    const { command: cmd, state, owner } = h;
+    const refusalCount = async () => (await h.db.prepare("SELECT COUNT(*) n FROM p_records WHERE kind='audit' AND json_extract(value,'$.action')='integration-use-refused'").first()).n;
+    const send = async (...args) => {
+        const before=await refusalCount(), response=await h.send(...args);
+        if(response.status>=400 && (args[0].startsWith('/api/purse/integration-tokens') || args[0]==='/api/purse/integration/requests'))assert.equal(await refusalCount(),before+1,'INTAKE-007 every refused native management/intake attempt is audited');
+        return response;
+    };
     await cmd('business', { name: 'North Ridge equipment', currencies: ['USD'], locations: ['Denver'], costCentres: ['Field'], projects: ['Safety'] });
     const requester = await h.member('field@example.test', ['requester']);
     const other = await h.member('other@example.test', ['requester']);
@@ -23,7 +29,7 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
     for (const cookie of [requester,buyer,approver]) { assert.equal((await send(base,input,cookie)).status,403); assert.equal((await send(base,undefined,cookie)).status,403); }
     assert.equal((await send(base, { ...input, requesterEmail: 'unregistered@example.test' }, owner)).status,409);
     assert.equal((await send(base, { ...input, requesterEmail: 'buyer@example.test' }, owner)).status,409);
-    const cross = await h.mf.dispatchFetch(h.origin+base,{method:'POST',headers:{origin:'https://elsewhere.example.test',cookie:owner,'content-type':'application/json'},body:JSON.stringify(input)});assert.equal(cross.status,403);
+    const cross = await h.mf.dispatchFetch(h.origin+base,{method:'POST',headers:{origin:'https://elsewhere.example.test',cookie:owner,'content-type':'application/json'},body:JSON.stringify(input)});assert.equal(cross.status,403);assert.ok(await refusalCount()>0);
     const issued = await send(base,input,owner);assert.equal(issued.status,200);
     let { token, integration } = issued.value;
     const stored = await h.db.prepare('SELECT * FROM p_integration_tokens WHERE id=?').bind(integration.id).first();
@@ -33,8 +39,11 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
     assert.equal(list.value.tokens.length,1);assert.ok(!JSON.stringify(list.value).includes(token));assert.ok(!JSON.stringify(list.value).includes(stored.hash));
     const fields = { title: 'Two fall-arrest harnesses', supplier:supplier.id,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre:'Field',terms:'Net 30',lines:[{description:'Harness',quantity:'2',unitMinor:12500,category:'Safety',project:'Safety'}], requester:'forged',requesterEmail:'owner@example.test',status:'approved',totalMinor:1 };
     const integrationRequest = async (secret,key,body=fields,path='/api/purse/integration/requests',method='POST') => {
+        const before=await refusalCount();
         const response = await h.mf.dispatchFetch(h.origin+path,{method,headers:{authorization:'Bearer '+secret,...(key?{'idempotency-key':key}:{}),'content-type':'application/json'},...(method==='GET'?{}:{body:typeof body==='string'?body:JSON.stringify(body)})});
-        const value = await response.json(); return { status:response.status,value };
+        const value = await response.json();
+        if(response.status>=400)assert.equal(await refusalCount(),before+1,'INTAKE-007 every refused bearer use is audited');
+        return { status:response.status,value };
     };
     assert.equal((await send('/api/purse/integration/requests',fields,owner)).status,401,'Native cookie is not an integration credential');
     assert.equal((await integrationRequest(token,null)).status,400);
@@ -48,7 +57,7 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
     assert.deepEqual(concurrent.map(r=>r.status),[200,200]);
     assert.deepEqual(concurrent.map(r=>r.value.duplicate).sort(),[false,true]);
     let draft = concurrent[0].value.request;assert.deepEqual(concurrent[1].value.request,draft);
-    assert.equal(draft.requesterEmail,'field@example.test');assert.notEqual(draft.requester,'forged');assert.equal(draft.status,'draft');assert.equal(draft.totalMinor,25000);assert.equal(draft.integration.id,integration.id);
+    assert.equal(draft.requesterEmail,'field@example.test');assert.notEqual(draft.requester,'forged');assert.equal(draft.status,'draft');assert.equal(draft.totalMinor,25000);assert.equal(draft.integration.id,integration.id);assert.equal(draft.integration.name,input.name);assert.equal(draft.integration.requester,draft.requester);assert.equal(draft.integration.requesterEmail,draft.requesterEmail);
     let data=(await state()).data;assert.equal(data.request.length,1);assert.equal(data.order.length,0);assert.equal(data.decision.length,0);assert.equal(data.commitment.length,0);assert.equal(h.messages.length,mailBefore,'Draft creation sends no mail');
     assert.equal((await state(other)).data.request.length,0);assert.equal((await state(requester)).data.request[0].id,draft.id);
     assert.equal((await integrationRequest(token,'linen-asset-42',{...fields,title:'Changed body'})).status,409);
@@ -81,6 +90,11 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
     assert.equal((await send(base+'/'+integration.id+'/revoke',{},owner)).status,200);
     assert.equal((await integrationRequest(token,'revoked')).status,401);assert.equal((await send(base+'/'+integration.id+'/rotate',{},owner)).status,409);
     const audit=(await send('/api/purse/audit',undefined,owner)).value.events;
+    const refusals=audit.filter(e=>e.action==='integration-use-refused');assert.equal(refusals.length,await refusalCount());
+    assert.ok(refusals.every(e=>e.reason && e.status>=400 && e.door));
+    assert.ok(refusals.some(e=>e.integration===integration.id && e.name===input.name && e.requester===draft.requester));
+    assert.ok(refusals.some(e=>e.integration===null && e.actor==='integration:unidentified'));
+    assert.ok(refusals.some(e=>e.door==='outside-token-scope'));
     for(const action of ['integration-token-create','integration-token-rotate','integration-token-revoke','integration-request-create'])assert.ok(audit.some(e=>e.action===action));
     const csv=await send('/api/purse/audit.csv',undefined,owner);assert.equal(csv.status,200);assert.match(csv.value,/integration-request-create/);
     assert.ok(!JSON.stringify(audit).includes(token));assert.ok(!csv.value.includes(token));

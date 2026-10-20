@@ -1,3 +1,4 @@
+import { integrationRefusals } from './integration-audit';
 import { integrationTokensApi } from './integration-tokens';
 import { integrationRequestsApi } from './integration-requests';
 import { emailIntake, sendEmailIntakeLinks } from './email-intake';
@@ -46,6 +47,7 @@ export const api = new Hono<{
 }>();
 api.get('/health', c => c.json({ status: 'ok', ...deploymentHealth(c.env) }));
 api.use('/api/purse/*', async (c, next) => { c.header('cache-control', 'no-store'); c.header('x-content-type-options', 'nosniff'); await next(); });
+api.use('/api/purse/*', integrationRefusals);
 api.onError((e, c) => c.json({ error: e.message }, e instanceof Fault ? e.status as 400 : 400));
 export async function command(s: State, a: Actor, op: string, b: Data, env?: Bindings): Promise<Data> { if (op === 'execute-action') {
     const p = actionInput(s, a, b);

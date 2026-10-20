@@ -37,7 +37,7 @@ integrationRequestsApi.post('/api/purse/integration/requests', async c => {
     requireThat(body && typeof body === 'object' && !Array.isArray(body) && !body.id, 'Supply fields for a new purchase request');
     const a: Actor = { id: requester.id, email: requester.email, version: requester.version, owner: requester.role === 'owner', session: '', dev: false };
     const draft = requests(state, a, 'request', body)!;
-    const request: Data = { ...draft, integration: { id: token.id, name: token.name } };
+    const request: Data = { ...draft, integration: { id: token.id, name: token.name, requester: requester.id, requesterEmail: requester.email } };
     put(state, 'request', request.id, request); put(state, 'revision', `${request.id}:${request.revision}`, { ...request, request: request.id });
     const queries = [fence];
     for (const [key, row] of state) if (before.get(key)?.revision !== row.revision) queries.push(insertRfqRecord(c.env.DB, row.kind, row.value));
