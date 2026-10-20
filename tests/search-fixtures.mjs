@@ -7,7 +7,7 @@ import portability from '../scripts/installer/portability.mjs';
 import { harness } from './purse-harness.mjs';
 import { invoiceText } from './invoice-reading-fixtures.mjs';
 
-export const pdfPhrase='Northern depot antenna calibration';
+export const pdfPhrase='Obsidian satellite harmonization evidence';
 export const bankNumber='736290184652';
 export async function searchPurchasing(h) {
  const cmd=h.command;await cmd('business',{name:'Canyon Field Services',currencies:['USD','AUD'],locations:['Denver'],costCentres:['Operations','Marketing'],projects:['Safety','Fitout']});
