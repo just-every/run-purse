@@ -60,6 +60,7 @@ export function savingsReport(data: Data) {
                 quantity: q / 1000, firstMinor, billedMinor, savingsMinor: firstMinor - billedMinor });
         }
     }
+    for(const row of realizedRows){const order=orderById.get(row.order);row.outcomeConfirmations=(data.valueConfirmation??[]).filter((c:Data)=>c.request===row.request&&c.revision===order?.revision).map((c:Data)=>({id:c.id,run:c.run,runVersion:c.runVersion,request:c.request,revision:c.revision,fingerprint:c.fingerprint,usefulness:c.usefulness,notes:c.notes,at:c.at,actor:c.actor,assessment:c.inputs.assessment,provenance:'Requester-confirmed value report; usefulness notes are unscored; no additional monetary savings'}));}
     const currencies = [...new Set([...rows, ...realizedRows].map(r => r.currency))].sort();
     return { rows, realizedRows, totals: currencies.map(currency => ({ currency,
         negotiatedMinor: rows.filter(r => r.currency === currency).reduce((n, r) => n + r.savingsMinor, 0),
