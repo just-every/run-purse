@@ -11,10 +11,11 @@ const rules: [RegExp, string][] = [
   [/ (Co\.)/g, ' $1'],
   [/(\d+) +of +(\d+)/g, '$1 of $2'],
   [/(\S) +([×=]) +(?=[\d$])/g, '$1 $2 '],
+  [/(\d) +× +/g, '$1 × '],
   [/ +− +(?=\$)/g, ' − '],
   [new RegExp(`(\\d[\\d,.:]*) +(${units})\\b`, 'g'), '$1 $2'],
   [/\b(PO|Bill|GL|aisle|Q4|chase|most) +(?=\d|[a-z])/g, '$1 '],
-  [/\b(this|left|actual|committed|invoice|billed|received|ordered|open|differences) +(?=[\d$])/g, '$1 '],
+  [/\b(this|left|actual|committed|invoice|billed|received|ordered|open|differences|Operations|Marketing|Engineering|Facilities) +(?=[\d$])/g, '$1 '],
   [/([A-Za-z:]) +(?=\$\d)/g, '$1 '],
 ]
 // A done check never wraps alone: the word before it travels with it.
