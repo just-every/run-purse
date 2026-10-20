@@ -1,3 +1,4 @@
+import { visibleAgentValue } from './agent-value';
 import { visibleAgreementReadings } from './agreement-reading';
 import { visibleAgreements } from './agreements';
 import { visibleEmailIntakes } from './email-intake';
@@ -17,6 +18,7 @@ import { supplierScorecards } from './supplier-performance';
 import { supplierDocumentStatus } from './supplier-documents';
 export function visible(s: State, a: Actor) { const capabilities = roles(s, a); requireThat(capabilities.length, 'No active business membership', 403); const staff = capabilities.some(r => ['owner', 'approver', 'buyer', 'receiver'].includes(r)); const requests = all(s, 'request').filter(r => staff || r.requester === a.id || r.requesterEmail === a.email), ids = new Set(requests.map(r => r.id)); const orders = all(s, 'order').filter(o => ids.has(o.request)), orderIds = new Set(orders.map(o => o.id)); const data: Data = {}; for (const kind of ['business', 'supplier', 'catalogue', 'catalogueBundle', 'policy', 'delegation', 'code'])
     data[kind] = all(s, kind);
+    Object.assign(data,visibleAgentValue(s,a,ids));
     Object.assign(data,visibleEmailIntakes(s,a),visibleRfqs(s,a),visibleQuoteReadings(s,ids),visibleInvoiceReadings(s,capabilities.includes('buyer')));
     data.supplier = data.supplier.map((v: Data) => ({ ...supplierPublicValue(v), documents: (v.documents ?? []).filter((id: string) => capabilities.includes('buyer') || !s.get('attachment:' + id)?.value.privateSupplierDocument) }));
     Object.assign(data, capabilities.includes('buyer') ? {...visibleAgreements(s,a),...visibleAgreementReadings(s,a)} : {agreement:[], agreementInvoice:[], agreementReminder:[], agreementAward:[], agreementReading:[], agreementReadingEvent:[]});
@@ -45,11 +47,11 @@ export function visible(s: State, a: Actor) { const capabilities = roles(s, a); 
 export function recordScope(s: State, a: Actor, kind: string, r: Data) { requireThat(roles(s, a).length, 'No active membership', 403); if(kind==='attachment'){if(r.privateSupplierDocument||['invoice','invoiceSource'].includes(r.kind))can(s,a,'buyer');recordScope(s,a,r.kind,get(s,r.kind,r.record));return;} if(kind==='invoiceSource'){can(s,a,'buyer');recordScope(s,a,'order',get(s,'order',r.order));return;} if(kind==='agreement')can(s,a,'buyer'); if (kind === 'request')
     own(s, a, r); if (kind === 'order')
     own(s, a, get(s, 'request', r.request)); if (kind === 'invoice')
-    recordScope(s, a, 'order', get(s, 'order', r.order)); if (kind === 'agentRun')
+    recordScope(s, a, 'order', get(s, 'order', r.order)); if(kind==='agentRun'&&r.workflow==='value-realization'){own(s,a,get(s,'request',r.request));return;} if (kind === 'agentRun')
     requireThat(a.owner || r.actor === a.id, 'Draft outside scope', 403); }
 export function download(s: State, a: Actor, kind: string, id: string) { const r = get(s, kind, id); if (kind === 'attachment') {
     recordScope(s, a, 'attachment', r);
     return new Response(Uint8Array.from(atob(r.base64), c => c.charCodeAt(0)), { headers: { 'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="${r.name.replace(/[^a-zA-Z0-9._-]/g, '_')}"` } });
-} recordScope(s, a, kind, r); if (kind === 'agentRun')
+} recordScope(s, a, kind, r); if(kind==='agentRun'&&r.workflow==='value-realization')return new Response(JSON.stringify(r,null,2),{headers:{'content-type':'application/json','content-disposition':'attachment; filename="value-report.json"'}}); if (kind === 'agentRun')
     return new Response(r.draft + '\n\nMissing: ' + r.missing.join(', ') + '\nSources: ' + JSON.stringify(r.references), { headers: { 'content-type': 'text/plain; charset=utf-8', 'content-disposition': 'attachment; filename="preparation.txt"' } }); requireThat(kind === 'order', 'Unsupported document', 404); const business = get(s, 'business', 'main'), supplier = r.imported ? get(s, 'supplier', r.supplier) : r.supplierSnapshot; requireThat(supplier?.id === r.supplier, 'Approved supplier identity is missing; renew purchasing authority', 409); const body = poHtml(poContent(s, r)); return new Response(body, { headers: { 'content-type': 'text/html; charset=utf-8', 'content-disposition': `attachment; filename="${r.number.replace(/[^a-zA-Z0-9._-]/g,'_')}.html"`, 'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; img-src data:" } }); }
 export function accounting(s: State, a: Actor) { can(s, a, 'buyer'); const cell = (v: unknown) => '"' + String(v).replace(/"/g, '""').replace(/^[=+@-]/, "' $&") + '"'; const byAllocation = new Map(discrepancies(s).map(d => [JSON.stringify([d.invoiceId, d.lineId]), d])); const rows = [['invoice', 'po', 'line', 'currency', 'quantity', 'amount_minor', 'price_mismatch', 'quantity_mismatch', 'receipt_shortfall'], ...all(s, 'invoice').flatMap(i => i.allocations.map((l: Data) => { const o = get(s, 'order', i.order), d = byAllocation.get(JSON.stringify([i.id, l.line]))!; return [i.reference, o.number, l.line, i.currency, l.quantity, l.amountMinor, d.priceMismatch, d.quantityMismatch, d.receiptShortfall]; }))]; return new Response(rows.map(row => row.map(cell).join(',')).join('\r\n'), { headers: { 'content-type': 'text/csv', 'content-disposition': 'attachment; filename="purse-accounting.csv"' } }); }

@@ -1,3 +1,4 @@
+import { AgentValue } from './agent-value';
 import { Agreements } from './agreements';
 import { SearchWorkspace } from './search';
 import { PerformanceReport } from './performance-report';
@@ -19,14 +20,14 @@ import { Imports } from './imports';
 function Masthead({ actor }: { actor?: D }) { return <header className="app-header"><a className="app-brand" href="/app"><img className="app-mark" src="/brand/mark.svg" alt=""/><span className="app-name" data-rer-name>Purse</span> <span className="app-tagline">Purchasing, with a clear record</span></a>{actor && <span className="app-who">{actor.email}<span className="app-roles"> · {actor.roles.join(', ')}</span></span>}</header>; }
 export function App() { return new URLSearchParams(window.location.search).has('search') ? <SearchWorkspace/> : <PurchasingApp/>; }
 function PurchasingApp() {
-    const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState(new URLSearchParams(window.location.search).has('agreement') ? 'Agreements' : new URLSearchParams(window.location.search).has('receipt') ? 'Orders' : new URLSearchParams(window.location.search).has('intake') ? 'Requests' : 'Overview'), [notice, setNotice] = useState(''), [performance, setPerformance] = useState(false);
+    const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState(new URLSearchParams(window.location.search).has('valueRequest') ? 'Value' : new URLSearchParams(window.location.search).has('agreement') ? 'Agreements' : new URLSearchParams(window.location.search).has('receipt') ? 'Orders' : new URLSearchParams(window.location.search).has('intake') ? 'Requests' : 'Overview'), [notice, setNotice] = useState(''), [performance, setPerformance] = useState(false);
     async function reload() { setState(await call('state')); }
     useEffect(() => { reload().catch(e => setError(e.message)); }, []);
     async function mutate(op: string, b: D) { const result = await call('command/' + op, b); setNotice('Saved.'); await reload(); return result; }
     if (!state)
         return <div className="app"><Masthead/><main className="workspace"><h1 className="page-title">Purse</h1>{error ? <p role="alert">{error} · <a href="/signin">Sign in</a></p> : <p className="lead">Opening purchasing workspace…</p>}</main></div>;
     const { data, actor } = state;
-    const tabs = ['Overview', 'Requests', 'Orders', 'Search', 'Reports', ...(actor.roles.includes('buyer') ? ['Suppliers', 'Catalogue', 'Agreements'] : []), 'Preparation', ...(actor.roles.includes('approver') ? ['Authority'] : []), ...(actor.roles.includes('owner') ? ['Settings', 'Imports', 'Audit'] : [])];
+    const tabs = ['Overview', 'Requests', 'Orders', 'Search', 'Reports', 'Value', ...(actor.roles.includes('buyer') ? ['Suppliers', 'Catalogue', 'Agreements'] : []), 'Preparation', ...(actor.roles.includes('approver') ? ['Authority'] : []), ...(actor.roles.includes('owner') ? ['Settings', 'Imports', 'Audit'] : [])];
     return <div className="app">
         <Masthead actor={actor}/>
         <nav className="app-tabs" aria-label="Workspace">{tabs.map(t => <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => { if(t==='Search')window.location.assign('/app?search=1');else setTab(t); setNotice(''); }}>{t}</button>)}</nav>
@@ -34,6 +35,7 @@ function PurchasingApp() {
             <p className="notice" aria-live="polite">{notice}</p>
             {tab === 'Overview' && <Overview data={data} onSetUp={() => setTab('Settings')}/>}
             {tab === 'Reports' && <>{actor.roles.includes('buyer') && <button onClick={() => setPerformance(!performance)}>{performance ? 'Spend and commitments' : 'Procurement performance'}</button>}{performance && actor.roles.includes('buyer') ? <PerformanceReport data={data}/> : <SpendReport data={data}/>}</>}
+            {tab === 'Value' && <AgentValue data={data} actor={actor} mutate={mutate}/>}
             {tab === 'Requests' && <Requests data={data} actor={actor} mutate={mutate}/>}
             {tab === 'Orders' && <Orders data={data} actor={actor} mutate={mutate} reload={reload}/>}
             {tab === 'Suppliers' && <Suppliers data={data} actor={actor} mutate={mutate} reload={reload}/>}
