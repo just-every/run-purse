@@ -6,7 +6,7 @@ export function validateAgreements(all,get,check,same) {
  const deadline=(end,days)=>new Date(Date.parse(end)-days*86400000).toISOString().slice(0,10);
  function ref(v,signature=false){if(v===null)return;check(v&&str(v.provider)&&str(v.reference)&&str(v.url),'agreement_reference');let url;try{url=new URL(v.url)}catch{}check(url?.protocol==='https:'&&!url.username&&!url.password,'agreement_reference_url');if(signature)check(['not-recorded','draft','sent','signed','declined','void'].includes(v.status)&&str(v.source)&&v.provenance==='owner-recorded; not provider-verified','agreement_signature');}
  for(const a of all('agreement')){
-  check(int(a.version,1,1000000)&&Array.isArray(a.history)&&a.history.length===a.version&&timestamp(a.createdAt),'agreement_history');
+  check(int(a.version,1,1000000)&&Array.isArray(a.history)&&a.history.length===a.version&&timestamp(a.createdAt)&&a.createdAt===a.history[0]?.at,'agreement_history');
   for(const [i,h]of a.history.entries()){
    get('supplier',h.supplier);check(get('business','main').currencies.includes(h.currency),'agreement_currency');
    check(h.version===i+1&&['name','reference','parties','paymentTerms','owner','ownerEmail','reason','confirmedBy'].every(k=>str(h[k]))&&h.owner===h.confirmedBy&&timestamp(h.at),'agreement_terms');
@@ -29,7 +29,7 @@ export function validateAgreements(all,get,check,same) {
   check(e.outcome?.recipient===e.ownerEmail&&['uncertain','suppressed','unavailable','accepted','rejected'].includes(e.outcome.status),'agreement_reminder_outcome');
   check(Array.isArray(e.spend?.rows)&&Array.isArray(e.spend?.totals),'agreement_reminder_spend');
   check(new Set(e.spend.rows.map(r=>r.id)).size===e.spend.rows.length,'agreement_reminder_spend_duplicates');
-  for(const row of e.spend.rows){const l=get('agreementInvoice',row.id);check(l.agreement===e.agreement&&row.invoice===l.invoice&&row.order===l.order&&row.currency===l.currency&&row.amountMinor===l.amountMinor,'agreement_reminder_source');}
+  for(const row of e.spend.rows){const l=get('agreementInvoice',row.id),i=get('invoice',l.invoice),o=get('order',l.order);check(l.agreement===e.agreement&&same(row,{...l,reference:i.reference,number:o.number,source:i.source,url:'/app?agreement='+encodeURIComponent(e.agreement)}),'agreement_reminder_source');}
   const totals=[...new Set(e.spend.rows.map(r=>r.currency))].map(currency=>({currency,amountMinor:e.spend.rows.filter(r=>r.currency===currency).reduce((n,r)=>n+r.amountMinor,0)}));check(same(e.spend.totals,totals),'agreement_reminder_totals');
  }
 }
