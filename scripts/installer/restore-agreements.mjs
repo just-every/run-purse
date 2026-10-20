@@ -14,6 +14,10 @@ export function validateAgreements(all,get,check,same) {
    check(h.noticeDeadline===deadline(h.endDate,h.noticeDays)&&typeof h.autoRenew==='boolean'&&typeof h.remindersEnabled==='boolean','agreement_notice');
    check(Array.isArray(h.reminderDays)&&h.reminderDays.length>0&&h.reminderDays.length<=12&&h.reminderDays.every(n=>int(n,1,365))&&new Set(h.reminderDays).size===h.reminderDays.length,'agreement_intervals');
    ref(h.clm);ref(h.signature,true);
+   check(h.valueMinor==null||int(h.valueMinor,0,1e12),'agreement_value');
+   check(h.firstOfferMinor==null||int(h.firstOfferMinor,0,1e12)&&h.valueMinor!=null&&str(h.firstOfferSource)&&str(h.awardSource),'agreement_offer');
+   if(h.priceLines){check(Array.isArray(h.priceLines)&&h.priceLines.length>0&&h.priceLines.length<=100,'agreement_price_lines');for(const l of h.priceLines)check(str(l.description)&&str(l.unit)&&typeof l.quantity==='string'&&Number(l.quantity)*1000===l.q&&int(l.q,1,1e12)&&int(l.firstUnitMinor,0,1e12)&&int(l.awardedUnitMinor,0,1e12),'agreement_price_line');const total=k=>h.priceLines.reduce((n,l)=>n+Number((BigInt(l.q)*BigInt(l[k])+500n)/1000n),0);check(total('firstUnitMinor')===h.firstOfferMinor&&total('awardedUnitMinor')===h.valueMinor,'agreement_price_totals');}
+   if(Object.hasOwn(h,'totalMinor'))check(h.totalMinor===h.valueMinor,'agreement_value_projection');
   }
   check(same(Object.fromEntries(Object.keys(a.history.at(-1)).map(k=>[k,a[k]])),a.history.at(-1)),'agreement_current_history');
  }

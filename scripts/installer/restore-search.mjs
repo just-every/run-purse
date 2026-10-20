@@ -15,6 +15,6 @@ export function validateSearchProjection(rows,index,check) {
   check(row.number===number,'search_projection_number');
   const names=[text(v.name),text(v.dba),text(v.supplierSnapshot?.name),text(v.supplierSnapshot?.dba),text(v.supplier?.value)].join(' ');
   check(row.names===names&&typeof row.namesKey==='string','search_projection_names');
-  if(row.kind==='invoiceReading'||row.kind==='quoteReading')check(!/\b\d{8,}\b|\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/.test(text(v.searchText)),'search_projection_protected_text');
+  if(row.kind==='invoiceReading'||row.kind==='quoteReading'||row.kind==='agreement')check(!/\b\d{8,}\b|\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/.test(text(v.searchText)),'search_projection_protected_text');
  }
 }
