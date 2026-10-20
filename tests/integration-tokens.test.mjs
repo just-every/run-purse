@@ -37,6 +37,9 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
     };
     assert.equal((await send('/api/purse/integration/requests',fields,owner)).status,401,'Native cookie is not an integration credential');
     assert.equal((await integrationRequest(token,null)).status,400);
+    assert.equal((await integrationRequest(token,'x'.repeat(201))).status,400);
+    assert.equal((await integrationRequest(token,'oversize',' '.repeat(1_600_001))).status,400);
+    assert.equal((await integrationRequest(token,'edit',{...fields,id:'existing'})).status,400);
     assert.equal((await integrationRequest(token,'bad','{')).status,400);
     assert.equal((await integrationRequest(token,'missing',{title:'No purchasing fields'})).status,404);
     const concurrent = await Promise.all([integrationRequest(token,'linen-asset-42'),integrationRequest(token,'linen-asset-42')]);
@@ -67,6 +70,10 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
     assert.equal((await integrationRequest(token,'old')).status,401);token=rotation.value.token;
     assert.equal((await integrationRequest(token,'linen-asset-42')).value.duplicate,true);
     const live = await send(base,{...input,name:'Live archive exclusion'},owner);assert.equal(live.status,200);
+    assert.equal((await integrationRequest(live.value.token,'live-archive')).status,200);
+    for(const cookie of [requester,buyer,approver]) for(const action of ['rotate','revoke']) assert.equal((await send(base+'/'+integration.id+'/'+action,{},cookie)).status,403);
+    const publicState = JSON.stringify((await state()).data);
+    for(const credential of [token,live.value.token,stored.hash]) assert.ok(!publicState.includes(credential),'State and preparation context exclude bearer material');
     assert.equal((await send(base+'/'+integration.id+'/revoke',{},owner)).status,200);
     assert.equal((await integrationRequest(token,'revoked')).status,401);assert.equal((await send(base+'/'+integration.id+'/rotate',{},owner)).status,409);
     const audit=(await send('/api/purse/audit',undefined,owner)).value.events;
@@ -86,4 +93,5 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
     // Native deactivation is independently checked even with purchasing role still assigned.
     await h.db.prepare("UPDATE oa_operators SET status='inactive' WHERE email='field@example.test'").run();
     assert.equal((await integrationRequest(live.value.token,'inactive')).status,403);
+    assert.equal((await integrationRequest(live.value.token,'live-archive')).status,403);
 });
