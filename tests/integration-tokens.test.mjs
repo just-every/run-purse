@@ -46,6 +46,7 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
         return { status:response.status,value };
     };
     assert.equal((await send('/api/purse/integration/requests',fields,owner)).status,401,'Native cookie is not an integration credential');
+    assert.equal((await integrationRequest('invalid-bearer','invalid')).status,401);
     assert.equal((await integrationRequest(token,null)).status,400);
     assert.equal((await integrationRequest(token,'x'.repeat(201))).status,400);
     assert.equal((await integrationRequest(token,'oversize',' '.repeat(1_600_001))).status,400);
