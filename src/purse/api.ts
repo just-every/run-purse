@@ -1,3 +1,5 @@
+import { integrationTokensApi } from './integration-tokens';
+import { integrationRequestsApi } from './integration-requests';
 import { emailIntake, sendEmailIntakeLinks } from './email-intake';
 import { emailIntakeApi } from './email-intake-api';
 import { rfq } from './rfq';
@@ -52,6 +54,8 @@ export async function command(s: State, a: Actor, op: string, b: Data, env?: Bin
     audit(s, a, op, p.id);
     return result;
 } const result = await emailIntake(s, a, op, b, env) ?? rfq(s, a, op, b) ?? await invoiceReading(s, a, op, b) ?? await quoteReading(s, a, op, b) ?? receiptRouting(s, a, op, b) ?? invoiceReview(s, a, op, b) ?? quoteAwards(s, a, op, b) ?? await poProfiles(s, a, op, b) ?? payables(s, a, op, b) ?? orderChasing(s, a, op, b) ?? supplierDocuments(s, a, op, b) ?? await suppliers(s, a, op, b) ?? supplierMerge(s, a, op, b) ?? supplierPerformance(s, a, op, b) ?? catalogueGrants(s, a, op, b) ?? catalogue(s, a, op, b) ?? administration(s, a, op, b) ?? catalogueRequests(s, a, op, b) ?? requests(s, a, op, b) ?? orders(s, a, op, b) ?? orderClosure(s, a, op, b) ?? stockroom(s, a, op, b) ?? preparation(s, a, op, b); requireThat(result, 'Unknown action', 404); return result; }
+api.route('/',integrationTokensApi);
+api.route('/',integrationRequestsApi);
 api.route('/',rfqApi);
 api.route('/',emailIntakeApi);
 api.all('/api/purse/supplier-refresh/:token', c => supplierRefresh(c.req.raw, runtimeBindings(c.env), c.req.param('token')));
