@@ -114,7 +114,7 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
     data=(await state()).data;for(const kind of ['request','revision','decision','commitment','audit'])assert.deepEqual(after[kind].sort((a,b)=>a.id.localeCompare(b.id)),data[kind].sort((a,b)=>a.id.localeCompare(b.id)),'INTAKE-007 '+kind+' survives without credentials');
     const restoredCall=await restored.mf.dispatchFetch(restored.origin+'/api/purse/integration/requests',{method:'POST',headers:{authorization:'Bearer '+live.value.token,'idempotency-key':'restored','content-type':'application/json'},body:JSON.stringify(fields)});assert.equal(restoredCall.status,401);
     // Native deactivation is independently checked even with purchasing role still assigned.
-    await h.db.prepare("UPDATE oa_operators SET status='inactive' WHERE email='field@example.test'").run();
+    assert.equal((await send('/auth/operator/status',{operatorId:draft.requester,status:'inactive'},owner)).status,200);
     assert.equal((await integrationRequest(live.value.token,'inactive')).status,403);
     assert.equal((await integrationRequest(live.value.token,'live-archive')).status,403);
 });
