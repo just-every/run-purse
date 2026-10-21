@@ -246,8 +246,43 @@ current native session and revision fence. Rejected values never enter the
 preparation, proposed-action, draft download or refusal audit.
 
 This boundary does not redact arbitrary source prose or clean historical stored
-context. Recoverable protected storage, reveal, exact masks, installation key
-custody/rotation and default/include archive protection remain SECURITY-001 gaps.
+context. The native storage/reveal slice below adds recoverable storage and exact masks; installation key rotation and complete default/include archive protection remain SECURITY-001 gaps.
 In particular, current default archives still carry the legacy supplier matching
 root alongside fingerprints. The approved policy in CONTRACT and ACCEPTANCE is
 the target; this bounded guard does not establish archive confidentiality.
+
+
+## Native protected supplier values (SECURITY-001, partial)
+
+`GET /api/purse/supplier-protected/:supplier` returns the current global revision,
+role masks and the honest bank status "Recorded, not verified – not active for
+payment". Current native owners and buyers see last four; other current native
+roles see only On file for TIN/account and no routing value. Ordinary native state
+uses the same protected masks; exports and other supplier projections do not
+receive suffixes. No protected values appear in command responses.
+
+The current native owner posts `/store` on that path with
+`{revision,values:{tin?,bankAccount?,bankRouting?},reason,evidence}`. TIN/routing
+are nine digit strings; account is 4–17 digits. Bank account and routing change
+together. Reason and evidence reference are required and encrypted with the value.
+AES-256-GCM binds each ciphertext to business, exact supplier row, field and key
+ID. The separate installation-local table and SUPPLIER-003 fingerprints update
+in one native owner/session/revision-fenced transaction. New writes to merged
+aliases are refused; reveal reads only the exact historical supplier row.
+
+POST `/reveal` takes `{revision,field,reason}` and returns only that one field
+with no-store after a current-owner fence and a completed native email step-up
+within ten minutes. Request `/auth/step-up` with action `export` and confirm its
+email link in the same session before revealing. Development sign-in alone is
+not reauthentication. Stale or concurrent operations return 409. Recognized
+refusals and successful operations retain fixed-vocabulary audit events without
+input digits. Authentication/origin refusals remain at the native perimeter.
+
+`rer setup` provisions managed `PROTECTED_DATA_KEY`; owner deployments supply it
+as a Worker secret. Never put it in arguments, records, R2, archives or logs. An
+absent or mismatched key returns 503 without plaintext fallback. Keep the original
+installation key privately: this slice has no rotation or recovery workflow and
+key loss requires reentry. Default archives exclude the ciphertext table and
+restore returns "Not restored – re-enter". **Legacy matching roots still travel
+in default archives**, and encrypted owner-include archives are unbuilt; do not
+claim complete SECURITY-001 archive confidentiality or clause completion.

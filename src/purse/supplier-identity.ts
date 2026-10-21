@@ -32,9 +32,9 @@ export function matchingInputs(s: State, input: unknown, previous: Data = {}): D
     }
     return result;
 }
-export function supplierPublicValue(supplier: Data): Data {
-    const { matching, sourceRedaction, ...value } = supplier;
-    return { ...value, ...(sourceRedaction ? { sourceRedaction: { redactedColumns: sourceRedaction.redactedColumns } } : {}), matchingOnly: { tin: Boolean(matching?.tin), bank: Boolean(matching?.bank) } };
+export function supplierPublicValue(supplier: Data, protectedView?: Data | number): Data {
+    const { matching, sourceRedaction, protectedOnFile, ...value } = supplier;
+    return { ...value, ...(protectedView && typeof protectedView === 'object' && Object.keys(protectedView).length ? { protectedData: protectedView } : {}), ...(sourceRedaction ? { sourceRedaction: { redactedColumns: sourceRedaction.redactedColumns } } : {}), matchingOnly: { tin: Boolean(matching?.tin), bank: Boolean(matching?.bank) } };
 }
 export function canonicalSupplier(s: State, id: string) {
     const seen = new Set<string>();

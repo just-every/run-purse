@@ -1,3 +1,5 @@
+import { supplierPublicValue } from './supplier-identity';
+import { supplierProtectedApi, protectedSupplierState } from './supplier-protected';
 import { ProtectedInputFault } from './protected-input';
 import { agentValue } from './agent-value';
 import { agreementReading } from './agreement-reading';
@@ -70,8 +72,9 @@ api.route('/',rfqApi);
 api.route('/',emailIntakeApi);
 api.route('/',invoiceInboxApi);
 api.route('/',searchApi);
+api.route('/',supplierProtectedApi);
 api.all('/api/purse/supplier-refresh/:token', c => supplierRefresh(c.req.raw, runtimeBindings(c.env), c.req.param('token')));
-api.get('/api/purse/state', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = visible(state, a);if(a.owner) result.data.importJobs = await importJobs(c.env.DB, a); await readFence(c.env.DB, a, revision); return c.json(result); });
+api.get('/api/purse/state', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = visible(state, a); const masks = await protectedSupplierState(runtimeBindings(c.env),a,result.actor.roles,result.data.supplier.map((s: Data)=>get(state,'supplier',s.id))); result.data.supplier = result.data.supplier.map((s: Data)=>supplierPublicValue(s,masks.get(s.id)));if(a.owner) result.data.importJobs = await importJobs(c.env.DB, a); await readFence(c.env.DB, a, revision); return c.json(result); });
 api.get('/api/purse/spend-report', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = spendReport(visible(state, a).data, c.req.query()); await readFence(c.env.DB, a, revision); return c.json(result); });
 api.post('/api/purse/command/:op', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB), before = structuredClone(state); const length = Number(c.req.header('content-length') ?? 0); requireThat(length <= (c.req.param('op') === 'po-profile' ? 4100000 : 1600000), 'Request too large', 413); const body = await c.req.json(); let result; try { result = await command(state, a, c.req.param('op'), body, runtimeBindings(c.env)); } catch (error) { if (error instanceof ProtectedInputFault) { const refusal = structuredClone(before); audit(refusal, a, 'protected-input-refused', 'preparation', { operation: ['prepare','edit-preparation','propose-action','execute-action'].includes(c.req.param('op')) ? c.req.param('op') : 'command', reason: 'structured-protected-field' }); await save(c.env.DB, a, before, refusal, revision); } throw error; } await save(c.env.DB, a, before, state, revision); if(c.req.param('op').startsWith('email-intake-'))await sendEmailIntakeLinks(runtimeBindings(c.env)); return c.json(result); });
 api.post('/api/purse/supplier-reminders', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); can(state, a, 'buyer'); await readFence(c.env.DB, a, revision); return c.json(await runSupplierReminders(c.env)); });

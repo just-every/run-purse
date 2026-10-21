@@ -56,6 +56,17 @@
       "ownerVisible": true,
       "generate": "hex",
       "group": "owner"
+    },
+    {
+      "name": "PROTECTED_DATA_KEY",
+      "label": "Protected supplier data key",
+      "help": "Installation-local encryption key. Keep a private recovery copy; losing it requires reentry of protected supplier values. Never include it in an archive.",
+      "kind": "secret",
+      "required": true,
+      "ownerVisible": false,
+      "input": "managed",
+      "generate": "hex",
+      "group": "owner"
     }
   ],
   "steps": [

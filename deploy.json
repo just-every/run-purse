@@ -37,6 +37,11 @@
       "binding": "EMAIL_INTAKE_WEBHOOK_SECRET",
       "environment": "EMAIL_INTAKE_WEBHOOK_SECRET",
       "optional": true
+    },
+    {
+      "binding": "PROTECTED_DATA_KEY",
+      "environment": "PROTECTED_DATA_KEY",
+      "optional": true
     }
   ],
   "platforms": [

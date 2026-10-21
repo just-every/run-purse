@@ -42,3 +42,29 @@ export async function protectedPreparationJourney(browser,root,origin,width,evid
   return {clause:'SECURITY-001',scope:'structured preparation input only',width,run:run.id};
  }finally{await buyer.context.close();await owner.context.close();}
 }
+
+
+// Native browser fetches exercise the protected HTTP door without inventing a
+// supplier UI or treating development sign-in as native reauthentication.
+export async function protectedStorageJourney(browser,root,origin,width,evidence){
+ const owner=await session(browser,root,origin,'owner',width),buyer=await session(browser,root,origin,'buyer',width),requester=await session(browser,root,origin,'requester',width);
+ try{
+  const supplier=await api(owner.context,origin,'supplier',{name:'Synthetic protected storage '+width+' '+crypto.randomUUID().slice(0,8),status:'active',reason:'Synthetic SECURITY-001 storage proof'});
+  const path='/api/purse/supplier-protected/'+supplier.id;
+  const call=async(page,path,body)=>page.evaluate(async({path,body})=>{const r=await fetch(path,body===undefined?{}:{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});return {status:r.status,value:await r.json(),cache:r.headers.get('cache-control')}},{path,body});
+  let metadata=await call(owner.page,path);assert.equal(metadata.status,200);
+  const values={tin:'987651234',bankAccount:'9876543215678',bankRouting:'123456789'};
+  const stored=await call(owner.page,path+'/store',{revision:metadata.value.revision,values,reason:'Synthetic protected browser proof',evidence:'synthetic-original-reference'});assert.equal(stored.status,200,JSON.stringify(stored.value));
+  metadata=await call(owner.page,path);assert.deepEqual(metadata.value.masks,{tin:'••••1234',bankAccount:'••••5678',bankRouting:'••••6789'});
+  assert.deepEqual((await call(buyer.page,path)).value.masks,metadata.value.masks);
+  assert.deepEqual((await call(requester.page,path)).value.masks,{tin:'On file',bankAccount:'On file'});
+  const denied=await call(buyer.page,path+'/reveal',{revision:metadata.value.revision,field:'tin',reason:'Synthetic wrong-role attempt'});assert.equal(denied.status,403);assert.equal(denied.cache,'no-store');
+  metadata=await call(owner.page,path);const devProof=await call(owner.page,path+'/reveal',{revision:metadata.value.revision,field:'tin',reason:'Synthetic development sign-in is not native reauthentication'});assert.equal(devProof.status,403);assert.match(devProof.value.error,/reauthentication/);
+  const state=await current(owner.context,origin);assert.deepEqual(state.data.supplier.find(s=>s.id===supplier.id).protectedData,metadata.value.masks);
+  for(const session of [owner,buyer,requester]){await session.page.reload();await session.page.getByRole('navigation').getByRole('button',{name:'Suppliers',exact:true}).click();for(const value of Object.values(values))assert.ok(!(await session.page.locator('body').innerText()).includes(value));assert.equal(await session.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);}
+  await owner.page.screenshot({path:join(evidence,`SECURITY-001-native-storage-${width}.png`),fullPage:true});
+  const search=await owner.context.request.get(origin+'/api/purse/search?q='+values.bankAccount);assert.equal(search.status(),200);assert.equal((await search.json()).total,0);
+  for(const endpoint of ['/api/purse/audit','/api/purse/audit.csv','/api/purse/accounting']){const r=await owner.context.request.get(origin+endpoint);assert.equal(r.status(),200);const bytes=await r.text();for(const value of Object.values(values))assert.ok(!bytes.includes(value));}
+  return {clause:'SECURITY-001',scope:'encrypted native storage and masks; reveal refuses dev-only proof',width,protectedSupplier:supplier.id};
+ }finally{await owner.context.close();await buyer.context.close();await requester.context.close();}
+}

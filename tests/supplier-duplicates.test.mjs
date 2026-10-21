@@ -116,3 +116,64 @@ test('SUPPLIER-003 duplicate matching, redacted CSV custody and history-preservi
  assert.deepEqual(retainedPrivate.value.originals,privateStatus.value.originals,'Merge retains redacted originals and original-file custody digests')
 
 })
+
+test('SECURITY-001 encrypted owner storage, native reveal, role masks, atomic matching and safe refusal through public HTTP',async t=>{
+ const {createHash,createDecipheriv}=await import('node:crypto');
+ const syntheticKey=createHash('sha256').update('synthetic-security-storage-key').digest('hex');
+ const h=await harness({protectedKey:syntheticKey});t.after(()=>h.close());
+ await h.command('business',{name:'Synthetic protected business',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Office']});
+ const buyer=await h.member('synthetic-security-buyer@example.test',['buyer']);
+ const requester=await h.member('synthetic-security-requester@example.test',['requester']);
+ const approver=await h.member('synthetic-security-approver@example.test',['approver']);
+ const receiver=await h.member('synthetic-security-receiver@example.test',['receiver']);
+ const supplier=await h.command('supplier',{name:'Synthetic protected supplier',status:'active',reason:'Synthetic storage acceptance'},buyer);
+ const base='/api/purse/supplier-protected/'+supplier.id;
+ const values={tin:'987651234',bankRouting:'123456789',bankAccount:'9876543215678'};
+ const metadata=async(cookie=h.owner)=>{const r=await h.send(base,undefined,cookie);assert.equal(r.status,200,JSON.stringify(r.value));return r.value};
+ const body=async(extra={})=>({revision:(await metadata()).revision,values,reason:'Synthetic private reason',evidence:'synthetic-source-reference',...extra});
+ const snapshot=async()=>({product:(await h.db.prepare("SELECT * FROM p_records WHERE kind!='audit' ORDER BY kind,id").all()).results,ciphertext:(await h.db.prepare('SELECT * FROM p_supplier_protected ORDER BY supplier,field').all()).results});
+ const refused=async(input,cookie,status=400,operation='store')=>{const before=await snapshot();const r=await h.send(base+'/'+operation,input,cookie);assert.equal(r.status,status,JSON.stringify(r.value));assert.deepEqual(await snapshot(),before);assert.equal(r.headers.get('cache-control'),'no-store');for(const value of Object.values(values))assert.ok(!JSON.stringify(r.value).includes(value));return r};
+ await refused(await body(),buyer,403);
+ await refused(await body({reason:''}),h.owner);
+ await refused(await body({evidence:''}),h.owner);
+ await refused(await body({values:{tin:values.tin,unknown:values.bankAccount}}),h.owner);
+ await refused(await body({values:{bankAccount:values.bankAccount}}),h.owner);
+ await refused(await body({values:{tin:'invalid '+values.tin}}),h.owner);
+ const firstBody=await body(),stored=await h.send(base+'/store',firstBody,h.owner);assert.equal(stored.status,200,JSON.stringify(stored.value));assert.deepEqual(stored.value.stored,Object.keys(values));assert.equal(stored.value.bankStatus,'Recorded, not verified – not active for payment');
+ const records=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+ for(const row of records)for(const value of Object.values(values))assert.ok(!JSON.stringify(row).includes(value),'No protected plaintext in ordinary product records');
+ const encrypted=(await h.db.prepare('SELECT * FROM p_supplier_protected ORDER BY field').all()).results;assert.equal(encrypted.length,3);
+ for(const row of encrypted){for(const value of Object.values(values))assert.ok(!JSON.stringify(row).includes(value));const dec=createDecipheriv('aes-256-gcm',Buffer.from(syntheticKey,'hex'),Buffer.from(row.nonce,'base64'));dec.setAAD(Buffer.from(JSON.stringify(['main',supplier.id,row.field,row.key_id])));dec.setAuthTag(Buffer.from(row.tag,'base64'));const plain=JSON.parse(Buffer.concat([dec.update(Buffer.from(row.ciphertext,'base64')),dec.final()]).toString());assert.equal(plain.value,values[row.field]);assert.equal(plain.evidence,'synthetic-source-reference');}
+ assert.deepEqual((await metadata()).masks,{tin:'••••1234',bankAccount:'••••5678',bankRouting:'••••6789'});assert.deepEqual((await h.state()).data.supplier.find(s=>s.id===supplier.id).protectedData,(await metadata()).masks);
+ assert.deepEqual((await metadata(buyer)).masks,(await metadata()).masks);
+ for(const who of [requester,approver,receiver])assert.deepEqual((await metadata(who)).masks,{tin:'On file',bankAccount:'On file'});
+ const matching=await h.command('supplier-duplicates',{name:'Synthetic different supplier',matching:values},buyer);assert.ok(matching.matches.some(m=>m.id===supplier.id&&m.reasons.includes('TIN (matching-only)')&&m.reasons.includes('bank account (matching-only)')));
+ const reveal=async(field='tin')=>({revision:(await metadata()).revision,field,reason:'Synthetic authorized reveal'});
+ await refused(await reveal(),h.owner,403,'reveal');
+ for(const who of [buyer,requester,approver,receiver])await refused(await reveal(),who,403,'reveal');
+ // Complete actual native email reauthentication in the requesting session.
+ const step=await h.send('/auth/step-up',{action:'export'},h.owner);assert.equal(step.status,202,JSON.stringify(step.value));
+ const message=[...h.messages].reverse().find(m=>m.to.includes('owner@example.test'));
+ const token=new URL(message.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0]).searchParams.get('token');
+ assert.equal((await h.send('/auth/confirm',{token},h.owner)).status,303);
+ for(const field of Object.keys(values)){const r=await h.send(base+'/reveal',await reveal(field),h.owner);assert.equal(r.status,200,JSON.stringify(r.value));assert.equal(r.value.value,values[field]);assert.equal(r.headers.get('cache-control'),'no-store');}
+ await refused({...await reveal(),field:'all'},h.owner,400,'reveal');
+ await refused({...await reveal(),reason:''},h.owner,400,'reveal');
+ const stale=await body();await h.command('supplier',{...supplier,reason:'Synthetic current revision change'},buyer);await refused(stale,h.owner,409);
+ const concurrent=await body({values:{tin:'987659876'}}),beforeRace=await snapshot();const race=await Promise.all([h.send(base+'/store',concurrent,h.owner),h.send(base+'/store',concurrent,h.owner)]);assert.deepEqual(race.map(r=>r.status).sort(),[200,409]);assert.notDeepEqual(await snapshot(),beforeRace);
+ const raceInput=await reveal();const settlement=await Promise.all([h.send(base+'/reveal',raceInput,h.owner),h.send(base+'/store',{...raceInput,values:{tin:values.tin},evidence:'synthetic-race-source'},h.owner)]);assert.deepEqual(settlement.map(r=>r.status).sort(),[200,409]);
+ // Native revision-fenced refusal must not reveal a value under expired proof.
+ await h.db.prepare('UPDATE oa_step_up_challenges SET consumed_at=? WHERE consumed_at IS NOT NULL').bind(Date.now()-11*60*1000).run();await refused(await reveal(),h.owner,403,'reveal');
+ for(const path of ['/api/purse/state','/api/purse/audit','/api/purse/audit.csv','/api/purse/accounting','/api/purse/search?q=9876543215678']){const r=await h.send(path,undefined,h.owner);assert.equal(r.status,200,JSON.stringify(r.value));for(const value of Object.values(values))assert.ok(!JSON.stringify(r.value).includes(value),path);}
+ const audit=await h.send('/api/purse/audit',undefined,h.owner);for(const event of audit.value.events.filter(e=>e.action.startsWith('protected-'))){assert.ok(!JSON.stringify(event).includes('synthetic-source-reference'));assert.ok(!Object.values(values).some(v=>JSON.stringify(event).includes(v)));}assert.ok(audit.value.events.some(e=>e.action==='protected-store'));assert.ok(audit.value.events.some(e=>e.action==='protected-reveal'));assert.ok(audit.value.events.some(e=>e.action==='protected-refused'));
+ const noAuth=await h.send(base+'/store',await body());assert.equal(noAuth.status,401);
+ const cross=await h.mf.dispatchFetch(h.origin+base+'/store',{method:'POST',headers:{cookie:h.owner,origin:'https://synthetic-other.example.test','content-type':'application/json'},body:JSON.stringify(await body())});assert.equal(cross.status,403);
+ const signout=await h.send('/auth/signout',{},h.owner);assert.equal(signout.status,204);assert.equal((await h.send(base+'/reveal',{revision:0,field:'tin',reason:'Synthetic revoked'},h.owner)).status,401);
+});
+
+test('SECURITY-001 unavailable installation key returns 503 without protected or matching writes',async t=>{
+ const h=await harness();t.after(()=>h.close());await h.command('business',{name:'Synthetic key loss',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Office']});
+ const supplier=await h.command('supplier',{name:'Synthetic key unavailable supplier',status:'active',reason:'Synthetic acceptance'}),base='/api/purse/supplier-protected/'+supplier.id;
+ const metadata=await h.send(base,undefined,h.owner),before=(await h.db.prepare("SELECT * FROM p_records WHERE kind!='audit' ORDER BY kind,id").all()).results;
+ const r=await h.send(base+'/store',{revision:metadata.value.revision,values:{tin:'987651234'},reason:'Synthetic reason',evidence:'synthetic-source'},h.owner);assert.equal(r.status,503,JSON.stringify(r.value));assert.equal(r.headers.get('cache-control'),'no-store');assert.equal((await h.db.prepare('SELECT COUNT(*) AS n FROM p_supplier_protected').first()).n,0);assert.deepEqual((await h.db.prepare("SELECT * FROM p_records WHERE kind!='audit' ORDER BY kind,id").all()).results,before);
+});

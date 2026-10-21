@@ -319,7 +319,7 @@ part, "contract, not yet in code" is the target only.
 | 05 | Bank details checked by call-back and a second approver; account name matched with Plaid | SUPPLIER-002 | contract, not yet in code |
 | 05 | OFAC screening and the duplicate-supplier check | SUPPLIER-007, SUPPLIER-003 | code: `src/purse/screening.ts`; `src/purse/supplier-matching.ts`; `tests/supplier-screening.test.mjs`; `tests/supplier-duplicates.test.mjs` |
 | 05 | Insurance certificate kept with its expiry | SUPPLIER-004 | code: `src/purse/supplier-documents.ts`; `tests/supplier-documents.test.mjs` |
-| 05 | EIN and bank details masked | SECURITY-001 | contract, not yet in code |
+| 05 | EIN and bank details masked | SECURITY-001 | partial |
 | 06 | Each PO emailed from the business's own address with an acknowledgment link | PO-001, PO-002 | contract, not yet in code (PO documents are code: PO-009) |
 | 06 | PO document with lines, need date, terms and total | PO-009 | code: `src/purse/po-content.ts`; `src/purse/po-pdf.ts`; `tests/po-documents.test.mjs` |
 | 06 | Unacknowledged POs chased on a set schedule (1 a day, at most 3) | PO-003, AGENT-003 | partly: `src/purse/order-chasing.ts`; `tests/order-chasing.test.mjs` (the agent's chase message is contract) |
@@ -357,8 +357,8 @@ STOCK-001, PO-010, SUPPLIER-007, SUPPLIER-005, CATALOG-001, SUPPLIER-003, SUPPLI
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 17 | 0 | 0 | 17 |
-| Target and push further | 25 | 23 | 47 | 95 |
-| All | 42 | 23 | 47 | 112 |
+| Target and push further | 25 | 24 | 46 | 95 |
+| All | 42 | 24 | 46 | 112 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -461,7 +461,7 @@ STOCK-001, PO-010, SUPPLIER-007, SUPPLIER-005, CATALOG-001, SUPPLIER-003, SUPPLI
 | `IMPORT-003` | Adopting open POs without re-sending | target | partial | `src/purse/import-mapping.ts`; `src/purse/receiving.ts`; `tests/purse.test.mjs` P13 | Adoption, remaining quantities, unapplied deposits, receiving and commitment absent |
 | `IMPORT-004` | Existing ledger records keep their ledger identity | target | missing |  | Ledger-ID matching and first-sync linking not built |
 | `AUDIT-001` | Audit log and approval evidence | target | done | `src/purse/audit-log.ts`; `src/purse/requests.ts`; `src/ui/audit-log.tsx`; `tests/audit-log.test.mjs`; `tests/browser-audit-log.mjs` |  |
-| `SECURITY-001` | Protected tax and bank data | target | missing | `src/purse/protected-input.ts`; `src/purse/agents.ts`; `src/purse/api.ts`; `tests/purse.test.mjs` | Structured preparation/action protected-key refusals and digit-free audit asserted; recoverable encrypted storage/reveal/masks, keys/rotation, legacy contexts and default/include archive migration remain unbuilt; existing matching root still travels in default archives |
+| `SECURITY-001` | Protected tax and bank data | target | partial | `src/purse/supplier-protected.ts`; `src/purse/store.ts`; `src/purse/supplier-identity.ts`; `src/purse/protected-input.ts`; `migrations/core/0029_supplier_protected.sql`; `scripts/installer/portability.mjs`; `tests/supplier-duplicates.test.mjs`; `tests/browser-journey.mjs`; `tests/browser.mjs` | Native owner AES-256-GCM store/reveal, current native reauthentication, role masks, transactional matching, revision races, safe refusals, missing-key 503 and default ciphertext exclusion asserted. Remaining: rotation/key recovery ceremony, cryptographically separated legacy matching/invoice-evidence migration (legacy matching root still exports), encrypted owner-include restore, connector lifecycle, historical-context cleanup, complete cross-door suffix/log/PDF/mail proof, full web storage/reveal UI and complete refusal audit semantics. All nine groups remain required. |
 | `ERASURE-001` | Personal data erasure with financial retention | target | missing |  | Personal-data erasure with receipt and retained anonymized records not built |
 | `AGENT-001` | Requirements intake agent | push-further | partial | `src/purse/agents.ts`; `tests/purse.test.mjs` P14 | No agent execution |
 | `AGENT-002` | Quote collection and normalization agent | push-further | partial | `src/purse/agents.ts`; `src/purse/requests.ts`; `tests/purse.test.mjs` P05, P14 | No agent execution |
