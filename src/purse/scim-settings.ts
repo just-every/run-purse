@@ -37,7 +37,9 @@ scimSettingsApi.post('/api/purse/scim', async c => {
         requireThat(b.consent === true, 'Explicit owner consent is required for identity provisioning, mapped grants and approval transfer');
         const issuer = text(b.issuer, 'IdP issuer', 1000); let issuerUrl: URL;
         try { issuerUrl = new URL(issuer); } catch { throw new Fault(400, 'IdP issuer must be an absolute URL'); }
-        requireThat(issuerUrl.protocol === 'https:' || issuerUrl.origin === c.env.AUTH_ORIGIN, 'IdP issuer requires HTTPS');
+        const loopback = (host: string) => ['localhost', '127.0.0.1', '[::1]'].includes(host);
+        const localIssuer = c.env.AUTH_LOCAL === 'true' && loopback(new URL(c.env.AUTH_ORIGIN).hostname) && loopback(issuerUrl.hostname) && issuerUrl.protocol === 'http:';
+        requireThat(issuerUrl.protocol === 'https:' || localIssuer, 'IdP issuer requires HTTPS');
         requireThat(!issuerUrl.username && !issuerUrl.password && !issuerUrl.search && !issuerUrl.hash, 'IdP issuer must not contain credentials or query parameters');
         const previous = state.get('scimConfig:main')?.value;
         requireThat(!previous || previous.issuer === issuer || all(state, 'scimUser').length === 0, 'Existing provisioned identities pin the issuer', 409);

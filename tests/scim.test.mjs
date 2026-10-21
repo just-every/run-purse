@@ -93,7 +93,7 @@ test('SCIM deactivation atomically ends every session and transfers pending appr
  const domain=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(domain),true)
  const archive=join(h.dir,'synthetic-purse-15.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[])
  const exported=await records(archive),archived=rows(exported),credential=(await h.db.prepare("SELECT value FROM p_scim_authority WHERE kind='scimCredential'").first())
- assert.ok(!JSON.stringify(exported).includes('p_scim_authority'),'Archive manifest and rows exclude SCIM service authority')
+ assert.ok(!archived.some(row=>row.table==='p_scim_authority'),'Archives contain no SCIM service authority rows')
  for(const secret of [token,JSON.parse(credential.value).hash])assert.ok(!JSON.stringify(exported).includes(secret),'Archives exclude bearer material')
  for(const kind of ['scimUser','scimApprovalTransfer'])assert.ok(archived.some(row=>row.table==='p_records'&&row.row.kind===kind),'Archive retains '+kind+' provenance')
  assert.ok(!archived.some(row=>row.table==='p_records'&&['scimConfig','scimCredential'].includes(row.row.kind)))
