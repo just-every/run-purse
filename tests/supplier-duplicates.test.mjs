@@ -8,6 +8,7 @@ test('SUPPLIER-003 duplicate matching, redacted CSV custody and history-preservi
  const buyer=await h.member('buyer@example.test',['buyer']),requester=await h.member('requester@example.test',['requester'])
  const original=await cmd('supplier',{name:'Summit Office, Inc.',dba:'Mountain Supply',address:'100 Market St., Denver CO',phone:'+1 (303) 555-0182',contacts:[{name:'Alex',email:'orders@summit-office.example'}],status:'active',reason:'Approved office supplier',matching:{tin:'12-3456789',bankRouting:'021000021',bankAccount:'000123456789'}},buyer)
  assert.deepEqual(original.matchingOnly,{tin:true,bank:true});assert.equal(original.matching,undefined)
+ assert.deepEqual((await state(buyer)).data.supplier.find(s=>s.id===original.id).matchingOnly,{tin:true,bank:true},'SUPPLIER-003 native state preserves matching-only flags after protected masks are projected')
  const input={name:'SUMMIT OFFICE INC',dba:'Different DBA',address:'100 Market St Denver, CO',phone:'303-555-0182',contacts:[{name:'Riley',email:'sales@summit-office.example'}],status:'active',reason:'New supplier pending duplicate review'}
  const before=(await state()).data
  const review=await cmd('supplier-duplicates',input,buyer)
