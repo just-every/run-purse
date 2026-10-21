@@ -82,7 +82,9 @@ export function buyerLimits(s: State, a: Actor, record: Data): BuyerLimit[] {
     return accessGrants(s, a).filter(grant => grant.permissions.includes('po.convert') && grantMatches(s, a, grant, record)).map(grant => {
         const role = s.get('accessRole:' + grant.role)?.value;
         const defaults = s.get('buyerRoleLimit:' + grant.role + ':' + entity)?.value.limits ?? role?.limits ?? {};
-        return { absoluteMinor: 0, percent: 0, quantityPercent: 0, ...defaults, ...grant.limits };
+        const limits: BuyerLimit = { quantityPercent: 0, ...defaults, ...grant.limits };
+        if (limits.absoluteMinor === undefined && limits.percent === undefined) limits.absoluteMinor = 0;
+        return limits;
     });
 }
 export function buyerLimit(s: State, a: Actor, record: Data) { return buyerLimits(s, a, record)[0]; }

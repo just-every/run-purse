@@ -11,8 +11,10 @@ function percentage(before, after, limit = 0) {
 }
 function limitProof(limit, before, after) {
     if (accessShape(limit, ['unlimited']) && limit.unlimited === true) return;
-    validateBuyerLimit(limit, true);
-    const price = (before, after) => after <= before || after - before <= limit.absoluteMinor || percentage(before, after, limit.percent);
+    validateBuyerLimit(limit);
+    const price = (before, after) => after <= before || (limit.absoluteMinor !== undefined || limit.percent !== undefined)
+        && (limit.absoluteMinor === undefined || after - before <= limit.absoluteMinor)
+        && (limit.percent === undefined || percentage(before, after, limit.percent));
     check(price(before.totalMinor, after.totalMinor) && before.lines.every((line, index) => price(line.unitMinor, after.lines[index].unitMinor) && price(line.totalMinor, after.lines[index].totalMinor) && percentage(line.q, after.lines[index].q, limit.quantityPercent)), 'conversion_limit');
 }
 /** A recorded limit is historical purchasing evidence, never restored authority.

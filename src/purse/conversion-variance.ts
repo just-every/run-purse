@@ -13,7 +13,9 @@ function percentage(before: number, after: number, limit = 0) {
     return BigInt(after - before) * 100n * denominator <= BigInt(before) * numerator;
 }
 function price(before: number, after: number, limit: BuyerLimit) {
-    return after <= before || limit.absoluteMinor !== undefined && after - before <= limit.absoluteMinor || limit.percent !== undefined && percentage(before, after, limit.percent);
+    return after <= before || (limit.absoluteMinor !== undefined || limit.percent !== undefined)
+        && (limit.absoluteMinor === undefined || after - before <= limit.absoluteMinor)
+        && (limit.percent === undefined || percentage(before, after, limit.percent));
 }
 /** A single scoped grant must cover the whole edit; grants never lend each other limits. */
 export function currentConversionLimit(s: State, a: Actor, request: Data, face: Data) {

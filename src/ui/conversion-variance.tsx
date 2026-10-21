@@ -8,11 +8,12 @@ function unitMinor(value: string) {
 }
 /** Keeps the approved request visible; the native converter authorizes every entered edit. */
 export function ConversionVariance({ request, limit, mutate }: { request: D; limit?: D; mutate: (op: string, input: D) => Promise<any> }) {
+    const priceCaps = limit ? [limit.absoluteMinor !== undefined ? money(limit.absoluteMinor, request.currency) : null, limit.percent !== undefined ? limit.percent + '%' : null].filter(Boolean) : [];
     return <details className="disclosure">
         <summary>Adjust price or quantity at conversion</summary>
         <div className="disclosure-body">
             <p>Leave a field blank to keep its approved value. The PO retains the approved request and decision as its source and records every conversion change. Issue the prepared document separately in Orders.</p>
-            {limit && <p>{limit.unlimited ? 'The current native owner has no buyer variance cap.' : 'Your displayed buyer limit: ' + (limit.absoluteMinor !== undefined ? money(limit.absoluteMinor, request.currency) : 'no dollar allowance') + ' or ' + (limit.percent ?? 0) + '% price increase; ' + (limit.quantityPercent ?? 0) + '% quantity increase. A single current grant must cover the complete edit.'}</p>}
+            {limit && <p>{limit.unlimited ? 'The current native owner has no buyer variance cap.' : 'Your displayed buyer limit: ' + (priceCaps.length ? priceCaps.join(' and ') + ' price increase' : 'no price increase') + (priceCaps.length > 1 ? ' (both caps apply; the lower governs)' : '') + '; ' + (limit.quantityPercent ?? 0) + '% quantity increase. A single current grant must cover the complete edit.'}</p>}
             <p>Decreases are allowed. Increases require your current price and quantity allowances and available budget. An edit outside those allowances is refused; amend the request and obtain renewed approval.</p>
             <Form label="Generate purchase order with conversion edits" onSubmit={async input => {
                 const lines = request.lines.flatMap((line: D) => {
