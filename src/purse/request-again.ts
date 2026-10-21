@@ -42,7 +42,7 @@ export async function requestAgain(s: State, a: Actor, op: string, b: Data) {
     }
     const files = all(s, 'attachment').filter(f => f.kind === b.kind && f.record === source.id && !f.privateSupplierDocument);
     const review = { draft, flags, changes, files: files.map(({ id, name, mediaType, size }) => ({ id, name, mediaType, size })) };
-    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify({ actor: a.id, source: s.get(b.kind + ':' + source.id)?.revision, review, files })));
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify({ actor: a.id, source: s.get(b.kind + ':' + source.id)?.revision, review, files: files.map(file => [file.id, s.get('attachment:' + file.id)?.revision]) })));
     const fingerprint = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
     if (op === 'request-again-preview') return { ...review, fingerprint };
     requireThat(b.fingerprint === fingerprint, 'Copy review changed; review current prices, access and source again', 409);

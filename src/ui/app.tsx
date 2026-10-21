@@ -24,7 +24,7 @@ function PurchasingApp() {
     const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState(firstTab), [notice, setNotice] = useState(''), [performance, setPerformance] = useState(false);
     async function reload() { setState(await call('state')); }
     useEffect(() => { reload().catch(e => setError(e.message)); }, []);
-    async function mutate(op: string, b: D) { const result = await call('command/' + op, b); setNotice('Saved.'); await reload(); return result; }
+    async function mutate(op: string, b: D) { const result = await call('command/' + op, b); if (op !== 'request-again-preview') setNotice('Saved.'); await reload(); return result; }
     if (!state)
         return <div className="app"><TopBar/><main className="workspace">{error ? <p role="alert">{error} · <a href="/signin">Sign in</a></p> : <p className="lead">Opening purchasing workspace…</p>}</main></div>;
     const { data, actor } = state;
