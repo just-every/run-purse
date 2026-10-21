@@ -1,3 +1,7 @@
+import {nativeWebContext} from './native-web-fixture.mjs';
+import {createPortability} from '@runeditrun/rer/modules/portability';
+import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import portability from '../scripts/installer/portability.mjs';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {mkdir,readFile} from 'node:fs/promises';
@@ -13,13 +17,7 @@ const browser=await chromium.launch({headless:true,...(process.env.PURSE_CHROMIU
 try{for(const width of widths){
  const h=await harness({protectedKey:createHash('sha256').update('synthetic-purse-1').digest('hex')});let context;
  try{
-  const f=await legacyHistoryFixture(h);context=await browser.newContext({viewport:{width,height:1000}});const[name,value]=h.owner.split('=');await context.addCookies([{name,value,url:h.origin}]);
-  await context.route(h.origin+'/**',async route=>{const path=new URL(route.request().url()).pathname;
-   if(path==='/app')return route.fulfill({contentType:'text/html',body:'<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/rer-theme.css"><link rel="stylesheet" href="/purse.css"></head><body><div id="root"></div><script type="module" src="/test-app.js"></script></body></html>'});
-   if(path==='/test-app.js')return route.fulfill({contentType:'text/javascript',body:bundle.outputFiles[0].text});
-   if(['/rer-theme.css','/purse.css'].includes(path)||/^\/(fonts|brand)\/[a-zA-Z0-9./_-]+$/.test(path)&&!path.includes('..'))return route.fulfill({body:await readFile('public'+path),contentType:({css:'text/css',woff2:'font/woff2',svg:'image/svg+xml'})[path.split('.').pop()]||'application/octet-stream'});
-   return route.continue();
-  });
+  const f=await legacyHistoryFixture(h);context=await nativeWebContext(browser,h,width,bundle.outputFiles[0].text);
   const page=await context.newPage(),failures=[];page.on('pageerror',e=>failures.push(e.message));
   await page.goto(h.origin+'/app?tab=Settings');const migration=page.getByRole('region',{name:'Invoice evidence history',exact:true});await migration.getByText('5 legacy invoices awaiting migration.').waitFor();
   await migration.getByRole('button',{name:'Check legacy evidence',exact:true}).click();await migration.getByText('attested-at-migration: 2 · unavailable-source: 2 · did-not-verify: 1',{exact:true}).waitFor();await migration.screenshot({path:join(evidence,`SECURITY-001-migration-${width}.png`)});
@@ -29,6 +27,22 @@ try{for(const width of widths){
   async function verify(account){for(const[label,v]of [['Original routing number',f.remit.bankRouting],['Original bank account',account],['Private re-entry reason','Supplier source check'],['Private source reference','External original receipt']])await section.getByLabel(label,{exact:true}).fill(v);await section.getByRole('button',{name:'Verify original evidence',exact:true}).click();}
   await verify('736290184652');await section.getByText('Legacy evidence did not verify.',{exact:true}).waitFor();await section.screenshot({path:join(evidence,`SECURITY-001-reentry-mismatch-${width}.png`)});
   await verify(f.remit.bankAccount);await section.getByText(/Verified by owner re-entry on/).waitFor();assert.equal(await section.locator('input[name=bankAccount]').inputValue(),'');await section.screenshot({path:join(evidence,`SECURITY-001-reentry-checked-${width}.png`)});
+  const protectedValues={tin:'987659731',bankRouting:f.remit.bankRouting,bankAccount:f.remit.bankAccount};
+  const meta=await h.send('/api/purse/supplier-protected/'+f.supplier.id,undefined,h.owner);assert.equal((await h.send('/api/purse/supplier-protected/'+f.supplier.id+'/store',{revision:meta.value.revision,values:protectedValues,reason:'synthetic-purse-2',evidence:'synthetic-purse-3'},h.owner)).status,200);
+  await page.goto(h.origin+'/app?tab=Settings');const archivePanel=page.getByRole('region',{name:'Encrypted protected archive',exact:true}),exportForm=archivePanel.locator('form').filter({has:page.getByRole('button',{name:'Download encrypted supplement',exact:true})});
+  async function archiveFields(form,passphrase){await form.getByLabel('Private archive passphrase',{exact:true}).fill(passphrase);await form.getByLabel('Private archive reason',{exact:true}).fill('Custody of owner backup');await form.getByLabel('Private archive evidence reference',{exact:true}).fill('Private backup register');await form.getByRole('checkbox').check();}
+  await archiveFields(exportForm,'synthetic-purse-archive');const downloading=page.waitForEvent('download');await exportForm.getByRole('button',{name:'Download encrypted supplement',exact:true}).click();const include=await downloading,includePath=await include.path();await archivePanel.getByRole('status').filter({hasText:'Encrypted supplement downloaded.'}).waitFor();await archivePanel.screenshot({path:join(evidence,`SECURITY-001-owner-include-${width}.png`)});
+  const ordinary=join(h.dir,'ordinary.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),ordinary,[]);
+  const target=await harness({empty:true,protectedKey:createHash('sha256').update('synthetic-purse-4').digest('hex')});let restoredContext;
+  try{
+   await importArchive(await createPortability({db:target.db,buckets:{ORIGINALS:target.originals},policy:portability}),ordinary,[]);
+   const bootstrap=await target.send('/auth/bootstrap',{token:'synthetic-local-test-bootstrap-token-0123456789',displayName:'Restored owner'});assert.equal(bootstrap.status,303);target.owner=bootstrap.cookie;await nativeEvidenceProof(target);
+   restoredContext=await nativeWebContext(browser,target,width,bundle.outputFiles[0].text);const restoredPage=await restoredContext.newPage();await restoredPage.goto(target.origin+'/app?tab=Settings');const panel=restoredPage.getByRole('region',{name:'Encrypted protected archive',exact:true}),form=panel.locator('form').filter({has:restoredPage.getByRole('button',{name:'Restore encrypted supplement',exact:true})});
+   const snapshot=async()=>JSON.stringify((await target.db.prepare("SELECT kind,id,value FROM p_records WHERE kind!='audit' ORDER BY kind,id").all()).results),before=await snapshot();
+   async function restore(passphrase){await form.getByLabel('Encrypted protected supplement',{exact:true}).setInputFiles(includePath);await archiveFields(form,passphrase);await form.getByRole('button',{name:'Restore encrypted supplement',exact:true}).click();}
+   await restore('synthetic-purse-wrong');await panel.getByRole('alert').filter({hasText:'Protected archive or passphrase invalid'}).waitFor();assert.equal(await snapshot(),before);assert.equal((await target.db.prepare('SELECT COUNT(*) n FROM p_supplier_protected').first()).n,0);await panel.screenshot({path:join(evidence,`SECURITY-001-wrong-passphrase-${width}.png`)});
+   await restore('synthetic-purse-archive');await panel.getByRole('status').filter({hasText:'Protected values and matching restored'}).waitFor();assert.equal((await target.db.prepare('SELECT COUNT(*) n FROM p_supplier_protected').first()).n,3);await panel.screenshot({path:join(evidence,`SECURITY-001-include-restored-${width}.png`)});assert.equal(await restoredPage.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  }finally{await restoredContext?.close();await target.close();}
   assert.ok(!(await page.locator('body').innerText()).includes(f.remit.bankAccount));assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.deepEqual(failures,[]);
  }finally{await context?.close();await h.close();}
 }}finally{await browser.close();}

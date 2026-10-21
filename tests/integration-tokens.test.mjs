@@ -231,7 +231,7 @@ test('SECURITY-001 explicit encrypted include restores protected fields and matc
     assert.ok(JSON.stringify(await snapshot())===JSON.stringify(before),'Authenticated-encryption failure changes no domain rows');
     const stale=await input(target,{archive});await target.send(path+'restore',await input(target,{archive,passphrase:'synthetic-purse-18'}),target.owner);
     assert.equal((await target.send(path+'restore',stale,target.owner)).status,409);
-    const restored=await target.send(path+'restore',await input(target,{archive}),target.owner);assert.equal(restored.status,200,JSON.stringify(restored.value));assert.equal(restored.value.restored,3);assert.equal(restored.headers.get('cache-control'),'no-store');
+    const restored=await target.send(path+'restore',await input(target,{archive}),target.owner);assert.equal(restored.status,200,JSON.stringify({value:restored.value,stage:restored.headers.get('x-protected-stage'),type:restored.headers.get('x-protected-error')}));assert.equal(restored.value.restored,3);assert.equal(restored.headers.get('cache-control'),'no-store');
     assert.equal((await target.db.prepare('SELECT COUNT(*) n FROM p_integration_tokens').first()).n,0,'The explicit include never restores connector authority');
     const stored=(await target.db.prepare('SELECT * FROM p_supplier_protected').all()).results;
     assert.ok(stored.every(row=>row.key_id===createHash('sha256').update(Buffer.from(targetKey,'hex')).digest('hex')),'The destination encrypts with its own installation key');
