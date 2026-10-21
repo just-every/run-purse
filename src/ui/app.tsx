@@ -46,7 +46,7 @@ function PurchasingApp() {
             {current === 'Authority' && <Authority data={data} actor={actor} mutate={mutate}/>}
             {current === 'Preparation' && <Preparation data={data} mutate={mutate}/>}
             {current === 'Imports' && <Imports reload={reload} jobs={data.importJobs ?? []}/>}
-            {current === 'Audit' && <AuditLog/>}
+            {current === 'Audit' && <AuditLog actor={actor}/>}
         </main>
     </div>;
 }

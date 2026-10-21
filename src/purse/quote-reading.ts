@@ -6,8 +6,8 @@ import { readQuoteSource } from './quote-reading-source';
 import { parseQuoteFields, type QuoteField } from './quote-reading-fields';
 const headers = ['currency', 'freightAmount', 'taxAmount', 'leadTime', 'validity'];
 const itemFields = ['description', 'quantity', 'unitAmount', 'unit'];
-function scope(s: State, a: Actor, request: Data) {
-    requirePermission(s,a,'request.edit',request);
+function scope(s: State, a: Actor, request: Data,permission:string) {
+    requirePermission(s,a,permission,request);
 }
 function event(s: State, a: Actor, reading: Data, action: string, detail: Data = {}) {
     const id = uid(); put(s, 'quoteReadingEvent', id, { request: reading.request, reading: reading.id, revision: reading.revision, attachment: reading.attachment, version: reading.version, action, actor: a.id, at: new Date().toISOString(), ...detail });
@@ -19,7 +19,7 @@ export function visibleQuoteReadings(s: State, requestIds: Set<string>) {
 export async function quoteReading(s: State, a: Actor, op: string, b: Data): Promise<Data | undefined> {
     if (!['quote-extract', 'quote-reading-instructions', 'quote-reading-propose', 'quote-reading-edit', 'quote-reading-confirm'].includes(op)) return;
     const prior = ['quote-extract', 'quote-reading-instructions', 'quote-reading-propose'].includes(op) ? null : get(s, 'quoteReading', b.id);
-    const request = get(s, 'request', prior?.request ?? b.request); scope(s, a, request);
+    const request = get(s, 'request', prior?.request ?? b.request); scope(s, a, request,op==='quote-reading-instructions'?'request.read':'request.edit');
     requireThat(b.request === request.id && b.revision === request.revision && (!prior || prior.revision === request.revision), 'Quote reading belongs to a stale request revision', 409);
     requireThat(!request.imported && request.status === 'draft', 'Quote reading only changes the current native draft; submitted or approved requests are refused', 409);
     const attachment = get(s, 'attachment', prior?.attachment ?? b.attachment ?? b.source?.attachment);

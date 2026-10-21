@@ -1,6 +1,6 @@
 import {nativeWebContext} from './native-web-fixture.mjs';
 import {accessFixture} from './access-fixture.mjs';
-import {manageAccess,zeroBuyer,conversionEdit,scopedReports} from './browser-access-flows.mjs';
+import {manageAccess,zeroBuyer,conversionEdit,scopedReports,apTerms} from './browser-access-flows.mjs';
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
@@ -22,7 +22,7 @@ try{for(const width of widths){const f=await accessFixture(),contexts=[];try{
   if(['auditor','finance-viewer','lead','approver'].includes(role))assert.equal(await page.getByRole('button',{name:'Save invoice',exact:true}).count(),0);
   if(role==='lead'){assert.equal(await page.getByText('Invoice FAC-203',{exact:true}).count(),0);await page.getByLabel('Quantity',{exact:true}).fill('1');await page.getByLabel('Reason or service milestone',{exact:true}).fill('Denver receiving lead checked one kit');await page.getByRole('button',{name:'Record receiving event',exact:true}).click();await page.getByText('Saved.',{exact:true}).waitFor();for(const [operation,body]of [['decision',{id:f.pending[0].id,revision:1,decision:'approved',reason:'No approval permission'}],['receipt',{order:f.orders[1].id,line:f.orders[1].lines[0].id,event:'receive',quantity:'1',reason:'Wrong location'}]])assert.equal((await page.context().request.post(f.h.origin+'/api/purse/command/'+operation,{data:body,headers:{origin:f.h.origin}})).status(),403);assert.equal((await page.context().request.get(f.h.origin+'/api/purse/download/attachment/'+f.sources[0].attachment)).status(),403);}
   if(role==='approver')assert.equal((await page.context().request.post(f.h.origin+'/api/purse/command/decision',{data:{id:f.pending[1].id,revision:1,decision:'approved',reason:'Outside department'},headers:{origin:f.h.origin}})).status(),403);
-  await snap(page,role+'-orders');
+  await snap(page,role+'-orders');if(role==='ap-clerk')await apTerms(page,f,snap);
   if(role!=='lead'){await page.goto(f.h.origin+'/app?tab=Requests&request='+f.pending[0].id);await page.getByRole('heading',{name:'Facilities approval waiting · revision 1',exact:true}).waitFor();if(role==='auditor')assert.equal(await page.getByRole('button',{name:'Record decision',exact:true}).count(),0);await snap(page,role+'-requests');}
   if(['requester','ap-clerk','finance-viewer','auditor'].includes(role))await scopedReports(page,f,role,snap);
   if(role==='auditor'){await page.goto(f.h.origin+'/app?tab=Audit');await page.getByRole('heading',{name:'Audit history',exact:true}).waitFor();await page.getByLabel('Subject ID or PO number',{exact:true}).fill(f.orders[0].number);await page.getByRole('button',{name:'Filter audit history',exact:true}).click();await page.getByRole('cell',{name:f.orders[0].id,exact:true}).first().waitFor();const download=page.waitForEvent('download');await page.getByRole('link',{name:'Export filtered audit CSV',exact:true}).click();await download;await snap(page,'auditor-history');assert.equal((await page.context().request.post(f.h.origin+'/api/purse/command/request',{data:f.draft(0,'Readonly refused'),headers:{origin:f.h.origin}})).status(),403);}

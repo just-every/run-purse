@@ -12,7 +12,7 @@ function relatedInvoiceRead(s: State, a: Actor, supplier: Data) {
 }
 /** Mask eligibility concerns the exact supplier row, including after a merge. */
 export function mayReadProtectedSupplier(s: State, a: Actor, supplier: Data) {
-    if (a.owner || accessGrants(s,a).some(grant=>grant.role!=='requester' && (grant.permissions.includes('request.read') || grant.permissions.includes('invoice.read')) && !Object.keys(grant.scope).length && !Object.keys(grant.roleScope??{}).length)) return true;
+    if (a.owner || unrestrictedPermission(s,a,'request.read') || unrestrictedPermission(s,a,'invoice.read')) return true;
     return all(s, 'request').some(request => request.supplier === supplier.id && allowed(s, a, 'request.read', request))
         || relatedInvoiceRead(s, a, supplier);
 }
