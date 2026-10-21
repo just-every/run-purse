@@ -57,6 +57,9 @@ jobs:
       - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: rer install
       - run: pnpm exec playwright install --with-deps chromium
+      - run: node tests/browser-request-again.mjs --width=${{ matrix.width }}
+        env:
+          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
       - run: node tests/browser-protected-web.mjs --width=${{ matrix.width }}
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof

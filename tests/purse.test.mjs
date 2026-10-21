@@ -92,3 +92,51 @@ test('SECURITY-001 / AGENT-010 structured protected fields never enter preparati
  const cross=await h.mf.dispatchFetch(h.origin+'/api/purse/command/prepare',{method:'POST',headers:{cookie:buyer,origin:'https://other.example.test','content-type':'application/json'},body:JSON.stringify(protectedBody)});assert.equal(cross.status,403);
  const harmless=await cmd('prepare',{workflow:'exception',fields:{'receipt source':'Document prose remains data'},draft:'An instruction in a supplier document cannot choose an action',references:[]},buyer);assert.equal(harmless.fields['receipt source'],'Document prose remains data');
 });
+
+test('INTAKE-001 request again reviews current prices and omissions, copies only chosen bytes and persists a new draft with fresh authority', async t => {
+ const h=await harness();t.after(()=>h.close());const cmd=h.command;
+ await cmd('business',{name:'Canyon Procurement',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Office']});
+ const requester=await h.member('again@example.test',['requester']),other=await h.member('other@example.test',['requester']),approver=await h.member('approver@example.test',['approver']),buyer=await h.member('buyer@example.test',['buyer']);
+ const supplier=await cmd('supplier',{name:'Repeat Supplies',status:'preferred',reason:'Reviewed supplier'});
+ const policy=await cmd('policy',{name:'Office authority',currency:'USD',category:'*',project:'*',approver:'approver@example.test',limitMinor:1000000,budgetMinor:5000000});
+ const items=[];for(const [index,unitMinor]of [1000,2000,3000].entries())items.push(await cmd('catalogue',{description:'Catalog item '+index,supplier:supplier.id,currency:'USD',unitMinor,category:'Office',project:'Office',approved:true}));
+ const source=await cmd('request',{title:'Last month supplies',supplier:supplier.id,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre:'Operations',terms:'Net 30',lines:items.map(item=>({catalogue:item.id,quantity:'3',project:'Office'}))},requester);
+ const files=[];for(const name of ['specification.txt','old-price.txt'])files.push(await cmd('attachment',{kind:'request',record:source.id,name,mediaType:'text/plain',base64:Buffer.from('Exact original '+name+'\r\n').toString('base64')},requester));
+ await cmd('submit',{id:source.id,revision:1},requester);await cmd('decision',{id:source.id,revision:1,decision:'approved',reason:'Last month approval'},approver);
+ const order=await cmd('convert',{id:source.id,revision:1},buyer);await cmd('issue',{id:order.id,revision:1,reason:'Original issuance'},buyer);
+ await cmd('receipt',{order:order.id,line:order.lines[0].id,event:'receive',quantity:'1',reason:'Prior delivery'});
+ await cmd('invoice',{order:order.id,reference:'ORIGINAL-INVOICE',source:'Original evidence',allocations:[{line:order.lines[0].id,quantity:'1',amountMinor:1000}]},buyer);
+ const oldReview=await cmd('request-again-preview',{kind:'request',id:source.id},requester);
+ await cmd('catalogue',{...items[0],unitMinor:1500});await cmd('catalogue',{...items[2],access:{departments:['Restricted']}});
+ const before=await h.state();
+ await cmd('request-again',{kind:'request',id:source.id,fingerprint:oldReview.fingerprint,draft:oldReview.draft},requester,409);
+ await cmd('request-again-preview',{kind:'request',id:source.id},other,403);
+ await cmd('request-again-preview',{kind:'request',id:source.id},buyer,403);
+ await cmd('request-again-preview',{kind:'request',id:source.id},'',401);
+ assert.deepEqual(await h.state(),before,'Refused copies and read-only reviews create no records');
+ const review=await cmd('request-again-preview',{kind:'request',id:source.id},requester);
+ assert.equal(review.draft.lines.length,2);assert.equal(review.changes.length,1);assert.equal(review.changes[0].beforeMinor,1000);assert.equal(review.changes[0].afterMinor,1500);assert.match(review.flags[0].reason,/left out/);
+ assert.deepEqual(review.draft.lines.map(l=>l.project),['Office','Office']);
+ await cmd('request-again',{kind:'request',id:source.id,fingerprint:review.fingerprint,draft:review.draft,attachments:['not-in-this-source']},requester,400);
+ const copy=await cmd('request-again',{kind:'request',id:source.id,fingerprint:review.fingerprint,draft:{...review.draft,title:'Request again, reviewed',lines:review.draft.lines.map(l=>({...l,unitMinor:1}))},attachments:[files[0].id]},requester);
+ assert.notEqual(copy.id,source.id);assert.equal(copy.status,'draft');assert.equal(copy.policy,null);assert.equal(copy.revision,1);assert.equal(copy.totalMinor,10500);assert.equal(copy.lines[0].unitMinor,1500);
+ for(const key of ['emailIntake','integration','amends','quoteTerms','valuePromise'])assert.equal(copy[key],undefined);
+ assert.ok(copy.lines.every(l=>!source.lines.some(old=>old.id===l.id)&&l.carriedAccepted===undefined&&l.carriedCancelled===undefined));
+ let state=(await h.state()).data;
+ for(const kind of ['decision','quote','order','commitment'])assert.ok(!state[kind].some(r=>r.request===copy.id),'No historical '+kind+' copied');
+ const copiedFiles=state.attachment.filter(f=>f.kind==='request'&&f.record===copy.id);assert.equal(copiedFiles.length,1);assert.notEqual(copiedFiles[0].id,files[0].id);assert.equal(copiedFiles[0].name,'specification.txt');
+ const downloaded=await h.send('/api/purse/download/attachment/'+copiedFiles[0].id,undefined,requester);assert.equal(downloaded.value,'Exact original specification.txt\r\n');
+ // A fresh native session is a second device; the draft and selected file survive it.
+ const login=await h.send('/auth/magic-link',{email:'again@example.test'});assert.equal(login.status,202);
+ const message=[...h.messages].reverse().find(m=>m.to.includes('again@example.test'));const token=new URL(message.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0]).searchParams.get('token');const confirmed=await h.send('/auth/confirm',{token});assert.equal(confirmed.status,303);const secondDevice=confirmed.cookie;assert.notEqual(secondDevice,requester);state=(await h.state(secondDevice)).data;assert.equal(state.request.find(r=>r.id===copy.id).status,'draft');assert.ok(state.attachment.some(f=>f.id===copiedFiles[0].id));
+ const freshPolicy=await cmd('policy',{...policy,name:'Revised authority'});
+ await cmd('submit',{id:copy.id,revision:1},secondDevice);assert.equal((await h.state(secondDevice)).data.request.find(r=>r.id===copy.id).policy,freshPolicy.id);
+ await cmd('decision',{id:copy.id,revision:1,decision:'approved',reason:'New exact-revision decision'},approver);
+ const poReview=await cmd('request-again-preview',{kind:'order',id:order.id},secondDevice);const poCopy=await cmd('request-again',{kind:'order',id:order.id,fingerprint:poReview.fingerprint,draft:poReview.draft},secondDevice);assert.equal(poCopy.status,'draft');assert.equal(poCopy.totalMinor,10500);assert.equal((await h.state()).data.attachment.filter(f=>f.record===poCopy.id).length,0);
+ // Direct transport remains same-origin, including read-only review POSTs.
+ const cross=await h.mf.dispatchFetch(h.origin+'/api/purse/command/request-again-preview',{method:'POST',headers:{origin:'https://outside.example.test',cookie:secondDevice,'content-type':'application/json'},body:JSON.stringify({kind:'order',id:order.id})});assert.equal(cross.status,403);
+ await cmd('catalogue',{...items[1],validUntil:'2000-01-01'});const expired=await cmd('request-again-preview',{kind:'request',id:source.id},secondDevice);assert.equal(expired.draft.lines.length,1);
+ await cmd('supplier',{...supplier,status:'blocked',reason:'Supplier no longer eligible'});const blocked=await cmd('request-again-preview',{kind:'request',id:source.id},secondDevice);assert.equal(blocked.draft.supplier,'');assert.equal(blocked.draft.lines.length,0);assert.ok(blocked.flags.some(f=>f.field==='supplier'));
+ await cmd('request-again',{kind:'request',id:source.id,fingerprint:blocked.fingerprint,draft:review.draft},secondDevice,409);
+ const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;const {validatePurchasingArchive}=await import('../scripts/installer/restore-validation.mjs');assert.equal(validatePurchasingArchive(rows),true,'New draft, exact selected bytes and provenance remain portable');
+});

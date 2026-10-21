@@ -20,7 +20,7 @@ export function Requests({ data, actor, mutate }: {
     actor: D;
     mutate: (op: string, b: D) => Promise<any>;
 }) {
-    const { id, heading, open, close } = useRecord(), [team, setTeam] = useState(''), [channel, setChannel] = useState(''), [draft, setDraft] = useState<string>();
+    const { id, heading, open, close } = useRecord(new URLSearchParams(window.location.search).get('request') || ''), [team, setTeam] = useState(''), [channel, setChannel] = useState(''), [draft, setDraft] = useState<string>();
     useEffect(() => { if (new URLSearchParams(window.location.search).has('ask')) focusComposer(); }, []);
     const business = data.business[0], asked = askedTimes(data), at = (r: D) => asked.get(r.id) ?? '';
     const all = [...data.request].sort((a: D, b: D) => at(a).localeCompare(at(b)) || a.id.localeCompare(b.id));
