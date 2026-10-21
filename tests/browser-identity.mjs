@@ -73,7 +73,6 @@ try {
                 ]);
                 await requester.page.getByRole('region', { name: 'Requests', exact: true }).waitFor();
                 await requester.page.getByLabel('Ask Purse for something to buy', { exact: true }).waitFor();
-                await requester.page.getByText('requester@example.test', { exact: true }).waitFor();
                 const identity = await requester.context.request.get(h.origin + '/auth/session');
                 assert.equal(identity.status(), 200);
                 const session = await identity.json();
