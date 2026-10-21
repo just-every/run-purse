@@ -38,6 +38,15 @@ test('PO-005 blanket invoice draw-down preserves approved caps, validity, commit
  await cmd('payable-terms',{invoice:over.id,version:0,invoiceDate:over.invoiceDate,term:'Net 30',reason:'Source date'},buyer);await cmd('approve-payable',{invoice:over.id,version:1,reason:'Must remain held'},buyer,409);
  const outside=await cmd('invoice',{order:next.id,reference:'FR-LATE',source:'Out of period evidence',invoiceDate:'2027-02-01',allocations:[{line:next.lines[0].id,quantity:'1',amountMinor:100000}]},buyer);assert.ok(outside.flags.some(f=>f.code==='blanket-validity'));
  const expired=await cmd('request',{...input,title:'Expired cap',poDetails:{blanket:{validFrom:'2000-01-01',validThrough:'2000-12-31'}}},requester);await cmd('submit',{id:expired.id,revision:1},requester);await cmd('decision',{id:expired.id,revision:1,decision:'approved',reason:'Historical terms'},approver);const prepared=await cmd('convert',{id:expired.id,revision:1},buyer);await cmd('issue',{id:prepared.id,revision:1,reason:'Expired validity'},buyer,409);
+ // PO-005 current amendment validity has inclusive edges; each boundary invoice consumes current authority exactly once.
+ const priorBoundary=await balance(),priorCommitted=await committed();const boundaryInvoices=[];
+ for(const [reference,invoiceDate]of [['FROM','2026-01-01'],['THROUGH','2027-01-31'],['BEFORE','2025-12-31']]){
+  const body={order:next.id,reference:'BOUNDARY-'+reference,source:'Supplier boundary invoice '+reference,invoiceDate,allocations:[{line:next.lines[0].id,quantity:'0.001',amountMinor:100}]};
+  const invoice=await cmd('invoice',body,buyer);boundaryInvoices.push(invoice);
+  assert.equal(invoice.flags.some(f=>f.code==='blanket-validity'),reference==='BEFORE','PO-005 inclusive current amended validity '+reference);
+  assert.equal((await cmd('invoice',body,buyer)).id,invoice.id,'PO-005 boundary replay never draws twice');
+ }
+ assert.equal((await balance()).billedMinor,priorBoundary.billedMinor+300);assert.equal(await committed(),priorCommitted);
  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true,'PO-005 native cap, invoice sources and approved history validate for portable restore');
  const corrupt=structuredClone(rows),row=corrupt.find(row=>row.kind==='order'&&row.id===next.id),value=JSON.parse(row.value);value.poDetails.blanket.validThrough='2027-02-30';row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt));
 });
