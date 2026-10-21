@@ -255,14 +255,13 @@ select:not([multiple],[size]:not([size="1"])):disabled { --rer-select-ink: color
 
 /* Disclosures: a white row that opens a form. */
 .disclosure { margin: 20px 0; }
-.disclosure > summary { display: flex; align-items: center; gap: 14px; min-height: 52px; padding: 12px 20px; border: 1px solid var(--purse-rule); border-radius: 12px; background: #fff; color: var(--purse-blue); font-size: 16px; font-weight: 700; list-style: none; cursor: pointer; box-shadow: var(--purse-shadow); }
-.disclosure-label { flex: 1; min-width: 0; }
+.disclosure > summary { display: block; position: relative; min-height: 52px; padding: 12px 43px 12px 52px; border: 1px solid var(--purse-rule); border-radius: 12px; background: #fff; color: var(--purse-blue); font-size: 16px; font-weight: 700; list-style: none; cursor: pointer; box-shadow: var(--purse-shadow); }
 .disclosure > summary::-webkit-details-marker { display: none; }
-.disclosure > summary::before { content: "+"; width: 18px; color: var(--purse-blue); font-size: 24px; font-weight: 400; line-height: 1; text-align: center; }
-.disclosure > summary::after { content: ""; width: 9px; height: 9px; margin-left: auto; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: translateY(-3px) rotate(45deg); transition: transform 0.15s; }
+.disclosure > summary::before { content: "+"; position: absolute; left: 20px; top: 50%; transform: translateY(-50%); width: 18px; color: var(--purse-blue); font-size: 24px; font-weight: 400; line-height: 1; text-align: center; }
+.disclosure > summary::after { content: ""; position: absolute; right: 20px; top: 50%; width: 9px; height: 9px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: translateY(-70%) rotate(45deg); transition: transform 0.15s; }
 .disclosure[open] > summary { border-radius: 12px 12px 0 0; box-shadow: none; }
 .disclosure[open] > summary::before { content: "−"; }
-.disclosure[open] > summary::after { transform: translateY(2px) rotate(-135deg); }
+.disclosure[open] > summary::after { transform: translateY(-20%) rotate(-135deg); }
 .disclosure > summary:hover { background: var(--purse-blue-wash); }
 .disclosure-body { padding: 4px 20px 8px; border: 1px solid var(--purse-rule); border-top: 0; border-radius: 0 0 12px 12px; background: #fff; }
 .disclosure-body .record-form { padding: 0; border: 0; background: none; }
@@ -393,7 +392,9 @@ select:not([multiple],[size]:not([size="1"])):disabled { --rer-select-ink: color
   .record-form > .form-end, .record-form:not(:has(> :nth-child(6))):not(:has(> p, > fieldset)) > .form-end { flex: 1 1 100%; }
   .panel { padding: 16px 14px 18px; }
   .workspace .panel > h2, .workspace .panel > h3 { font-size: 19px; }
-  .disclosure > summary { padding: 12px 14px; font-size: 15px; }
+  .disclosure > summary { padding: 12px 37px 12px 46px; font-size: 15px; }
+  .disclosure > summary::before { left: 14px; }
+  .disclosure > summary::after { right: 14px; }
   .disclosure-body { padding: 4px 14px 8px; }
   .record-head { align-items: flex-start; }
   .workspace .record-title { font-size: 24px; }

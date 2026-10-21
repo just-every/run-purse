@@ -76,4 +76,4 @@ export function Attachments({ data, kind, record, mutate, invoice = false }: {
 export function Details({ label, children }: {
     label: string;
     children: ReactNode;
-}) { return <details className="disclosure"><summary><span className="disclosure-label">{separated(label)}</span></summary><div className="disclosure-body">{children}</div></details>; }
+}) { return <details className="disclosure"><summary>{separated(label)}</summary><div className="disclosure-body">{children}</div></details>; }
