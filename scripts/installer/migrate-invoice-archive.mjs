@@ -1,6 +1,6 @@
 import {randomBytes,randomUUID} from 'node:crypto';
 import {tombstone} from '@runeditrun/rer/internal/modules/portability/journal.mjs';
-import {attestation,classifyLegacyEvidence,digest,retainedEvidence} from './invoice-evidence-crypto.mjs';
+import {attestation,classifyLegacyEvidence,digest,retainedEvidence} from '../../src/purse/invoice-evidence-crypto.mjs';
 
 /** The pinned Base policy exposes only staging copies here. All migrations are
  * validated before Base's single destination commit; failure never writes domain rows.

@@ -1,4 +1,4 @@
-import { attestation, digest, retainedEvidence, v2Hash } from './invoice-evidence-crypto.mjs';
+import { attestation, digest, retainedEvidence, v2Hash } from '../../src/purse/invoice-evidence-crypto.mjs';
 const hex=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
 const states=['attested-at-migration','unavailable-source','did-not-verify','verified-by-reentry'];
 export function validateInvoiceEvidence(all,check) {

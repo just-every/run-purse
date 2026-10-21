@@ -1,6 +1,6 @@
 import { rejectProtectedInput, stripProtectedInput } from './protected-input';
 import { all, audit, put, requireThat, text, type Actor, type Data, type State } from './types';
-import { preparationActions, executablePreparationAction, hasUnsafeProtectedContext, unavailableProtectedTarget } from '../../scripts/installer/protected-context-fields.mjs';
+import { preparationActions, executablePreparationAction, hasUnsafeProtectedContext, unavailableProtectedTarget } from './protected-context-fields.mjs';
 export { preparationActions, executablePreparationAction };
 
 type ContextKind = 'agentRun' | 'proposedAction';

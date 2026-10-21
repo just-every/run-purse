@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createHmac} from 'node:crypto';
-import {legacyHash} from '../scripts/installer/invoice-evidence-crypto.mjs';
+import {legacyHash} from '../src/purse/invoice-evidence-crypto.mjs';
 export async function legacyHistoryFixture(h) {
  await h.command('business',{name:'Canyon Field Services',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety']});
  const requester=await h.member('requester@example.test',['requester']),approver=await h.member('approver@example.test',['approver']),buyer=await h.member('buyer@example.test',['buyer']);

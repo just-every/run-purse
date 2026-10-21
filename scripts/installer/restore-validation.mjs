@@ -1,4 +1,4 @@
-import { hasUnsafeProtectedContext } from './protected-context-fields.mjs';
+import { hasUnsafeProtectedContext } from '../../src/purse/protected-context-fields.mjs';
 import { validateAgentValue } from './restore-agent-value.mjs';
 import { validateAgreementReadings } from './restore-agreement-readings.mjs';
 import { validateAgreementAwards } from './restore-agreement-awards.mjs';

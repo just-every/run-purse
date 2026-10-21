@@ -1,4 +1,4 @@
-import { mac, v2Hash } from '../../scripts/installer/invoice-evidence-crypto.mjs';
+import { mac, v2Hash } from './invoice-evidence-crypto.mjs';
 import { evidenceKey } from './invoice-evidence-history';
 import { createHash } from 'node:crypto';
 import { initializeSupplierMatching, matchingInputs } from './supplier-identity';

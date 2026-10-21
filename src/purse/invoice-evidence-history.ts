@@ -1,6 +1,6 @@
 import { evidenceLabel } from './invoice-evidence-labels';
 import { randomBytes } from 'node:crypto';
-import { attestation, classifyLegacyEvidence, digest, legacyHash, retainedEvidence } from '../../scripts/installer/invoice-evidence-crypto.mjs';
+import { attestation, classifyLegacyEvidence, digest, legacyHash, retainedEvidence } from './invoice-evidence-crypto.mjs';
 import { all, audit, get, key, put, requireThat, uid, type Actor, type Data, type State } from './types';
 import { canonicalSupplier, matchingInputs } from './supplier-identity';
 

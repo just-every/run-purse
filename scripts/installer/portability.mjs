@@ -1,5 +1,5 @@
 import { migrateInvoiceArchive } from './migrate-invoice-archive.mjs';
-import { hasUnsafeProtectedContext } from './protected-context-fields.mjs';
+import { hasUnsafeProtectedContext } from '../../src/purse/protected-context-fields.mjs';
 import { validateSearchProjection } from './restore-search.mjs';
 import { check, validatePurchasingArchive } from './restore-validation.mjs';
 export default {
