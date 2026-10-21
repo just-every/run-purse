@@ -71,6 +71,8 @@ try {
                     requester.page.waitForURL(h.origin + '/app'),
                     button.click(),
                 ]);
+                const workspace = await requester.context.request.get(h.origin + '/api/purse/state');
+                assert.equal(workspace.status(), 200, await workspace.text());
                 await requester.page.getByRole('region', { name: 'Requests', exact: true }).waitFor();
                 await requester.page.getByLabel('Ask Purse for something to buy', { exact: true }).waitFor();
                 const identity = await requester.context.request.get(h.origin + '/auth/session');
@@ -113,6 +115,12 @@ try {
             assert.equal(await requester.page.getByRole('button', { name: 'Continue with Local test company', exact: true }).count(), 0);
             assert.equal((await owner.context.request.get(h.origin + '/auth/session')).status(), 200, 'Native owner recovery sign-in remains current');
             assert.equal(pageErrors, 0, 'Native settings and the shipped App have no browser exceptions');
+        } catch (error) {
+            for (const [index, context] of contexts.entries()) for (const page of context.pages()) {
+                await snap(page, 'failure-' + index).catch(() => {});
+                console.error('Identity browser state:', new URL(page.url()).pathname, (await page.locator('body').innerText()).slice(0, 1200));
+            }
+            throw error;
         } finally {
             try { await Promise.all(contexts.map(context => context.close())); } finally { await h.close(); }
         }
