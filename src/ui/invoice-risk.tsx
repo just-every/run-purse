@@ -14,7 +14,7 @@ export function InvoiceRisk({ invoice, data, actor, mutate }: { invoice: D; data
         {(invoice.flags ?? []).map((flag: D) => {
             const review = invoice.riskReviews?.find((r: D) => r.flag === flag.id), related = data.invoice.find((i: D) => i.id === flag.relatedInvoice);
             return <section className="invoice" key={flag.id} aria-label={'Risk '+flag.code+' '+invoice.reference}><h5>{labels[flag.code] || flag.code} · {review ? 'Reviewed' : 'Open'}</h5><p>{flag.reason}</p>{related && <p>Related invoice {related.reference}</p>}
-                {review ? <p>Risk review · {review.reason} · {when(review.at)}</p> : actor.roles.includes('buyer') && <Form label="Resolve risk flag" initial={{ invoice: invoice.id, flag: flag.id, version: invoice.riskVersion }} onSubmit={b => mutate('invoice-risk-review', b)}><Field label="Risk review reason" name="reason"/></Form>}
+                {review ? <p>Risk review · {review.reason} · {when(review.at)}</p> : invoice.mayReview && <Form label="Resolve risk flag" initial={{ invoice: invoice.id, flag: flag.id, version: invoice.riskVersion }} onSubmit={b => mutate('invoice-risk-review', b)}><Field label="Risk review reason" name="reason"/></Form>}
             </section>;
         })}
     </section>;

@@ -3,7 +3,7 @@ import type { D } from './shared';
 
 /** How a request came in: the integration that posted it (named by the owner), email intake, or the web. */
 export const channelOf = (r: D) => r.integration?.name || (r.emailIntake ? 'email' : 'web');
-export const isStaff = (actor: D) => actor.roles.some((role: string) => ['owner', 'approver', 'buyer', 'receiver'].includes(role));
+export const isStaff = (actor: D) => actor.permissions.some((permission:string)=>['access.manage','request.approve','procurement.manage','receive'].includes(permission));
 export const mine = (actor: D, r: D) => r.requester === actor.id || r.requesterEmail === actor.email;
 const issuedStatuses = ['issued', 'amendment-pending', 'closed'];
 
@@ -23,15 +23,15 @@ export const policyOf = (data: D, r: D) => r.policy ? data.policy.find((p: D) =>
 
 export function holdsAuthority(data: D, actor: D, r: D) {
     const p = data.policy.find((x: D) => x.id === r.policy);
-    if (!p || r.status !== 'pending' || r.imported || mine(actor, r) || !actor.roles.includes('approver')) return false;
+    if (!p || r.status !== 'pending' || r.imported || mine(actor, r) || !r.mayApprove) return false;
     return p.approver === actor.email || data.delegation.some((d: D) => d.policy === p.id && d.from === p.approver && d.delegate === actor.email && d.active && Date.parse(d.expires) > Date.now());
 }
 /** The viewer's own next step on a request, if it waits on them. */
 export function verbFor(data: D, actor: D, r: D): 'approve' | 'submit' | 'convert' | null {
     if (r.imported) return null;
     if (holdsAuthority(data, actor, r)) return 'approve';
-    if (['draft', 'returned'].includes(r.status) && actor.roles.includes('requester') && (mine(actor, r) || actor.roles.includes('owner'))) return 'submit';
-    if (r.status === 'approved' && !orderOf(data, r) && actor.roles.includes('buyer')) return 'convert';
+    if (['draft', 'returned'].includes(r.status) && r.mayEdit) return 'submit';
+    if (r.status === 'approved' && !orderOf(data, r) && r.mayConvert) return 'convert';
     return null;
 }
 /** Who owns the next step, named for the card. */
@@ -46,7 +46,7 @@ export function nextStep(data: D, actor: D, r: D) {
         const emails: string[] = [...new Set<string>([...(eligible(p.approver) ? [p.approver] : []), ...delegates.map((d: D) => d.delegate)])];
         return emails.length ? emails.map(email => `${you(email)} ${email === actor.email ? 'decide' : 'decides'}`).join(' · ') : 'Needs another approver · self-approval refused';
     }
-    if (r.status === 'approved' && !orderOf(data, r) && actor.roles.includes('buyer')) return 'You raise the PO';
+    if (r.status === 'approved' && !orderOf(data, r) && r.mayConvert) return 'You raise the PO';
     if (r.status === 'approved' && !orderOf(data, r)) { const buyers = (data.people ?? []).filter((m: D) => m.roles.includes('buyer')); return buyers.length === 1 ? `${you(buyers[0].email)} ${buyers[0].email === actor.email ? 'raise' : 'raises'} the PO` : 'A buyer raises the PO'; }
     return '';
 }

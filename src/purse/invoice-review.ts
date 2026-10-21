@@ -1,10 +1,13 @@
-import { openInvoiceFlags, publicInvoice } from './invoice-status';
-import { audit, can, get, put, requireThat, text, type Actor, type Data, type State } from './types';
+import { openInvoiceFlags } from './invoice-status';
+import { audit, get, put, requireThat, text, type Actor, type Data, type State } from './types';
+import { requirePermission } from './access';
+import { scopedInvoice } from './invoices';
 /** A risk disposition records human review; it never verifies a bank or resolves matching discrepancies. */
 export function invoiceReview(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if (op !== 'invoice-risk-review') return;
-    can(s, a, 'buyer');
+    requirePermission(s, a, 'invoice.review');
     const invoice = get(s, 'invoice', b.invoice);
+    requirePermission(s, a, 'invoice.review', invoice);
     requireThat(!invoice.imported, 'Native invoice required', 409);
     requireThat(b.version === (invoice.riskVersion ?? 0), 'Invoice risk review changed; reload', 409);
     const flag = openInvoiceFlags(invoice).find(f => f.id === b.flag);
@@ -13,5 +16,5 @@ export function invoiceReview(s: State, a: Actor, op: string, b: Data): Data | u
     const version = (invoice.riskVersion ?? 0) + 1;
     put(s, 'invoice', invoice.id, { ...invoice, riskVersion: version, riskReviews: [...(invoice.riskReviews ?? []), review] });
     audit(s, a, op, invoice.id, { ...review, version });
-    return publicInvoice(get(s, 'invoice', invoice.id));
+    return scopedInvoice(s, a, get(s, 'invoice', invoice.id));
 }

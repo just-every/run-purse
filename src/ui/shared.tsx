@@ -65,14 +65,15 @@ export function Table({ heads, children, figures = [], stack = heads.filter(Bool
 }) { return <div className={stack ? 'record-table record-table-stack' : 'record-table'}><table><thead><tr>{heads.map((h, i) => <th key={h || i} className={figures.includes(h) ? 'figure' : undefined}>{h}</th>)}</tr></thead><tbody>{separated(Children.map(children, row => labelled(row, heads)))}</tbody></table></div>; }
 /** Plain words from the record ("approved · v2", "issued") on a quiet grey chip; never a traffic-light colour. */
 export function Chip({ children }: { children: ReactNode }) { return <span className="chip">{children}</span>; }
-export function Attachments({ data, kind, record, mutate, invoice = false }: {
+export function Attachments({ data, kind, record, mutate, editable, invoice = false }: {
     data: D;
     kind: string;
     record: string;
     invoice?: boolean;
+    editable: boolean;
     mutate: (op: string, b: D) => Promise<any>;
-}) { const files = data.attachment.filter((x: D) => x.kind === kind && x.record === record); return <section className="attachments">{invoice ? <h5>Invoice evidence</h5> : <h3>Evidence files</h3>}{files.length > 0 && <ul className="ruled-list">{files.map((f: D) => <li key={f.id}><a href={`/api/purse/download/attachment/${f.id}`}>{f.name}</a> · {f.size} bytes</li>)}</ul>}<Form className="record-form-inline" label="Upload evidence" onSubmit={async (b) => { const f = b.file as File; const bytes = new Uint8Array(await f.arrayBuffer()); let raw = ''; for (const x of bytes)
-    raw += String.fromCharCode(x); return mutate('attachment', { kind, record, name: f.name, mediaType: f.type || 'application/octet-stream', base64: btoa(raw) }); }}><label className="field">Evidence file<input type="file" name="file" required/></label></Form></section>; }
+}) { const files = data.attachment.filter((x: D) => x.kind === kind && x.record === record); return <section className="attachments">{invoice ? <h5>Invoice evidence</h5> : <h3>Evidence files</h3>}{files.length > 0 && <ul className="ruled-list">{files.map((f: D) => <li key={f.id}><a href={`/api/purse/download/attachment/${f.id}`}>{f.name}</a> · {f.size} bytes</li>)}</ul>}{editable && <Form className="record-form-inline" label="Upload evidence" onSubmit={async (b) => { const f = b.file as File; const bytes = new Uint8Array(await f.arrayBuffer()); let raw = ''; for (const x of bytes)
+    raw += String.fromCharCode(x); return mutate('attachment', { kind, record, name: f.name, mediaType: f.type || 'application/octet-stream', base64: btoa(raw) }); }}><label className="field">Evidence file<input type="file" name="file" required/></label></Form>}</section>; }
 export function Details({ label, children }: {
     label: string;
     children: ReactNode;

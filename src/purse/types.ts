@@ -1,3 +1,6 @@
+import { accessGrants, allowed, requirePermission } from './access';
+import { rolePermission } from './access-permissions';
+export { accessGrants, allowed, requirePermission, recordInScope, resolvedPermissions, buyerLimit, buyerLimits } from './access';
 export type Data = Record<string, any>;
 export type Row = {
     business: string;
@@ -31,7 +34,13 @@ export const extended = (q: number, cost: number) => { const n = (BigInt(q) * Bi
 export const qty = (n: number) => (n / 1000).toFixed(3).replace(/\.?0+$/, '');
 export function date(v: unknown, label = 'Date') { const x = text(v, label); requireThat(/^\d{4}-\d{2}-\d{2}$/.test(x) && Number.isFinite(Date.parse(x)) && new Date(x).toISOString().slice(0, 10) === x, 'Use a valid YYYY-MM-DD date'); return x; }
 export const audit = (s: State, a: Actor, action: string, record: string, detail: Data = {}) => { const id = uid(); put(s, 'audit', id, { actor: a.id, email: a.email, action, record, at: new Date().toISOString(), ...detail }); };
-export function roles(s: State, a: Actor): string[] { if (a.owner)
-    return ['owner', 'requester', 'approver', 'buyer', 'receiver']; const m = all(s, 'member').find(m => m.email.toLowerCase() === a.email.toLowerCase() && m.active); return m?.roles ?? []; }
-export function can(s: State, a: Actor, role: string) { requireThat(roles(s, a).includes(role), `${role} capability required`, 403); }
-export function own(s: State, a: Actor, r: Data) { requireThat(a.owner || r.requester === a.id || r.requesterEmail === a.email || roles(s, a).some(r => ['approver', 'buyer', 'receiver'].includes(r)), 'Record outside your scope', 403); }
+export function roles(s: State, a: Actor): string[] {
+    if (a.owner) return ['owner', 'requester', 'approver', 'buyer', 'receiver'];
+    return [...new Set(accessGrants(s, a).map(grant => grant.role))];
+}
+export function can(s: State, a: Actor, role: string) {
+    if (role === 'owner') { requireThat(a.owner, 'Current native owner required', 403); return; }
+    const permission = rolePermission[role];
+    requireThat(permission && allowed(s, a, permission), `${role} capability required`, 403);
+}
+export function own(s: State, a: Actor, r: Data) { requirePermission(s, a, 'request.read', r); }

@@ -49,7 +49,7 @@ export function catalogue(s: State, a: Actor, op: string, b: Data): Data | undef
         requireThat(new Set(items.map((i: Data) => i.catalogue)).size === items.length, 'Bundle contains duplicate items');
         record = { name: text(b.name, 'Bundle name'), approved: b.approved === true, items };
     }
-    record.access = catalogueLists(b.access ?? previous?.access, 'Catalogue access');
+    record.access = catalogueLists(b.access ?? previous?.access, 'Catalogue access', s);
     put(s, kind, id, record); audit(s, a, op, id);
     return get(s, kind, id);
 }

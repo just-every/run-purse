@@ -10,7 +10,7 @@ import {validatePurchasingArchive} from '../scripts/installer/restore-validation
 
 test('SOURCE-001 supplier links, immutable revisions, reminders, cross-supplier award and source-backed savings',async t=>{
  let failMail=false;const h=await harness({mail:async()=>{if(failMail)throw new Error('Synthetic uncertain mail transport');return Response.json({id:crypto.randomUUID()});}});t.after(()=>h.close());const cmd=h.command;
- await cmd('business',{name:'Field procurement',currencies:['USD','CAD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety']});
+ await cmd('business',{name:'Field procurement',currencies:['USD','CAD'],locations:['Denver','Boulder'],costCentres:['Operations','IT'],projects:['Safety']});
  const requester=await h.member('requester@example.test',['requester']),buyer=await h.member('buyer@example.test',['buyer']),approver=await h.member('approver@example.test',['approver']);
  const suppliers=[];for(let i=0;i<3;i++)suppliers.push(await cmd('supplier',{name:'Equipment supplier '+i,status:'preferred',reason:'Buyer nominated',contacts:[{name:'Sales',email:`sales@equipment-${i}.example.test`}]},buyer));
  await cmd('policy',{name:'Equipment authority',currency:'USD',category:'*',project:'*',approver:'approver@example.test',limitMinor:3000000,budgetMinor:9000000});
@@ -63,6 +63,31 @@ assert.equal(historical.lines[0].unitMinor,95000);assert.equal(winner.lines[0].u
  const separate=(await h.state(buyer)).data.rfqResponse.filter(r=>r.rfq===currencyRfq.id);assert.deepEqual([...new Set(separate.map(r=>r.currency))].sort(),['CAD','USD']);const usd=separate.find(r=>r.currency==='USD'),cad=separate.find(r=>r.currency==='CAD');await cmd('rfq-award',{rfq:currencyRfq.id,revision:1,firstResponse:cad.id,response:usd.id,reason:'Currencies must not combine'},buyer,400);await cmd('rfq-award',{rfq:currencyRfq.id,revision:1,firstResponse:usd.id,response:usd.id,reason:'USD offer explicitly chosen'},buyer);assert.deepEqual((await report()).totals,[{currency:'USD',negotiatedMinor:100000,realizedMinor:60000}],'Unapproved new-source awards never enter savings');
  assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
  await cmd('rfq-create',{...config,request:singleRequest.id,revision:2,deadline:new Date(Date.now()+1800000).toISOString(),reminderAt:new Date(Date.now()+1000).toISOString()},buyer,400); const jsonRevision={...payload('900'),lines:uncertainRfq.lines.map(l=>({...l,requestLine:l.id,unitAmount:'900'})),files:[{name:'json-drawing.pdf',mediaType:'application/pdf',base64:largeFiles[0].toString('base64')}]};assert.equal((await respond(newLink.value.url,jsonRevision)).status,200);const jsonResponse=(await h.state(buyer)).data.rfqResponse.find(r=>r.rfq===uncertainRfq.id);const jsonDownload=await fetch(h.origin+`/api/purse/rfq-original/${jsonResponse.id}/${jsonResponse.files[0].id}`,{headers:{cookie:buyer}});assert.deepEqual(Buffer.from(await jsonDownload.arrayBuffer()),largeFiles[0],'SOURCE-001 JSON retains a 10 MB original');
+ // Finer native grants bind configuration, invitations, response history, awards and private bytes to the RFQ's request.
+ const scopedBuyer=await h.member('synthetic-rfq-buyer@example.test',['buyer']),scopedReader=await h.member('synthetic-rfq-reader@example.test',['finance-viewer']);
+ const scope={departments:['Operations'],locations:['Denver'],projects:['Safety'],entities:['main']};
+ for(const [email,role]of [['synthetic-rfq-buyer@example.test','buyer'],['synthetic-rfq-reader@example.test','finance-viewer']])await cmd('member',{email,name:email,grants:[{role,scope}]});
+ const scopedRequest=await cmd('request',{...draft,title:'Scoped supplier quotations'},requester),outsideRequest=await cmd('request',{...draft,title:'Private IT quotations',location:'Boulder',costCentre:'IT'},requester);
+ const scopedRfq=await cmd('rfq-create',{...config,request:scopedRequest.id},scopedBuyer),outsideRfq=await cmd('rfq-create',{...config,request:outsideRequest.id},buyer);
+ await cmd('rfq-create',{...config,request:outsideRequest.id},scopedBuyer,403);
+ const scopedLink=await h.send('/api/purse/rfq/send',{rfq:scopedRfq.id,supplier:suppliers[0].id},scopedBuyer);assert.equal(scopedLink.status,200);
+ const scopedReissue=await h.send('/api/purse/rfq/reissue',{rfq:scopedRfq.id,supplier:suppliers[0].id},scopedBuyer);assert.equal(scopedReissue.status,200);assert.equal((await fetch(scopedLink.value.url)).status,410);
+ const outsideLink=await h.send('/api/purse/rfq/send',{rfq:outsideRfq.id,supplier:suppliers[0].id},buyer);assert.equal(outsideLink.status,200);
+ const scopedOffer=(record,price)=>({...payload(price),lines:record.lines.map(line=>({...line,requestLine:line.id,unitAmount:price}))});
+ assert.equal((await respond(scopedReissue.value.url,scopedOffer(scopedRfq,'990'))).status,200);assert.equal((await respond(outsideLink.value.url,scopedOffer(outsideRfq,'980'))).status,200);
+ const responses=(await h.state(buyer)).data.rfqResponse,scopedResponse=responses.find(response=>response.rfq===scopedRfq.id),outsideResponse=responses.find(response=>response.rfq===outsideRfq.id);
+ const privatePath=response=>`/api/purse/rfq-original/${response.id}/${response.files[0].id}`;
+ for(const session of [scopedBuyer,scopedReader]){
+  const visible=(await h.state(session)).data;assert.ok(visible.rfq.some(record=>record.id===scopedRfq.id));assert.ok(!visible.rfq.some(record=>record.id===outsideRfq.id));assert.ok(!visible.rfqResponse.some(record=>record.rfq===outsideRfq.id));assert.ok(!visible.rfqMailEvent.some(record=>record.rfq===outsideRfq.id));
+  assert.equal((await h.send(privatePath(scopedResponse),undefined,session)).value,'Original supplier quotation 990');assert.equal((await h.send(privatePath(outsideResponse),undefined,session)).status,403);
+ }
+ const beforeDeniedMail=h.messages.length;
+ for(const operation of ['send','reissue'])assert.equal((await h.send('/api/purse/rfq/'+operation,{rfq:outsideRfq.id,supplier:suppliers[0].id},scopedBuyer)).status,403);
+ assert.equal((await h.send('/api/purse/rfq/reissue',{rfq:scopedRfq.id,supplier:suppliers[0].id},scopedReader)).status,403);assert.equal(h.messages.length,beforeDeniedMail);
+ await cmd('rfq-award',{rfq:outsideRfq.id,revision:1,firstResponse:outsideResponse.id,response:outsideResponse.id,reason:'Cross-scope award'},scopedBuyer,403);
+ await cmd('rfq-award',{rfq:scopedRfq.id,revision:1,firstResponse:scopedResponse.id,response:scopedResponse.id,reason:'Reader cannot award'},scopedReader,403);
+ const scopedAward=await cmd('rfq-award',{rfq:scopedRfq.id,revision:1,firstResponse:scopedResponse.id,response:scopedResponse.id,reason:'Scoped buyer reviewed exact supplier response'},scopedBuyer);assert.equal(scopedAward.status,'draft');assert.equal(scopedAward.revision,2);
+ await cmd('member',{email:'synthetic-rfq-buyer@example.test',name:'Revoked RFQ buyer',roles:[],active:false});assert.equal((await h.send('/api/purse/rfq/reissue',{rfq:scopedRfq.id,supplier:suppliers[0].id},scopedBuyer)).status,403);
  const archive=join(h.dir,'supplier-originals.rer'),service=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});
  await exportArchive(service,archive,[]);
  const restored=await harness({empty:true});t.after(()=>restored.close());

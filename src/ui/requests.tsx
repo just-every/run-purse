@@ -49,7 +49,7 @@ export function Requests({ data, actor, mutate }: {
             {live.map((r: D) => <Fragment key={r.id}>{item(r)}{exceptionList.filter(e => e.requests[e.requests.length - 1].id === r.id).map(e => <ThreadException key={e.policy.id} e={e} data={data} actor={actor} mutate={mutate}/>)}</Fragment>)}
             {!shown.length && <p className="thread-empty">{all.length ? 'No requests match these filters.' : 'No requests yet. Ask Purse for something to buy below, or connect email and integrations in Settings.'}</p>}
         </div>
-        {actor.roles.includes('requester') && <>
+        {actor.permissions.includes('request.create') && <>
             {draft !== undefined && <section className="draft-card" aria-labelledby="draft-heading"><div className="draft-head"><img src="/brand/mark-32.svg" alt="" width="26" height="26"/><h2 id="draft-heading">New purchase request</h2><button type="button" className="btn-quiet" onClick={() => setDraft(undefined)}>Cancel</button></div><p className="quiet">Code the lines, supplier and need date, then save the draft; you submit it for approval from its card.</p><RequestForm key={draft} data={data} prefillTitle={draft} mutate={async (op, b) => { const saved = await mutate(op, b); setDraft(undefined); return saved; }}/></section>}
             <CatalogueRequest data={data} mutate={mutate}/>
             <form className="composer" onSubmit={e => { e.preventDefault(); const input = e.currentTarget.elements.namedItem('ask') as HTMLInputElement; setDraft(input.value.trim()); input.value = ''; }}>
@@ -57,6 +57,6 @@ export function Requests({ data, actor, mutate }: {
                 <button type="submit" className="composer-send" aria-label="New purchase request"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.4 20.6 3.6 15.4 20.4l-3.9-6.1L3 11.4Z"/><path d="m11.5 14.3 9.1-10.7"/></svg></button>
             </form>
         </>}
-        {(actor.roles.includes('owner') || (data.emailIntake ?? []).length > 0) && <EmailIntake data={data} actor={actor} mutate={mutate}/>}
+        {(data.emailIntakeMayConfigure || data.emailIntakeMayReadReceipts || (data.emailIntake ?? []).length > 0) && <EmailIntake data={data} actor={actor} mutate={mutate}/>}
     </section>;
 }

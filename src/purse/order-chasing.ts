@@ -5,17 +5,18 @@ import { linePosition } from './orders';
 import { load } from './store';
 import { canonicalSupplier } from './supplier-identity';
 import { lapsedSupplierDocuments } from './supplier-documents';
-import { all, audit, can, Fault, get, key, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
+import { all, allowed, audit, Fault, get, key, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
 const dayMs = 86400000;
 const calendar = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
-const buyer = (s: State, email: string) => all(s, 'member').some(member => member.active && member.email.toLowerCase() === email && member.roles.includes('buyer'));
+const buyer = (s: State, email: string, order: Data) => allowed(s, { id: '', email, owner: false, dev: false, session: '', version: 0 }, 'procurement.manage', order);
 
 /** Configuration records the buyer's decision; it never supplies a synthetic cron identity. */
 export function orderChasing(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if (op !== 'order-chase-policy') return;
-    can(s, a, 'buyer');
+    requirePermission(s, a, 'procurement.manage');
     const order = get(s, 'order', text(b.order, 'PO', 200));
+    requirePermission(s, a, 'procurement.manage', order);
     requireThat(!order.imported && order.issuedAt && ['issued', 'closed'].includes(order.status) && !order.amendedBy, 'Choose a current natively issued PO', 409);
     const previous = s.has(key('orderChasePolicy', order.id)) ? get(s, 'orderChasePolicy', order.id) : undefined;
     requireThat(b.version === (previous?.version ?? 0), 'PO chase policy changed; reload', 409);
@@ -25,7 +26,7 @@ export function orderChasing(s: State, a: Actor, op: string, b: Data): Data | un
     const escalateTo = text(b.escalateTo, 'Escalation email', 254).toLowerCase();
     requireThat(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(escalateTo), 'Use a valid escalation email');
     const escalateToOwner = a.owner && escalateTo === a.email.toLowerCase();
-    requireThat(escalateToOwner || buyer(s, escalateTo), 'Escalation requires an active buyer or the configuring owner');
+    requireThat(escalateToOwner || buyer(s, escalateTo, order), 'Escalation requires an active buyer in this PO scope or the configuring owner');
     const { history = [], ...snapshot } = previous ?? {};
     put(s, 'orderChasePolicy', order.id, { order: order.id, version: (previous?.version ?? 0) + 1,
         enabled: b.enabled, cadenceDays: b.cadenceDays, maxChases: b.maxChases, escalateTo, escalateToOwner,
@@ -63,11 +64,34 @@ function communication(order: Data, evidence: Data | null): string {
     return `${acknowledgment} ${evidence?.promisedDate ? `Buyer-recorded supplier promise: ${evidence.promisedDate}.` : `PO need date: ${order.needDate}.`}`;
 }
 
-const ownerAuthority = "EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND lower(email)=? AND role='owner' AND status='active')";
+type RecipientFence = { sql: string; params: (string | number)[] };
+async function escalationAuthority(env: Bindings, state: State, policy: Data, order: Data): Promise<RecipientFence | undefined> {
+    const native = await env.DB.prepare("SELECT id,email,version,role FROM oa_operators WHERE lower(email)=? AND status='active'").bind(policy.escalateTo).first<{id: string; email: string; version: number; role: string}>();
+    if (!native) return;
+    if (policy.escalateToOwner) {
+        if (policy.owner !== true || policy.actor !== native.id || policy.email.toLowerCase() !== policy.escalateTo || native.role !== 'owner') return;
+    } else if (!buyer(state, native.email, order)) return;
+    return {
+        sql: `EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND lower(email)=? AND version=? AND status='active'${policy.escalateToOwner ? " AND role='owner'" : ''})`,
+        params: [native.id, policy.escalateTo, native.version],
+    };
+}
 
 async function send(env: Bindings, event: Data, order: Data, policy: Data, authorized: boolean, now: number): Promise<Data> {
     const outcome: Data = { recipient: event.outcome.recipient, status: 'unavailable', at: new Date(now).toISOString() };
     if (!authorized || !outcome.recipient || !env.MAIL_FROM) return outcome;
+    if (event.kind === 'escalation') {
+        // The claim itself advanced the revision. Read current grants and the
+        // actual PO again, then fence that snapshot and native recipient just
+        // before mail. Revoked or moved grants never receive an old alert.
+        const { state, revision } = await load(env.DB), currentPolicy = state.get(key('orderChasePolicy', policy.order))?.value;
+        const currentOrder = state.get(key('order', order.id))?.value;
+        if (!currentPolicy?.enabled || currentPolicy.version !== policy.version || !currentOrder || !eligible(state, currentOrder, now) || !due(state, currentOrder, currentPolicy, now)) return outcome;
+        const recipient = await escalationAuthority(env, state, currentPolicy, currentOrder);
+        if (!recipient) return outcome;
+        const current = await env.DB.prepare(`SELECT 1 AS ok WHERE (SELECT revision FROM p_meta WHERE id=1)=? AND ${recipient.sql}`).bind(revision, ...recipient.params).first<{ok: number}>();
+        if (!current?.ok) return outcome;
+    }
     try {
         const sender = operatorMail(env);
         if (!sender) return outcome;
@@ -97,23 +121,20 @@ async function attempt(env: Bindings, policyId: string, escalation: boolean, now
     if (escalation ? count < policy.maxChases || events.some(event => event.kind === 'escalation')
         : count >= policy.maxChases || last && now - Date.parse(last.at) < policy.cadenceDays * dayMs) return;
     const sequence = escalation ? policy.maxChases + 1 : count + 1, kind = escalation ? 'escalation' : 'chase';
-    let authorized = true;
-    if (escalation) authorized = policy.escalateToOwner
-        ? policy.owner === true && policy.email.toLowerCase() === policy.escalateTo
-            && Boolean((await env.DB.prepare(`SELECT 1 AS ok WHERE ${ownerAuthority}`).bind(policy.actor, policy.escalateTo).first<{ ok: number }>())?.ok)
-        : buyer(state, policy.escalateTo);
+    const recipient = escalation ? await escalationAuthority(env, state, policy, order) : undefined;
+    const authorized = !escalation || Boolean(recipient);
     const id = `${order.id}:${policy.version}:${escalation ? 'escalation' : `chase:${sequence}`}`;
     const event: Data = { id, order: order.id, policyVersion: policy.version, sequence, kind, reason: current.reason,
         at: new Date(now).toISOString(), evidence: current.evidence,
         outcome: { recipient: escalation ? policy.escalateTo : order.supplierSnapshot?.contacts?.[0]?.email ?? '', status: 'unknown' } };
     // The state revision also fences receipts, closures, evidence, supplier merges and compliance edits.
-    const ownerFence = escalation && policy.escalateToOwner && authorized ? ` AND ${ownerAuthority}` : '';
+    const recipientFence = recipient ? ` AND ${recipient.sql}` : '';
     const inserted = await env.DB.prepare(`INSERT OR IGNORE INTO p_records(business,kind,id,revision,value)
         SELECT 'main','orderChaseEvent',?,?,? WHERE (SELECT revision FROM p_meta WHERE id=1)=?
         AND EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='orderChasePolicy' AND id=? AND revision=?)
-        AND EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='order' AND id=? AND revision=?)${ownerFence}`)
+        AND EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='order' AND id=? AND revision=?)${recipientFence}`)
         .bind(id, uid(), JSON.stringify(event), revision, policyId, policyRow.revision, order.id, orderRow.revision,
-            ...(ownerFence ? [policy.actor, policy.escalateTo] : [])).run();
+            ...(recipient?.params ?? [])).run();
     if (!inserted.meta.changes) return;
     event.outcome = await send(env, event, order, policy, authorized, now);
     await env.DB.prepare("UPDATE p_records SET revision=?,value=? WHERE business='main' AND kind='orderChaseEvent' AND id=?")

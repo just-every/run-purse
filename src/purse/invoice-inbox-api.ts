@@ -1,19 +1,22 @@
 import { Hono } from 'hono';
 import type { Bindings } from '../auth.server';
 import { intakeSha256 } from './email-intake-api';
-import { apFileKey, apScope } from './invoice-inbox';
+import { apFileKey, apScope, projectInvoiceInbox } from './invoice-inbox';
 import { actor, load, readFence } from './store';
 import { get, requireThat, type Data } from './types';
+import { requirePermission } from './access';
 
 export const invoiceInboxApi = new Hono<{ Bindings: Bindings }>();
 invoiceInboxApi.get('/api/purse/invoice-inbox/:id', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB);
-    apScope(state, a); const capture = get(state, 'apInvoiceEmail', c.req.param('id'));
-    await readFence(c.env.DB, a, revision); return c.json(capture);
+    requirePermission(state, a, 'invoice.read');
+    const capture = get(state, 'apInvoiceEmail', c.req.param('id')); apScope(state, a, capture);
+    await readFence(c.env.DB, a, revision); return c.json(projectInvoiceInbox(state, a, capture));
 });
 invoiceInboxApi.get('/api/purse/invoice-inbox/:id/files/:file', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB);
-    apScope(state, a); const capture = get(state, 'apInvoiceEmail', c.req.param('id'));
+    requirePermission(state, a, 'invoice.read');
+    const capture = get(state, 'apInvoiceEmail', c.req.param('id')); apScope(state, a, capture);
     const file = [capture.original, ...capture.files, ...(capture.embedded ?? [])].find((f: Data) => f.id === c.req.param('file'));
     requireThat(file, 'AP email file not found', 404);
     requireThat(file.key === apFileKey(capture.id, file.id), 'Invalid AP email custody', 409);

@@ -4,6 +4,7 @@ import { invoiceReading } from './invoice-reading';
 import { senderAddress, senderDomainRelation } from './invoice-risk';
 import { canonicalSupplier } from './supplier-identity';
 import { all, audit, can, get, put, requireThat, text, type Actor, type Data, type State } from './types';
+import { accessGrants, allowed, requirePermission } from './access';
 
 export const apSenderLabel = 'Provider-reported sender; supplier authorship is not verified';
 export const apFileKey = (capture: string, file: string) => `ap-inbox/${capture}/${file}`;
@@ -36,9 +37,38 @@ export function apInvoiceEmail(s: State, input: Data): Data {
         status: match.supplier ? 'draft' : 'held', holdReason: match.holdReason, sources: [], version: 1, receivedAt: new Date().toISOString() };
 }
 
-export function apScope(s: State, a: Actor) { can(s, a, 'buyer'); }
-export function visibleInvoiceInbox(s: State, buyer: boolean) {
-    return { apInvoiceEmail: buyer ? all(s, 'apInvoiceEmail') : [], invoiceInboxConfig: buyer ? all(s, 'invoiceInboxConfig') : [] };
+function inboxAllowed(s: State, a: Actor, capture: Data, permission: string) {
+    if (a.owner) return true;
+    const orders = (capture.sources ?? []).map((source: Data) => get(s, 'order', source.order));
+    return accessGrants(s, a).some(grant => {
+        if (!grant.permissions.includes(permission)) return false;
+        const scopes: Data[] = [grant.scope ?? {}, ...(grant.roleScope ? [grant.roleScope] : [])];
+        // A supplier identity cannot establish a department for raw inbound mail.
+        if (!orders.length) return scopes.every(scope => ['departments', 'locations', 'projects', 'entities'].every(d => scope[d] === undefined));
+        return orders.every((order: Data) => {
+            if (!allowed(s, a, permission, order)) return false;
+            const request = get(s, 'request', order.request);
+            const dimensions: Data = { departments: [order.costCentre ?? request.costCentre], locations: [order.location ?? request.location],
+                projects: order.lines.map((line: Data) => line.project), entities: [order.entity ?? request.entity ?? 'main'] };
+            return scopes.every(scope => Object.entries(dimensions).every(([dimension, values]) => scope[dimension] === undefined
+                || values.every((value: string) => scope[dimension].includes(value))));
+        });
+    });
+}
+export function apScope(s: State, a: Actor, capture: Data, permission = 'invoice.read') {
+    requirePermission(s, a, permission);
+    requireThat(inboxAllowed(s, a, capture, permission), 'AP email outside your scope', 403);
+}
+export function projectInvoiceInbox(s: State, a: Actor, capture: Data) {
+    return { ...capture, mayCapture: inboxAllowed(s, a, capture, 'invoice.capture'),
+        repeatedFiles: (capture.repeatedFiles ?? []).map((repeat: Data) => {
+            const prior = s.get('apInvoiceEmail:' + repeat.capture)?.value;
+            return prior && inboxAllowed(s, a, prior, 'invoice.read') ? repeat : { file: repeat.file, repeated: true };
+        }) };
+}
+export function visibleInvoiceInbox(s: State, a: Actor) {
+    return { apInvoiceEmail: all(s, 'apInvoiceEmail').filter(capture => inboxAllowed(s, a, capture, 'invoice.read')).map(capture => projectInvoiceInbox(s, a, capture)),
+        invoiceInboxConfig: allowed(s, a, 'invoice.read') ? all(s, 'invoiceInboxConfig') : [] };
 }
 
 export async function invoiceInbox(s: State, a: Actor, op: string, b: Data, env?: Bindings): Promise<Data | undefined> {
@@ -51,8 +81,9 @@ export async function invoiceInbox(s: State, a: Actor, op: string, b: Data, env?
         put(s, 'invoiceInboxConfig', 'main', config); audit(s, a, op, 'main', { address });
         return get(s, 'invoiceInboxConfig', 'main');
     }
-    apScope(s, a);
+    requirePermission(s, a, 'invoice.capture');
     const capture = get(s, 'apInvoiceEmail', b.id);
+    apScope(s, a, capture, 'invoice.capture');
     requireThat(capture.version === b.version, 'AP email changed; reload', 409);
     if (op === 'invoice-inbox-assign') {
         requireThat(capture.status === 'held', 'Only held AP email can be assigned', 409);
@@ -67,6 +98,8 @@ export async function invoiceInbox(s: State, a: Actor, op: string, b: Data, env?
     requireThat(file, 'Choose an attachment of this AP email', 404);
     requireThat(!capture.sources.some((x: Data) => x.file === file.id), 'This attachment already opened an invoice reading', 409);
     const order = get(s, 'order', text(b.order, 'Purchase order'));
+    requirePermission(s, a, 'invoice.capture', order);
+    requireThat(inboxAllowed(s, a, { ...capture, sources: [...capture.sources, { order: order.id }] }, 'invoice.capture'), 'AP email sources must remain within one grant scope', 403);
     requireThat(canonicalSupplier(s, order.supplier) === capture.supplier, 'Choose a PO of the supplier linked to this AP email', 409);
     requireThat(file.size <= invoiceDocumentBytes, 'Attachment exceeds the 1 MB invoice reading limit; its original remains downloadable and nothing was truncated', 413);
     requireThat(file.key === apFileKey(capture.id, file.id), 'Invalid AP email custody', 409);

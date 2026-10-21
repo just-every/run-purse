@@ -1,6 +1,6 @@
 import { projectProtectedContext, protectedContextPending } from './protected-context';
 import { approvedValueRequest, buildValueSnapshot, canonicalValue, parseSeatOriginal, valueDigest, valueMode, valueDelivery } from './agent-value-evidence';
-import { all, audit, can, date, get, key, own, put, requireThat, roles, text, uid, type Actor, type Data, type State } from './types';
+import { all, allowed, audit, can, date, get, key, own, put, requirePermission, requireThat, roles, text, uid, type Actor, type Data, type State } from './types';
 export { buildValueSnapshot, valueDelivery } from './agent-value-evidence';
 
 function enabled(s: State) {
@@ -29,8 +29,10 @@ export async function agentValue(s: State, a: Actor, op: string, b: Data): Promi
     }
     enabled(s);
     if (op === 'value-seat-import') {
-        can(s, a, 'requester');
-        const request = currentRequest(s, a, b), attachment = get(s, 'attachment', b.attachment);
+        requirePermission(s, a, 'request.create');
+        const request = currentRequest(s, a, b);
+        requirePermission(s, a, 'request.create', request); requirePermission(s, a, 'request.edit', request);
+        const attachment = get(s, 'attachment', b.attachment);
         // Identical scope to the existing request-attachment command, with no identity grants.
         requireThat(attachment.kind === 'request' && attachment.record === request.id, 'Seat original belongs to another request', 403);
         const delivery = valueDelivery(s, request, request.revision);
@@ -65,7 +67,7 @@ export async function agentValue(s: State, a: Actor, op: string, b: Data): Promi
     requireThat(run.workflow === 'value-realization', 'Value report required', 409);
     const request = get(s, 'request', run.request);
     // Owner authority never substitutes for this exact native requester identity.
-    requireThat(a.id === request.requester && roles(s, a).includes('requester'), 'Only the current requester with requester capability may confirm usefulness', 403);
+    requireThat(a.id === request.requester && allowed(s, a, 'request.edit', request), 'Only the current requester with requester capability may confirm usefulness', 403);
     requireThat(b.request === request.id && b.revision === run.revision && b.version === run.version && b.fingerprint === run.inputs.fingerprint, 'Value report input changed; reload', 409);
     approvedValueRequest(s, request, run.revision);
     requireThat(!all(s, 'valueConfirmation').some(c => c.run === run.id && c.runVersion === run.version), 'This report version was already confirmed', 409);
@@ -96,16 +98,17 @@ export function visibleAgentValue(s: State, a: Actor, visibleRequestIds: Set<str
         valueCheckin: all(s, 'valueCheckin').filter(v => visibleRequestIds.has(v.request)).map(v => projectValueRecord(s,a,v)) };
 }
 
-/** Stored financial provenance retains REPORT-003's buyer-only scope on every read. */
+/** Stored financial provenance follows current performance permission on its exact source request. */
 export function projectValueRecord(s: State, a: Actor, row: Data): Data {
     row=projectProtectedContext('agentRun',row);
-    if (row.inputs?.promise?.kind !== 'quoted-saving' || roles(s, a).includes('buyer')) return row;
+    const request = row.request ? s.get('request:' + row.request)?.value : undefined;
+    if (row.inputs?.promise?.kind !== 'quoted-saving' || request && allowed(s, a, 'performance.read', request)) return row;
     const projected = structuredClone(row), restricted = new Set(['quote', 'quoteAward', 'agreementAward', 'invoice', 'payable']);
     const sources = (values: Data[]) => values.map(source => restricted.has(source.kind)
         ? { kind: source.kind, id: source.id, version: source.version, restricted: true } : source);
     const assessment = { kind: 'quoted-saving', status: 'restricted', promisedMinor: row.inputs.promise.amountMinor,
         currency: row.inputs.promise.currency,
-        statement: 'Financial evidence is available in buyer-only procurement performance; requester confirms usefulness' };
+        statement: 'Financial evidence requires procurement performance permission on this request; requester confirms usefulness' };
     projected.inputs.assessment = assessment;
     projected.inputs.sources = sources(projected.inputs.sources);
     if (projected.sources) projected.sources = sources(projected.sources);

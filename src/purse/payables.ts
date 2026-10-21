@@ -1,12 +1,15 @@
 import { openInvoiceFlags } from './invoice-status';
-import { all, audit, can, date, get, put, requireThat, text, type Actor, type Data, type State } from './types';
+import { audit, date, get, put, requireThat, text, type Actor, type Data, type State } from './types';
 import { discrepancies } from './orders';
 import { termDates } from './payment-terms';
+import { requirePermission } from './access';
 export function payables(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if (!['payable-terms', 'approve-payable', 'cash-expectation'].includes(op)) return;
-    can(s, a, 'buyer');
+    const permission = op === 'approve-payable' ? 'payable.approve' : 'payable.terms';
+    requirePermission(s, a, permission);
     if (op === 'cash-expectation') {
         const order = get(s, 'order', b.order), old = s.get('cashExpectation:' + order.id)?.value;
+        requirePermission(s, a, permission, order);
         requireThat(order.issuedAt && !order.imported && ['issued', 'amendment-pending'].includes(order.status), 'Current native issued PO required', 409);
         requireThat(b.version === (old?.version ?? 0), 'Cash expectation changed; reload', 409);
         const entry = { expectedDate: date(b.expectedDate, 'Expected invoice date'), reason: text(b.reason, 'Forecast reason'), actor: a.id, at: new Date().toISOString(), version: (old?.version ?? 0) + 1 };
@@ -15,6 +18,7 @@ export function payables(s: State, a: Actor, op: string, b: Data): Data | undefi
         return get(s, 'cashExpectation', order.id);
     }
     const invoice = get(s, 'invoice', b.invoice), order = get(s, 'order', invoice.order), old = s.get('payable:' + invoice.id)?.value;
+    requirePermission(s, a, permission, invoice);
     requireThat(!invoice.imported && !order.imported && order.issuedAt, 'Native invoice evidence required', 409);
     requireThat(b.version === (old?.version ?? 0), 'Payable changed; reload', 409);
     requireThat(!old?.approvedAt, 'Approved cash-planning terms are immutable', 409);

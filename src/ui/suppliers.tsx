@@ -17,7 +17,7 @@ export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; 
             <td className="record-name">{s.name}</td><td><Chip>{s.status}</Chip></td><td>{s.reason}</td><td className="figure-cell">{calendarDay(s.renewal)}</td>
             <td className="row-action"><button onClick={() => open(s.id)}>Open</button></td>
         </tr>)}</Table>
-        {selected?.mergedInto ? <section className="panel"><h3>Merged supplier history · {selected.name}</h3><p>This supplier is no longer purchasable. Its original records remain intact.</p><button onClick={() => open(data.supplierFamilies.find((f: D) => f.members.some((m: D) => m.id === selected.id)).supplier)}>Open surviving supplier</button></section> : <>
+        {selected?.mergedInto ? <section className="panel"><h3>Merged supplier history · {selected.name}</h3><p>This supplier is no longer purchasable. Its original records remain intact.</p><button onClick={() => open(selected.mergedInto)}>Open surviving supplier</button></section> : data.mayManageSupplierRegister && <>
             <h3>{selected ? 'Edit ' + selected.name : 'Add supplier'}</h3>
             <Form key={selected?.id ?? 'new'} initial={{ id: selected?.id }} label="Save supplier" onSubmit={async b => {
                 const input = { ...b, contacts: b.email ? [{ name: b.contactName, email: b.email }] : [], matching: { tin: b.matchTin, bankRouting: b.matchRouting, bankAccount: b.matchAccount } };
@@ -43,13 +43,14 @@ export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; 
                 </fieldset>
             </Form>
         </>}
-        {duplicate && <DuplicateSupplierReview review={duplicate.review} input={duplicate.input} mutate={mutate} onSaved={s => open(s.id)} onOpen={async id => { try { await reload(); open(id); setOpenError(''); } catch (e) { setOpenError((e as Error).message); } }}/>}
+        {data.mayManageSupplierRegister && duplicate && <DuplicateSupplierReview review={duplicate.review} input={duplicate.input} mutate={mutate} onSaved={s => open(s.id)} onOpen={async id => { try { await reload(); open(id); setOpenError(''); } catch (e) { setOpenError((e as Error).message); } }}/>}
         {openError && <p role="alert">{openError}</p>}
         {selected && <>
-            <SupplierProtected key={selected.id + ":protected"} supplier={selected} owner={actor.roles.includes('owner')} reload={reload}/>
-            {!selected.mergedInto && <><SupplierPerformance key={selected.id} supplier={selected} data={data} mutate={mutate}/><SupplierScreening supplier={selected} owner={actor.roles.includes('owner')} mutate={mutate}/><Attachments data={data} kind="supplier" record={selected.id} mutate={mutate}/><SupplierDocuments key={selected.id + ":documents"} supplier={selected} data={data} mutate={mutate} reload={reload}/><SupplierMerge key={selected.id} supplier={selected} data={data} mutate={mutate} onMerged={() => setDuplicate(undefined)}/></>}
+            {selected.mayReadProtected && <SupplierProtected key={selected.id + ":protected"} supplier={selected} owner={actor.roles.includes('owner')} reload={reload}/>}
+            {!selected.mergedInto && <Attachments data={data} kind="supplier" record={selected.id} editable={Boolean(data.mayManageSupplierRegister && selected.mayManagePurchasing)} mutate={mutate}/>}
+            {!selected.mergedInto && data.mayManageSupplierRegister && <><SupplierPerformance key={selected.id} supplier={selected} data={data} mutate={mutate}/><SupplierScreening supplier={selected} owner={actor.roles.includes('owner')} mutate={mutate}/><SupplierDocuments key={selected.id + ":documents"} supplier={selected} data={data} mutate={mutate} reload={reload}/><SupplierMerge key={selected.id} supplier={selected} data={data} mutate={mutate} onMerged={() => setDuplicate(undefined)}/></>}
             <SupplierHistory supplier={selected} data={data}/>
-            <button onClick={() => open()}>Add another supplier</button>
+            {data.mayManageSupplierRegister && <button onClick={() => open()}>Add another supplier</button>}
         </>}
     </></Separated>;
 }

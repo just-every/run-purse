@@ -1,33 +1,28 @@
+import { accessAdministration, requireAdministrativeEdit } from './access-admin';
 import { initializeSupplierMatching } from './supplier-identity';
 import { moneyInput } from './money';
-import { all, audit, can, get, put, requireThat, text, date, uid, type Actor, type Data, type State } from './types';
+import { allowed, all, audit, can, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 export function administration(s: State, a: Actor, op: string, b: Data): Data | undefined {
+    const access = accessAdministration(s, a, op, b); if (access) return access;
     if (op === 'business') {
-        can(s, a, 'owner');
         const currencies = (b.currencies ?? ['AUD']).map((c: unknown) => text(c, 'Currency'));
         requireThat(currencies.length && currencies.every((c: string) => /^[A-Z]{3}$/.test(c)), 'Use ISO currency codes');
         for(const field of ['locations','costCentres','projects']){requireThat(Array.isArray(b[field])&&b[field].length>0&&b[field].length<=100,field+' requires 1–100 codes');requireThat(b[field].every((v:unknown)=>typeof v==='string'&&v.trim().length>0&&v.length<=200),field+' must contain nonempty names');requireThat(new Set(b[field]).size===b[field].length,field+' contains duplicates')}
         const timezone = b.timezone || s.get('business:main')?.value.timezone || 'America/New_York';
         try { new Intl.DateTimeFormat('en-US',{timeZone:timezone}).format(); } catch { requireThat(false,'Use a valid IANA installation timezone'); }
-        put(s, 'business', 'main', { timezone, name: text(b.name, 'Business name'), currencies, locations: b.locations ?? [], costCentres: b.costCentres ?? [], projects: b.projects ?? [] });
+        const next = { timezone, name: text(b.name, 'Business name'), currencies, locations: b.locations ?? [], costCentres: b.costCentres ?? [], projects: b.projects ?? [] };
+        requireAdministrativeEdit(s, a, s.get('business:main')?.value, next);
+        put(s, 'business', 'main', next);
         initializeSupplierMatching(s);
         audit(s, a, op, 'main');
         return get(s, 'business', 'main');
     }
-    if (op === 'member') {
-        can(s, a, 'owner');
-        const email = text(b.email, 'Email').toLowerCase();
-        requireThat(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email), 'Valid email required');
-        requireThat(Array.isArray(b.roles) && b.roles.every((r: string) => ['requester', 'approver', 'buyer', 'receiver'].includes(r)), 'Invalid role');
-        put(s, 'member', email, { email, name: text(b.name, 'Name'), roles: b.roles, active: b.active !== false });
-        audit(s, a, op, email, { roles: b.roles, active: b.active !== false });
-        return get(s, 'member', email);
-    }
     if (op === 'policy') {
-        can(s, a, 'owner');
         currency(s, b.currency);
         const id = b.id ?? uid();
-        put(s, 'policy', id, { name: text(b.name, 'Policy name'), currency: b.currency, category: b.category || '*', project: b.project || '*', limitMinor: moneyInput(b, 'limitAmount', 'limitMinor', 'Authority limit'), budgetMinor: moneyInput(b, 'budgetAmount', 'budgetMinor', 'Budget'), approver: text(b.approver, 'Approver email').toLowerCase(), active: b.active !== false });
+        const next = { name: text(b.name, 'Policy name'), currency: b.currency, category: b.category || '*', project: b.project || '*', limitMinor: moneyInput(b, 'limitAmount', 'limitMinor', 'Authority limit'), budgetMinor: moneyInput(b, 'budgetAmount', 'budgetMinor', 'Budget'), approver: text(b.approver, 'Approver email').toLowerCase(), active: b.active !== false };
+        requireAdministrativeEdit(s, a, s.get('policy:' + id)?.value, next);
+        put(s, 'policy', id, next);
         audit(s, a, op, id);
         return get(s, 'policy', id);
     }
@@ -35,7 +30,7 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
         can(s, a, 'approver');
         const p = get(s, 'policy', b.policy);
         requireThat(a.owner || p.approver === a.email, 'Only policy approver may delegate', 403);
-        requireThat(all(s, 'member').some(m => m.email === b.delegate && m.active && m.roles.includes('approver')), 'Delegate must be an active approver');
+        requireThat(all(s, 'member').some(m => m.email === b.delegate && m.active && allowed(s,{id:m.id,email:m.email,owner:false,dev:false,session:'',version:0},'request.approve')), 'Delegate must be an active approver');
         const expires = text(b.expires, 'Expiry');
         requireThat(Number.isFinite(Date.parse(expires)) && Date.parse(expires) > Date.now(), 'Expiry must be in the future');
         const id = uid();

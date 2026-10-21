@@ -7,7 +7,7 @@ function ReadField({field,label,url}:{field:D;label:string;url:string}) {
 }
 export function InvoiceReadingReview({reading,order,data,mutate}:{reading:D;order:D;data:D;mutate:(op:string,b:D)=>Promise<any>}) {
     const fields=[...headers.map(([key])=>reading[key]),...reading.lines.flatMap((line:D)=>items.map(([key])=>line[key]))],low=fields.filter((field:D)=>field&&field.confidence<.95).length;
-    const editable=reading.status==='review';
+    const editable=reading.status==='review'&&reading.mayCapture===true;
     return <div><h4>Invoice reading · {reading.status}</h4><p><a href={reading.sourceDescriptor.url}>{reading.sourceDescriptor.name}</a> · review version {reading.version}</p><p className="quiet">{reading.reader?`Externally prepared invoice reading · declared provider ${reading.reader.provider} · model ${reading.reader.model} · run ${reading.reader.runReference}. Execution and quotations unverified.`:'Deterministic labelled parsing. Confidence measures a source match, not correctness.'}</p>
         {reading.status==='unsupported'?<p role="status">{reading.reason}</p>:<>
             {low>0&&<p role="status">Needs review · {low} missing or low-confidence fields. Human review is required before invoice creation.</p>}

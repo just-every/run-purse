@@ -1,9 +1,11 @@
+import { requirePermission } from './access';
 import { all, audit, can, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
 /** A recorded buyer decision, never a supplier signature or message. */
 export function quoteAwards(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if (op !== 'quote-award') return;
-    can(s, a, 'buyer');
+    requirePermission(s,a,'rfq.manage',get(s,'request',b.request));
+    requirePermission(s,a,'request.edit',get(s,'request',b.request));
     const request = get(s, 'request', b.request);
     requireThat(!request.imported && request.revision === b.revision && request.status === 'draft', 'Award the current native draft before submission', 409);
     requireThat(![...all(s, 'quoteAward'),...all(s,'agreementAward')].some(q => q.request === request.id && q.revision === request.revision), 'This revision already has an immutable award', 409);

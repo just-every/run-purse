@@ -1,5 +1,5 @@
 import { mayReceive, receiptVersion } from './receipt-routing';
-import { audit, can, get, put, requireThat, text, quantity, uid, type Actor, type Data, type State } from './types';
+import { audit, requirePermission, get, put, requireThat, text, quantity, uid, type Actor, type Data, type State } from './types';
 import { linePosition, commitment, remainingValue } from './orders';
 import { ledger, reservationAvailable } from './requests';
 
@@ -14,7 +14,7 @@ export function receipt(s: State, a: Actor, b: Data) {
     requireThat(['receive', 'return', 'reject', 'cancel'].includes(event), 'Choose a receipt event');
     requireThat(event === 'return' ? q <= position.accepted : q <= position.outstanding, 'Quantity exceeds received or outstanding quantity', 409);
     requireThat(event !== 'receive' || o.replenishmentStatus !== 'held', 'Replenishment is held for review; amend the request and obtain new approval before receiving replacements', 409);
-    if (event === 'cancel') can(s, a, 'buyer');
+    if (event === 'cancel') requirePermission(s, a, 'procurement.manage', o);
     const id = uid();
     const record = { order: o.id, line: l.id, event, q, quantity: b.quantity,
         reason: text(b.reason, 'Receipt reason or milestone'), actor: a.id, at: new Date().toISOString() };

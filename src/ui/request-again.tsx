@@ -5,7 +5,7 @@ import { Details, money, type D } from './shared';
 /** Uses the existing request editor: a copy is reviewed and saved before submission. */
 export function RequestAgain({ kind, source, data, actor, mutate }: { kind: 'request' | 'order'; source: D; data: D; actor: D; mutate: (op: string, b: D) => Promise<any> }) {
     const [review, setReview] = useState<D>(), [error, setError] = useState(''), [busy, setBusy] = useState(false), [created, setCreated] = useState<string>();
-    if (!actor.roles.includes('requester')) return null;
+    if (!actor.permissions.includes('request.create')) return null;
     async function preview() {
         setBusy(true); setError(''); setCreated(undefined);
         try { setReview(await mutate('request-again-preview', { kind, id: source.id })); }

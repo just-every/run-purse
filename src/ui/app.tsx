@@ -28,7 +28,7 @@ function PurchasingApp() {
     if (!state)
         return <div className="app"><TopBar/><main className="workspace">{error ? <p role="alert">{error} · <a href="/signin">Sign in</a></p> : <p className="lead">Opening purchasing workspace…</p>}</main></div>;
     const { data, actor } = state;
-    const tabs = workspaceTabs(actor.roles), current = tabs.includes(tab) ? tab : 'Requests', business = data.business[0];
+    const tabs = workspaceTabs(actor), current = tabs.includes(tab) ? tab : tabs[0], business = data.business[0];
     const open = (t: string) => { setTab(t); setNotice(''); };
     return <div className="app">
         <TopBar actor={actor} business={business?.name} tab={current} onTab={open} onAsk={business ? () => { open('Requests'); focusComposer(); } : undefined}/>
@@ -37,12 +37,12 @@ function PurchasingApp() {
             {current === 'Requests' && (business ? <Requests data={data} actor={actor} mutate={mutate}/> : <EmptyWorkspace owner={actor.roles.includes('owner')} onSetUp={() => open('Settings')}/>)}
             {current === 'Value' && <AgentValue data={data} actor={actor} mutate={mutate}/> }
             {current === 'Overview' && <Overview data={data} onSetUp={() => open('Settings')}/>}
-            {current === 'Reports' && <>{actor.roles.includes('buyer') && <button className="report-switch" onClick={() => setPerformance(!performance)}>{performance ? 'Spend and commitments' : 'Procurement performance'}</button>}{performance && actor.roles.includes('buyer') ? <PerformanceReport data={data}/> : <SpendReport data={data}/>}</>}
+            {current === 'Reports' && <>{actor.permissions.includes('performance.read') && <button className="report-switch" onClick={() => setPerformance(!performance)}>{performance ? 'Spend and commitments' : 'Procurement performance'}</button>}{performance && actor.permissions.includes('performance.read') ? <PerformanceReport data={data}/> : <SpendReport data={data}/>}</>}
             {current === 'Orders' && <Orders data={data} actor={actor} mutate={mutate} reload={reload}/>}
             {current === 'Suppliers' && <Suppliers data={data} actor={actor} mutate={mutate} reload={reload}/>}
             {current === 'Agreements' && <Agreements data={data} actor={actor} mutate={mutate}/>}
             {current === 'Catalogue' && <><Catalogue data={data} mutate={mutate}/><Stockroom data={data} mutate={mutate}/></>}
-            {current === 'Settings' && <><Settings data={data} mutate={mutate}/><section className="panel"><h3>Invite saved member</h3><Form label="Send invitation" onSubmit={async b => { await call('invite', b); setNotice('Invitation sent.'); }}><Field label="Member email" name="email" type="email"/></Form><p className="quiet">Invite an active saved member to sign in.{actor.dev && <> Dev personas also require saved purchasing roles.</>}</p></section></>}
+            {current === 'Settings' && <><Settings data={data} actor={actor} mutate={mutate}/>{actor.roles.includes('owner') && <section className="panel"><h3>Invite saved member</h3><Form label="Send invitation" onSubmit={async b => { await call('invite', b); setNotice('Invitation sent.'); }}><Field label="Member email" name="email" type="email"/></Form><p className="quiet">Invite an active saved member to sign in.{actor.dev && <> Dev personas also require saved purchasing roles.</>}</p></section>}</>}
             {current === 'Authority' && <Authority data={data} actor={actor} mutate={mutate}/>}
             {current === 'Preparation' && <Preparation data={data} mutate={mutate}/>}
             {current === 'Imports' && <Imports reload={reload} jobs={data.importJobs ?? []}/>}

@@ -1,19 +1,25 @@
 import { supplier } from './admin';
 import { requests } from './requests';
-import { all, audit, can, get, put, requireThat, roles, text, date, uid, type Actor, type Data, type State } from './types';
+import { all, audit, get, put, requireThat, text, date, uid, type Actor, type Data, type State } from './types';
+import { allowed, requirePermission } from './access';
 
 export function visibleRfqs(s: State, a: Actor) {
-    const allowed = roles(s, a).includes('buyer');
-    return Object.fromEntries(['rfq', 'rfqResponse', 'rfqMailEvent'].map(kind => [kind, allowed ? all(s, kind) : []]));
+    const rfqs = all(s, 'rfq').filter(rfq => allowed(s, a, 'rfq.read', get(s, 'request', rfq.request)))
+        .map((rfq): Data => ({ ...rfq, mayManage: allowed(s, a, 'rfq.manage', get(s, 'request', rfq.request)),
+            mayAward: allowed(s, a, 'rfq.manage', get(s, 'request', rfq.request)) && allowed(s, a, 'request.edit', get(s, 'request', rfq.request)) }));
+    const ids = new Set(rfqs.map(rfq => rfq.id));
+    return { rfq: rfqs, rfqResponse: all(s, 'rfqResponse').filter(response => ids.has(response.rfq)),
+        rfqMailEvent: all(s, 'rfqMailEvent').filter(event => ids.has(event.rfq)) };
 }
 export const rfqResponses = (s: State, id: string, supplierId?: string) => all(s, 'rfqResponse').filter(r => r.rfq === id && (!supplierId || r.supplier === supplierId)).sort((a, b) => a.sequence - b.sequence);
 
-/** Configurations and supplier responses are evidence; only a buyer can amend the ordinary request. */
+/** Configurations and supplier responses are evidence; an award amends the ordinary request. */
 export function rfq(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if (!['rfq-create', 'rfq-award'].includes(op)) return;
-    can(s, a, 'buyer');
+    requirePermission(s, a, 'rfq.manage');
     if (op === 'rfq-create') {
         const request = get(s, 'request', b.request);
+        requirePermission(s, a, 'rfq.manage', request);
         requireThat(!request.imported && request.status === 'draft' && request.revision === b.revision, 'Use the exact current native draft', 409);
         const instant=(value:unknown)=>{requireThat(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:[0-5]\d)$/.test(value),'RFQ times require ISO timestamps with an explicit time zone');date(value.slice(0,10),'RFQ date');return Date.parse(value);};
         const deadline = instant(b.deadline), reminderAt = instant(b.reminderAt), now = Date.now();
@@ -28,6 +34,8 @@ export function rfq(s: State, a: Actor, op: string, b: Data): Data | undefined {
         put(s, 'rfq', id, value); audit(s, a, op, request.id, { rfq: id, revision: request.revision }); return value;
     }
     const invitation = get(s, 'rfq', b.rfq), current = get(s, 'request', invitation.request);
+    requirePermission(s, a, 'rfq.manage', current);
+    requirePermission(s, a, 'request.edit', current);
     requireThat(current.revision === b.revision && current.revision === invitation.revision && current.status === 'draft', 'RFQ award requires its exact current draft; create a new RFQ after changes', 409);
     const first = get(s, 'rfqResponse', b.firstResponse), winner = get(s, 'rfqResponse', b.response);
     requireThat(first.rfq === invitation.id && winner.rfq === invitation.id && first.currency === winner.currency, 'Select two distinct responses to this RFQ in one currency');

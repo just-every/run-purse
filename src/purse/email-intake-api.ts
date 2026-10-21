@@ -2,10 +2,11 @@ import { Hono } from 'hono';
 import { normalizeInbound, createResendAttachmentFetcher, verifyWebhook, readStream } from '../inbound-mail.server.mjs';
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { actor, load, readFence } from './store';
-import { activeIntakeRequester, intakeLimits, intakeScope, providerSenderLabel, queueIntakeLink, sendEmailIntakeLinks } from './email-intake';
+import { activeIntakeRequester, intakeAdminAllowed, intakeLimits, intakeScope, providerSenderLabel, queueIntakeLink, sendEmailIntakeLinks, unrestrictedIntakeAdmin } from './email-intake';
 import { apFileKey, apInvoiceEmail } from './invoice-inbox';
 import { embeddedInvoicePdfs } from './invoice-xml';
 import { Fault, get, put, requireThat, uid, type Data } from './types';
+import { requirePermission } from './access';
 
 export const emailIntakeApi = new Hono<{ Bindings: Bindings }>();
 export async function intakeSha256(bytes: Uint8Array) {
@@ -119,7 +120,12 @@ emailIntakeApi.get('/api/purse/email-intake/:id/files/:file', async c => {
 });
 
 emailIntakeApi.get('/api/purse/email-intake-receipts', async c => {
-    const a = await actor(c.req.raw, c.env); requireThat(a.owner, 'Owner capability required', 403);
-    const { revision } = await load(c.env.DB), receipts = await c.env.DB.prepare('SELECT provider,email_id,intake_id,status,created_at FROM p_email_intake_receipts ORDER BY created_at DESC LIMIT 200').all();
-    await readFence(c.env.DB, a, revision); return c.json({ receipts: receipts.results });
+    const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); requirePermission(state, a, 'intake.admin');
+    const receipts = await c.env.DB.prepare('SELECT provider,email_id,intake_id,status,created_at FROM p_email_intake_receipts ORDER BY created_at DESC LIMIT 200').all<Data>();
+    const globalAdmin = unrestrictedIntakeAdmin(state, a);
+    const visible = receipts.results.filter(receipt => {
+        const intake = state.get('emailIntake:' + receipt.intake_id)?.value;
+        return intake ? intakeAdminAllowed(state, a, intake) : globalAdmin;
+    });
+    await readFence(c.env.DB, a, revision); return c.json({ receipts: visible });
 });

@@ -9,20 +9,24 @@ import { invoiceXmlFields, invoiceXmlKind } from './invoice-xml';
 import { quoteSourceDescriptor } from './quote-reading-proposal';
 import { readQuoteSource } from './quote-reading-source';
 import { normalizedSupplierText } from './supplier-matching';
-import { all, audit, can, date, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
+import { all, audit, date, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
+import { allowed, requirePermission } from './access';
 
 function event(s: State, a: Actor, reading: Data, action: string, detail: Data = {}) {
     const id = uid(); put(s,'invoiceReadingEvent',id,{ reading:reading.id, source:reading.source, order:reading.order, version:reading.version, action, actor:a.id, at:new Date().toISOString(), ...detail });
     audit(s,a,action,reading.order,{ reading:reading.id, source:reading.source, version:reading.version });
 }
-export function visibleInvoiceReadings(s: State, buyer: boolean) {
-    return Object.fromEntries(['invoiceSource','invoiceReading','invoiceReadingEvent'].map(kind=>[kind,buyer?all(s,kind):[]]));
+export function visibleInvoiceReadings(s: State, a: Actor) {
+    return Object.fromEntries(['invoiceSource','invoiceReading','invoiceReadingEvent'].map(kind=>[kind,
+        all(s,kind).filter(record => allowed(s, a, 'invoice.read', get(s, 'order', record.order)))
+            .map(record => ({ ...record, mayCapture: allowed(s, a, 'invoice.capture', get(s, 'order', record.order)) }))]));
 }
 export async function invoiceReading(s: State, a: Actor, op: string, b: Data): Promise<Data | undefined> {
     if (!['invoice-source','invoice-extract','invoice-reading-instructions','invoice-reading-propose','invoice-reading-edit','invoice-reading-confirm'].includes(op)) return;
-    can(s,a,'buyer');
+    const permission = op === 'invoice-reading-instructions' ? 'invoice.read' : 'invoice.capture';
+    requirePermission(s, a, permission);
     if (op === 'invoice-source') {
-        const order = get(s,'order',b.order); requireThat(!order.imported && order.issuedAt && ['issued','closed'].includes(order.status),'Use a current issued native PO',409);
+        const order = get(s,'order',b.order); requirePermission(s, a, permission, order); requireThat(!order.imported && order.issuedAt && ['issued','closed'].includes(order.status),'Use a current issued native PO',409);
         const metadata = documentMetadata(b.document), id=uid(), attachment=uid(), at=new Date().toISOString();
         put(s,'invoiceSource',id,{ order:order.id, orderRevision:order.revision, attachment, actor:a.id, at });
         put(s,'attachment',attachment,{ ...metadata, kind:'invoiceSource', record:id, base64:b.document.base64, actor:a.id, at });
@@ -30,7 +34,7 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
     }
     const prior = ['invoice-reading-edit','invoice-reading-confirm'].includes(op)?get(s,'invoiceReading',b.id):null;
     const source = get(s,'invoiceSource',prior?.source ?? (typeof b.source==='string'?b.source:b.source?.id));
-    const order = get(s,'order',source.order); requireThat(!order.imported && order.issuedAt && order.revision===source.orderRevision && ['issued','closed'].includes(order.status),'Invoice source belongs to a superseded or unavailable PO',409);
+    const order = get(s,'order',source.order); requirePermission(s, a, permission, order); requireThat(!order.imported && order.issuedAt && order.revision===source.orderRevision && ['issued','closed'].includes(order.status),'Invoice source belongs to a superseded or unavailable PO',409);
     const attachment = get(s,'attachment',source.attachment), descriptor: Data = { id:source.id, ...await quoteSourceDescriptor(attachment,s.get('attachment:'+attachment.id)!.revision) };
     requireThat(attachment.kind==='invoiceSource'&&attachment.record===source.id,'Invoice original is outside this source',409);
     if (op==='invoice-reading-instructions') return invoiceInstructions(descriptor);
@@ -77,7 +81,7 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
     const mapped=amounts.lines.map((line:Data)=>{ const map=b.lines.find((item:Data)=>item.id===line.id);requireThat(map&&order.lines.some((item:Data)=>item.id===map.orderLine)&&!used.has(map.orderLine),'Map each invoice item to a unique line of this PO');used.add(map.orderLine);return{...line,line:map.orderLine}; });
     // The current invoice door stores inclusive allocation amounts; retain the exact breakdown here.
     const allocations=allocateInvoiceCharges(mapped,amounts.freightMinor+amounts.taxMinor).map(line=>({line:line.line,quantity:line.quantity,amountMinor:line.amountMinor}));
-    const result=invoice(s,a,{order:order.id,reference:value('reference'),source:'Confirmed invoice reading '+reading.id,invoiceDate,
+    const result:Data=invoice(s,a,{order:order.id,reference:value('reference'),source:'Confirmed invoice reading '+reading.id,invoiceDate,
         ...(source.apSender?{senderEmail:source.apSender}:reading.senderEmail.value?{senderEmail:reading.senderEmail.value}:{}),...(reading.remitTo.value?{remitTo:reading.remitTo.value}:{}),...(b.remit?{remit:b.remit}:{}),document:{name:attachment.name,mediaType:attachment.mediaType,base64:attachment.base64},allocations});
     reading.status='confirmed';reading.version++;reading.invoice=result.id;reading.confirmedBy=a.id;reading.confirmedAt=new Date().toISOString();reading.amounts=amounts;
     put(s,'invoiceReading',reading.id,reading);event(s,a,reading,op,{invoice:result.id,reason,snapshot:structuredClone(reading)});return reading;

@@ -2,10 +2,10 @@ import { runtimeBindings, type Bindings } from '../auth.server';
 import { operatorMail } from '../mail.server.mjs';
 import { buildValueSnapshot, valueDelivery } from './agent-value';
 import { load } from './store';
-import { all, key, uid, type Data, type State } from './types';
+import { all, allowed, key, uid, type Data, type State } from './types';
 
 const day = 86400000;
-const nativeRequester = "EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND lower(email)=? AND status='active' AND (?=1 OR (role='owner' AND ?=1)))";
+const nativeRequester = "EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND lower(email)=? AND version=? AND status='active' AND (?=1 OR (role='owner' AND ?=1)))";
 
 function approved(s: State, request: Data) {
     if (request.imported || !request.valuePromise || request.status !== 'approved') return;
@@ -16,8 +16,7 @@ function approved(s: State, request: Data) {
 }
 
 function membership(s: State, request: Data) {
-    return all(s, 'member').some(m => m.active === true && m.email.toLowerCase() === request.requesterEmail.toLowerCase()
-        && Array.isArray(m.roles) && m.roles.includes('requester'));
+    return allowed(s, {id:request.requester,email:request.requesterEmail,owner:false,session:'',dev:false,version:0}, 'request.edit', request);
 }
 
 function message(env: Bindings, request: Data, intervalDays: number, confirmationUrl: string) {
@@ -47,8 +46,9 @@ async function send(env: Bindings, event: Data, now: number): Promise<Data> {
     const policy = fresh.state.get(key('valuePolicy', 'main'))?.value;
     if (!policy?.enabled || policy.version !== event.policyVersion) return { ...suppressed, code: 'paused-or-policy-changed' };
     const member = membership(fresh.state, request);
+    const native = await env.DB.prepare("SELECT version FROM oa_operators WHERE id=? AND lower(email)=? AND status='active'").bind(event.requester,event.requesterEmail).first<{version:number}>();
     if (request.requester !== event.requester || request.requesterEmail.toLowerCase() !== event.requesterEmail
-        || (!member && request.requesterOwner !== true)) return { ...suppressed, code: 'requester-capability-revoked' };
+        || !native || (!member && request.requesterOwner !== true)) return { ...suppressed, code: 'requester-capability-revoked' };
     const snapshot = await buildValueSnapshot(fresh.state, request, event.revision);
     if (snapshot.fingerprint !== event.inputs.fingerprint) return { ...suppressed, code: 'evidence-changed' };
     const sender = operatorMail(env);
@@ -56,7 +56,7 @@ async function send(env: Bindings, event: Data, now: number): Promise<Data> {
     // The domain revision covers the current request, exact decision, policy and membership.
     // Owner self-requests require the same current native identity and current owner role.
     const permitted = await env.DB.prepare(`SELECT 1 AS ok WHERE (SELECT revision FROM p_meta WHERE id=1)=? AND ${nativeRequester}`)
-        .bind(fresh.revision, event.requester, event.requesterEmail, member ? 1 : 0, request.requesterOwner === true ? 1 : 0).first<{ ok: number }>();
+        .bind(fresh.revision, event.requester, event.requesterEmail, native.version, member ? 1 : 0, request.requesterOwner === true ? 1 : 0).first<{ ok: number }>();
     if (!permitted?.ok) return { ...suppressed, code: 'current-authority-changed' };
     try {
         const result = await sender.send(event.message);

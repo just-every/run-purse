@@ -6,7 +6,7 @@ import { optionalPoText } from './po-profiles';
 import { moneyInput } from './money';
 import { requireCatalogueAccess } from './catalogue-access';
 import { currentPrice, requiredCatalogueFiles } from './catalogue';
-import { all, audit, can, get, put, requireThat, text, minor, quantity, extended, date, uid, own, roles, type Actor, type Data, type State } from './types';
+import { all, audit, can, get, put, requireThat, requirePermission, text, minor, quantity, extended, date, uid, type Actor, type Data, type State } from './types';
 import { supplier, currency } from './admin';
 import { approvalAmount as approvalOf, coveringPolicies } from './policy-match';
 export function lines(s: State, input: unknown, a: Actor) { requireThat(Array.isArray(input) && input.length > 0 && input.length <= 100, 'Provide 1–100 lines'); return input.map((x: Data) => { const item = x.catalogue ? get(s, 'catalogue', x.catalogue) : undefined; if (item)
@@ -16,14 +16,13 @@ export function policies(s: State, r: Data) { return coveringPolicies(all(s, 'po
 export const reserved = (s: State, policy: string) => all(s, 'commitment').filter(e => e.policy === policy).reduce((n, e) => n + e.amountMinor, 0);
 export function reservationAvailable(s: State, r: Data, amountMinor: number) { const p = policies(s, r).find(p => p.id === r.policy); return Boolean(p && reserved(s, p.id) + amountMinor <= p.budgetMinor); }
 export function ledger(s: State, a: Actor, r: Data, amountMinor: number, kind: string) { requireThat(amountMinor <= 0 || reservationAvailable(s, r, amountMinor), 'Current policy or budget does not authorize replenishment; renew approval', 409); const balance=all(s,'commitment').filter(e=>e.currency===r.currency).reduce((n,e)=>n+e.amountMinor,0);requireThat(Number.isSafeInteger(balance+amountMinor),'Commitment exceeds supported integer range',409);const id = uid(); put(s, 'commitment', id, { request: r.id, revision: r.revision, policy: r.policy, currency: r.currency, amountMinor, kind, actor: a.id, at: new Date().toISOString() }); }
-export function authorizedApproval(s: State, a: Actor, r: Data) { can(s, a, 'approver'); requireThat(a.id !== r.requester && a.email !== r.requesterEmail, 'Self approval is prohibited', 403); const p = get(s, 'policy', r.policy); requireThat(policies(s, r).some(x => x.id === p.id), 'Current policy does not cover these terms', 409); const delegated = all(s, 'delegation').find(d => d.policy === p.id && d.from === p.approver && d.delegate === a.email && d.active && Date.parse(d.expires) > Date.now()); requireThat(a.email === p.approver || delegated, 'You do not hold authority for this policy', 403); return { p, delegated }; }
+export function authorizedApproval(s: State, a: Actor, r: Data) { requirePermission(s, a, 'request.approve', r); requireThat(a.id !== r.requester && a.email !== r.requesterEmail, 'Self approval is prohibited', 403); const p = get(s, 'policy', r.policy); requireThat(policies(s, r).some(x => x.id === p.id), 'Current policy does not cover these terms', 409); const delegated = all(s, 'delegation').find(d => d.policy === p.id && d.from === p.approver && d.delegate === a.email && d.active && Date.parse(d.expires) > Date.now()); requireThat(a.email === p.approver || delegated, 'You do not hold authority for this policy', 403); return { p, delegated }; }
 export function requests(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if (op === 'request' || op === 'amend') {
-        can(s, a, op === 'amend' && roles(s, a).includes('buyer') ? 'buyer' : 'requester');
         let old: Data | undefined;
         if (b.id) {
             old = get(s, 'request', b.id);requireThat(b.revision===old.revision,'Stale request revision',409);
-            requireThat(old.requester === a.id || old.requesterEmail === a.email || a.owner || (op === 'amend' && roles(s, a).includes('buyer')), 'Only requester or buyer may edit', 403);
+            requirePermission(s, a, 'request.edit', old);
             requireThat(!old.imported, 'Imported historical records cannot grant native authority', 409);
         }
         const counterparty = supplier(s, b.supplier);
@@ -40,6 +39,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         const business = get(s, 'business', 'main');
         requireThat(business.locations.includes(r.location) && business.costCentres.includes(r.costCentre) && r.lines.every(l => business.projects.includes(l.project)), 'Use configured location, cost centre and project');
         requireThat(new Set(r.lines.map(l => l.id)).size === r.lines.length, 'Line IDs must be unique');
+        requirePermission(s, a, old ? 'request.edit' : 'request.create', r);
         if (old) requireThat(!all(s, 'orderClosure').some(c => c.active && get(s, 'order', c.order).request === old!.id), 'Reopen closed balances before amending this request', 409);
         if (old)
             requireThat(r.lines.every(l => !b.lines.find((x: Data) => x.id === l.id) || old!.lines.some((x: Data) => x.id === l.id)), 'Line ID is outside this request');
@@ -89,7 +89,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         supplier(s, r.supplier);
         requireThat(!r.imported, 'Imported status cannot grant native authority', 409);
         if (op === 'submit') {
-            can(s, a, 'requester');
+            requirePermission(s, a, 'request.edit', r);
             requireThat(a.owner || r.requester === a.id || r.requesterEmail===a.email, 'Only requester may submit', 403);
             requireThat(['draft', 'returned', 'rejected'].includes(r.status), 'Request is not a draft', 409);
             for (const line of r.lines) if (line.catalogue) { const item = get(s, 'catalogue', line.catalogue); requireCatalogueAccess(s, a, item); requireThat(item.approved && currentPrice(item), 'Catalogue item is unapproved or outside price validity; revise the draft', 409); }
@@ -120,13 +120,13 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         return get(s, 'request', r.id);
     }
     if (op === 'quote') {
-        can(s, a, 'requester');
         const r = get(s, 'request', b.request);
-        own(s, a, r);
+        requirePermission(s, a, 'request.edit', r);
         supplier(s, b.supplier);
         currency(s, b.currency);
         const id = uid();
         const ls = lines(s, b.lines, a);
+        requirePermission(s, a, 'request.edit', { ...r, lines: ls });
         const q = { id, at: new Date().toISOString(), sequence: all(s, 'quote').filter(q => q.request === r.id && q.revision === r.revision).length + 1, request: r.id, revision: r.revision, supplier: b.supplier, currency: b.currency, lines: ls, freightMinor: moneyInput(b, 'freightAmount', 'freightMinor', 'Freight', { optional: true }), taxMinor: moneyInput(b, 'taxAmount', 'taxMinor', 'Supplied tax', { optional: true }), delivery: b.delivery ? date(b.delivery) : null, conditions: b.conditions ? text(b.conditions, 'Conditions') : null, source: text(b.source, 'Quote source evidence'), missing: [] as string[] };
         q.missing = ['freightMinor', 'taxMinor', 'delivery', 'conditions'].filter(k => (q as Data)[k] === null);
         put(s, 'quote', id, q);
@@ -140,11 +140,10 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         requireThat(b.privateSupplierDocument === undefined || typeof b.privateSupplierDocument === 'boolean', 'Private supplier document flag must be boolean');
         requireThat(!b.privateSupplierDocument || kind === 'supplier', 'Private compliance evidence belongs to a supplier');
         if (kind === 'request') {
-            can(s, a, 'requester');
-            own(s, a, r);
+            requirePermission(s, a, 'request.edit', r);
         }
-        else
-            can(s, a, kind === 'agreement' ? 'owner' : kind === 'supplier' ? 'buyer' : kind === 'invoice' ? 'buyer' : 'receiver');
+        else if (kind === 'agreement') can(s, a, 'owner');
+        else requirePermission(s, a, kind === 'supplier' ? 'procurement.manage' : kind === 'invoice' ? 'invoice.capture' : 'receive', r);
         requireThat(typeof b.base64 === 'string' && b.base64.length > 0 && b.base64.length <= 1400000, 'Attachment must contain up to 1 MB of bytes');
         let bytes;
         try {

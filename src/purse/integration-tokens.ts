@@ -2,7 +2,7 @@ import type { Bindings } from '../auth.server';
 import { activeIntakeRequester } from './email-intake';
 import { hashRfqToken, insertRfqRecord } from './rfq-links';
 import { actor, authority, load, readFence } from './store';
-import { all, Fault, requireThat, text, uid, type Data } from './types';
+import { allowed, Fault, requireThat, text, uid, type Data } from './types';
 import { Hono } from 'hono';
 
 export const integrationTokensApi = new Hono<{ Bindings: Bindings }>();
@@ -21,8 +21,8 @@ export async function guardedBatch(db: D1Database, queries: D1PreparedStatement[
 integrationTokensApi.get('/api/purse/integration-tokens', async c => {
     const a = await actor(c.req.raw, c.env); requireThat(a.owner, 'Owner capability required', 403);
     const { state, revision } = await load(c.env.DB);
-    const members = await c.env.DB.prepare("SELECT id,email,display_name,role FROM oa_operators WHERE status='active'").all<Data>();
-    const requesters = members.results.filter(m => m.role === 'owner' || all(state, 'member').some(r => r.active && r.email.toLowerCase() === m.email.toLowerCase() && r.roles.includes('requester'))).map(m => ({ id: m.id, email: m.email, name: m.display_name }));
+    const members = await c.env.DB.prepare("SELECT id,email,display_name,version,role FROM oa_operators WHERE status='active'").all<Data>();
+    const requesters = members.results.filter(m => allowed(state, {id:m.id,email:m.email,version:m.version,owner:m.role==='owner',dev:false,session:''}, 'request.create')).map(m => ({ id: m.id, email: m.email, name: m.display_name }));
     const result = await c.env.DB.prepare('SELECT * FROM p_integration_tokens ORDER BY created_at DESC,id').all<Data>();
     await readFence(c.env.DB, a, revision);
     return c.json({ tokens: result.results.map(integrationMetadata), requesters });

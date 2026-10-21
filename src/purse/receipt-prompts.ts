@@ -1,8 +1,8 @@
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { operatorMail } from '../mail.server.mjs';
-import { receiptAssignment, receiptDay, receiptPrompts } from './receipt-routing';
+import { activeReceiver, receiptAssignment, receiptDay, receiptPrompts, receiptRecipient } from './receipt-routing';
 import { load } from './store';
-import { all, key, uid, type Data } from './types';
+import { allowed, key, uid, type Data } from './types';
 
 const activeRecipient = "EXISTS(SELECT 1 FROM oa_operators WHERE lower(email)=? AND status='active' AND (?=1 OR role='owner'))";
 
@@ -22,9 +22,10 @@ async function send(env: Bindings, event: Data, now: number): Promise<Data> {
     if (!prompt || !order) return { ...outcome, code: 'obsolete' };
     const assignment = receiptAssignment(state, { ...order.value, id: order.id });
     if (assignment.email.toLowerCase() !== event.receiver) return { ...outcome, code: 'obsolete' };
-    const member = all(state, 'member').some(row => row.active && row.email.toLowerCase() === event.receiver
-        && (!assignment.explicit || row.roles.includes('receiver')));
-    if (assignment.explicit && !member) return { ...outcome, code: 'obsolete' };
+    const scopedOrder = { ...order.value, id: order.id };
+    if (!receiptRecipient(state, event.receiver, scopedOrder)) return { ...outcome, code: 'obsolete' };
+    const recipient = { id: '', email: event.receiver, owner: false, dev: false, session: '', version: 0 };
+    const member = activeReceiver(state,event.receiver,scopedOrder) || !assignment.explicit && allowed(state,recipient,'request.edit',scopedOrder);
     const sender = operatorMail(env);
     if (!sender || !env.MAIL_FROM) return { ...outcome, status: 'unavailable' };
     const url = new URL('/app', env.AUTH_ORIGIN);

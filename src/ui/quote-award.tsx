@@ -4,7 +4,7 @@ export function QuoteAward({ data, current, actor, mutate }: { data: D; current:
     const quotes = data.quote.filter((q: D) => q.request === current.id && q.revision === current.revision && q.supplier === current.supplier && q.currency === current.currency);
     return <section><h3>Recorded quote awards</h3><p className="quiet">A buyer records the first offer and winning quote before submission. Purchasing approval remains separate. Line prices must match this draft; freight and tax do not count as savings.</p>
         {awards.map((a: D) => <p key={a.id}>Revision {a.revision} · {a.reason} · {a.at}</p>)}
-        {actor.roles.includes('buyer') && current.status === 'draft' && !awards.some((a: D) => a.revision === current.revision) && <Details label="Record quote award"><Form label="Record award" initial={{ request: current.id, revision: current.revision }} onSubmit={async b => {
+        {current.mayManagePurchasing && current.status === 'draft' && !current.imported && !awards.some((a: D) => a.revision === current.revision) && <Details label="Record quote award"><Form label="Record award" initial={{ request: current.id, revision: current.revision }} onSubmit={async b => {
             const first = quotes.find((q: D) => q.id === b.firstQuote), winner = quotes.find((q: D) => q.id === b.awardedQuote);
             const lines = current.lines.map((l: D, i: number) => ({ requestLine: l.id, firstLine: b['first-'+i], awardedLine: b['won-'+i] }));
             return mutate('quote-award', { request: b.request, revision: b.revision, firstQuote: first?.id, awardedQuote: winner?.id, reason: b.reason, lines });

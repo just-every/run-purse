@@ -1,3 +1,4 @@
+import { mayReadProtectedSupplier } from './access-records';
 import { Hono } from 'hono';
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { actor, load, readFence, save } from './store';
@@ -42,7 +43,7 @@ supplierProtectedApi.get('/api/purse/supplier-protected/:supplier', async c => {
     try {
         a = await actor(c.req.raw, env); const {state, revision} = await load(env.DB);
         const capabilities = roles(state, a); requireThat(capabilities.length, 'No active business membership', 403);
-        const supplier = get(state, 'supplier', c.req.param('supplier')), stored = await rows(env, supplier.id);
+        const supplier = get(state, 'supplier', c.req.param('supplier')); requireThat(mayReadProtectedSupplier(state,a,supplier),'Supplier protected state outside your scope',403); const stored = await rows(env, supplier.id);
         const masks = protectedMasks(env,supplier,a,capabilities,stored);
         await readFence(env.DB, a, revision);
         return c.json({ revision, supplier: supplier.id, masks, bankStatus: protectedBankStatus(supplier,stored) });

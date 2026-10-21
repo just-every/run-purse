@@ -1,14 +1,16 @@
 import { type Bindings } from '../auth.server';
 import { authority, load } from './store';
-import { all, can, get, requireThat, uid, type Actor, type Data } from './types';
+import { all, get, requireThat, uid, type Actor, type Data } from './types';
+import { requirePermission } from './access';
 import { sendRfqMail } from './rfq-mail';
 export const hashRfqToken = async (token: string) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token)))].map(b => b.toString(16).padStart(2, '0')).join('');
 export const liveRfqLink = `SELECT l.rfq,l.supplier,l.expires_at,l.generation FROM p_rfq_links l JOIN p_records r ON r.business='main' AND r.kind='rfq' AND r.id=l.rfq WHERE l.hash=? AND l.revoked_at IS NULL AND json_extract(r.value,'$.closedAt') IS NULL AND l.expires_at>? AND json_extract(r.value,'$.deadline')=strftime('%Y-%m-%dT%H:%M:%fZ',l.expires_at/1000.0,'unixepoch')`;
 export function insertRfqRecord(db: D1Database, kind: string, value: Data) { return db.prepare("INSERT INTO p_records(business,kind,id,revision,value) VALUES('main',?,?,?,?)").bind(kind, value.id, uid(), JSON.stringify(value)); }
 
 export async function issueRfqLink(env: Bindings, a: Actor, rfqId: string, supplierId: string, reissue: boolean, now = Date.now()) {
-    const { state, revision } = await load(env.DB); can(state, a, 'buyer');
+    const { state, revision } = await load(env.DB); requirePermission(state, a, 'rfq.manage');
     const rfq = get(state, 'rfq', rfqId), target = rfq.suppliers.find((s: Data) => s.id === supplierId);
+    requirePermission(state, a, 'rfq.manage', get(state, 'request', rfq.request));
     requireThat(target, 'Supplier is outside this RFQ', 404);
     const deadline = Date.parse(rfq.deadline); requireThat(!rfq.closedAt && now < deadline && deadline <= now + 30 * 86400000, 'RFQ deadline has passed', 410);
     const previous = await env.DB.prepare('SELECT MAX(generation) AS generation FROM p_rfq_links WHERE rfq=? AND supplier=?').bind(rfq.id, supplierId).first<{generation: number | null}>();

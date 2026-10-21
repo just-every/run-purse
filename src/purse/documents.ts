@@ -1,6 +1,5 @@
 import { projectProtectedContext } from './protected-context';
 import { publicEvidence } from './invoice-status';
-import { blanketPosition } from './blanket-orders';
 import { visibleAgentValue, projectValueRecord } from './agent-value';
 import { visibleAgreementReadings } from './agreement-reading';
 import { visibleAgreements } from './agreements';
@@ -9,53 +8,126 @@ import { visibleRfqs } from './rfq';
 import { visibleInvoiceReadings } from './invoice-reading';
 import { visibleInvoiceInbox } from './invoice-inbox';
 import { visibleQuoteReadings } from './quote-reading';
-import { mayReceive, receiptAssignment, receiptMatch, receiptVersion } from './receipt-routing';
 import { poContent, poHtml } from './po-content';
 import { cashRequirements } from './cash-requirements';
-import { all, can, get, own, requireThat, qty, roles, type Actor, type Data, type State } from './types';
-import { discrepancies, linePosition } from './orders';
+import { all, get, requireThat, roles, type Actor, type Data, type State } from './types';
+import { discrepancies } from './orders';
 import { supplierFamilies } from './supplier-merge';
 import { supplierPublicValue } from './supplier-identity';
 import { catalogueAllows } from './catalogue-access';
 import { currentPrice } from './catalogue';
 import { supplierScorecards } from './supplier-performance';
 import { supplierDocumentStatus } from './supplier-documents';
-export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) { const capabilities = roles(s, a); requireThat(capabilities.length, 'No active business membership', 403); const staff = capabilities.some(r => ['owner', 'approver', 'buyer', 'receiver'].includes(r)); const requests = all(s, 'request').filter(r => staff || r.requester === a.id || r.requesterEmail === a.email), ids = new Set(requests.map(r => r.id)); const orders = all(s, 'order').filter(o => ids.has(o.request)), orderIds = new Set(orders.map(o => o.id)); const data: Data = {}; for (const kind of ['business', 'supplier', 'catalogue', 'catalogueBundle', 'policy', 'delegation', 'code'])
-    data[kind] = all(s, kind);
-    Object.assign(data,visibleAgentValue(s,a,ids));
-    Object.assign(data,visibleEmailIntakes(s,a),visibleRfqs(s,a),visibleQuoteReadings(s,ids),visibleInvoiceReadings(s,capabilities.includes('buyer')),visibleInvoiceInbox(s,capabilities.includes('buyer')));
-    data.supplier = data.supplier.map((v: Data) => ({ ...supplierPublicValue(v,protectedViews?.get(v.id)), documents: (v.documents ?? []).filter((id: string) => capabilities.includes('buyer') || !s.get('attachment:' + id)?.value.privateSupplierDocument) }));
-    Object.assign(data, capabilities.includes('buyer') ? {...visibleAgreements(s,a),...visibleAgreementReadings(s,a)} : {agreement:[], agreementInvoice:[], agreementReminder:[], agreementAward:[], agreementReading:[], agreementReadingEvent:[]});
-    data.quoteAward = all(s, 'quoteAward').filter(q => ids.has(q.request));
-    data.receiptRule = capabilities.includes('buyer') ? all(s,'receiptRule') : all(s,'receiptRule').filter(r=>r.order&&orderIds.has(r.order));
-    data.receivers = capabilities.some(r=>['buyer','receiver'].includes(r)) ? all(s,'member').filter(m=>m.active&&m.roles.includes('receiver')).map(m=>({id:m.email,email:m.email,name:m.name})) : [];
-    data.receiptPromptEvent = all(s,'receiptPromptEvent').filter(e=>orderIds.has(e.order));
-    data.poProfile = a.owner ? all(s, 'poProfile') : [];
-    data.payable = capabilities.includes('buyer') ? all(s, 'payable') : [];
-    data.cashExpectation = capabilities.includes('buyer') ? all(s, 'cashExpectation') : [];
-    data.cashRequirements = capabilities.includes('buyer') ? cashRequirements(s, a) : null;
-    data.orderChasePolicy = capabilities.includes('buyer') ? all(s, 'orderChasePolicy').filter(p => orderIds.has(p.order)) : [];
-    data.orderChaseEvent = all(s, 'orderChaseEvent').filter(e => orderIds.has(e.order));
-    data.orderChaseEvidence = all(s, 'supplierOrderEvidence').filter(e => orderIds.has(e.order));
-    data.supplierDocument = capabilities.includes('buyer') ? all(s, 'supplierDocument').map(d => ({ ...d, compliance: supplierDocumentStatus(s, d) })) : [];
-    data.supplierDocumentReminder = capabilities.includes('buyer') ? all(s, 'supplierDocumentReminder') : [];
-    data.supplierDocumentSubmission = capabilities.includes('buyer') ? all(s, 'supplierDocumentSubmission') : [];
-    data.supplierFamilies = capabilities.includes('buyer') ? supplierFamilies(s) : [];
-    const maintainCatalogue = capabilities.includes('buyer');
+import { accessGrants, allowed, requirePermission, resolvedPermissions } from './access';
+import { canReadRecord, mayReadPrivateSupplier, mayReadProtectedSupplier, requireRecordRead, unrestrictedPermission } from './access-records';
+import { analyticState, peopleProjection, projectPurchaseLinks, purchasingProjection, scopeAuditRows } from './access-projection';
+import { scopedAgreementEvidence } from './access-agreement-sources';
+
+function cashView(s: State, a: Actor, orderIds: Set<string>, invoiceIds: Set<string>) {
+    if (!allowed(s, a, 'cash.read')) return null;
+    const cash = cashRequirements(s, a), bills = cash.bills.filter(bill => invoiceIds.has(bill.invoice)), commitments = cash.commitments.filter(order => orderIds.has(order.order));
+    const weeks = new Map<string, Data>();
+    for (const [field, records] of [['billsMinor', bills], ['commitmentsMinor', commitments]] as const) for (const record of records) {
+        const id = record.week + ':' + record.currency, week = weeks.get(id) ?? { week: record.week, currency: record.currency, billsMinor: 0, commitmentsMinor: 0 };
+        week[field] += record.amountMinor; week.totalMinor = week.billsMinor + week.commitmentsMinor; weeks.set(id, week);
+    }
+    return { bills, commitments, weeks: [...weeks.values()].sort((a, b) => a.week.localeCompare(b.week) || a.currency.localeCompare(b.currency)) };
+}
+export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) {
+    const permissions = resolvedPermissions(s, a); requireThat(permissions.length, 'No active business membership', 403);
+    const { data, requestIds, orderIds, invoiceIds } = purchasingProjection(s, a);
+    for (const kind of ['business', 'code']) data[kind] = all(s, kind);
+    Object.assign(data, visibleAgentValue(s, a, requestIds), visibleEmailIntakes(s, a), visibleRfqs(s, a),
+        visibleQuoteReadings(s, requestIds), visibleInvoiceReadings(s, a), visibleInvoiceInbox(s, a), peopleProjection(s, a, data.order));
+    const globalProcurement = unrestrictedPermission(s, a, 'procurement.manage');
+    data.mayManageSupplierRegister = globalProcurement;
+    data.supplier = all(s, 'supplier').map(supplier => {
+        const eligible = mayReadProtectedSupplier(s, a, supplier), value: Data = supplierPublicValue(supplier, eligible ? protectedViews?.get(supplier.id) : undefined);
+        if (!eligible) { delete value.matchingOnly; delete value.sourceRedaction; }
+        return { ...value, mayReadProtected: eligible, mayManagePurchasing: globalProcurement, documents: (supplier.documents ?? []).filter((id: string) => {
+            const attachment = s.get('attachment:' + id)?.value;
+            return attachment && canReadRecord(s, a, 'attachment', attachment);
+        }) };
+    });
     const requestable = (item: Data) => item.approved && currentPrice(item) && catalogueAllows(s, a, item);
-    data.catalogue = data.catalogue.filter((item: Data) => maintainCatalogue || requestable(item)).map((item: Data) => ({ ...item, requestable: requestable(item) }));
-    data.catalogueBundle = data.catalogueBundle.filter((bundle: Data) => maintainCatalogue || (bundle.approved && catalogueAllows(s, a, bundle) && bundle.items.every((i: Data) => requestable(get(s, 'catalogue', i.catalogue))))).map((bundle: Data) => ({ ...bundle, requestable: bundle.approved && catalogueAllows(s, a, bundle) && bundle.items.every((i: Data) => requestable(get(s, 'catalogue', i.catalogue))) }));
+    data.stockroom = all(s, 'stockroom').filter(stock => allowed(s, a, 'procurement.manage', stock));
+    const stockCatalogueIds = new Set(data.stockroom.map((stock: Data) => stock.catalogue));
+    data.catalogue = all(s, 'catalogue').filter(item => globalProcurement || stockCatalogueIds.has(item.id) || requestable(item)).map(item => ({ ...item, requestable: requestable(item) }));
+    data.catalogueBundle = all(s, 'catalogueBundle').filter(bundle => globalProcurement || bundle.approved && catalogueAllows(s, a, bundle)
+        && bundle.items.every((item: Data) => requestable(get(s, 'catalogue', item.catalogue)))).map(bundle => ({ ...bundle,
+            requestable: bundle.approved && catalogueAllows(s, a, bundle) && bundle.items.every((item: Data) => requestable(get(s, 'catalogue', item.catalogue))) }));
     data.catalogueGrant = a.owner ? all(s, 'catalogueGrant') : [];
-    data.supplierScorecards = capabilities.includes('buyer') ? supplierScorecards(s, a) : []; data.supplierOrderEvidence = capabilities.includes('buyer') ? all(s, 'supplierOrderEvidence') : []; data.supplierIssue = capabilities.includes('buyer') ? all(s, 'supplierIssue') : []; data.stockroom = capabilities.includes('buyer') ? all(s, 'stockroom') : []; data.request = requests; data.order = orders.map(o => ({ ...o, ...(o.poDetails?.blanket ? {blanketPosition: blanketPosition(s,o)} : {}), receiverAssignment: receiptAssignment(s,o), mayReceive: mayReceive(s,a,o), receiptVersion: receiptVersion(s,o), positions: o.lines.map((l: Data) => ({ line: l.id, ...linePosition(s, o.id, l) })) })); for (const kind of ['revision', 'decision', 'quote', 'commitment'])
-    data[kind] = all(s, kind).filter(r => ids.has(r.request ?? (kind === 'revision' ? r.id : null)) && (kind!=='quote'||!r.rfq||capabilities.includes('buyer'))); data.receipt = all(s, 'receipt').filter(r => orderIds.has(r.order)); data.orderClosure = all(s, 'orderClosure').filter(r => orderIds.has(r.order)); data.invoice = all(s, 'invoice').filter(r => orderIds.has(r.order)); const invoiceIds = new Set(data.invoice.map((r: Data) => r.id)); data.invoice = data.invoice.map((invoice: Data) => ({ ...publicEvidence(invoice), ...(!capabilities.includes('buyer') ? { document: undefined, documentHashes: undefined, remitPostal: undefined } : {}), receiptMatch: receiptMatch(s,invoice), flags: invoice.flags?.map((flag: Data) => invoiceIds.has(flag.relatedInvoice) || !flag.relatedInvoice ? flag : { ...flag, relatedInvoice: undefined }) })); data.attachment = all(s, 'attachment').filter(r => !['invoice','invoiceSource'].includes(r.kind) || capabilities.includes('buyer')).filter(r => !r.privateSupplierDocument || capabilities.includes('buyer')).filter(r => r.kind === 'agreement' && capabilities.includes('buyer') || r.kind === 'supplier' || r.kind === 'invoiceSource' && capabilities.includes('buyer') || ids.has(r.record) || orderIds.has(r.record) || invoiceIds.has(r.record)).map(({ base64, ...r }) => r); data.agentRun = all(s, 'agentRun').filter(r => a.owner || r.actor === a.id).map(r=>r.workflow==='value-realization'?projectValueRecord(s,a,r):projectProtectedContext('agentRun',r)); data.proposedAction = all(s, 'proposedAction').filter(r => a.owner || r.actor === a.id).map(r=>projectProtectedContext('proposedAction',r)); data.audit = all(s, 'audit').filter(r => a.owner || r.actor === a.id || ids.has(r.record) || orderIds.has(r.record)); data.member = a.owner ? all(s, 'member') : []; data.people = all(s, 'member').filter(m => m.active && (staff || m.email.toLowerCase() === a.email.toLowerCase())).map(m => ({ email: m.email, name: m.name, roles: m.roles })); data.discrepancies = discrepancies(s).filter(d => orders.some(o => o.id === d.orderId)); data.totals = data.commitment.reduce((m: Data, e: Data) => ({ ...m, [e.currency]: (m[e.currency] ?? 0) + e.amountMinor }), {}); return { actor: { id: a.id, email: a.email, roles: capabilities, dev: a.dev }, data }; }
-export function recordScope(s: State, a: Actor, kind: string, r: Data) { requireThat(roles(s, a).length, 'No active membership', 403); if(kind==='attachment'){if(r.privateSupplierDocument||['invoice','invoiceSource'].includes(r.kind))can(s,a,'buyer');recordScope(s,a,r.kind,get(s,r.kind,r.record));return;} if(kind==='invoiceSource'){can(s,a,'buyer');recordScope(s,a,'order',get(s,'order',r.order));return;} if(kind==='agreement')can(s,a,'buyer'); if (kind === 'request')
-    own(s, a, r); if (kind === 'order')
-    own(s, a, get(s, 'request', r.request)); if (kind === 'invoice')
-    recordScope(s, a, 'order', get(s, 'order', r.order)); if(kind==='agentRun'&&r.workflow==='value-realization'){own(s,a,get(s,'request',r.request));return;} if (kind === 'agentRun')
-    requireThat(a.owner || r.actor === a.id, 'Draft outside scope', 403); }
-export function download(s: State, a: Actor, kind: string, id: string) { const r = get(s, kind, id); if (kind === 'attachment') {
-    recordScope(s, a, 'attachment', r);
-    return new Response(Uint8Array.from(atob(r.base64), c => c.charCodeAt(0)), { headers: { 'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="${r.name.replace(/[^a-zA-Z0-9._-]/g, '_')}"` } });
-} recordScope(s, a, kind, r); if(kind==='agentRun'&&r.workflow==='value-realization')return new Response(JSON.stringify(projectValueRecord(s,a,r),null,2),{headers:{'content-type':'application/json','content-disposition':'attachment; filename="value-report.json"'}}); if (kind === 'agentRun')
-    return new Response(projectProtectedContext('agentRun',r).draft + '\n\nMissing: ' + r.missing.join(', ') + '\nSources: ' + JSON.stringify(r.references), { headers: { 'content-type': 'text/plain; charset=utf-8', 'content-disposition': 'attachment; filename="preparation.txt"' } }); requireThat(kind === 'order', 'Unsupported document', 404); const business = get(s, 'business', 'main'), supplier = r.imported ? get(s, 'supplier', r.supplier) : r.supplierSnapshot; requireThat(supplier?.id === r.supplier, 'Approved supplier identity is missing; renew purchasing authority', 409); const body = poHtml(poContent(s, r)); return new Response(body, { headers: { 'content-type': 'text/html; charset=utf-8', 'content-disposition': `attachment; filename="${r.number.replace(/[^a-zA-Z0-9._-]/g,'_')}.html"`, 'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; img-src data:" } }); }
-export function accounting(s: State, a: Actor) { can(s, a, 'buyer'); const cell = (v: unknown) => '"' + String(v).replace(/"/g, '""').replace(/^[=+@-]/, "' $&") + '"'; const byAllocation = new Map(discrepancies(s).map(d => [JSON.stringify([d.invoiceId, d.lineId]), d])); const rows = [['invoice', 'po', 'line', 'currency', 'quantity', 'amount_minor', 'price_mismatch', 'quantity_mismatch', 'receipt_shortfall'], ...all(s, 'invoice').flatMap(i => i.allocations.map((l: Data) => { const o = get(s, 'order', i.order), d = byAllocation.get(JSON.stringify([i.id, l.line]))!; return [i.reference, o.number, l.line, i.currency, l.quantity, l.amountMinor, d.priceMismatch, d.quantityMismatch, d.receiptShortfall]; }))]; return new Response(rows.map(row => row.map(cell).join(',')).join('\r\n'), { headers: { 'content-type': 'text/csv', 'content-disposition': 'attachment; filename="purse-accounting.csv"' } }); }
+    const agreementState = new Map([...s].filter(([, row]) => row.kind !== 'agreementInvoice' || invoiceIds.has(row.value.invoice) && orderIds.has(row.value.order)));
+    Object.assign(data, globalProcurement ? { ...visibleAgreements(agreementState, a), ...visibleAgreementReadings(s, a) }
+        : scopedAgreementEvidence(s, a));
+    data.agreementAward = all(s, 'agreementAward').filter(award => requestIds.has(award.request)
+        && ['procurement.manage', 'performance.read'].some(permission => allowed(s, a, permission, award))
+        && data.revision.some((revision: Data) => revision.request === award.request && revision.revision === award.revision));
+    data.receiptRule = all(s, 'receiptRule').filter(rule => rule.order ? orderIds.has(rule.order) : globalProcurement
+        || data.order.some((order: Data) => (order.mayManageReceipt || order.mayReassignReceipt) && (rule.location === '*' || rule.location === order.location)
+            && (rule.purchaseType === '*' || order.lines.every((line: Data) => line.category === rule.purchaseType))));
+    data.receiptPromptEvent = all(s, 'receiptPromptEvent').filter(event => orderIds.has(event.order));
+    data.poProfile = a.owner ? all(s, 'poProfile') : [];
+    data.payable = all(s, 'payable').filter(payable => invoiceIds.has(payable.invoice) && ['cash.read', 'payable.terms', 'payable.approve']
+        .some(permission => allowed(s, a, permission, get(s, 'invoice', payable.invoice))));
+    data.cashExpectation = all(s, 'cashExpectation').filter(expectation => orderIds.has(expectation.order)
+        && ['cash.read', 'payable.terms'].some(permission => allowed(s, a, permission, get(s, 'order', expectation.order))));
+    data.cashRequirements = cashView(s, a, orderIds, invoiceIds);
+    for (const kind of ['orderChasePolicy', 'orderChaseEvent']) data[kind] = all(s, kind).filter(record => orderIds.has(record.order)
+        && allowed(s, a, 'procurement.manage', get(s, 'order', record.order)));
+    data.supplierOrderEvidence = all(s, 'supplierOrderEvidence').filter(evidence => orderIds.has(evidence.order)
+        && ['procurement.manage', 'performance.read'].some(permission => allowed(s, a, permission, get(s, 'order', evidence.order))));
+    data.orderChaseEvidence = data.supplierOrderEvidence;
+    data.supplierIssue = all(s, 'supplierIssue').filter(issue => orderIds.has(issue.order));
+    const supplierDocumentIds = new Set<string>();
+    data.supplierDocument = all(s, 'supplierDocument').filter(document => mayReadPrivateSupplier(s, a, get(s, 'supplier', document.supplier)))
+        .map(document => { supplierDocumentIds.add(document.id); return { ...document, compliance: supplierDocumentStatus(s, document) }; });
+    for (const kind of ['supplierDocumentReminder', 'supplierDocumentSubmission']) data[kind] = all(s, kind).filter(record => supplierDocumentIds.has(record.document));
+    data.attachment = all(s, 'attachment').filter(attachment => canReadRecord(s, a, 'attachment', attachment)).map(({ base64, ...attachment }) => attachment);
+    data.agentRun = all(s, 'agentRun').filter(run => canReadRecord(s, a, 'agentRun', run)).map(run => run.workflow === 'value-realization'
+        ? projectValueRecord(s, a, projectProtectedContext('agentRun', run)) : projectProtectedContext('agentRun', run));
+    data.proposedAction = all(s, 'proposedAction').filter(proposal => canReadRecord(s, a, 'proposedAction', proposal)).map(proposal => projectProtectedContext('proposedAction', proposal));
+    data.audit = scopeAuditRows(s, a, data);
+    data.supplierMerge = globalProcurement ? all(s, 'supplierMerge').map(merge => ({ ...merge, links: projectPurchaseLinks(data, merge.links ?? {}) })) : [];
+    const safeState = analyticState(s, data);
+    data.supplierScorecards = allowed(s, a, 'procurement.manage') ? supplierScorecards(safeState, a) : [];
+    data.supplierFamilies = allowed(s, a, 'procurement.manage') ? supplierFamilies(safeState).map(family => ({ ...family,
+        members: family.members.map((member: Data) => data.supplier.find((supplier: Data) => supplier.id === member.id)),
+        invoices: family.invoices.map((invoice: Data) => publicEvidence(invoice)) })) : [];
+    data.registerAnalyticsScoped = !globalProcurement;
+    data.accessRole = all(s, 'accessRole').filter(role => allowed(s, a, 'access.manage', role));
+    data.buyerRoleLimit = all(s, 'buyerRoleLimit').filter(limit => allowed(s, a, 'access.manage', limit));
+    return { actor: { id: a.id, email: a.email, roles: roles(s, a), permissions, grants: accessGrants(s, a), dev: a.dev }, data };
+}
+
+export function recordScope(s: State, a: Actor, kind: string, record: Data) { requireRecordRead(s, a, kind, record); }
+export function download(s: State, a: Actor, kind: string, id: string) {
+    const record = get(s, kind, id); recordScope(s, a, kind, record);
+    if (kind === 'attachment') return new Response(Uint8Array.from(atob(record.base64), char => char.charCodeAt(0)), { headers: {
+        'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="${record.name.replace(/[^a-zA-Z0-9._-]/g, '_')}"` } });
+    if (kind === 'agentRun') {
+        const projected = projectProtectedContext('agentRun', record);
+        if (record.workflow === 'value-realization') return new Response(JSON.stringify(projectValueRecord(s, a, projected), null, 2), { headers: {
+            'content-type': 'application/json', 'content-disposition': 'attachment; filename="value-report.json"' } });
+        return new Response(projected.draft + '\n\nMissing: ' + projected.missing.join(', ') + '\nSources: ' + JSON.stringify(projected.references), { headers: {
+            'content-type': 'text/plain; charset=utf-8', 'content-disposition': 'attachment; filename="preparation.txt"' } });
+    }
+    requireThat(kind === 'order', 'Unsupported document', 404);
+    const supplier = record.imported ? get(s, 'supplier', record.supplier) : record.supplierSnapshot;
+    requireThat(supplier?.id === record.supplier, 'Approved supplier identity is missing; renew purchasing authority', 409);
+    return new Response(poHtml(poContent(s, record)), { headers: { 'content-type': 'text/html; charset=utf-8',
+        'content-disposition': `attachment; filename="${record.number.replace(/[^a-zA-Z0-9._-]/g, '_')}.html"`,
+        'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; img-src data:" } });
+}
+export function accounting(s: State, a: Actor) {
+    requirePermission(s, a, 'invoice.read');
+    const cell = (value: unknown) => '"' + String(value).replace(/"/g, '""').replace(/^[=+@-]/, "' $&") + '"';
+    const byAllocation = new Map(discrepancies(s).map(discrepancy => [JSON.stringify([discrepancy.invoiceId, discrepancy.lineId]), discrepancy]));
+    const rows = [['invoice', 'po', 'line', 'currency', 'quantity', 'amount_minor', 'price_mismatch', 'quantity_mismatch', 'receipt_shortfall'],
+        ...all(s, 'invoice').filter(invoice => allowed(s, a, 'invoice.read', invoice)).flatMap(invoice => invoice.allocations.map((line: Data) => {
+            const order = get(s, 'order', invoice.order), discrepancy = byAllocation.get(JSON.stringify([invoice.id, line.line]))!;
+            return [invoice.reference, order.number, line.line, invoice.currency, line.quantity, line.amountMinor, discrepancy.priceMismatch, discrepancy.quantityMismatch, discrepancy.receiptShortfall];
+        }))];
+    return new Response(rows.map(row => row.map(cell).join(',')).join('\r\n'), { headers: {
+        'content-type': 'text/csv', 'content-disposition': 'attachment; filename="purse-accounting.csv"' } });
+}

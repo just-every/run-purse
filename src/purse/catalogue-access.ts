@@ -1,7 +1,8 @@
+import { builtinRoles } from './access';
 import { all, audit, can, get, put, roles, requireThat, text, type Actor, type Data, type State } from './types';
 
 export const catalogueDimensions = ['departments', 'locations', 'entities', 'roles'] as const;
-export function catalogueLists(input: unknown, label: string): Data {
+export function catalogueLists(input: unknown, label: string, s?: State): Data {
     requireThat(input === undefined || (input !== null && typeof input === 'object' && !Array.isArray(input)), label + ' must be an object');
     const value = (input ?? {}) as Data, result: Data = {};
     for (const field of catalogueDimensions) {
@@ -10,7 +11,7 @@ export function catalogueLists(input: unknown, label: string): Data {
         requireThat(list.length <= 100, field + ' allows at most 100 values');
         result[field] = list.map((v: unknown) => text(v, field, 200));
         requireThat(new Set(result[field]).size === result[field].length, field + ' contains duplicates');
-        if (field === 'roles') requireThat(result[field].every((r: string) => ['owner', 'requester', 'approver', 'buyer', 'receiver'].includes(r)), 'Unknown catalogue role');
+        if (field === 'roles') requireThat(result[field].every((r: string) => builtinRoles.includes(r) || Boolean(s?.has('accessRole:' + r))), 'Unknown catalogue role');
     }
     return result;
 }
@@ -29,7 +30,7 @@ export function catalogueGrants(s: State, a: Actor, op: string, b: Data): Data |
     const member = get(s, 'member', email);
     requireThat(member.active, 'Choose an active member');
     // Roles always come from current native purchasing capabilities, never a grant.
-    const { roles: ignored, ...scope } = catalogueLists(b, 'Catalogue membership');
+    const { roles: ignored, ...scope } = catalogueLists(b, 'Catalogue membership', s);
     put(s, 'catalogueGrant', email, { email, ...scope });
     audit(s, a, op, email, scope);
     return get(s, 'catalogueGrant', email);

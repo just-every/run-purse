@@ -14,8 +14,7 @@ function ExternalReader({ files, current, mutate, select }: { files: D[]; curren
 export function QuoteReading({ data, current, actor, mutate }: { data: D; current: D; actor: D; mutate: (op: string, b: D) => Promise<any> }) {
     const [chosen, choose] = useState('');
     const readings = (data.quoteReading ?? []).filter((r: D) => r.request === current.id), selected = readings.find((r: D) => r.id === chosen) ?? readings.at(-1);
-    const allowed = actor.roles.includes('buyer') || actor.roles.includes('requester') && (current.requester === actor.id || current.requesterEmail === actor.email);
-    const editable = allowed && !current.imported && current.status === 'draft';
+    const editable = current.mayEdit && !current.imported && current.status === 'draft';
     const files = data.attachment.filter((f: D) => f.kind === 'request' && f.record === current.id);
     const exact = selected?.revision === current.revision && selected?.status === 'review';
     return <section aria-label="Quote document review"><h3>Read supplier quote</h3><p className="quiet">Reads labelled tables or item fields in text PDFs, plain text and .eml email. For scans, images or other layouts, prepare a reading with an external reader you choose. Review each field and correct missing values before confirming a new draft revision.</p>

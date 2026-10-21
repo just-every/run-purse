@@ -8,7 +8,7 @@ export function OrderChasing({ order, data, actor, mutate, reload }: { order: D;
     const evidence = data.orderChaseEvidence.find((e: D) => e.order === order.id);
     return <section className="panel"><h3>Supplier follow-up</h3>
         {evidence ? <><p>Supplier promise: {evidence.promisedDate}. Acknowledgment: {evidence.acknowledgedAt ? when(evidence.acknowledgedAt) : 'not recorded'}.</p><details><summary>Buyer-recorded supplier replies and promises</summary><ul className="ruled-list">{evidence.history.map((h: D) => <li key={h.version}>{when(h.at)} · {h.source} · promised {h.promisedDate}{h.acknowledgedAt && <> · acknowledged {when(h.acknowledgedAt)}</>}</li>)}</ul></details></> : <p>No supplier acknowledgment or promise has been recorded. Issuance alone is not an acknowledgment.</p>}
-        {actor.roles.includes('buyer') && ['issued', 'closed'].includes(order.status) && !order.imported && <>
+        {order.mayManagePurchasing && ['issued', 'closed'].includes(order.status) && !order.imported && <>
             <Form key={policy?.version ?? 0} label="Save chase schedule" initial={{ order: order.id, version: policy?.version ?? 0 }} onSubmit={b => mutate('order-chase-policy', { ...b, enabled: b.enabled === 'yes', cadenceDays: Number(b.cadenceDays), maxChases: Number(b.maxChases) })}>
                 <Field label="Automatic supplier chases" name="enabled" defaultValue={policy?.enabled ? 'yes' : 'no'} options={[{ value: 'yes', label: 'Enabled' }, { value: 'no', label: 'Paused' }]}/>
                 <Field label="Days between chase attempts" name="cadenceDays" type="number" defaultValue={policy?.cadenceDays ?? 3}/>
