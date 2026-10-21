@@ -1,5 +1,5 @@
 import { projectProtectedContext } from './protected-context';
-import { publicEvidence } from './invoice-evidence-history';
+import { publicEvidence } from './invoice-status';
 import { blanketPosition } from './blanket-orders';
 import { visibleAgentValue, projectValueRecord } from './agent-value';
 import { visibleAgreementReadings } from './agreement-reading';

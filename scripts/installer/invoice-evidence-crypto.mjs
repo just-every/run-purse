@@ -15,14 +15,6 @@ export function attestation(secret, invoice) {
  const e=invoice.evidence;
  return mac(secret,'invoice-evidence-attestation:v1:',{invoice:invoice.id,legacyHash:invoice.evidenceHash,representation:'legacy-root-v1',retainedDigest:e.retainedDigest,state:e.state,event:e.event,actor:e.actor,at:e.at});
 }
-export function evidenceLabel(e) {
- if(!e)return 'Legacy evidence not migrated – not verified.';
- if(e.state==='attested-at-migration')return `Checked at migration on ${e.at} from retained records. Later checks verify this migration record, not the original submission.`;
- if(e.state==='unavailable-source')return 'Original bank input not retained – legacy evidence not verified.';
- if(e.state==='did-not-verify')return 'Legacy evidence did not verify.';
- if(e.state==='verified-by-reentry')return `Verified by owner re-entry on ${e.at}. Later checks verify this re-entry record.`;
- return 'Retained invoice evidence verified. Bank comparison is not bank verification.';
-}
 export function classifyLegacyEvidence(root,invoice,baseline) {
  const bank=invoice.remit?.supplied?baseline??null:null;
  const checked=(!invoice.remit?.supplied||bank)&&legacyHash(root,invoice,bank)===invoice.evidenceHash;

@@ -1,5 +1,6 @@
+import { evidenceLabel } from './invoice-evidence-labels';
 import { randomBytes } from 'node:crypto';
-import { attestation, classifyLegacyEvidence, digest, evidenceLabel, legacyHash, retainedEvidence } from '../../scripts/installer/invoice-evidence-crypto.mjs';
+import { attestation, classifyLegacyEvidence, digest, legacyHash, retainedEvidence } from '../../scripts/installer/invoice-evidence-crypto.mjs';
 import { all, audit, get, key, put, requireThat, uid, type Actor, type Data, type State } from './types';
 import { canonicalSupplier, matchingInputs } from './supplier-identity';
 
@@ -40,8 +41,4 @@ export function reenterInvoiceEvidence(s: State, a: Actor, invoiceId: string, bo
         put(s,'invoice',invoice.id,updated);
     }
     return {matched,state:matched?'verified-by-reentry':e.state,label:matched?evidenceLabel({state:'verified-by-reentry',at}):'Legacy evidence did not verify.'};
-}
-export function publicEvidence(invoice: Data) {
-    const {evidenceHash,evidence,...value}=invoice;
-    return {...value,...(evidenceHash?{evidenceStatus:{representation:evidence?.representation??'legacy-root-v1',state:evidence?.state??'unmigrated',label:evidenceLabel(evidence)}}:{})};
 }
