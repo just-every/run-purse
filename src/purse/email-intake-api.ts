@@ -4,6 +4,7 @@ import { runtimeBindings, type Bindings } from '../auth.server';
 import { actor, load, readFence } from './store';
 import { activeIntakeRequester, intakeLimits, intakeScope, providerSenderLabel, queueIntakeLink, sendEmailIntakeLinks } from './email-intake';
 import { apFileKey, apInvoiceEmail } from './invoice-inbox';
+import { embeddedInvoicePdfs } from './invoice-xml';
 import { Fault, get, put, requireThat, uid, type Data } from './types';
 
 export const emailIntakeApi = new Hono<{ Bindings: Bindings }>();
@@ -63,7 +64,16 @@ emailIntakeApi.post('/api/purse/email-intake/inbound', async c => {
             files.push(file); retained.push(file.key);
         }
         if (ap) {
-            const capture = apInvoiceEmail(state, { id, emailId, from, normalized, original, files });
+            const embedded: Data[] = [];
+            let decoded = normalized.attachments.reduce((n: number, file: Data) => n + file.content.length, 0);
+            for (const [index, attachment] of normalized.attachments.entries()) for (const pdf of embeddedInvoicePdfs(attachment.content)) {
+                // The XML original keeps every embedded byte; a separate copy is kept only within the transport limits.
+                if (pdf.bytes.length > intakeLimits.maxAttachmentBytes || decoded + pdf.bytes.length > intakeLimits.maxTotalAttachmentBytes) continue;
+                decoded += pdf.bytes.length;
+                const fileId = uid(), file = await retain(env, custody(fileId), fileId, pdf.name, pdf.mediaType, pdf.bytes);
+                embedded.push({ ...file, embeddedIn: files[index].id, path: pdf.path }); retained.push(file.key);
+            }
+            const capture = apInvoiceEmail(state, { id, emailId, from, normalized, original, files, embedded });
             put(state, 'apInvoiceEmail', id, capture);
             put(state, 'audit', uid(), { actor: 'invoice-inbox', action: 'invoice-inbox-received', record: id, provider: 'resend', providerEmailId: emailId, status: capture.status, supplier: capture.supplier, match: capture.match, at: capture.receivedAt });
         } else {

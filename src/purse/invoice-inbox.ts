@@ -32,7 +32,7 @@ export function apInvoiceEmail(s: State, input: Data): Data {
     const repeatedFiles = input.files.flatMap((file: Data) => earlier.flatMap(capture => capture.files.filter((f: Data) => f.sha256 === file.sha256).map((f: Data) => ({ file: file.id, capture: capture.id, capturedFile: f.id }))));
     return { id: input.id, provider: 'resend', providerEmailId: input.emailId, providerSender: input.from, providerSenderLabel: apSenderLabel, senderVerified: false,
         to: input.normalized.to, subject: input.normalized.subject, sourceText: input.normalized.text, sourceHtml: input.normalized.html, messageId: input.normalized.messageId,
-        originalFormat: 'provider-api-json', original: input.original, files: input.files, repeatedFiles, supplier: match.supplier, match: match.basis,
+        originalFormat: 'provider-api-json', original: input.original, files: input.files, embedded: input.embedded, repeatedFiles, supplier: match.supplier, match: match.basis,
         status: match.supplier ? 'draft' : 'held', holdReason: match.holdReason, sources: [], version: 1, receivedAt: new Date().toISOString() };
 }
 

@@ -16,7 +16,7 @@ export default {
   }
   for (const row of rows.filter(row => ['emailIntake', 'apInvoiceEmail'].includes(row.kind))) {
    const intake = JSON.parse(row.value);
-   for (const file of [intake.original, ...intake.files]) {
+   for (const file of [intake.original, ...intake.files, ...(intake.embedded ?? [])]) {
     const object = manifest.objects.find(object => object.bucket === 'ORIGINALS' && object.key === file.key);
     check(object && object.size === file.size && object.sha256 === file.sha256, 'email_intake_original_inventory');
    }
