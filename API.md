@@ -286,3 +286,10 @@ key loss requires reentry. Default archives exclude the ciphertext table and
 restore returns "Not restored – re-enter". **Legacy matching roots still travel
 in default archives**, and encrypted owner-include archives are unbuilt; do not
 claim complete SECURITY-001 archive confidentiality or clause completion.
+
+
+### Protected supplier web flow
+
+In Suppliers, open an existing supplier and use **Protected tax and bank values**. The current native owner stores TIN/account/routing with a private reason and evidence reference; blank inputs keep the stored fields and account/routing change together. Submitted private inputs clear after each attempt. Storage uses the dedicated protected HTTP door; ordinary supplier saves never receive these values. The panel shows role masks and the recorded/unverified/not-active bank label.
+
+**Request native reauthentication** requests the existing native email challenge. Confirm its link in the same browser, then return to the supplier and reveal one field with a private reason. A request alone or development sign-in grants no reveal proof; local mail remains suppressed. **Hide protected value**, leaving the supplier/workspace, or hiding the document clears the displayed value. Buyers have masks only. These controls preserve current HTTP authorization and revision fences; they do not implement rotation, encrypted owner-include archives, connector-secret lifecycle or complete refusal auditing.

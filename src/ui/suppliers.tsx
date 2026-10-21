@@ -1,3 +1,4 @@
+import { SupplierProtected } from './supplier-protected';
 import { Separated } from './separated';
 import { useState } from 'react';
 import { DuplicateSupplierReview } from './supplier-duplicates';
@@ -45,6 +46,7 @@ export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; 
         {duplicate && <DuplicateSupplierReview review={duplicate.review} input={duplicate.input} mutate={mutate} onSaved={s => open(s.id)} onOpen={async id => { try { await reload(); open(id); setOpenError(''); } catch (e) { setOpenError((e as Error).message); } }}/>}
         {openError && <p role="alert">{openError}</p>}
         {selected && <>
+            <SupplierProtected key={selected.id + ":protected"} supplier={selected} owner={actor.roles.includes('owner')} reload={reload}/>
             {!selected.mergedInto && <><SupplierPerformance key={selected.id} supplier={selected} data={data} mutate={mutate}/><SupplierScreening supplier={selected} owner={actor.roles.includes('owner')} mutate={mutate}/><Attachments data={data} kind="supplier" record={selected.id} mutate={mutate}/><SupplierDocuments key={selected.id + ":documents"} supplier={selected} data={data} mutate={mutate} reload={reload}/><SupplierMerge key={selected.id} supplier={selected} data={data} mutate={mutate} onMerged={() => setDuplicate(undefined)}/></>}
             <SupplierHistory supplier={selected} data={data}/>
             <button onClick={() => open()}>Add another supplier</button>
