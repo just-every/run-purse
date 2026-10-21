@@ -8,6 +8,10 @@ export function unrestrictedAccess(s:State,a:Actor,permission:string) {
 export function auditEventAllowed(s:State,a:Actor,event:Data,permission='audit.read') {
  if(unrestrictedAccess(s,a,permission))return true;
  if(!allowed(s,a,permission))return false;
+ if(['scim-user-create','scim-user-update','scim-user-deactivate'].includes(event.action)){
+  const grants=[...(event.grantsBefore??[]),...(event.grantsAfter??[])];
+  return grants.length>0&&grants.every((grant:Data)=>allowed(s,a,permission,{scope:grant.scope??{},entity:'main'}));
+ }
  if(['member','access-role','buyer-role-limit'].includes(event.action)){
   const snapshots=[event.before,event.after].filter(Boolean);
   if(!snapshots.length)return false;

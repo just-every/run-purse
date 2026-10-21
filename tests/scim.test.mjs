@@ -48,6 +48,11 @@ test('SCIM owner consent, stable identities, department scope and credential lif
  assert.equal((await scim(h,token,'PUT','/Users/'+created.value.id,{...user(1,'Engineering'),displayName:'Synthetic Purse renamed'})).status,200)
  const unknown=await scim(h,token,'POST','/Users',user(3,'Unmapped'));assert.equal(unknown.status,201);const member=await h.db.prepare("SELECT value FROM p_records WHERE kind='member' AND id=?").bind(user(3).userName).first();assert.deepEqual(JSON.parse(member.value).grants,[])
  const auditor=await h.member('synthetic-purse-4@example.test',['auditor']);assert.equal((await h.send('/api/purse/scim',undefined,auditor)).status,403)
+ await h.command('member',{email:'synthetic-purse-4@example.test',name:'Operations auditor',grants:[{role:'auditor',scope:{departments:['Operations']}}]})
+ const history=await h.send('/api/purse/audit',undefined,auditor);assert.equal(history.status,200)
+ assert.ok(history.value.events.some(event=>event.action==='scim-user-create'&&event.record===created.value.id))
+ assert.ok(!history.value.events.some(event=>event.action==='scim-user-update'&&event.record===created.value.id),'Cross-department provisioning history stays outside a one-department audit grant')
+ assert.ok(!history.value.events.some(event=>event.action==='scim-configure'),'Global provisioning mappings remain outside department audit scope')
  credential=await settings(h,{action:'rotate'});assert.ok(credential.token);assert.equal((await scim(h,token,'GET','/Users')).status,401);token=credential.token
  assert.equal((await scim(h,token,'GET','/Users')).status,200);await settings(h,{action:'revoke'});assert.equal((await scim(h,token,'GET','/Users')).status,401)
 })
