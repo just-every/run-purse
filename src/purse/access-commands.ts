@@ -74,6 +74,7 @@ export function authorizeAccessCommand(s: State, a: Actor, op: string, b: Data):
         if (op === 'prepare') preparationReferences(s, a, b.references ?? []);
         else {
             const run = get(s, 'agentRun', op === 'edit-preparation' ? b.id : b.run);
+            requireThat(run.workflow!=='value-realization','Value reports are immutable; prepare a new report for changed evidence',409);
             requireThat(run.actor === a.id, 'Preparation outside your scope', 403);
             preparationReferences(s, a, run.references);
         }

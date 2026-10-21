@@ -28,7 +28,7 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
     assert.equal((await send(base, input)).status, 401);
     for (const cookie of [requester,buyer,approver]) { assert.equal((await send(base,input,cookie)).status,403); assert.equal((await send(base,undefined,cookie)).status,403); }
     assert.equal((await send(base, { ...input, requesterEmail: 'unregistered@example.test' }, owner)).status,409);
-    assert.equal((await send(base, { ...input, requesterEmail: 'buyer@example.test' }, owner)).status,409);
+    assert.equal((await send(base, { ...input, requesterEmail: 'approver@example.test' }, owner)).status,409);
     const cross = await h.mf.dispatchFetch(h.origin+base,{method:'POST',headers:{origin:'https://elsewhere.example.test',cookie:owner,'content-type':'application/json'},body:JSON.stringify(input)});assert.equal(cross.status,403);assert.ok(await refusalCount()>0);
     const issued = await send(base,input,owner);assert.equal(issued.status,200);
     let { token, integration } = issued.value;

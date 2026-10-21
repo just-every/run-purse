@@ -1,9 +1,9 @@
-import { mayReadProtectedSupplier } from './access-records';
+import { mayReadProtectedSupplier, protectedReadCapabilities } from './access-records';
 import { Hono } from 'hono';
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { actor, load, readFence, save } from './store';
 import { matchingInputs } from './supplier-identity';
-import { audit, get, put, requireThat, roles, type Actor, type Data } from './types';
+import { audit, get, put, requireThat, roles, type Actor, type Data, type State } from './types';
 import { protectedFields, protectedRows, decryptProtected, encryptProtected, writeProtected, type CipherRow, type ProtectedField } from './protected-crypto';
 import { privateText, protectedBody, protectedProof, protectedRefusal } from './protected-controls';
 import { protectedKeysApi } from './protected-keys';
@@ -31,9 +31,9 @@ function protectedMasks(env: Bindings, supplier: Data, a: Actor, capabilities: s
     }
     return masks;
 }
-export async function protectedSupplierState(env: Bindings, a: Actor, capabilities: string[], suppliers: Data[]) {
+export async function protectedSupplierState(env: Bindings, a: Actor, capabilities: string[], suppliers: Data[], state:State) {
     const stored = (await env.DB.prepare("SELECT * FROM p_supplier_protected WHERE business='main'").all<CipherRow>()).results;
-    return new Map(suppliers.map(supplier => [supplier.id, protectedMasks(env,supplier,a,capabilities,stored.filter(row => row.supplier === supplier.id),true)]));
+    return new Map(suppliers.map(supplier => [supplier.id, protectedMasks(env,supplier,a,protectedReadCapabilities(state,a,supplier),stored.filter(row => row.supplier === supplier.id),true)]));
 }
 
 export const supplierProtectedApi = new Hono<{ Bindings: Bindings }>();
@@ -44,7 +44,7 @@ supplierProtectedApi.get('/api/purse/supplier-protected/:supplier', async c => {
         a = await actor(c.req.raw, env); const {state, revision} = await load(env.DB);
         const capabilities = roles(state, a); requireThat(capabilities.length, 'No active business membership', 403);
         const supplier = get(state, 'supplier', c.req.param('supplier')); requireThat(mayReadProtectedSupplier(state,a,supplier),'Supplier protected state outside your scope',403); const stored = await rows(env, supplier.id);
-        const masks = protectedMasks(env,supplier,a,capabilities,stored);
+        const masks = protectedMasks(env,supplier,a,protectedReadCapabilities(state,a,supplier),stored);
         await readFence(env.DB, a, revision);
         return c.json({ revision, supplier: supplier.id, masks, bankStatus: protectedBankStatus(supplier,stored) });
     } catch (error) { return protectedRefusal(env, c.req.raw, 'read', error, a); }

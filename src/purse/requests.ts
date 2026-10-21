@@ -85,6 +85,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
     }
     if (['submit', 'decision'].includes(op)) {
         const r = get(s, 'request', b.id);
+        requirePermission(s,a,op==='decision'?'request.approve':'request.edit',r);
         requireThat(r.revision === b.revision, 'Stale request revision', 409);
         supplier(s, r.supplier);
         requireThat(!r.imported, 'Imported status cannot grant native authority', 409);

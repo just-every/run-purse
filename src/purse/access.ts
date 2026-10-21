@@ -66,6 +66,7 @@ function grantMatches(s: State, a: Actor, grant: AccessGrant, record: Data, perm
     if (context.requester === a.id || context.requesterEmail?.toLowerCase() === a.email.toLowerCase()) return true;
     return permission !== 'request.edit' && grant.departmentRead === true && Boolean(grant.scope.departments?.length) && context.dimensions.departments.length > 0;
 }
+export function grantAllows(s:State,a:Actor,grant:AccessGrant,permission:string,record?:Data){return grant.permissions.includes(permission) && (record===undefined || grantMatches(s,a,grant,record,permission));}
 export function allowed(s: State, a: Actor, permission: string, record?: Data) {
     if (!permissions.includes(permission as typeof permissions[number])) return false;
     return accessGrants(s, a).some(grant => grant.permissions.includes(permission) && (record === undefined || grantMatches(s, a, grant, record, permission)));

@@ -1,14 +1,13 @@
 import { purchasingSearchText } from './search-text';
 import { proposedQuoteReading, quoteReadingInstructions, quoteSourceDescriptor } from './quote-reading-proposal';
-import { all, audit, get, put, requireThat, roles, text, uid, type Actor, type Data, type State } from './types';
+import { all, audit, get, put, requireThat, requirePermission, text, uid, type Actor, type Data, type State } from './types';
 import { requests } from './requests';
 import { readQuoteSource } from './quote-reading-source';
 import { parseQuoteFields, type QuoteField } from './quote-reading-fields';
 const headers = ['currency', 'freightAmount', 'taxAmount', 'leadTime', 'validity'];
 const itemFields = ['description', 'quantity', 'unitAmount', 'unit'];
 function scope(s: State, a: Actor, request: Data) {
-    const capabilities = roles(s, a);
-    requireThat(capabilities.includes('buyer') || capabilities.includes('requester') && (request.requester === a.id || request.requesterEmail === a.email), 'Only the current requester or buyer may review this quote', 403);
+    requirePermission(s,a,'request.edit',request);
 }
 function event(s: State, a: Actor, reading: Data, action: string, detail: Data = {}) {
     const id = uid(); put(s, 'quoteReadingEvent', id, { request: reading.request, reading: reading.id, revision: reading.revision, attachment: reading.attachment, version: reading.version, action, actor: a.id, at: new Date().toISOString(), ...detail });

@@ -10,6 +10,7 @@ test('Scoped procurement roles, native custom receiving, report sources, audit g
   assert.equal((await h.send('/api/purse/supplier-protected/'+suppliers[1].id,undefined,c[role])).status,403);
   const masked=await h.send('/api/purse/supplier-protected/'+suppliers[0].id,undefined,c[role]);assert.equal(masked.status,200);assert.equal(masked.value.masks.tin,role==='buyer'?'••••4735':'On file');
  }
+ for(const role of ['buyer','ap-clerk','finance-viewer','auditor','lead']){const allowed=await h.send('/api/purse/search?kind=order&id='+o[0].id,undefined,c[role]),denied=await h.send('/api/purse/search?kind=order&id='+o[1].id,undefined,c[role]);assert.equal(allowed.status,200);assert.equal(allowed.value.total,1);assert.equal(denied.value.total,0);}
  for(const role of ['admin','owner'])assert.equal((await h.state(c[role])).data.request.length,4);
  await cmd('decision',{id:pending[1].id,revision:1,decision:'approved',reason:'Outside department'},c.approver,403);
  await cmd('decision',{id:pending[0].id,revision:1,decision:'approved',reason:'Facilities budget reviewed'},c.approver);
@@ -35,6 +36,10 @@ test('Scoped procurement roles, native custom receiving, report sources, audit g
  await cmd('member',{email:'receiving-lead@example.test',name:'Receiving lead',grants:[{role:'receiving-lead',scope:{locations:['Boston']}}]},c.admin,403);
  await cmd('buyer-role-limit',{role:'buyer',limits:{absoluteMinor:5000,percent:10,quantityPercent:0}});
  await cmd('member',{email:'buyer@example.test',name:'Buyer',grants:[{role:'buyer',scope:f.scope,limits:{absoluteMinor:0,percent:0,quantityPercent:0}}]});
+ const dual=await h.member('dual@example.test',['finance-viewer']);await cmd('member',{email:'dual@example.test',name:'Dual scoped roles',grants:[{role:'buyer',scope:f.scope},{role:'finance-viewer',scope:{departments:['Engineering'],locations:['Boston'],projects:['IT'],entities:['main']}}]});
+ const buyerMask=await h.send('/api/purse/supplier-protected/'+suppliers[0].id,undefined,dual),financeMask=await h.send('/api/purse/supplier-protected/'+suppliers[1].id,undefined,dual);assert.equal(buyerMask.value.masks.tin,'••••4735');assert.equal(financeMask.value.masks.tin,'On file');assert.equal(financeMask.value.masks.bankRouting,undefined);
+ await cmd('member',{email:'receiving-lead@example.test',name:'Receiving lead',grants:[]});assert.equal((await h.send('/api/purse/state',undefined,c.lead)).status,403);
  const ownerEvents=(await h.send('/api/purse/audit',undefined,h.owner)).value.events;assert.ok(ownerEvents.some(e=>e.action==='buyer-role-limit'&&e.after.limits.absoluteMinor===5000));assert.ok(ownerEvents.some(e=>e.action==='member'&&e.after.email==='buyer@example.test'&&e.after.grants[0].limits?.absoluteMinor===0));
+ assert.ok(ownerEvents.some(e=>e.action==='member'&&e.after.email==='receiving-lead@example.test'&&e.after.grants.length===0&&e.before.grants.length===1));
  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
 });

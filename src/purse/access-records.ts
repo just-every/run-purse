@@ -1,4 +1,4 @@
-import { accessGrants, allowed, resolvedPermissions } from './access';
+import { accessGrants, allowed, grantAllows, resolvedPermissions } from './access';
 import { all, get, requireThat, type Actor, type Data, type State } from './types';
 import { performanceAgreementSources } from './access-agreement-sources';
 
@@ -69,4 +69,13 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
 }
 export function requireRecordRead(s: State, a: Actor, kind: string, record: Data) {
     requireThat(canReadRecord(s, a, kind, record), 'Record outside your scope', 403);
+}
+
+/** A broader read grant never lends another grant its buyer suffix privilege. */
+export function protectedReadCapabilities(s:State,a:Actor,supplier:Data){
+ if(a.owner)return ['owner','buyer'];
+ const buyer=accessGrants(s,a).some(grant=>grant.role==='buyer' && ((!Object.keys(grant.scope).length&&!Object.keys(grant.roleScope??{}).length)
+  || all(s,'request').some(request=>request.supplier===supplier.id&&grantAllows(s,a,grant,'request.read',request))
+  || all(s,'invoice').some(invoice=>(invoice.supplier===supplier.id||s.get('order:'+invoice.order)?.value.supplier===supplier.id)&&grantAllows(s,a,grant,'invoice.read',invoice))));
+ return buyer?['buyer']:[];
 }
