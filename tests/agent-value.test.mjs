@@ -68,7 +68,7 @@ test('AGENT-005 exact approved promises, original provider-reported 50/31/19 evi
  await cmd('value-confirm',answer(run),requester,409);await cmd('execute-action',{id:proposal.id,usefulness:true,notes:''},requester,409);
  assert.equal((await h.state()).data.order.length,1,'Value evaluation and source instructions create no orders beyond the explicit buyer purchase');
  let next=await report(request);await policy(false);await cmd('value-confirm',answer(next),requester,409);await cmd('value-report',{request:request.id,revision:1},requester,409);await policy(true);await cmd('value-confirm',answer(next),requester,409);
- next=await report(request);await cmd('member',{email:'requester@example.test',name:'Requester',roles:['buyer'],active:true});await cmd('value-confirm',answer(next),requester,403);await cmd('member',{email:'requester@example.test',name:'Requester',roles:['requester'],active:true});
+ next=await report(request);await cmd('member',{email:'requester@example.test',name:'Requester',roles:['finance-viewer'],active:true});await cmd('value-confirm',answer(next),requester,403);await cmd('member',{email:'requester@example.test',name:'Requester',roles:['requester'],active:true});
  const amended=await cmd('amend',{...base,lines:base.lines.map(line=>({...line,id:request.lines[0].id,quantity:'60'})),id:request.id,revision:request.revision,valuePromise:{kind:'seats',seats:60},reason:'New outcome requires renewed exact approval'},requester);
  await cmd('value-confirm',answer(next),requester,409);await cmd('value-report',{request:request.id,revision:1},requester,409);
  assert.equal((await h.state()).data.revision.find(r=>r.request===request.id&&r.revision===1).valuePromise.seats,50);assert.equal(amended.valuePromise.seats,60);

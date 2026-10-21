@@ -1,0 +1,32 @@
+import {nativeWebContext} from './native-web-fixture.mjs';
+import {accessFixture} from './access-fixture.mjs';
+import {manageAccess,zeroBuyer,conversionEdit,scopedReports} from './browser-access-flows.mjs';
+import assert from 'node:assert/strict';
+import {mkdir} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
+import {build} from 'esbuild';
+const {chromium}=await import(process.env.PURSE_PLAYWRIGHT_MODULE||'@playwright/test');
+const widths=process.argv.find(v=>v.startsWith('--width='))?[Number(process.argv.find(v=>v.startsWith('--width=')).slice(8))]:[1440,390];
+const evidence=resolve(process.env.PURSE_EVIDENCE||'.cache/access');await mkdir(evidence,{recursive:true});
+const bundle=await build({stdin:{contents:"import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);",resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'esm',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
+const browser=await chromium.launch({headless:true,...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--use-mock-keychain','--password-store=basic']});
+try{for(const width of widths){const f=await accessFixture(),contexts=[];try{
+ const snap=async(page,name)=>{assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,name+' overflow');await page.screenshot({path:join(evidence,`ACCESS-001-${name}-${width}.png`),fullPage:true});};
+ const open=async role=>{const context=await nativeWebContext(browser,f.h,width,bundle.outputFiles[0].text,f.cookies[role]);contexts.push(context);const page=await context.newPage();page.on('pageerror',error=>{throw error});return page;};
+ const owner=await open('owner');await manageAccess(owner,f,snap);
+ const admin=await open('admin');await admin.goto(f.h.origin+'/app?tab=Settings');await admin.getByRole('button',{name:'Save custom role',exact:true}).waitFor();assert.equal(await admin.getByRole('button',{name:'Save role grant',exact:true}).count(),0);await snap(admin,'admin');
+ const approvals=[];for(const title of ['Buyer role allowance','Buyer personal zero']){const r=await f.h.command('request',f.draft(0,title),f.cookies.requester);await f.h.command('submit',{id:r.id,revision:1},f.cookies.requester);await f.h.command('decision',{id:r.id,revision:1,decision:'approved',reason:'Reviewed native web conversion case'},f.cookies.approver);approvals.push(r);}
+ for(const role of ['owner','requester','approver','buyer','receiver','ap-clerk','finance-viewer','auditor','lead']){
+  const page=role==='owner'?owner:await open(role);await page.goto(f.h.origin+'/app?tab=Orders&receipt='+f.orders[0].id);await page.getByRole('heading',{name:f.orders[0].number+' · issued',exact:true}).waitFor();
+  if(!['owner'].includes(role))assert.equal(await page.getByText(f.orders[1].number,{exact:true}).count(),0);
+  if(['auditor','finance-viewer','lead','approver'].includes(role))assert.equal(await page.getByRole('button',{name:'Save invoice',exact:true}).count(),0);
+  if(role==='lead'){assert.equal(await page.getByText('Invoice FAC-203',{exact:true}).count(),0);await page.getByLabel('Quantity',{exact:true}).fill('1');await page.getByLabel('Reason or service milestone',{exact:true}).fill('Denver receiving lead checked one kit');await page.getByRole('button',{name:'Record receiving event',exact:true}).click();await page.getByText('Saved.',{exact:true}).waitFor();for(const [operation,body]of [['decision',{id:f.pending[0].id,revision:1,decision:'approved',reason:'No approval permission'}],['receipt',{order:f.orders[1].id,line:f.orders[1].lines[0].id,event:'receive',quantity:'1',reason:'Wrong location'}]])assert.equal((await page.context().request.post(f.h.origin+'/api/purse/command/'+operation,{data:body})).status(),403);assert.equal((await page.context().request.get(f.h.origin+'/api/purse/download/attachment/'+f.sources[0].attachment)).status(),403);}
+  await snap(page,role+'-orders');
+  if(role!=='lead'){await page.goto(f.h.origin+'/app?tab=Requests&request='+f.pending[0].id);await page.getByRole('heading',{name:'Facilities approval waiting · revision 1',exact:true}).waitFor();if(role==='auditor')assert.equal(await page.getByRole('button',{name:'Record decision',exact:true}).count(),0);await snap(page,role+'-requests');}
+  if(['requester','ap-clerk','finance-viewer','auditor'].includes(role))await scopedReports(page,f,role,snap);
+  if(role==='auditor'){await page.goto(f.h.origin+'/app?tab=Audit');await page.getByRole('heading',{name:'Audit history',exact:true}).waitFor();await page.getByLabel('Subject ID or PO number',{exact:true}).fill(f.orders[0].number);await page.getByRole('button',{name:'Filter audit history',exact:true}).click();await page.getByRole('cell',{name:f.orders[0].id,exact:true}).first().waitFor();const download=page.waitForEvent('download');await page.getByRole('link',{name:'Export filtered audit CSV',exact:true}).click();await download;await snap(page,'auditor-history');assert.equal((await page.context().request.post(f.h.origin+'/api/purse/command/request',{data:f.draft(0,'Readonly refused')})).status(),403);}
+  if(['buyer','ap-clerk'].includes(role)){await page.goto(f.h.origin+'/app?tab=Suppliers');await page.getByRole('row').filter({hasText:'Prairie Safety Supply'}).getByRole('button',{name:'Open',exact:true}).click();await page.getByRole('heading',{name:'Protected tax and bank values',exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'Reveal protected value',exact:true}).count(),0);await snap(page,role+'-masks');}
+ }
+ const buyer=await open('buyer');await conversionEdit(buyer,f,approvals[0],'10.50',true,snap);await zeroBuyer(owner,f,snap);await conversionEdit(buyer,f,approvals[1],'10.01',false,snap);
+ }finally{for(const context of contexts)await context.close();await f.h.close();}}}finally{await browser.close();}
+console.log('Scoped native role web journeys passed at '+widths.join('/'));

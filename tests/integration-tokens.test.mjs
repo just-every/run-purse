@@ -92,7 +92,7 @@ test('INTAKE-007 owner-bound create-only bearer: idempotency, native human appro
     await cmd('decision',{id:draft.id,revision:draft.revision,decision:'approved',reason:'Self approval denied'},requester,403);
     const approved=await cmd('decision',{id:draft.id,revision:draft.revision,decision:'approved',reason:'Equipment requirement reviewed'},approver);assert.equal(approved.status,'approved');
     assert.equal((await integrationRequest(token,'linen-asset-42')).value.request.status,'draft','Duplicate returns immutable creation response');
-    await cmd('member',{email:'field@example.test',name:'Field',roles:['buyer'],active:true});
+    await cmd('member',{email:'field@example.test',name:'Field',roles:['finance-viewer'],active:true});
     assert.equal((await integrationRequest(token,'role-removed')).status,403);assert.equal((await integrationRequest(token,'linen-asset-42')).status,403);
     await cmd('member',{email:'field@example.test',name:'Field',roles:['requester'],active:true});
     const rotation=await send(base+'/'+integration.id+'/rotate',{requesterEmail:'other@example.test'},owner);assert.equal(rotation.status,200);assert.equal(rotation.value.integration.requesterEmail,'field@example.test');assert.notEqual(rotation.value.token,token);

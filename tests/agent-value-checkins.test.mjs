@@ -106,7 +106,7 @@ test('AGENT-005 scheduled check-ins reject current revoked/inactive requester au
  let uncertain=false
  const {h,read,tick,policy,purchase,requester}=await fixture(t,{mail:()=>uncertain?new Response('Unavailable',{status:503}):Response.json({id:crypto.randomUUID()})})
  const revoked=await purchase('Revoked requester purchase')
- await h.command('member',{email:'requester@example.test',name:'Requester',roles:['buyer'],active:true})
+ await h.command('member',{email:'requester@example.test',name:'Requester',roles:['finance-viewer'],active:true})
  const before=h.messages.length
  await tick(revoked.deliveredAt+30*day)
  assert.equal(h.messages.length,before)

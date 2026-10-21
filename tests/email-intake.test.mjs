@@ -21,6 +21,7 @@ test('INTAKE-004 signed provider intake preserves private sources, requester com
     const { command: cmd, send, state, owner } = h;
     await cmd('business', { name: 'Email intake business', currencies: ['USD'], locations: ['Denver','Boulder'], costCentres: ['Field','IT'], projects: ['Site'] });
     const requester = await h.member('requester@example.test', ['requester']), other = await h.member('other@example.test', ['requester']), buyer = await h.member('buyer@example.test', ['buyer']);
+    await h.member('readonly@example.test',['finance-viewer']);
     const inactive = await h.member('inactive@example.test', ['requester']);
     await cmd('member', { email: 'inactive@example.test', name: 'Inactive requester', roles: ['requester'], active: false });
     await cmd('email-intake-config', { address: 'requests@example.test' }, requester, 403);
@@ -62,7 +63,7 @@ test('INTAKE-004 signed provider intake preserves private sources, requester com
     data = (await state(requester)).data; assert.equal(data.request.length, 1); assert.equal(data.emailIntake.find(i => i.id === intake.id).request, request.id);
     assert.equal((await send(download, undefined, requester)).value, pdf.toString());
 
-    for (const [id, from] of [['unknown_quote', 'unknown@example.test'], ['inactive_quote', 'inactive@example.test'], ['wrong_role_quote', 'buyer@example.test']]) {
+    for (const [id, from] of [['unknown_quote', 'unknown@example.test'], ['inactive_quote', 'inactive@example.test'], ['wrong_role_quote', 'readonly@example.test']]) {
         addMail(id, from); assert.equal((await deliver(id)).status, 202);
     }
     const held = (await state()).data.emailIntake.filter(i => i.status === 'held'); assert.equal(held.length, 3);
