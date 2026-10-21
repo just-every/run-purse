@@ -1,4 +1,5 @@
 import { allowed } from './access';
+import { agreementSpend } from './agreements';
 import { all, type Actor, type Data, type State } from './types';
 
 /** An award grants performance provenance for its exact retained agreement version.
@@ -29,12 +30,20 @@ export function performanceAgreementSources(s: State, a: Actor) {
 
 export function scopedAgreementEvidence(s: State, a: Actor) {
     const selected = performanceAgreementSources(s, a);
+    const invoiceEvidence = all(s, 'agreementInvoice').filter(link => {
+        const invoice = s.get('invoice:' + link.invoice)?.value;
+        return selected.versions.get(link.agreement)?.has(link.agreementVersion)
+            && invoice && invoice.order === link.order && allowed(s, a, 'invoice.read', invoice);
+    });
+    const evidenceIds = new Set(invoiceEvidence.map(link => link.id));
+    const spendState: State = new Map([...s].filter(([, row]) => row.kind !== 'agreementInvoice' || evidenceIds.has(row.id)));
     const agreements = all(s, 'agreement').filter(agreement => selected.versions.has(agreement.id)).map(agreement => {
         const history = agreement.history.filter((version: Data) => selected.versions.get(agreement.id)!.has(version.version));
         const latest = [...history].sort((first: Data, second: Data) => second.version - first.version)[0];
-        return { ...latest, id: agreement.id, history, scopeBasis: 'Exact awarded agreement versions within your performance scope', readOnlySource: true };
+        return { ...latest, id: agreement.id, history, spend: agreementSpend(spendState, agreement.id),
+            scopeBasis: 'Exact awarded agreement versions within your performance scope', readOnlySource: true };
     });
-    return { agreement: agreements, agreementInvoice: [], agreementReminder: [], agreementAward: selected.awards,
-        agreementReading: all(s, 'agreementReading').filter(reading => selected.readingVersions.get(reading.id) === reading.version),
+    return { agreement: agreements, agreementInvoice: invoiceEvidence, agreementReminder: [], agreementAward: selected.awards,
+        agreementReading: all(s, 'agreementReading').filter(reading => selected.readingVersions.has(reading.id) && selected.readingVersions.get(reading.id) === reading.version),
         agreementReadingEvent: all(s, 'agreementReadingEvent').filter(event => selected.readingVersions.has(event.reading) && selected.readingVersions.get(event.reading) === event.version) };
 }

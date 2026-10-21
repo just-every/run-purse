@@ -37,7 +37,7 @@ function PurchasingApp() {
             {current === 'Requests' && (business ? <Requests data={data} actor={actor} mutate={mutate}/> : <EmptyWorkspace owner={actor.roles.includes('owner')} onSetUp={() => open('Settings')}/>)}
             {current === 'Value' && <AgentValue data={data} actor={actor} mutate={mutate}/> }
             {current === 'Overview' && <Overview data={data} onSetUp={() => open('Settings')}/>}
-            {current === 'Reports' && <>{actor.permissions.includes('performance.read') && <button className="report-switch" onClick={() => setPerformance(!performance)}>{performance ? 'Spend and commitments' : 'Procurement performance'}</button>}{performance && actor.permissions.includes('performance.read') ? <PerformanceReport data={data}/> : <SpendReport data={data}/>}</>}
+            {current === 'Reports' && <>{actor.permissions.includes('performance.read') && <button className="report-switch" onClick={() => setPerformance(!performance)}>{performance ? 'Spend and commitments' : 'Procurement performance'}</button>}{(performance || !actor.permissions.includes('report.read')) && actor.permissions.includes('performance.read') ? <PerformanceReport data={data}/> : <SpendReport data={data}/>}</>}
             {current === 'Orders' && <Orders data={data} actor={actor} mutate={mutate} reload={reload}/>}
             {current === 'Suppliers' && <Suppliers data={data} actor={actor} mutate={mutate} reload={reload}/>}
             {current === 'Agreements' && <Agreements data={data} actor={actor} mutate={mutate}/>}

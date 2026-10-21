@@ -6,7 +6,7 @@ import {validatePurchasingArchive} from '../scripts/installer/restore-validation
 
 test('CONTRACT-001 REPORT-003 confirmed agreement prices realize exact approved invoice savings, source history and amendment caps through public doors',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
- await cmd('business',{name:'Canyon Services',currencies:['USD','CAD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety']});
+ await cmd('business',{name:'Canyon Services',currencies:['USD','CAD'],locations:['Denver','Boulder'],costCentres:['Operations','IT'],projects:['Safety']});
  const requester=await h.member('requester@example.test',['requester']),buyer=await h.member('buyer@example.test',['buyer']),approver=await h.member('approver@example.test',['approver']);
  const supplier=await cmd('supplier',{name:'Canyon Agreement Equipment',status:'preferred',reason:'Recorded supplier'});
  for(const currency of ['USD','CAD'])await cmd('policy',{name:currency+' authority',currency,category:'*',project:'*',approver:'approver@example.test',limitMinor:3000000,budgetMinor:9000000});
@@ -36,12 +36,13 @@ test('CONTRACT-001 REPORT-003 confirmed agreement prices realize exact approved 
  async function issue(r){const o=await cmd('convert',{id:r.id,revision:r.revision},buyer);await cmd('issue',{id:o.id,revision:r.revision,reason:'Issued approved revision'},buyer);return o}
  await approve(request);let savings=await report();assert.deepEqual(savings.totals,[{currency:'USD',negotiatedMinor:100000,realizedMinor:0}]);
  const row=savings.rows[0];assert.equal(row.award,award.id);assert.equal(row.agreement,agreement.id);assert.equal(row.agreementVersion,2);assert.deepEqual(row.reading,agreement.reading);assert.equal(row.firstOfferSource,base.firstOfferSource);assert.equal(row.awardSource,base.awardSource);assert.equal(row.agreementLine,0);
- agreement=await cmd('agreement',{...base,id:agreement.id,version:2,name:'Renamed contract',firstOfferSource:'Later confirmation source',awardSource:'Later price source',reason:'Later owner correction'});
- assert.equal((await report()).rows[0].firstOfferSource,base.firstOfferSource,'Later agreement corrections never rewrite the exact awarded source');
  const original=await h.send('/api/purse/download/attachment/'+row.reading.attachment,undefined,buyer);assert.equal(original.status,200);assert.equal(Buffer.from(await (await h.mf.dispatchFetch(h.origin+'/api/purse/download/attachment/'+attachment.id,{headers:{cookie:buyer}})).arrayBuffer()).equals(bytes),true);
  assert.equal((await h.send('/api/purse/download/attachment/'+attachment.id,undefined,requester)).status,403);
  const order=await issue(request);await cmd('receipt',{order:order.id,line:order.lines[0].id,event:'receive',quantity:'6',reason:'Six accepted'});
  const invoice=await cmd('invoice',{order:order.id,reference:'AGREEMENT-SIX',source:'Original six-set invoice',allocations:[{line:order.lines[0].id,quantity:'6',amountMinor:540000}],remit:{bankRouting:'123456789',bankAccount:'1234567890'}},buyer);
+ await cmd('agreement-invoice',{agreement:agreement.id,invoice:invoice.id,reason:'Owner attributed the exact awarded agreement version'});
+ agreement=await cmd('agreement',{...base,id:agreement.id,version:2,name:'Renamed contract',firstOfferSource:'Later confirmation source',awardSource:'Later price source',reason:'Later owner correction'});
+ assert.equal((await report()).rows[0].firstOfferSource,base.firstOfferSource,'Later agreement corrections never rewrite the exact awarded source');
  assert.equal((await report()).totals[0].realizedMinor,0);
  await cmd('payable-terms',{invoice:invoice.id,version:0,invoiceDate:'2026-10-19',term:'Net 30',reason:'Original invoice terms'},buyer);
  await cmd('approve-payable',{invoice:invoice.id,version:1,reason:'Still held'},buyer,409);
@@ -72,6 +73,44 @@ test('CONTRACT-001 REPORT-003 confirmed agreement prices realize exact approved 
  assert.equal((await report()).totals.find(r=>r.currency==='USD').realizedMinor,0,'New unresolved duplicate-document flags hold previously approved invoice savings');
  for(const id of [invoice.id,second.id]){let current=(await h.state(buyer)).data.invoice.find(i=>i.id===id);for(const flag of current.flags.filter(f=>!current.riskReviews.some(r=>r.flag===f.id))){current=await cmd('invoice-risk-review',{invoice:id,version:current.riskVersion,flag:flag.id,reason:'Buyer reviewed newly attached invoice original'},buyer);}}
  assert.equal((await report()).totals.find(r=>r.currency==='USD').realizedMinor,105000);
+ // Scoped performance readers receive the awarded source and its readable invoice evidence only.
+ await cmd('agreement-invoice',{agreement:agreement.id,invoice:second.id,reason:'Owner attributed later-version invoice evidence'});
+ const outside=await cmd('request',{...draft,title:'Private IT CAD purchase',currency:'CAD',location:'Boulder',costCentre:'IT'},requester);
+ await approve(outside);const outsideOrder=await issue(outside);
+ await cmd('receipt',{order:outsideOrder.id,line:outsideOrder.lines[0].id,event:'receive',quantity:'1',reason:'IT accepted one set'});
+ const outsideInvoice=await cmd('invoice',{order:outsideOrder.id,reference:'PRIVATE-IT-CAD',source:'Private IT original',allocations:[{line:outsideOrder.lines[0].id,quantity:'1',amountMinor:90000}]},buyer);
+ await cmd('agreement-invoice',{agreement:cadAgreement.id,invoice:outsideInvoice.id,reason:'Owner attributed separate department evidence to the awarded CAD version'});
+ const laterPdf=await PDFDocument.create(),laterPage=laterPdf.addPage(),laterFont=await laterPdf.embedFont(StandardFonts.Helvetica);
+ [...labels,'Unawarded later agreement original'].forEach((line,i)=>laterPage.drawText(line,{x:40,y:750-i*30,size:12,font:laterFont}));
+ const laterBytes=Buffer.from(await laterPdf.save());
+ const laterAttachment=await cmd('attachment',{kind:'agreement',record:agreement.id,name:'unawarded-later-agreement.pdf',mediaType:'application/pdf',base64:laterBytes.toString('base64')});
+ const laterReading=await cmd('agreement-extract',{agreement:agreement.id,version:3,attachment:laterAttachment.id});assert.equal(laterReading.status,'review');
+ agreement=await cmd('agreement',{...base,id:agreement.id,version:3,name:'Unawarded agreement revision',firstOfferSource:'Unawarded first-offer source',awardSource:'Unawarded price source',reading:{id:laterReading.id,version:laterReading.version}});
+ const readers=[];
+ for(const role of ['ap-clerk','finance-viewer']){
+  const email=role+'@example.test',cookie=await h.member(email,[role]);
+  await cmd('member',{email,name:role,grants:[{role,scope:{departments:['Operations'],locations:['Denver'],projects:['Safety'],entities:['main']}}]});readers.push(cookie);
+ }
+ const beforeReads=(await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results;
+ for(const cookie of readers){
+  const data=(await h.state(cookie)).data,source=data.agreement.find(r=>r.id===agreement.id),cadSource=data.agreement.find(r=>r.id===cadAgreement.id);
+  assert.equal(source.version,2);assert.deepEqual(source.history.map(r=>r.version),[2]);assert.deepEqual(source.reminderDays,base.reminderDays);assert.equal(source.remindersEnabled,true);assert.equal(source.readOnlySource,true);
+  assert.equal(source.name,base.name);assert.equal(source.firstOfferSource,base.firstOfferSource);assert.equal(source.awardSource,base.awardSource);assert.deepEqual(source.reading,row.reading);
+  assert.deepEqual(source.spend.totals,[{currency:'USD',amountMinor:540000}]);assert.deepEqual(source.spend.rows.map(r=>[r.invoice,r.agreementVersion,r.reference,r.source]),[[invoice.id,2,'AGREEMENT-SIX','Original six-set invoice']]);
+  assert.deepEqual(cadSource.spend.rows,[]);assert.deepEqual(cadSource.spend.totals,[]);assert.deepEqual(data.agreementInvoice.map(r=>r.invoice),[invoice.id]);
+  assert.ok(!data.invoice.some(r=>r.id===outsideInvoice.id));assert.ok(!JSON.stringify(data.agreement).includes(outsideInvoice.id));assert.ok(!JSON.stringify(source).includes(second.id));
+  assert.deepEqual(data.agreementReading.map(r=>[r.id,r.version]),[[row.reading.id,row.reading.version]]);
+  assert.ok(data.attachment.some(r=>r.id===attachment.id));assert.ok(!data.attachment.some(r=>r.id===laterAttachment.id));assert.ok(!data.agreementReadingEvent.some(r=>r.reading===laterReading.id));
+  const scopedReport=await h.send('/api/purse/performance-report',undefined,cookie);assert.equal(scopedReport.status,200);assert.deepEqual(scopedReport.value.savings.totals,[{currency:'CAD',negotiatedMinor:-100000,realizedMinor:0},{currency:'USD',negotiatedMinor:150000,realizedMinor:105000}]);
+  assert.ok(!JSON.stringify(scopedReport.value).includes(outsideInvoice.id));assert.deepEqual(scopedReport.value.savings.realizedRows.find(r=>r.invoice===invoice.id).reading,row.reading);
+  const exactOriginal=await h.mf.dispatchFetch(h.origin+'/api/purse/download/attachment/'+attachment.id,{headers:{cookie}});assert.equal(exactOriginal.status,200);assert.deepEqual(Buffer.from(await exactOriginal.arrayBuffer()),bytes);
+  assert.equal((await h.send('/api/purse/download/attachment/'+laterAttachment.id,undefined,cookie)).status,403);
+  await cmd('agreement',{...base,id:agreement.id,version:agreement.version},cookie,403);
+  await cmd('agreement-extract',{agreement:agreement.id,version:agreement.version,attachment:attachment.id},cookie,403);
+  await cmd('agreement-invoice',{agreement:agreement.id,invoice:outsideInvoice.id,reason:'Reader cannot attribute invoices'},cookie,403);
+  await cmd('attachment',{kind:'agreement',record:agreement.id,name:'reader.pdf',mediaType:'application/pdf',base64:bytes.toString('base64')},cookie,403);
+ }
+ assert.deepEqual((await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results,beforeReads,'Scoped reads and refused agreement writes leave native purchasing records unchanged');
  const records=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(records),true);
  for(const field of ['firstOfferSource','reading','lines']){const corrupt=structuredClone(records),record=corrupt.find(r=>r.kind==='agreementAward'&&r.id===award.id),value=JSON.parse(record.value);if(field==='lines')value.lines[0].firstUnitMinor++;else value[field]=field==='reading'?null:'Forged source';record.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt),/purse_agreement_award/)}
 });

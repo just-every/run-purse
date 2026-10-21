@@ -31,7 +31,7 @@ function protectedMasks(env: Bindings, supplier: Data, a: Actor, capabilities: s
     }
     return masks;
 }
-export async function protectedSupplierState(env: Bindings, a: Actor, capabilities: string[], suppliers: Data[], state:State) {
+export async function protectedSupplierState(env: Bindings, a: Actor, suppliers: Data[], state:State) {
     const stored = (await env.DB.prepare("SELECT * FROM p_supplier_protected WHERE business='main'").all<CipherRow>()).results;
     return new Map(suppliers.map(supplier => [supplier.id, protectedMasks(env,supplier,a,protectedReadCapabilities(state,a,supplier),stored.filter(row => row.supplier === supplier.id),true)]));
 }
