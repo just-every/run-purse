@@ -73,6 +73,9 @@ try {
                 ]);
                 const workspace = await requester.context.request.get(h.origin + '/api/purse/state');
                 assert.equal(workspace.status(), 200, await workspace.text());
+                // Redirect chains bypass Playwright's static asset route. The real
+                // callback and native session above complete before opening the shipped App.
+                await requester.page.goto(h.origin + '/app');
                 await requester.page.getByRole('region', { name: 'Requests', exact: true }).waitFor();
                 await requester.page.getByLabel('Ask Purse for something to buy', { exact: true }).waitFor();
                 const identity = await requester.context.request.get(h.origin + '/auth/session');
