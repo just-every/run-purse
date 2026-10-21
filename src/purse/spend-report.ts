@@ -46,8 +46,8 @@ export function spendReport(data: Data, filters: Data = {}) {
         for (const [kind, amount, terms] of [['committed', committed, order], ['reserved', b.amount - committed, request]] as const) {
             if (!amount) continue;
             const revision = data.revision.find((r: Data) => r.request === request.id && r.revision === terms.revision) || request;
-            const eligible = kind === 'committed' ? terms.lines.filter((l: Data) => order.positions.find((p: Data) => p.line === l.id)?.outstanding > 0) : terms.lines;
-            const weights = kind === 'committed' ? eligible.map((l: Data) => ({ ...l, totalMinor: Number((BigInt(Math.max(0, order.positions.find((p: Data) => p.line === l.id)?.outstanding ?? 0)) * BigInt(l.unitMinor) + 500n) / 1000n) })) : eligible;
+            const eligible = kind === 'committed' && !order.poDetails?.blanket ? terms.lines.filter((l: Data) => order.positions.find((p: Data) => p.line === l.id)?.outstanding > 0) : terms.lines;
+            const weights = kind === 'committed' && !order.poDetails?.blanket ? eligible.map((l: Data) => ({ ...l, totalMinor: Number((BigInt(Math.max(0, order.positions.find((p: Data) => p.line === l.id)?.outstanding ?? 0)) * BigInt(l.unitMinor) + 500n) / 1000n) })) : eligible;
             const values = distribute(amount, weights);
             eligible.forEach((l: Data, i: number) => {
                 if (values[i]) rows.push({ ...source(revision, l), kind, amountMinor: values[i], policy: b.policy, currency: b.currency,
@@ -85,6 +85,7 @@ export function spendReport(data: Data, filters: Data = {}) {
         choices: Object.fromEntries(reportDimensions.map(d => [d, [...new Map(rows.map(r => [r[d], { value: r[d], label: d === 'supplier' ? r.supplierName : r[d] }])).values()].sort((a, b) => String(a.label).localeCompare(String(b.label)))])), rows: selected };
 }
 function outstanding(order: Data) {
+    if(order.blanketPosition) return Math.min(order.totalMinor, order.blanketPosition.remainingMinor);
     const base = order.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0);
     const value = order.lines.reduce((n: bigint, l: Data) => {
         const p = order.positions.find((p: Data) => p.line === l.id);

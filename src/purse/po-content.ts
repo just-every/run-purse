@@ -19,6 +19,7 @@ export function poContent(s: State, order: Data): PoPdfContent {
         { heading: 'Totals', lines: [labels.freight + ': ' + money(order.freightMinor, order.currency), labels.tax + ': ' + money(order.taxMinor, order.currency), labels.total + ': ' + money(order.totalMinor, order.currency)] },
         { heading: 'Purchase terms and conditions', lines: [value(p?.standardTerms)] },
     ];
+    if(order.poDetails?.blanket) sections.unshift({heading:'Blanket purchase order',lines:['Approved cap: '+money(order.totalMinor,order.currency),'Valid from: '+order.poDetails.blanket.validFrom,'Valid through (inclusive): '+order.poDetails.blanket.validThrough,'Draw-down basis: recorded invoice evidence; not a supplier send or payment']});
     const revision = s.get('revision:' + order.request + ':' + order.revision)?.value;
     if (revision?.amends) {
         const prior = get(s, 'order', revision.amends);
@@ -34,6 +35,7 @@ export function poContent(s: State, order: Data): PoPdfContent {
             return !old ? ['Added: ' + l.description] : ['description', 'quantity', 'unitMinor', 'partNumber', 'unit', 'shipTo', 'lineTaxMinor'].filter(k => old[k] !== l[k]).map(k => `${l.description} · ${k}: ${value(old[k])} to ${value(l[k])}`);
         });
         for (const k of ['supplier', 'currency', 'terms', 'needDate', 'freightMinor', 'taxMinor']) if (prior[k] !== order[k]) changes.push(`${k}: ${value(prior[k])} to ${value(order[k])}`);
+        if(JSON.stringify(prior.poDetails?.blanket)!==JSON.stringify(order.poDetails?.blanket)) changes.push('Blanket validity: '+JSON.stringify(prior.poDetails?.blanket)+' to '+JSON.stringify(order.poDetails?.blanket));
         sections.unshift({ heading: 'Change order ' + sequence, lines: ['Change order revision: ' + sequence, 'Prior PO: ' + prior.number, 'Approved request/PO revision: ' + order.revision, ...changes] });
     }
     return { title: `${p?.legalName || 'Legal entity: Not recorded'} · ${order.number}`, subtitle: `${order.status.toUpperCase()} · Revision ${order.revision} · Issued ${order.issuedAt || 'Not issued'}${p ? '' : ' · Legacy document fields not recorded'}\nSource request ${order.request} · Generated ${order.generatedAt || 'Not recorded'}`,

@@ -1,3 +1,4 @@
+import { blanketRemaining, requireBlanketValidity } from './blanket-orders';
 import { openInvoiceFlags } from './invoice-status';
 import { poProfileSnapshot } from './po-profiles';
 import { currentDecision } from './approval';
@@ -10,7 +11,7 @@ import { invoice } from './invoices';
 import { receipt } from './receiving';
 export function linePosition(s: State, order: string, line: Data) { const events = all(s, 'receipt').filter(e => e.order === order && e.line === line.id); const accepted = (line.carriedAccepted ?? 0) + events.reduce((n, e) => n + (e.event === 'receive' ? e.q : e.event === 'return' ? -e.q : 0), 0), cancelled = (line.carriedCancelled ?? 0) + events.filter(e => e.event === 'cancel').reduce((n, e) => n + e.q, 0); const closed = all(s, 'orderClosure').filter(c => c.order === order && c.active).flatMap(c => c.lines).filter((c: Data) => c.line === line.id).reduce((n: number, c: Data) => n + c.q, 0); return { accepted, cancelled, closed, outstanding: line.q - accepted - cancelled - closed }; }
 export function commitment(s: State, r: Data) { return all(s, 'commitment').filter(e => e.request === r.id).reduce((n, e) => n + e.amountMinor, 0); }
-export function remainingValue(s: State, o: Data) { const remaining = o.lines.reduce((n: number, l: Data) => n + extended(linePosition(s, o.id, l).outstanding, l.unitMinor), 0); const base = o.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0); const any = o.lines.some((l: Data) => linePosition(s, o.id, l).outstanding > 0); return base ? Number((BigInt(o.totalMinor) * BigInt(remaining) + BigInt(base) / 2n) / BigInt(base)) : (any ? o.totalMinor : 0); }
+export function remainingValue(s: State, o: Data) { if(o.poDetails?.blanket) return blanketRemaining(s,o,l => { const p=linePosition(s,o.id,l);return p.cancelled+p.closed; }); const remaining = o.lines.reduce((n: number, l: Data) => n + extended(linePosition(s, o.id, l).outstanding, l.unitMinor), 0); const base = o.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0); const any = o.lines.some((l: Data) => linePosition(s, o.id, l).outstanding > 0); return base ? Number((BigInt(o.totalMinor) * BigInt(remaining) + BigInt(base) / 2n) / BigInt(base)) : (any ? o.totalMinor : 0); }
 export function orders(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if (op === 'convert') {
         can(s, a, 'buyer');
@@ -39,11 +40,12 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         requireThat(o.status === 'prepared' && r.status === 'approved' && r.revision === o.revision && b.revision === o.revision && !o.imported, 'PO document or authority is stale', 409);
         requireThat(policies(s, r).some(p => p.id === r.policy), 'Approval policy changed', 409);
         currentDecision(s, r);
+        requireBlanketValidity(s, o);
         if (r.amends) {
             const prior = get(s, 'order', r.amends);
             requireThat(prior.status === 'amendment-pending', 'Prior order changed', 409);
             put(s, 'order', prior.id, { ...prior, status: 'amended', amendedBy: o.id, ...(prior.replenishmentStatus === 'held' ? { replenishmentStatus: 'reviewed', replenishmentMinor: 0 } : {}) });
-            const groups=new Map<string,Data>();for(const e of all(s,'commitment').filter(e=>e.request===r.id)){const k=e.policy+':'+e.currency;const g=groups.get(k)??{policy:e.policy,currency:e.currency,amount:0};g.amount+=e.amountMinor;groups.set(k,g)}for(const g of groups.values())if(g.amount&&(g.policy!==r.policy||g.currency!==r.currency))ledger(s,a,{...r,policy:g.policy,currency:g.currency},-g.amount,'amendment-policy-release');const target = approvalAmount(r), current = commitment(s, r);
+            const groups=new Map<string,Data>();for(const e of all(s,'commitment').filter(e=>e.request===r.id)){const k=e.policy+':'+e.currency;const g=groups.get(k)??{policy:e.policy,currency:e.currency,amount:0};g.amount+=e.amountMinor;groups.set(k,g)}for(const g of groups.values())if(g.amount&&(g.policy!==r.policy||g.currency!==r.currency))ledger(s,a,{...r,policy:g.policy,currency:g.currency},-g.amount,'amendment-policy-release');const target = approvalAmount(r,s), current = commitment(s, r);
             if (target !== current)
                 ledger(s, a, r, target - current, 'amendment-issued-adjustment');
         }

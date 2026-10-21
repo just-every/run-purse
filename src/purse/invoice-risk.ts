@@ -53,6 +53,8 @@ export function documentMetadata(input: unknown): Data {
 export function invoiceRisk(s: State, order: Data, candidate: Data, input: Data): Data {
     const invoiceDate = date(input.invoiceDate === undefined ? new Date().toISOString().slice(0, 10) : input.invoiceDate, 'Invoice date');
     const flags: Data[] = [];
+    const validity=order.poDetails?.blanket;
+    if(validity && (invoiceDate<validity.validFrom || invoiceDate>validity.validThrough)) flags.push({code:'blanket-validity',reason:'Invoice date falls outside the approved blanket PO inclusive validity period'});
     const result: Data = { invoiceDate, invoiceDateSource: input.invoiceDate === undefined ? 'default-current-utc' : 'supplied', flags };
     const invoices = all(s, 'invoice').filter(i => i.id !== candidate.id);
     const supplierId = canonicalSupplier(s, candidate.supplier);
