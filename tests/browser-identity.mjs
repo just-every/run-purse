@@ -23,7 +23,7 @@ const browser = await chromium.launch({
 try {
     for (const width of widths) {
         const h = await identityFixture(), contexts = [];
-        let pageErrors = 0;
+        const pageErrors = [];
         try {
             await h.command('business', { name: 'Canyon native SSO', currencies: ['USD'], locations: ['Denver', 'Boulder'], costCentres: ['Operations', 'IT'], projects: ['Safety'] });
             const scope = { departments: ['Operations'], locations: ['Denver'], projects: ['Safety'], entities: ['main'] };
@@ -35,7 +35,7 @@ try {
                 if (anonymous) await context.clearCookies();
                 await context.setExtraHTTPHeaders({ 'CF-Connecting-IP': '127.0.0.1' });
                 const page = await context.newPage();
-                page.on('pageerror', () => { pageErrors++; });
+                page.on('pageerror', error => { pageErrors.push(error.message); });
                 return { context, page };
             }
             async function snap(page, name) {
@@ -114,10 +114,12 @@ try {
             await requester.page.getByRole('heading', { name: /Sign in to/ }).waitFor();
             assert.equal(await requester.page.getByRole('button', { name: 'Continue with Local test company', exact: true }).count(), 0);
             assert.equal((await owner.context.request.get(h.origin + '/auth/session')).status(), 200, 'Native owner recovery sign-in remains current');
-            assert.equal(pageErrors, 0, 'Native settings and the shipped App have no browser exceptions');
+            assert.deepEqual(pageErrors, [], 'Native settings and the shipped App have no browser exceptions');
         } catch (error) {
+            console.error('Identity browser exceptions:', JSON.stringify(pageErrors));
+            console.error(error);
             for (const [index, context] of contexts.entries()) for (const page of context.pages()) {
-                await snap(page, 'failure-' + index).catch(() => {});
+                await page.screenshot({ path: join(evidence, `ACCESS-002-failure-${index}-${width}.png`), fullPage: true }).catch(() => {});
                 console.error('Identity browser state:', new URL(page.url()).pathname, (await page.locator('body').innerText()).slice(0, 1200));
             }
             throw error;
