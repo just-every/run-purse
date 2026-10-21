@@ -5,6 +5,7 @@ import { createPortability } from '@runeditrun/rer/modules/portability';
 import { exportArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
 import { harness } from './purse-harness.mjs';
+import { exportSeedInclude, seedProtectedKey } from './browser-seed-archive.mjs';
 
 const signingBytes = Buffer.alloc(32, 7);
 export const emailIntakeWebhookSecret = 'whsec_' + signingBytes.toString('base64');
@@ -46,8 +47,8 @@ export function signedInbound(emailId, options = {}) {
 }
 
 /** Real business + held source archive, made through public inbound and export doors. */
-export async function prepareHeldIntakeArchive(path) {
-    const edge = await createEmailIntakeEdge(), h = await harness({ mailRequest: edge.mailRequest });
+export async function prepareHeldIntakeArchive(path, { protectedInclude = false } = {}) {
+    const edge = await createEmailIntakeEdge(), h = await harness({ mailRequest: edge.mailRequest, ...(protectedInclude ? { protectedKey: seedProtectedKey } : {}) });
     try {
         await h.command('business', { name: 'Fixture purchasing business', currencies: ['AUD', 'USD'], locations: ['Brisbane'], costCentres: ['Operations'], projects: ['Fitout'] });
         await h.command('email-intake-config', { address: 'requests@example.test' });
@@ -67,8 +68,9 @@ export async function prepareHeldIntakeArchive(path) {
         assert.ok(!records.some(r => ['member', 'request'].includes(r.kind)), 'The producer creates no requester or purchasing request');
         assert.equal(records.filter(r => r.kind === 'emailIntake').length, 2);
         assert.equal(JSON.parse(records.find(r => r.kind === 'emailIntake').value).status, 'held');
+        const include = protectedInclude ? await exportSeedInclude(h) : undefined;
         const service = await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability });
         await exportArchive(service, path, []);
-        return path;
+        return protectedInclude ? { path, protectedInclude: include } : path;
     } finally { await h.close(); }
 }
