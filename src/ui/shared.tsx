@@ -1,3 +1,4 @@
+import { separated } from './separated';
 import { Children, cloneElement, isValidElement, useState, type ReactElement, type ReactNode } from 'react';
 export type D = Record<string, any>;
 export async function call(path: string, input?: D) { const response = await fetch('/api/purse/' + path, input ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) } : undefined); const body: any = await response.json(); if (!response.ok)
@@ -61,7 +62,7 @@ export function Table({ heads, children, figures = [], stack = heads.filter(Bool
     children: ReactNode;
     figures?: string[];
     stack?: boolean;
-}) { return <div className={stack ? 'record-table record-table-stack' : 'record-table'}><table><thead><tr>{heads.map((h, i) => <th key={h || i} className={figures.includes(h) ? 'figure' : undefined}>{h}</th>)}</tr></thead><tbody>{Children.map(children, row => labelled(row, heads))}</tbody></table></div>; }
+}) { return <div className={stack ? 'record-table record-table-stack' : 'record-table'}><table><thead><tr>{heads.map((h, i) => <th key={h || i} className={figures.includes(h) ? 'figure' : undefined}>{h}</th>)}</tr></thead><tbody>{separated(Children.map(children, row => labelled(row, heads)))}</tbody></table></div>; }
 /** Plain words from the record ("approved · v2", "issued") on a quiet grey chip; never a traffic-light colour. */
 export function Chip({ children }: { children: ReactNode }) { return <span className="chip">{children}</span>; }
 export function Attachments({ data, kind, record, mutate, invoice = false }: {
@@ -75,4 +76,4 @@ export function Attachments({ data, kind, record, mutate, invoice = false }: {
 export function Details({ label, children }: {
     label: string;
     children: ReactNode;
-}) { return <details className="disclosure"><summary>{label}</summary><div className="disclosure-body">{children}</div></details>; }
+}) { return <details className="disclosure"><summary>{separated(label)}</summary><div className="disclosure-body">{children}</div></details>; }

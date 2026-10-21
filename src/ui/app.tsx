@@ -1,3 +1,5 @@
+import { useSeparators } from './separated';
+import { AgentValue } from './agent-value';
 import { Agreements } from './agreements';
 import { SearchWorkspace } from './search';
 import { PerformanceReport } from './performance-report';
@@ -16,8 +18,8 @@ import { Stockroom } from './stockroom';
 import { Preparation } from './preparation';
 import { Imports } from './imports';
 import { TopBar, workspaceTabs } from './top-bar';
-export function App() { return new URLSearchParams(window.location.search).has('search') ? <SearchWorkspace/> : <PurchasingApp/>; }
-function firstTab() { const query = new URLSearchParams(window.location.search); return query.has('agreement') ? 'Agreements' : query.has('receipt') ? 'Orders' : query.has('intake') ? 'Requests' : query.get('tab') || 'Requests'; }
+export function App() { useSeparators(); return new URLSearchParams(window.location.search).has('search') ? <SearchWorkspace/> : <PurchasingApp/>; }
+function firstTab() { const query = new URLSearchParams(window.location.search); return query.has('valueRequest') ? 'Value' : query.has('agreement') ? 'Agreements' : query.has('receipt') ? 'Orders' : query.has('intake') ? 'Requests' : query.get('tab') || 'Requests'; }
 function PurchasingApp() {
     const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState(firstTab), [notice, setNotice] = useState(''), [performance, setPerformance] = useState(false);
     async function reload() { setState(await call('state')); }
@@ -33,6 +35,7 @@ function PurchasingApp() {
         <main className="workspace" data-tab={current}>
             <p className="notice" aria-live="polite">{notice}</p>
             {current === 'Requests' && (business ? <Requests data={data} actor={actor} mutate={mutate}/> : <EmptyWorkspace owner={actor.roles.includes('owner')} onSetUp={() => open('Settings')}/>)}
+            {current === 'Value' && <AgentValue data={data} actor={actor} mutate={mutate}/> }
             {current === 'Overview' && <Overview data={data} onSetUp={() => open('Settings')}/>}
             {current === 'Reports' && <>{actor.roles.includes('buyer') && <button className="report-switch" onClick={() => setPerformance(!performance)}>{performance ? 'Spend and commitments' : 'Procurement performance'}</button>}{performance && actor.roles.includes('buyer') ? <PerformanceReport data={data}/> : <SpendReport data={data}/>}</>}
             {current === 'Orders' && <Orders data={data} actor={actor} mutate={mutate} reload={reload}/>}

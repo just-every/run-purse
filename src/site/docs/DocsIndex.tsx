@@ -17,7 +17,7 @@ export function DocsIndex() {
           <ul className="docs-index-grid">
             {section.pages.map(page => (
               <li key={page.slug}>
-                <a className="docs-card" href={docsPath(page.slug)}><span className="docs-card-title">{page.title} <span aria-hidden="true">→</span></span><span className="docs-card-summary">{page.summary}</span></a>
+                <a className="docs-card" href={docsPath(page.slug)}><span className="docs-card-title">{page.title}{'\u00a0'}<span aria-hidden="true">→</span></span><span className="docs-card-summary">{page.summary}</span></a>
               </li>
             ))}
           </ul>

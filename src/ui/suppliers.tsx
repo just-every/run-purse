@@ -1,3 +1,4 @@
+import { Separated } from './separated';
 import { useState } from 'react';
 import { DuplicateSupplierReview } from './supplier-duplicates';
 import { SupplierMerge, SupplierHistory } from './supplier-merge';
@@ -10,7 +11,7 @@ export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; 
     const [selectedId, setSelectedId] = useState<string>(), [duplicate, setDuplicate] = useState<D>(), [openError, setOpenError] = useState('');
     const selected = data.supplier.find((s: D) => s.id === selectedId);
     const open = (id?: string) => { setSelectedId(id); setDuplicate(undefined); };
-    return <><h2 className="page-title">Known suppliers</h2>
+    return <Separated><><h2 className="page-title">Known suppliers</h2>
         <Table heads={['Supplier', 'Status', 'Reason', 'Renewal', '']}>{data.supplier.map((s: D) => <tr key={s.id}>
             <td className="record-name">{s.name}</td><td><Chip>{s.status}</Chip></td><td>{s.reason}</td><td className="figure-cell">{calendarDay(s.renewal)}</td>
             <td className="row-action"><button onClick={() => open(s.id)}>Open</button></td>
@@ -48,5 +49,5 @@ export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; 
             <SupplierHistory supplier={selected} data={data}/>
             <button onClick={() => open()}>Add another supplier</button>
         </>}
-    </>;
+    </></Separated>;
 }

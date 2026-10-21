@@ -25,6 +25,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         const id = uid();
         const sequence = all(s, 'order').reduce((n, o) => Math.max(n, o.sequence || 0), 0) + 1;
         const o = { id, sequence, documentProfile: poProfileSnapshot(s, r, a), ...(r.poDetails ? { poDetails: structuredClone(r.poDetails) } : {}), location: r.location, costCentre: r.costCentre, approvalActor:approval.actor,approvalVersion:approval.operatorVersion, number: `PO-${String(sequence).padStart(6, '0')}`, request: r.id, policy:r.policy, revision: r.revision, supplier: r.supplier, supplierSnapshot: structuredClone(r.supplierSnapshot), currency: r.currency, lines: r.lines.map((l: Data) => ({ ...l, sourceLine: l.id })), freightMinor: r.freightMinor, taxMinor: r.taxMinor, totalMinor: r.totalMinor, terms: r.terms, needDate: r.needDate, status: 'prepared', generatedAt: new Date().toISOString(), issuedAt: null };
+        if(Object.hasOwn(r,'valuePromise')) (o as Data).valuePromise=structuredClone(r.valuePromise);
         put(s, 'order', id, o);
         audit(s, a, op, id, { request: r.id, revision: r.revision });
         return o;

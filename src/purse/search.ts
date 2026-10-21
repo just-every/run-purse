@@ -82,15 +82,16 @@ function result(row: Data, query: string) {
 
 searchApi.get('/api/purse/search/meta', async c => {
     const current = await context(c.req.raw, c.env);
+    const business = await c.env.DB.prepare("SELECT json_extract(value,'$.name') AS name FROM p_records WHERE business='main' AND kind='business' LIMIT 1").first<Data>();
     await readFence(c.env.DB, current.actor, current.revision);
-    return c.json({ actor: { id: current.actor.id, email: current.actor.email, roles: current.roles } });
+    return c.json({ actor: { id: current.actor.id, email: current.actor.email, roles: current.roles }, business: business?.name });
 });
 searchApi.get('/api/purse/search', async c => {
     const filters = searchFilters(c.req.query()), current = await context(c.req.raw, c.env, filters.q);
     const query = queryParts(filters, current);
     const [count, found] = await c.env.DB.batch<Data>([
         c.env.DB.prepare(query.prefix + 'SELECT count(*) AS total ' + query.from).bind(...query.params),
-        c.env.DB.prepare(query.prefix + `SELECT s.*,supplier.title AS supplierName,(SELECT json_extract(value,'$.sourceDescriptor.attachment') FROM p_records source WHERE source.business=s.business AND source.kind=s.kind AND source.id=s.id AND s.kind IN ('invoiceReading','quoteReading')) AS sourceAttachment ${query.from} ORDER BY s.date DESC,s.kind,s.id LIMIT ? OFFSET ?`).bind(...query.params, filters.limit, filters.offset),
+        c.env.DB.prepare(query.prefix + `SELECT s.*,supplier.title AS supplierName,(CASE WHEN s.kind='agreement' THEN (SELECT json_extract(value,'$.reading.attachment') FROM p_records source WHERE source.business=s.business AND source.kind=s.kind AND source.id=s.id) ELSE (SELECT json_extract(value,'$.sourceDescriptor.attachment') FROM p_records source WHERE source.business=s.business AND source.kind=s.kind AND source.id=s.id AND s.kind IN ('invoiceReading','quoteReading')) END) AS sourceAttachment ${query.from} ORDER BY s.date DESC,s.kind,s.id LIMIT ? OFFSET ?`).bind(...query.params, filters.limit, filters.offset),
     ]);
     await readFence(c.env.DB, current.actor, current.revision);
     return c.json({ results: found.results.map(row=>result(row,filters.q)), total: Number(count.results[0].total), limit: filters.limit, offset: filters.offset });

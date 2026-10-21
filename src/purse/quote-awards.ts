@@ -6,7 +6,7 @@ export function quoteAwards(s: State, a: Actor, op: string, b: Data): Data | und
     can(s, a, 'buyer');
     const request = get(s, 'request', b.request);
     requireThat(!request.imported && request.revision === b.revision && request.status === 'draft', 'Award the current native draft before submission', 409);
-    requireThat(!all(s, 'quoteAward').some(q => q.request === request.id && q.revision === request.revision), 'This revision already has an immutable award', 409);
+    requireThat(![...all(s, 'quoteAward'),...all(s,'agreementAward')].some(q => q.request === request.id && q.revision === request.revision), 'This revision already has an immutable award', 409);
     const first = get(s, 'quote', b.firstQuote), winner = get(s, 'quote', b.awardedQuote);
     requireThat(first.id !== winner.id && [first, winner].every(q => q.request === request.id && q.revision === request.revision && q.supplier === request.supplier && q.currency === request.currency), 'Use two quotes for this exact revision, supplier and currency', 409);
     const offers = all(s, 'quote').filter(q => q.request === request.id && q.revision === request.revision && q.supplier === request.supplier && q.currency === request.currency);

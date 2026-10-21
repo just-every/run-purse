@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { EmailIntake } from './email-intake';
 import { useRecord } from './use-record';
 import { type D } from './shared';
@@ -21,6 +21,7 @@ export function Requests({ data, actor, mutate }: {
     mutate: (op: string, b: D) => Promise<any>;
 }) {
     const { id, heading, open, close } = useRecord(), [team, setTeam] = useState(''), [channel, setChannel] = useState(''), [draft, setDraft] = useState<string>();
+    useEffect(() => { if (new URLSearchParams(window.location.search).has('ask')) focusComposer(); }, []);
     const business = data.business[0], asked = askedTimes(data), at = (r: D) => asked.get(r.id) ?? '';
     const all = [...data.request].sort((a: D, b: D) => at(a).localeCompare(at(b)) || a.id.localeCompare(b.id));
     const channels = [...new Set(all.map(channelOf))].sort();

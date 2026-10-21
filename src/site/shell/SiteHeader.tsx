@@ -1,10 +1,10 @@
 import { repository } from './repository'
 import { Wordmark } from './Wordmark'
 
-/** The run site's header: the wordmark home, then Docs, Contract and Source, over a 1px rule the width of the content. */
-export function SiteHeader({ current }: { current?: 'docs' }) {
+/** The run site's header: the mark and wordmark home, then Docs · Contract · Source in kingfisher. */
+export function SiteHeader({ current, className = 'site-header' }: { current?: 'docs'; className?: string }) {
   return (
-    <header className="site-header">
+    <header className={className}>
       <div className="site-bar">
         <Wordmark />
         <nav aria-label="Site">

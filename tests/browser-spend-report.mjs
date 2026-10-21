@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import {expect} from '@playwright/test'
 import {join} from 'node:path'
 import {session,api,current} from './browser-journey.mjs'
 export async function spendReportJourney(browser,root,origin,width,evidence){
@@ -17,8 +18,8 @@ export async function spendReportJourney(browser,root,origin,width,evidence){
   await owner.page.reload();await owner.page.getByRole('navigation').getByRole('button',{name:'Reports',exact:true}).click();
   await owner.page.getByLabel('Department',{exact:true}).selectOption('Operations');await owner.page.getByLabel('Project',{exact:true}).selectOption('Fitout');await owner.page.getByLabel('Category',{exact:true}).selectOption(category);
   await owner.page.getByLabel('From date',{exact:true}).fill('2026-10-01');await owner.page.getByLabel('Through date',{exact:true}).fill('2026-11-30');
-  await Promise.all([owner.page.waitForResponse(r=>r.url().includes('/api/purse/spend-report?')&&r.status()===200),owner.page.getByRole('button',{name:'Filter spend',exact:true}).click()]);
-  const committed=owner.page.getByRole('button',{name:supplier.name+' committed USD',exact:true});await committed.waitFor();assert.equal(await committed.textContent(),'$600.00');
+  await Promise.all([owner.page.waitForResponse(r=>{const url=new URL(r.url());return url.pathname==='/api/purse/spend-report'&&url.searchParams.get('category')===category&&url.searchParams.get('department')==='Operations'&&url.searchParams.get('project')==='Fitout'&&r.status()===200}),owner.page.getByRole('button',{name:'Filter spend',exact:true}).click()]);
+  const committed=owner.page.getByRole('button',{name:supplier.name+' committed USD',exact:true});await expect(committed).toHaveText('$600.00');
   await owner.page.screenshot({path:join(evidence,`REPORT-001-dashboard-${width}.png`),fullPage:true});await committed.click();const detail=owner.page.getByRole('region',{name:'Report source records'});
   await detail.getByRole('link',{name:o.number,exact:true}).waitFor();await detail.getByText('Source rows total: $600.00',{exact:true}).waitFor();await detail.getByText('Source record',{exact:true}).click();await detail.getByText(o.number+' · revision 1 · issued',{exact:true}).waitFor();
   assert.equal(await detail.getByRole('row').count(),2);await owner.page.screenshot({path:join(evidence,`REPORT-001-commitment-${width}.png`),fullPage:true});

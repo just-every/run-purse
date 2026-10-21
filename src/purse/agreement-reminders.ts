@@ -37,7 +37,7 @@ export async function runAgreementReminders(original: Bindings, now = Date.now()
             const totals = event.spend.totals.map((r: Data)=>`${r.currency} ${(r.amountMinor/100).toFixed(2)}`).join('; ') || 'No attributed invoice evidence';
             const url = new URL('/app',env.AUTH_ORIGIN);url.searchParams.set('agreement',agreement.id);
             const result = await sender.send({ deliveryId: 'agreement-reminder:'+id, from: env.MAIL_FROM, to: [agreement.ownerEmail], subject: `Agreement notice deadline: ${agreement.reference}`,
-                text: `${agreement.name}\nNotice deadline: ${agreement.noticeDeadline}\nTerm ends: ${agreement.endDate}\n${offset} days before notice deadline; first hourly tick on or after the configured day.\nAttributed invoice evidence to date: ${totals}. Not paid spend. Agreement value is not available yet.\nSign in to review sources: ${url.href}`,
+                text: `${agreement.name}\nNotice deadline: ${agreement.noticeDeadline}\nTerm ends: ${agreement.endDate}\n${offset} days before notice deadline; first hourly tick on or after the configured day.\nAttributed invoice evidence to date: ${totals}. Not paid spend. ${agreement.valueMinor == null ? 'Agreement value not recorded.' : `Confirmed agreement value: ${agreement.currency} ${(agreement.valueMinor/100).toFixed(2)}.`}\nSign in to review sources: ${url.href}`,
                 html: '', headers: {} });
             event.outcome = { ...event.outcome, status: result.status === 'development' ? 'suppressed' : result.status, delivery: result };
         } catch { event.outcome.status = 'uncertain'; }

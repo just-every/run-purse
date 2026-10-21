@@ -1,3 +1,4 @@
+import { Separated } from './separated';
 import { useState } from 'react';
 import { Field, Form, Table, money, when, type D } from './shared';
 
@@ -11,7 +12,7 @@ export function SupplierPerformance({ supplier, data, mutate }: { supplier: D; d
     const order = issued.find((o: D) => o.id === chosen) ?? issued[0];
     const evidence = card?.orders.find((o: D) => o.orderId === order?.id)?.evidence;
     if (!card) return null;
-    return <section className="panel"><h3>Supplier performance</h3>
+    return <Separated><section className="panel"><h3>Supplier performance</h3>
         <details><summary>On-time deliveries · {card.delivery.onTime} on time / {card.delivery.measured} measured · {percent(card.delivery.rate)}</summary>
             <p>{card.delivery.basis}. {card.delivery.late} late; {card.delivery.unknownPromise} receipts without a recorded promise.</p>
             <Table heads={['Receipt / PO', 'Recorded receipt', 'Promised date', 'Result', 'Evidence']}>{card.delivery.rows.map((r: D) => <tr key={r.receiptId}><td>{r.receiptId}<br/>{po(r.orderId, r.orderNumber)}</td><td>{r.quantity} · {when(r.at)}</td><td>{r.promisedDate || 'Unknown'}</td><td>{r.onTime === null ? 'Not measured' : r.onTime ? 'On time' : 'Late'}</td><td>{r.reason}<br/>Promise version {r.evidenceVersion ?? '—'}</td></tr>)}</Table>
@@ -36,5 +37,5 @@ export function SupplierPerformance({ supplier, data, mutate }: { supplier: D; d
             {evidence && <details><summary>Supplier communication history · {order.number}</summary>{evidence.history.map((h: D) => <p key={h.version}>Version {h.version}: promised {h.promisedDate}; acknowledged {when(h.acknowledgedAt)}<br/>{h.source} · recorded {when(h.at)}</p>)}</details>}
             <h4>Record supplier issue</h4><Form label="Save supplier issue" initial={{ supplier: supplier.id }} onSubmit={b => mutate('supplier-issue', b)}><Field label="Issue purchase order" name="order" options={issued.map((o: D) => ({ value: o.id, label: o.number }))}/><Field label="Issue category" name="category" options={['late', 'damaged', 'wrong-item', 'billing'].map(value => ({ value, label: value.replace('-', ' ') }))}/><Field label="Issue description" name="description" type="textarea"/></Form>
         </>}
-    </section>;
+    </section></Separated>;
 }

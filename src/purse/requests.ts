@@ -1,3 +1,4 @@
+import { normalizeValuePromise } from './value-promise';
 import { checkInvoiceAttachment } from './invoice-evidence';
 import { allocateLineTax } from './po-line-tax';
 import { optionalPoText } from './po-profiles';
@@ -30,6 +31,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         const id = old?.id ?? uid();
         const supplierSnapshot = { id: counterparty.id, name: counterparty.name, address: counterparty.address || '', remitTo: counterparty.remitTo || '', postalState: counterparty.postalState || '', contacts: structuredClone(counterparty.contacts), contractRef: counterparty.contractRef };
         const r = { id, requester: old?.requester ?? a.id, requesterEmail:old?.requesterEmail??a.email, requesterOwner:old?.requesterOwner??a.owner, title: text(b.title, 'Request title'), supplier: b.supplier, supplierSnapshot, currency: b.currency, needDate: date(b.needDate), location: text(b.location, 'Location'), costCentre: text(b.costCentre, 'Cost centre'), lines: lines(s, b.lines, old && !a.owner ? { ...a, id: old.requester, email: old.requesterEmail, owner: old.requesterOwner === true } : a), freightMinor: moneyInput(b, 'freightAmount', 'freightMinor', 'Freight', { fallback: 0 }), taxMinor: moneyInput(b, 'taxAmount', 'taxMinor', 'Supplied tax', { fallback: 0 }), terms: text(b.terms, 'Supplier-supplied terms'), revision: (old?.revision ?? 0) + 1, status: 'draft', policy: null, totalMinor: 0 };
+        if(Object.hasOwn(b,'valuePromise')||Object.hasOwn(old??{},'valuePromise')) (r as Data).valuePromise=normalizeValuePromise(Object.hasOwn(b,'valuePromise')?b.valuePromise:old?.valuePromise,r.currency,r.needDate);
         if(old?.integration) (r as Data).integration = structuredClone(old.integration);
         if(old?.emailIntake) (r as Data).emailIntake = old.emailIntake;
         if(old?.quoteTerms) (r as Data).quoteTerms = structuredClone(old.quoteTerms);
@@ -131,7 +133,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
     }
     if (op === 'attachment') {
         const kind = text(b.kind, 'Record kind');
-        requireThat(['request', 'supplier', 'order', 'invoice'].includes(kind), 'Unsupported attachment record');
+        requireThat(['request', 'supplier', 'order', 'invoice', 'agreement'].includes(kind), 'Unsupported attachment record');
         const r = get(s, kind, b.record);
         requireThat(b.privateSupplierDocument === undefined || typeof b.privateSupplierDocument === 'boolean', 'Private supplier document flag must be boolean');
         requireThat(!b.privateSupplierDocument || kind === 'supplier', 'Private compliance evidence belongs to a supplier');
@@ -140,7 +142,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             own(s, a, r);
         }
         else
-            can(s, a, kind === 'supplier' ? 'buyer' : kind === 'invoice' ? 'buyer' : 'receiver');
+            can(s, a, kind === 'agreement' ? 'owner' : kind === 'supplier' ? 'buyer' : kind === 'invoice' ? 'buyer' : 'receiver');
         requireThat(typeof b.base64 === 'string' && b.base64.length > 0 && b.base64.length <= 1400000, 'Attachment must contain up to 1 MB of bytes');
         let bytes;
         try {
