@@ -1,3 +1,4 @@
+import { Separated } from './separated';
 import { useState } from 'react';
 import { money, type D } from './shared';
 import { AskReply } from './thread-card';
@@ -9,7 +10,7 @@ function BudgetBar({ e, currency }: { e: Exception; currency: string }) {
     const budget = e.policy.budgetMinor, total = e.onOrderMinor + e.approvedMinor + e.pendingMinor, scale = Math.max(budget, total) || 1;
     const pct = (n: number) => `${(n / scale) * 100}%`, a = e.onOrderMinor, b = a + e.approvedMinor;
     const label = `${e.policy.name}: on order ${money(e.onOrderMinor, currency)}, approved ${money(e.approvedMinor, currency)}, pending ${money(e.pendingMinor, currency)} against ${money(budget, currency)}; ${money(e.overMinor, currency)} over`;
-    return <div className="budget">
+    return <Separated><div className="budget">
         <div className="budget-row">
             <svg className="budget-bar" role="img" aria-label={label} width="100%" height="28" preserveAspectRatio="none">
                 <defs><clipPath id={'clip-' + e.policy.id}><rect x="0" y="4" width={pct(total)} height="20" rx="6"/></clipPath></defs>
@@ -28,7 +29,7 @@ function BudgetBar({ e, currency }: { e: Exception; currency: string }) {
             <li><i className="key key-approved"/>approved, PO not issued {money(e.approvedMinor, currency)}</li>
             <li><i className="key key-pending"/>pending {money(e.pendingMinor, currency)}</li>
         </ul>
-    </div>;
+    </div></Separated>;
 }
 
 /** The one exception on the thread: requests that together overfill their budget, Purse's check of it, and the
@@ -39,7 +40,7 @@ export function ThreadException({ e, data, actor, mutate }: { e: Exception; data
     const run = async (op: string, body: D) => { setBusy(true); setError(''); try { await mutate(op, body); setAsking(undefined); } catch (x) { setError((x as Error).message); } finally { setBusy(false); } };
     const who = (r: D) => firstName(personName(data, r.requesterEmail)), short = (r: D) => r.lines.length === 1 ? r.lines[0].description : r.title;
     const fitsText = e.fits.map(r => `${who(r)}'s ${money(r.totalMinor, currency)}`).join(' and ');
-    return <section className="thread-exception" aria-label={`${p.name} budget exception`}>
+    return <Separated><section className="thread-exception" aria-label={`${p.name} budget exception`}>
         <div className="exception-card">
             <p className="card-line"><span className="exception-dot" aria-hidden="true"/><strong>{p.name}</strong> · budget {money(p.budgetMinor, currency)}</p>
             <ul className="exception-asks">{e.requests.map(r => <li key={r.id}><strong>{channelOf(r)}</strong> · {personName(data, r.requesterEmail)} · {short(r)} · {money(r.totalMinor, currency)}</li>)}</ul>
@@ -55,5 +56,5 @@ export function ThreadException({ e, data, actor, mutate }: { e: Exception; data
         </div>
         {asking && <AskReply who={who(asking)} busy={busy} onCancel={() => setAsking(undefined)} onSend={question => run('decision', { id: asking.id, revision: asking.revision, decision: 'returned', reason: question })}/>}
         {error && <p role="alert">{error}</p>}
-    </section>;
+    </section></Separated>;
 }

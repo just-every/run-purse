@@ -5,6 +5,7 @@ export function separated(children: ReactNode): ReactNode {
     return Children.map(children, child => {
         if (typeof child === 'string') return child.split(/ *· */).flatMap((part, i) => i ? [<span className="inline-sep" key={i}>{'\u00a0·'}</span>, ' ', part] : [part]);
         if (!isValidElement(child) || (typeof child.type !== 'string' && child.type !== Fragment)) return child;
+        if (['button', 'select', 'option', 'svg'].includes(String(child.type))) return child;
         const element = child as ReactElement<{ children?: ReactNode; className?: string }>;
         if (element.props.className?.split(' ').includes('inline-sep')) return element;
         return element.props.children === undefined ? element : cloneElement(element, {}, separated(element.props.children));

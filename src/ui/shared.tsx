@@ -54,7 +54,7 @@ export function calendarDay(value?: string | null) { if (!value) return '—'; r
 function labelled(row: ReactNode, heads: string[]): ReactNode {
     if (!isValidElement(row)) return row;
     const element = row as ReactElement<{ children?: ReactNode }>;
-    return cloneElement(element, {}, Children.toArray(element.props.children).map((cell, i) => isValidElement(cell) ? cloneElement(cell as ReactElement<D>, { 'data-label': heads[i] || undefined }) : cell));
+    return cloneElement(element, {}, Children.toArray(element.props.children).map((cell, i) => isValidElement(cell) ? cloneElement(cell as ReactElement<D>, { 'data-label': heads[i] || undefined }, <div className="cell-value">{(cell as ReactElement<D>).props.children}</div>) : cell));
 }
 /** The record table: a white card with hairline rows and quiet heads, figures right-aligned. More than two columns stack at phone width. */
 export function Table({ heads, children, figures = [], stack = heads.filter(Boolean).length > 2 }: {
@@ -76,4 +76,4 @@ export function Attachments({ data, kind, record, mutate, invoice = false }: {
 export function Details({ label, children }: {
     label: string;
     children: ReactNode;
-}) { return <details className="disclosure"><summary>{separated(label)}</summary><div className="disclosure-body">{children}</div></details>; }
+}) { return <details className="disclosure"><summary><span className="disclosure-label">{separated(label)}</span></summary><div className="disclosure-body">{children}</div></details>; }
