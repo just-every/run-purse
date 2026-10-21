@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 export function validateInvoiceRisk(all,get,check) {
- const codes=new Set(['near-duplicate','duplicate-document','remit-baseline-missing','remit-mismatch','remit-details-changed','sender-domain','po-balance']);
+ const codes=new Set(['near-duplicate','duplicate-document','remit-baseline-missing','remit-mismatch','remit-details-changed','sender-domain','po-balance','blanket-validity']);
  for(const invoice of all('invoice')){
   if(invoice.flags===undefined)continue;
   check(Array.isArray(invoice.flags)&&Array.isArray(invoice.riskReviews)&&Number.isSafeInteger(invoice.riskVersion)&&invoice.riskVersion>=1+invoice.riskReviews.length,'invoice_risk');

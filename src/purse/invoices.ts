@@ -3,7 +3,8 @@ import { invoiceEvidence, storeInvoiceOriginal } from './invoice-evidence';
 import { canonicalSupplier } from './supplier-identity';
 import { moneyInput } from './money';
 import { all, audit, can, get, put, requireThat, text, minor, quantity, extended, uid, type Actor, type Data, type State } from './types';
-import { linePosition } from './orders';
+import { linePosition, commitment, remainingValue } from './orders';
+import { ledger } from './requests';
 
 // Receipt positions and formatting are not invoice identity. Compare the
 // submitted evidence and normalized allocations, independently of line order.
@@ -45,6 +46,10 @@ export function invoice(s: State, a: Actor, b: Data) {
     const id = uid();
     put(s, 'invoice', id, { ...candidate, id, ...(closedBalance ? { status: 'exception', exception: 'Invoice exceeds the closed PO balance' } : {}), totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total'), actor: a.id, at: new Date().toISOString() });
     storeInvoiceOriginal(s, a, get(s, 'invoice', id), b);
+    if(o.poDetails?.blanket) {
+        const r=get(s,'request',o.request), target=remainingValue(s,o), current=commitment(s,r);
+        if(target<current) ledger(s,a,r,target-current,'blanket-invoice-drawdown');
+    }
     audit(s, a, 'invoice', id, { flags: candidate.flags.map((f: Data) => f.code) });
     return publicInvoice(get(s, 'invoice', id));
 }

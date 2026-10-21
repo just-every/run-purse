@@ -51,6 +51,8 @@ export function nextStep(data: D, actor: D, r: D) {
     return '';
 }
 
+/** Invoice value already drawn against a blanket request's cap, from its order's blanket balance. */
+const billed = (data: D, r: D) => r.poDetails?.blanket ? data.order.find((o: D) => o.request === r.id && o.currency === r.currency && o.blanketPosition)?.blanketPosition.billedMinor ?? 0 : 0;
 const balance = (data: D, policy: string, request?: string) => data.commitment.filter((e: D) => e.policy === policy && (!request || e.request === request)).reduce((n: number, e: D) => n + e.amountMinor, 0);
 /** The checks Purse runs before approval, as chips: budget room under the covering policy, and the supplier's standing. */
 export function checks(data: D, actor: D, r: D) {
@@ -59,7 +61,7 @@ export function checks(data: D, actor: D, r: D) {
     if (isStaff(actor) && ['draft', 'returned', 'pending'].includes(r.status)) {
         const p = policyOf(data, r);
         if (!p) out.push({ label: 'no policy covers this', tone: 'warn' });
-        else { const need = Math.max(0, approvalAmount(r) - balance(data, p.id, r.id)); out.push(balance(data, p.id) + need <= p.budgetMinor ? { label: 'in budget ✓', tone: 'ok' } : { label: 'over budget', tone: 'warn' }); }
+        else { const need = Math.max(0, approvalAmount(r, billed(data, r)) - balance(data, p.id, r.id)); out.push(balance(data, p.id) + need <= p.budgetMinor ? { label: 'in budget ✓', tone: 'ok' } : { label: 'over budget', tone: 'warn' }); }
     }
     const s = data.supplier.find((x: D) => x.id === r.supplier);
     if (s && !r.imported) out.push(s.status === 'preferred' ? { label: 'preferred supplier ✓', tone: 'ok' } : s.status === 'active' && !s.mergedInto ? { label: 'known supplier ✓', tone: 'ok' } : { label: s.mergedInto ? 'supplier merged' : s.status === 'blocked' ? 'supplier blocked' : 'supplier in review', tone: 'warn' });
@@ -74,7 +76,7 @@ export function exceptions(data: D, actor: D, pending: D[]): Exception[] {
     for (const p of data.policy) {
         const requests = pending.filter(r => r.policy === p.id && r.status === 'pending' && !r.imported);
         if (requests.length < 2) continue;
-        const outstanding = balance(data, p.id), needs = requests.map(r => Math.max(0, approvalAmount(r) - balance(data, p.id, r.id))), pendingMinor = needs.reduce((n, x) => n + x, 0);
+        const outstanding = balance(data, p.id), needs = requests.map(r => Math.max(0, approvalAmount(r, billed(data, r)) - balance(data, p.id, r.id))), pendingMinor = needs.reduce((n, x) => n + x, 0);
         if (outstanding + pendingMinor <= p.budgetMinor || requests.some((r, i) => outstanding + needs[i] > p.budgetMinor)) continue;
         let onOrderMinor = 0;
         for (const id of new Set<string>(data.commitment.filter((e: D) => e.policy === p.id).map((e: D) => e.request))) {

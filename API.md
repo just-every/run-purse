@@ -215,3 +215,21 @@ Owners use `agreement` with `{version:0, confirmed:true, name, reference, suppli
 Optional `clm` is `{provider,reference,url}`; optional `signature` adds `{status,source}`. Reference URLs must be HTTPS without credentials. Signature statuses are `not-recorded`, `draft`, `sent`, `signed`, `declined`, `void`, always labelled owner-recorded and not provider-verified. A pasted URL causes no provider lookup or send.
 
 `agreement-invoice` takes `{agreement,invoice,reason}`. It immutably attributes an issued native invoice once, requiring the same supplier family and currency. The register and reminder snapshot sum exact invoice allocations and drill to the invoice source, line amounts and PO. These are owner-attributed invoice evidence totals, not paid spend, verified compliance or savings. Attributed currency cannot change. Search indexes only agreement name/reference/supplier/currency/date metadata, never parties, payment terms, signature evidence or URLs. Complete archives retain terms/history, source attributions, reminder claims/outcomes and search. Agreement values, PDF reading and agreement savings remain unbuilt and are explicitly unavailable. Their full CONTRACT-001 requirements, including REPORT-003 first-offer/award/invoice source evidence before value/extraction ships, remain round B.
+
+
+## Native blanket invoice draw-down (PO-005, partial)
+
+Request/amend accepts `poDetails.blanket: {validFrom, validThrough}` with inclusive
+YYYY-MM-DD dates; omit or use null for ordinary purchasing. The approved total is
+the cap, including supplied freight/tax. Issuance checks the installation's current
+calendar date. An issued purchase retains its blanket basis and currency; changes
+to cap or validity require ordinary amendment and renewed approval.
+
+Every unique invoice evidence record consumes the cap once across the request's
+issued revisions, including held evidence. Receipts retain their physical meaning
+and do not release invoice-consumed authority again. Scoped order state includes
+`blanketPosition` with current cap, billed evidence, remaining cap and excess.
+Invoice dates outside validity and amounts above the current cap are risk flags;
+recording evidence is permitted, while unresolved flags refuse cash-planning approval.
+HTML/PDF retain the approved cap/validity and numbered changes. Release draw-downs,
+recurring generation and structured service matching are not implemented.

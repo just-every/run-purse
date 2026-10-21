@@ -1,3 +1,4 @@
+import { blanketTerms, blanketBilled } from './blanket-orders';
 import { normalizeValuePromise } from './value-promise';
 import { checkInvoiceAttachment } from './invoice-evidence';
 import { allocateLineTax } from './po-line-tax';
@@ -7,8 +8,7 @@ import { requireCatalogueAccess } from './catalogue-access';
 import { currentPrice, requiredCatalogueFiles } from './catalogue';
 import { all, audit, can, get, put, requireThat, text, minor, quantity, extended, date, uid, own, roles, type Actor, type Data, type State } from './types';
 import { supplier, currency } from './admin';
-import { approvalAmount, coveringPolicies } from './policy-match';
-export { approvalAmount };
+import { approvalAmount as approvalOf, coveringPolicies } from './policy-match';
 export function lines(s: State, input: unknown, a: Actor) { requireThat(Array.isArray(input) && input.length > 0 && input.length <= 100, 'Provide 1–100 lines'); return input.map((x: Data) => { const item = x.catalogue ? get(s, 'catalogue', x.catalogue) : undefined; if (item)
     { requireCatalogueAccess(s, a, item); requireThat(item.approved, 'Catalogue item is not approved'); requireThat(currentPrice(item), 'Catalogue price is outside its validity dates', 409); } const unitMinor = moneyInput(x, 'unitAmount', 'unitMinor', 'Unit price', { fallback: item?.unitMinor }), q = quantity(x.quantity); return { id: x.id ?? uid(), description: text(x.description ?? item?.description, 'Line description'), quantity: x.quantity, q, unitMinor, totalMinor: extended(q, unitMinor), category: text(x.category ?? item?.category, 'Category'), project: text(x.project || item?.project, 'Project'), catalogue: item?.id ?? null, partNumber: item?.partNumber ?? x.partNumber ?? '', unit: item?.unit ?? x.unit ?? 'each', shipTo: optionalPoText(x.shipTo, 'Line ship to'), lineTaxMinor: Object.hasOwn(x, 'lineTaxAmount') || Object.hasOwn(x, 'lineTaxMinor') ? moneyInput(x, 'lineTaxAmount', 'lineTaxMinor', 'Line tax', { optional: true }) : null, requiredAttachments: item?.requiredAttachments ?? x.requiredAttachments ?? [] }; }); }
 export function requestTotal(r: Data) { const total = r.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0) + r.freightMinor + r.taxMinor; return minor(total, 'Request total'); }
@@ -35,7 +35,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         if(old?.integration) (r as Data).integration = structuredClone(old.integration);
         if(old?.emailIntake) (r as Data).emailIntake = old.emailIntake;
         if(old?.quoteTerms) (r as Data).quoteTerms = structuredClone(old.quoteTerms);
-        (r as Data).poDetails = { depositTerms: optionalPoText((b.poDetails ?? old?.poDetails)?.depositTerms, 'Deposit/prepayment terms'), notes: optionalPoText((b.poDetails ?? old?.poDetails)?.notes, 'Notes to supplier'), shippingTerms: optionalPoText((b.poDetails ?? old?.poDetails)?.shippingTerms, 'Shipping terms'), buyerContact: optionalPoText((b.poDetails ?? old?.poDetails)?.buyerContact, 'Buyer contact') };
+        (r as Data).poDetails = { blanket: blanketTerms((b.poDetails ?? old?.poDetails)?.blanket), depositTerms: optionalPoText((b.poDetails ?? old?.poDetails)?.depositTerms, 'Deposit/prepayment terms'), notes: optionalPoText((b.poDetails ?? old?.poDetails)?.notes, 'Notes to supplier'), shippingTerms: optionalPoText((b.poDetails ?? old?.poDetails)?.shippingTerms, 'Shipping terms'), buyerContact: optionalPoText((b.poDetails ?? old?.poDetails)?.buyerContact, 'Buyer contact') };
         allocateLineTax(r.lines, r.taxMinor);
         const business = get(s, 'business', 'main');
         requireThat(business.locations.includes(r.location) && business.costCentres.includes(r.costCentre) && r.lines.every(l => business.projects.includes(l.project)), 'Use configured location, cost centre and project');
@@ -52,6 +52,8 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         r.totalMinor = requestTotal(r);
         const issued = all(s, 'order').find(o => o.request === id && (o.status === 'issued' || o.status === 'amendment-pending'));
         if (issued) {
+            requireThat(Boolean(issued.poDetails?.blanket) === Boolean((r as Data).poDetails.blanket), 'An issued PO retains its blanket or ordinary basis; create a separate request for another basis', 409);
+            if (issued.poDetails?.blanket) requireThat(r.currency === issued.currency, 'A blanket amendment retains its currency', 409);
             (r as Data).amends = issued.id;
             for (const l of r.lines) {
                 const prior = issued.lines.find((p: Data) => p.id === l.id);
@@ -64,7 +66,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             requireThat(issued.lines.every((p: Data) => r.lines.some(l => l.id === p.id)), 'Amendments retain each original line');
             // Editing invalidates unissued amendment reservations, but never the original obligation.
             const originalLines=issued.lines.map((l:Data)=>{const current:Data=r.lines.find(x=>x.id===l.id)!;return {...l,carriedAccepted:current.carriedAccepted,carriedCancelled:current.carriedCancelled}});
-            const originalLiability=approvalAmount({...issued,lines:originalLines});
+            const originalLiability=approvalAmount({...issued,lines:originalLines},s);
             const groups=new Map<string,Data>();for(const e of all(s,'commitment').filter(e=>e.request===id)){const k=e.policy+':'+e.currency;const g=groups.get(k)??{policy:e.policy,currency:e.currency,amount:0};g.amount+=e.amountMinor;groups.set(k,g)}
             // A draft can release authority, never grant unapproved replenishment.
             for(const g of groups.values()){const target=g.policy===issued.policy&&g.currency===issued.currency?Math.min(originalLiability,g.amount):0;if(g.amount!==target)ledger(s,a,{...old,policy:g.policy,currency:g.currency},target-g.amount,'unissued-amendment-release')}
@@ -105,7 +107,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         const reason = text(b.reason, 'Decision reason');
         if (decision === 'approved') {
             const current = all(s, 'commitment').filter(e => e.request === r.id && e.policy===r.policy && e.currency===r.currency).reduce((n, e) => n + e.amountMinor, 0);
-            const desired = approvalAmount(r);
+            const desired = approvalAmount(r,s);
             const delta = Math.max(0, desired - current);
             requireThat(reserved(s, p.id) + delta <= p.budgetMinor, 'Budget exhausted by existing commitments', 409);
             if (delta)
@@ -159,3 +161,5 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         return { id };
     }
 }
+/** What approving reserves, with the invoices already billed against a blanket PO's cap. */
+export function approvalAmount(r: Data, s: State) { return approvalOf(r, r.poDetails?.blanket ? blanketBilled(s, r) : 0); }
