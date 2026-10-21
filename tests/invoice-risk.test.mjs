@@ -53,8 +53,28 @@ test('INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicate
  for(const path of ['/api/purse/audit','/api/purse/audit.csv','/api/purse/accounting','/api/purse/search?q=Safety','/api/purse/download/order/'+o.id]){const response=await h.send(path,undefined,h.owner);assert.equal(response.status,200);excluded.push(JSON.stringify(response.value));}
  const pdfResponse=await h.mf.dispatchFetch(h.origin+'/api/purse/order-pdf/'+o.id,{headers:{cookie:h.owner}});assert.equal(pdfResponse.status,200);const pdfBytes=await pdfResponse.arrayBuffer();const {getDocumentProxy,extractText}=await import('unpdf');const pdfText=await extractText(await getDocumentProxy(new Uint8Array(pdfBytes)),{mergePages:true});excluded.push(pdfText.text);
  const preparation=await cmd('prepare',{workflow:'exception',fields:{source:'Safety supply evidence'},references:[{kind:'supplier',id:supplier.id},{kind:'order',id:o.id},{kind:'invoice',id:original.id}],draft:'Human purchasing summary'},buyer);excluded.push(JSON.stringify(preparation),(await h.send('/api/purse/download/agentRun/'+preparation.id,undefined,buyer)).value,JSON.stringify(h.messages));
- for(const value of Object.values(protectedValues))for(const output of excluded){assert.ok(!output.includes(value));assert.ok(!output.includes(value.slice(-4)),'No protected suffix enters audit/search/export/PDF/mail/preparation');}
- const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true,'INVOICE-003 source originals and immutable reviews remain portable');
+ const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+ // UUIDs and the original-document digest are public source identities. A random
+ // digit run inside one is not a disclosed bank/TIN suffix. Exempt exact values
+ // proven by their stored identity field or the original bytes, never digit patterns.
+ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+ const publicOpaque=new Set([createHash('sha256').update(bytes).digest('hex')]),privateFingerprints=new Set();
+ const collectIds=value=>{if(!value||typeof value!=='object')return;for(const [field,item]of Object.entries(value)){if(field==='id'&&typeof item==='string'&&uuid.test(item))publicOpaque.add(item);else if(item&&typeof item==='object')collectIds(item);}};
+ for(const row of rows){
+  for(const value of [row.id,row.revision])if(uuid.test(value))publicOpaque.add(value);
+  const value=JSON.parse(row.value);collectIds(value);
+  if(row.kind==='supplier')for(const fingerprint of Object.values(value.matching??{}))if(typeof fingerprint==='string')privateFingerprints.add(fingerprint);
+  if(row.kind==='invoice')for(const fingerprint of [value.evidenceHash,value.evidence?.bankBinding])if(typeof fingerprint==='string')privateFingerprints.add(fingerprint);
+ }
+ for(const operator of (await h.db.prepare('SELECT id FROM oa_operators').all()).results)if(uuid.test(operator.id))publicOpaque.add(operator.id);
+ assert.ok(privateFingerprints.size>0,'Stored matching/evidence fingerprints must be checked');
+ for(const [index,output]of excluded.entries()){
+  for(const fingerprint of privateFingerprints)assert.ok(!output.includes(fingerprint),'Private matching/evidence fingerprint in public output '+index);
+  for(const value of [...Object.values(protectedValues),changedEvidence.remit.bankAccount])assert.ok(!output.includes(value),'Full protected value in public output '+index);
+  let semantic=output;for(const identity of publicOpaque)semantic=semantic.replaceAll(identity,'[public source identity]');
+  for(const value of Object.values(protectedValues))assert.ok(!semantic.includes(value.slice(-4)),'Protected suffix in public output '+index+' outside proven source identities');
+ }
+ assert.equal(validatePurchasingArchive(rows),true,'INVOICE-003 source originals and immutable reviews remain portable');
  // Upgrade fixtures reproduce the original v1 wire representation, including lost bank input.
  const root=JSON.parse((await h.db.prepare("SELECT value FROM p_records WHERE kind='supplierMatchingKey'").first()).value).secret;
  const beforeMigration=(await h.db.prepare("SELECT * FROM p_records WHERE kind='invoice'").all()).results;
