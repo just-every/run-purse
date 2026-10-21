@@ -183,7 +183,7 @@ a:hover { color: var(--purse-blue-deep); }
 .record-table tbody tr:last-child td { border-bottom: 0; }
 .record-table td { overflow-wrap: break-word; }
 .cell-value { min-width: 0; }
-.record-table a:not(.btn-secondary) { display: inline-block; min-height: 24px; }
+.record-table a:not(.btn-secondary), .invoice-inbox .ruled-list a { display: inline-block; min-height: 24px; }
 .record-table .figure { text-align: right; white-space: nowrap; }
 .figure-cell { white-space: nowrap; }
 .record-id { color: var(--purse-blue); font-weight: 700; white-space: nowrap; }
