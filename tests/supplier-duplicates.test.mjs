@@ -139,6 +139,7 @@ test('SECURITY-001 encrypted owner storage, native reveal, role masks, atomic ma
  await refused(await body({values:{tin:values.tin,unknown:values.bankAccount}}),h.owner);
  await refused(await body({values:{bankAccount:values.bankAccount}}),h.owner);
  await refused(await body({values:{tin:'invalid '+values.tin}}),h.owner);
+ const initial=await metadata();assert.equal(initial.bankStatus,'Not recorded');const tinOnly=await h.send(base+'/store',await body({values:{tin:values.tin}}),h.owner);assert.equal(tinOnly.status,200);assert.equal(tinOnly.value.bankStatus,'Not recorded','TIN storage does not claim recorded bank details');assert.equal((await metadata()).bankStatus,'Not recorded');
  const firstBody=await body(),stored=await h.send(base+'/store',firstBody,h.owner);assert.equal(stored.status,200,JSON.stringify(stored.value));assert.deepEqual(stored.value.stored,Object.keys(values));assert.equal(stored.value.bankStatus,'Recorded, not verified – not active for payment');
  const records=(await h.db.prepare('SELECT * FROM p_records').all()).results;
  for(const row of records)for(const value of Object.values(values))assert.ok(!JSON.stringify(row).includes(value),'No protected plaintext in ordinary product records');

@@ -41,6 +41,11 @@ async function proof(env: Bindings, a: Actor, since: number) {
     requireThat(row, 'Native reauthentication required within ten minutes', 403);
 }
 
+function protectedBankStatus(supplier: Data, stored: CipherRow[]) {
+    if (stored.some(row => row.field === 'bankAccount' || row.field === 'bankRouting')) return 'Recorded, not verified – not active for payment';
+    return supplier.protectedOnFile?.bankAccount || supplier.protectedOnFile?.bankRouting ? 'Not restored – re-enter' : 'Not recorded';
+}
+
 function protectedMasks(env: Bindings, supplier: Data, a: Actor, capabilities: string[], stored: CipherRow[]) {
     const masks: Data = {};
     for (const field of fields) {
@@ -63,7 +68,7 @@ supplierProtectedApi.get('/api/purse/supplier-protected/:supplier', async c => {
     const supplier = get(state, 'supplier', c.req.param('supplier')), stored = await rows(env, supplier.id);
     const masks = protectedMasks(env,supplier,a,capabilities,stored);
     await readFence(env.DB, a, revision);
-    return c.json({ revision, supplier: supplier.id, masks, bankStatus: 'Recorded, not verified – not active for payment' });
+    return c.json({ revision, supplier: supplier.id, masks, bankStatus: protectedBankStatus(supplier,stored) });
 });
 supplierProtectedApi.post('/api/purse/supplier-protected/:supplier/:operation', async c => {
     const env = runtimeBindings(c.env), a = await actor(c.req.raw, env), loaded = await load(env.DB);
@@ -100,7 +105,7 @@ supplierProtectedApi.post('/api/purse/supplier-protected/:supplier/:operation', 
             audit(state,a,'protected-store',supplier.id,{fields:supplied,reason:'Private reason and evidence retained encrypted'});
             const statements = encrypted.map(row => env.DB.prepare('INSERT INTO p_supplier_protected(business,supplier,field,key_id,nonce,ciphertext,tag) VALUES(?,?,?,?,?,?,?) ON CONFLICT(business,supplier,field) DO UPDATE SET key_id=excluded.key_id,nonce=excluded.nonce,ciphertext=excluded.ciphertext,tag=excluded.tag').bind('main',row.supplier,row.field,row.key_id,row.nonce,row.ciphertext,row.tag));
             await save(env.DB,a,before,state,revision,{statements});
-            return c.json({stored:supplied,bankStatus:'Recorded, not verified – not active for payment'});
+            return c.json({stored:supplied,bankStatus:protectedBankStatus(supplier,await rows(env,supplier.id))});
         }
         requireThat(fields.includes(body.field), 'Choose one protected field');
         const since = Date.now()-10*60*1000;

@@ -255,8 +255,8 @@ the target; this bounded guard does not establish archive confidentiality.
 ## Native protected supplier values (SECURITY-001, partial)
 
 `GET /api/purse/supplier-protected/:supplier` returns the current global revision,
-role masks and the honest bank status "Recorded, not verified – not active for
-payment". Current native owners and buyers see last four; other current native
+role masks and bank status. Stored bank values say "Recorded, not verified – not active for
+payment"; absent values say "Not recorded", and excluded restored values say "Not restored – re-enter". Current native owners and buyers see last four; other current native
 roles see only On file for TIN/account and no routing value. Ordinary native state
 uses the same protected masks; exports and other supplier projections do not
 receive suffixes. No protected values appear in command responses.
