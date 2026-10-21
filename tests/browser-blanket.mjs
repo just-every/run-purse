@@ -7,7 +7,9 @@ export async function blanketJourney(browser,root,origin,width,evidence){
  const owner=await session(browser,root,origin,'owner',width),requester=await session(browser,root,origin,'requester',width),approver=await session(browser,root,origin,'approver',width),buyer=await session(browser,root,origin,'buyer',width);
  try{
   const tag=width+'-'+crypto.randomUUID().slice(0,8),business=(await current(owner.context,origin)).data.business[0];
-  const supplier=await api(buyer.context,origin,'supplier',{name:'Mountain Maintenance '+tag,status:'preferred',reason:'Annual site maintenance supplier',contacts:[{name:'Jordan',email:'maintenance-'+tag+'@example.test'}]});
+  const profile={name:'Mountain Maintenance '+tag,status:'preferred',reason:'Annual site maintenance supplier',contacts:[{name:'Jordan',email:'maintenance-'+tag+'@example.test'}]};
+  const duplicates=await api(buyer.context,origin,'supplier-duplicates',profile);
+  const supplier=await api(buyer.context,origin,'supplier',{...profile,...(duplicates.matches.length?{duplicateFingerprint:duplicates.fingerprint,duplicateReason:'Separate maintenance supplier fixture; similar register names reviewed'}:{})});
   const category='Blanket maintenance '+tag;
   await api(owner.context,origin,'policy',{name:'Annual maintenance '+tag,currency:'USD',category,project:'*',approver:'approver@dev.localhost',limitMinor:10000000,budgetMinor:10000000});
   const page=requester.page;await page.reload();await page.getByRole('navigation').getByRole('button',{name:'Requests',exact:true}).click();await page.getByText('New purchase request',{exact:true}).click();
