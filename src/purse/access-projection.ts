@@ -5,7 +5,7 @@ import { publicEvidence } from './invoice-status';
 import { coveringPolicies } from './policy-match';
 import { auditEventAllowed } from './access-audit';
 import { discrepancies, linePosition } from './orders';
-import { mayReceive, receiptAssignment, receiptMatch, receiptVersion } from './receipt-routing';
+import { mayReceive, receiptAssignment, receiptMatch, receiptMatchingStatus, receiptVersion } from './receipt-routing';
 import { all, type Actor, type Data, type State } from './types';
 
 function mayApprove(s: State, a: Actor, request: Data) {
@@ -27,6 +27,7 @@ export function purchasingProjection(s: State, a: Actor) {
             buyerLimit: buyerLimit(s, a, request), buyerLimits: buyerLimits(s, a, request) })),
         order: orders.map(order => ({ ...order, ...(order.poDetails?.blanket ? { blanketPosition: blanketPosition(s, order) } : {}),
             receiverAssignment: receiptAssignment(s, order), mayReceive: mayReceive(s, a, order), receiptVersion: receiptVersion(s, order),
+            ...(mayReceive(s, a, order) ? { receiptMatchingStatus: receiptMatchingStatus(s, order) } : {}),
             mayCaptureInvoice: allowed(s, a, 'invoice.capture', order), maySetCashExpectation: allowed(s, a, 'payable.terms', order),
             mayManageReceipt: allowed(s, a, 'procurement.manage', order), mayReassignReceipt: order.status === 'issued' && mayReceive(s, a, order) && allowed(s, a, 'receive', order),
             mayManagePurchasing: allowed(s, a, 'procurement.manage', order),

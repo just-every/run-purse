@@ -17,7 +17,7 @@ test('RECEIVE-001 responsible receivers, due email prompts, automatic invoice ho
  const read=async(cookie=buyer)=>(await h.state(cookie)).data;
  assert.equal((await read()).order.find(x=>x.id===o.id).receiverAssignment.email,'facilities@example.test','Type outranks location');
  const i=await cmd('invoice',{order:o.id,reference:'MAINT-1',source:'Supplier original invoice',allocations:[{line:o.lines[0].id,quantity:'10',amountMinor:100000}]},buyer);
- assert.equal((await read()).invoice.find(x=>x.id===i.id).receiptMatch,'Held for receipt');
+ assert.equal((await read()).invoice.find(x=>x.id===i.id).receiptMatch,'Held for receipt');assert.equal((await read(facilities)).order.find(x=>x.id===o.id).receiptMatchingStatus,'Held for receipt');assert.equal((await read(facilities)).invoice.length,0,'Receiver matching state never grants invoice reads');
  await cmd('payable-terms',{invoice:i.id,version:0,invoiceDate:'2026-10-19',term:'Net 30',reason:'Dated source'},buyer);await cmd('approve-payable',{invoice:i.id,version:1,reason:'Too early'},buyer,409);
  const before=(await read()).receipt;
  for(const cookie of [requester,it,stranger])await cmd('receipt',{order:o.id,line:o.lines[0].id,event:'receive',quantity:'1',reason:'Wrong receiver'},cookie,403);
@@ -32,7 +32,7 @@ test('RECEIVE-001 responsible receivers, due email prompts, automatic invoice ho
  await cmd('receipt',{order:o.id,line:o.lines[0].id,event:'receive',quantity:'6',reason:'Former receiver'},facilities,403);
  await tick('2026-10-20T13:00:00Z');assert.deepEqual(h.messages.at(-1).to,['it@example.test'],'Reassignment notifies the current receiver');
  await cmd('receipt',{order:o.id,line:o.lines[0].id,event:'receive',quantity:'6',receiptVersion:(await read()).order.find(x=>x.id===o.id).receiptVersion,reason:'Remaining delivery confirmed'},it);
- assert.equal((await read()).invoice.find(x=>x.id===i.id).receiptMatch,'Ready for matching');assert.ok((await read()).discrepancies.filter(d=>d.invoiceId===i.id).every(d=>!d.receiptShortfall));
+ assert.equal((await read()).invoice.find(x=>x.id===i.id).receiptMatch,'Ready for matching');assert.equal((await read(it)).order.find(x=>x.id===o.id).receiptMatchingStatus,'Ready for matching');assert.equal((await read(facilities)).order.find(x=>x.id===o.id).receiptMatchingStatus,undefined,'Former receiver has no operational invoice matching summary');assert.ok((await read()).discrepancies.filter(d=>d.invoiceId===i.id).every(d=>!d.receiptShortfall));
  await cmd('approve-payable',{invoice:i.id,version:1,reason:'Released into ordinary matching'},buyer);
  const afterReceive=h.messages.length;await tick('2026-10-21T12:00:00Z');assert.equal(h.messages.length,afterReceive,'Full receipt stops prompts');
  // Date-only triggers use the installation zone, across a DST boundary.

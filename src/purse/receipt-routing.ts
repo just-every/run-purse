@@ -70,6 +70,13 @@ export function receiptMatch(s: State, invoice: Data) {
     return rows.some(d=>d.receiptShortfall) ? 'Held for receipt' : rows.some(d=>d.priceMismatch||d.quantityMismatch||d.closedBalance||d.exception) ? 'Matching exception' : 'Ready for matching';
 }
 
+/** Operational receiving state only; invoice identities and evidence stay private. */
+export function receiptMatchingStatus(s: State, order: Data) {
+    const matches = all(s, 'invoice').filter(invoice => !invoice.imported && invoice.order === order.id).map(invoice => receiptMatch(s, invoice));
+    if (!matches.length) return;
+    return matches.includes('Held for receipt') ? 'Held for receipt' : matches.includes('Matching exception') ? 'Matching exception' : 'Ready for matching';
+}
+
 export function receiptDay(s: State, now: number): string {
  const zone=s.get('business:main')?.value.timezone || 'America/New_York';
  const parts=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
