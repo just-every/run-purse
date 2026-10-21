@@ -3,6 +3,7 @@ import { validateAgreementReadings } from './restore-agreement-readings.mjs';
 import { validateAgreementAwards } from './restore-agreement-awards.mjs';
 import { validateAgreements } from './restore-agreements.mjs';
 import { validateEmailIntakes } from './restore-email-intake.mjs';
+import { validateInvoiceInbox } from './restore-invoice-inbox.mjs';
 import { validateRfqs } from './restore-rfq.mjs';
 import { validateInvoiceReadings } from './restore-invoice-reading.mjs';
 import { validateQuoteReadings } from './restore-quote-reading.mjs';
@@ -18,7 +19,7 @@ import { validateSupplierPerformance } from './restore-supplier-performance.mjs'
 import { validateOrderChasing } from './restore-order-chasing.mjs';
 import { validateSupplierDocuments } from './restore-supplier-documents.mjs';
 
-const kinds = new Set(['valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
+const kinds = new Set(['invoiceInboxConfig','apInvoiceEmail','valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
 export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
 export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
 export const integer = n => Number.isSafeInteger(n) && n >= 0;
@@ -119,6 +120,7 @@ export function validatePurchasingArchive(rows) {
  validateAgreementAwards(all,get,check,same);
  validateRfqs(all,get,check);
  validateEmailIntakes(all,get,check);
+ validateInvoiceInbox(all,get,check);
  validateInvoiceReadings(all,get,check);
  validateQuoteReadings(all,get,check);
  validateReceiptRouting(all,get,check);

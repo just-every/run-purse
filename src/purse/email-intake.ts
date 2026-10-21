@@ -36,6 +36,7 @@ export async function emailIntake(s: State, a: Actor, op: string, b: Data, env?:
     if (op === 'email-intake-config') {
         can(s, a, 'owner');
         const config = { address: intakeAddress(b.address), updatedBy: a.id, updatedAt: new Date().toISOString() };
+        requireThat(s.get('invoiceInboxConfig:main')?.value.address !== config.address, 'Use a request address separate from the AP address', 409);
         put(s, 'emailIntakeConfig', 'main', config); audit(s, a, op, 'main', { address: config.address });
         return get(s, 'emailIntakeConfig', 'main');
     }

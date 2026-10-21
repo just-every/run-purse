@@ -4,7 +4,7 @@ import { normalizedSupplierText } from './supplier-matching';
 import { canonicalSupplier, matchingInputs } from './supplier-identity';
 import { all, date, get, requireThat, text, type Data, type State } from './types';
 
-function email(value: unknown): { address: string; domain: string } {
+export function senderAddress(value: unknown): { address: string; domain: string } {
     const address = text(value, 'Unverified sender email', 254).toLowerCase();
     const parts = address.split('@');
     requireThat(parts.length === 2 && parts[0].length <= 64 &&
@@ -16,6 +16,12 @@ function email(value: unknown): { address: string; domain: string } {
     requireThat(domain.length <= 253 && domain.includes('.') && domain.split('.').every(label =>
         /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label)), 'Use a valid sender email');
     return { address, domain };
+}
+
+export function senderDomainRelation(domains: string[], domain: string) {
+    return domains.some(known => domain.endsWith('.' + known) || known.endsWith('.' + domain)) ? 'subdomain difference' :
+        domain.split('.').some(label => label.startsWith('xn--')) ? 'Unicode/encoded domain difference' :
+        domains.some(known => oneEdit(known, domain)) ? 'one-character domain difference' : 'different domain';
 }
 
 function oneEdit(a: string, b: string): boolean {
@@ -92,18 +98,16 @@ export function invoiceRisk(s: State, order: Data, candidate: Data, input: Data)
 
     result.sender = { supplied: input.senderEmail !== undefined, authentication: 'unverified', baseline: 'immutable-po-contacts', comparison: 'not-supplied' };
     if (input.senderEmail !== undefined) {
-        const sender = email(input.senderEmail);
+        const sender = senderAddress(input.senderEmail);
         const domains = (order.supplierSnapshot?.contacts ?? []).flatMap((contact: Data) => {
             // Historical contacts were not email-validated. Invalid historical
             // values cannot establish a sender-domain baseline.
-            try { return [email(contact.email).domain]; } catch { return []; }
+            try { return [senderAddress(contact.email).domain]; } catch { return []; }
         });
         result.sender = { ...result.sender, email: sender.address, domain: sender.domain, comparison: domains.length ? 'matched' : 'baseline-missing' };
         if (!domains.includes(sender.domain)) {
             result.sender.comparison = domains.length ? 'mismatched' : 'baseline-missing';
-            const relation = domains.some((domain: string) => sender.domain.endsWith('.' + domain) || domain.endsWith('.' + sender.domain)) ? 'subdomain difference' :
-                sender.domain.split('.').some(label => label.startsWith('xn--')) ? 'Unicode/encoded domain difference' :
-                domains.some((domain: string) => oneEdit(domain, sender.domain)) ? 'one-character domain difference' : 'different domain';
+            const relation = senderDomainRelation(domains, sender.domain);
             flags.push({ code: 'sender-domain', reason: domains.length ?
                 'Unverified sender has a ' + relation + ' from the immutable PO contacts; sender authentication is not established' :
                 'Unverified sender cannot be compared because the immutable PO has no valid contact domain; sender authentication is not established' });

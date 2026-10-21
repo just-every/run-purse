@@ -4,6 +4,7 @@ import { visibleAgreements } from './agreements';
 import { visibleEmailIntakes } from './email-intake';
 import { visibleRfqs } from './rfq';
 import { visibleInvoiceReadings } from './invoice-reading';
+import { visibleInvoiceInbox } from './invoice-inbox';
 import { visibleQuoteReadings } from './quote-reading';
 import { mayReceive, receiptAssignment, receiptMatch, receiptVersion } from './receipt-routing';
 import { poContent, poHtml } from './po-content';
@@ -19,7 +20,7 @@ import { supplierDocumentStatus } from './supplier-documents';
 export function visible(s: State, a: Actor) { const capabilities = roles(s, a); requireThat(capabilities.length, 'No active business membership', 403); const staff = capabilities.some(r => ['owner', 'approver', 'buyer', 'receiver'].includes(r)); const requests = all(s, 'request').filter(r => staff || r.requester === a.id || r.requesterEmail === a.email), ids = new Set(requests.map(r => r.id)); const orders = all(s, 'order').filter(o => ids.has(o.request)), orderIds = new Set(orders.map(o => o.id)); const data: Data = {}; for (const kind of ['business', 'supplier', 'catalogue', 'catalogueBundle', 'policy', 'delegation', 'code'])
     data[kind] = all(s, kind);
     Object.assign(data,visibleAgentValue(s,a,ids));
-    Object.assign(data,visibleEmailIntakes(s,a),visibleRfqs(s,a),visibleQuoteReadings(s,ids),visibleInvoiceReadings(s,capabilities.includes('buyer')));
+    Object.assign(data,visibleEmailIntakes(s,a),visibleRfqs(s,a),visibleQuoteReadings(s,ids),visibleInvoiceReadings(s,capabilities.includes('buyer')),visibleInvoiceInbox(s,capabilities.includes('buyer')));
     data.supplier = data.supplier.map((v: Data) => ({ ...supplierPublicValue(v), documents: (v.documents ?? []).filter((id: string) => capabilities.includes('buyer') || !s.get('attachment:' + id)?.value.privateSupplierDocument) }));
     Object.assign(data, capabilities.includes('buyer') ? {...visibleAgreements(s,a),...visibleAgreementReadings(s,a)} : {agreement:[], agreementInvoice:[], agreementReminder:[], agreementAward:[], agreementReading:[], agreementReadingEvent:[]});
     data.quoteAward = all(s, 'quoteAward').filter(q => ids.has(q.request));

@@ -3,6 +3,7 @@ import { normalizeInbound, createResendAttachmentFetcher, verifyWebhook, readStr
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { actor, load, readFence } from './store';
 import { activeIntakeRequester, intakeLimits, intakeScope, providerSenderLabel, queueIntakeLink, sendEmailIntakeLinks } from './email-intake';
+import { apFileKey, apInvoiceEmail } from './invoice-inbox';
 import { Fault, get, put, requireThat, uid, type Data } from './types';
 
 export const emailIntakeApi = new Hono<{ Bindings: Bindings }>();
@@ -10,8 +11,8 @@ export async function intakeSha256(bytes: Uint8Array) {
     const digest = await crypto.subtle.digest('SHA-256', bytes as BufferSource);
     return Array.from(new Uint8Array(digest), n => n.toString(16).padStart(2, '0')).join('');
 }
-async function retain(env: Bindings, intake: string, id: string, name: string, mediaType: string, bytes: Uint8Array) {
-    const file = { id, name, mediaType, key: `intake/${intake}/${id}`, size: bytes.length, sha256: await intakeSha256(bytes) };
+async function retain(env: Bindings, key: string, id: string, name: string, mediaType: string, bytes: Uint8Array) {
+    const file = { id, name, mediaType, key, size: bytes.length, sha256: await intakeSha256(bytes) };
     await env.ORIGINALS.put(file.key, bytes, { httpMetadata: { contentType: mediaType } });
     return file;
 }
@@ -47,20 +48,30 @@ emailIntakeApi.post('/api/purse/email-intake/inbound', async c => {
     try {
         const { raw: source, normalized } = await hydrate(env, emailId);
         const { state, revision } = await load(env.DB), before = new Set(state.keys());
-        const config = get(state, 'emailIntakeConfig', 'main');
-        requireThat(normalized.to.some((email: string) => email.toLowerCase() === config.address), 'Email was not addressed to this business request address');
+        const recipients = normalized.to.map((email: string) => email.toLowerCase());
+        const requestAddress = state.get('emailIntakeConfig:main')?.value.address, apAddress = state.get('invoiceInboxConfig:main')?.value.address;
+        // The AP address takes supplier invoice mail only; it never becomes a purchase request, even when the request address is also a recipient.
+        const ap = Boolean(apAddress && recipients.includes(apAddress));
+        requireThat(ap || requestAddress && recipients.includes(requestAddress), 'Email was not addressed to this business request or AP address');
         requireThat(normalized.subject.length <= 2000 && normalized.attachments.every((file: Data) => file.filename.length <= 2000), 'Email subject or attachment name is too large');
-        const from = normalized.from.toLowerCase(), requester = await activeIntakeRequester(env.DB, state, from);
-        const original = await retain(env, id, 'original', 'provider-email.json', 'application/json', source); retained.push(original.key);
+        const from = normalized.from.toLowerCase(), requester = ap ? null : await activeIntakeRequester(env.DB, state, from);
+        const custody = (file: string) => ap ? apFileKey(id, file) : `intake/${id}/${file}`;
+        const original = await retain(env, custody('original'), 'original', 'provider-email.json', 'application/json', source); retained.push(original.key);
         const files: Data[] = [];
         for (const attachment of normalized.attachments) {
-            const file = await retain(env, id, uid(), attachment.filename || 'attachment', attachment.contentType, attachment.content);
+            const fileId = uid(), file = await retain(env, custody(fileId), fileId, attachment.filename || 'attachment', attachment.contentType, attachment.content);
             files.push(file); retained.push(file.key);
         }
-        const intake = { id, provider: 'resend', providerEmailId: emailId, providerSender: from, providerSenderLabel, senderVerified: false, to: normalized.to, subject: normalized.subject, title: normalized.subject, body: normalized.text ?? '', sourceText: normalized.text, sourceHtml: normalized.html, messageId: normalized.messageId, originalFormat: 'provider-api-json', original, files, status: requester ? 'draft' : 'held', holdReason: requester ? null : 'Sender has no active native requester membership', requester: requester?.id ?? null, requesterEmail: requester?.email ?? null, requesterVersion: requester?.version ?? null, version: 1, receivedAt: new Date().toISOString() };
-        put(state, 'emailIntake', id, intake);
-        if (requester) queueIntakeLink(state, intake);
-        const auditId = uid(); put(state, 'audit', auditId, { actor: 'email-intake', action: 'email-intake-received', record: id, provider: 'resend', providerEmailId: emailId, status: intake.status, at: intake.receivedAt });
+        if (ap) {
+            const capture = apInvoiceEmail(state, { id, emailId, from, normalized, original, files });
+            put(state, 'apInvoiceEmail', id, capture);
+            put(state, 'audit', uid(), { actor: 'invoice-inbox', action: 'invoice-inbox-received', record: id, provider: 'resend', providerEmailId: emailId, status: capture.status, supplier: capture.supplier, match: capture.match, at: capture.receivedAt });
+        } else {
+            const intake = { id, provider: 'resend', providerEmailId: emailId, providerSender: from, providerSenderLabel, senderVerified: false, to: normalized.to, subject: normalized.subject, title: normalized.subject, body: normalized.text ?? '', sourceText: normalized.text, sourceHtml: normalized.html, messageId: normalized.messageId, originalFormat: 'provider-api-json', original, files, status: requester ? 'draft' : 'held', holdReason: requester ? null : 'Sender has no active native requester membership', requester: requester?.id ?? null, requesterEmail: requester?.email ?? null, requesterVersion: requester?.version ?? null, version: 1, receivedAt: new Date().toISOString() };
+            put(state, 'emailIntake', id, intake);
+            if (requester) queueIntakeLink(state, intake);
+            const auditId = uid(); put(state, 'audit', auditId, { actor: 'email-intake', action: 'email-intake-received', record: id, provider: 'resend', providerEmailId: emailId, status: intake.status, at: intake.receivedAt });
+        }
         const queries = [env.DB.prepare('INSERT INTO p_guard SELECT CASE WHEN (SELECT revision FROM p_meta WHERE id=1)=? THEN 1 ELSE 0 END').bind(revision)];
         if (requester) queries.push(env.DB.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(requester.id, requester.version));
         for (const [key, row] of state) if (!before.has(key)) queries.push(env.DB.prepare('INSERT INTO p_records(business,kind,id,revision,value) VALUES(?,?,?,?,?)').bind(row.business, row.kind, row.id, row.revision, JSON.stringify(row.value)));
