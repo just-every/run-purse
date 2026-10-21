@@ -73,7 +73,7 @@ html.rer-themed body .rer-brand::before { width: 36px; height: 36px; }
 html.rer-themed body label { color: var(--purse-ink); font-size: 15px; font-weight: 600; }
 html.rer-themed body input:not([type=checkbox]):not([type=hidden]) { min-height: 46px; font-size: 16px; border: 1px solid var(--purse-field); border-radius: 8px; background: #fff; color: var(--purse-ink); }
 html.rer-themed body input:not([type=checkbox]):not([type=hidden]):focus-visible { outline: 3px solid color-mix(in srgb, var(--purse-blue) 30%, transparent); outline-offset: 0; border-color: var(--purse-blue); }
-html.rer-themed body input[type=checkbox] { accent-color: var(--purse-blue); width: 20px; height: 20px; flex: none; }
+html.rer-themed body input[type=checkbox] { accent-color: var(--purse-blue); width: 24px; height: 24px; flex: none; }
 html.rer-themed body button,
 html.rer-themed body .action { min-height: 48px; border: 1px solid var(--purse-blue); border-radius: var(--purse-radius); background: var(--purse-blue); color: #fff; font: 700 16px/1.2 var(--purse-font); }
 html.rer-themed body button:hover,

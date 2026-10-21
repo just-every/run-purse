@@ -238,7 +238,7 @@ select:not([multiple],[size]:not([size="1"])):disabled { --rer-select-ink: color
 .workspace input[type=file] { padding: 6px; background: #f7f8fa; }
 .workspace input[type=file]::file-selector-button { min-height: 36px; margin-right: 12px; padding: 6px 16px; border: 1px solid var(--purse-blue); border-radius: 8px; background: #fff; color: var(--purse-blue); font: 700 14px/1.2 var(--purse-font); cursor: pointer; }
 .workspace input[type=file]::file-selector-button:hover { background: var(--purse-blue-wash); }
-.workspace input[type=checkbox] { width: 18px; min-height: 18px; height: 18px; accent-color: var(--purse-blue); }
+.workspace input[type=checkbox] { width: 24px; min-height: 24px; height: 24px; accent-color: var(--purse-blue); }
 .workspace input:focus-visible, .workspace select:focus-visible, .workspace textarea:focus-visible { outline: 3px solid color-mix(in srgb, var(--purse-blue) 30%, transparent); outline-offset: 0; border-color: var(--purse-blue); }
 .workspace textarea { min-height: 96px; resize: vertical; }
 .form-end { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
