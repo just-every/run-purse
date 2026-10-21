@@ -293,3 +293,26 @@ claim complete SECURITY-001 archive confidentiality or clause completion.
 In Suppliers, open an existing supplier and use **Protected tax and bank values**. The current native owner stores TIN/account/routing with a private reason and evidence reference; blank inputs keep the stored fields and account/routing change together. Submitted private inputs clear after each attempt. Storage uses the dedicated protected HTTP door; ordinary supplier saves never receive these values. The panel shows role masks and the recorded/unverified/not-active bank label.
 
 **Request native reauthentication** requests the existing native email challenge. Confirm its link in the same browser, then return to the supplier and reveal one field with a private reason. A request alone or development sign-in grants no reveal proof; local mail remains suppressed. **Hide protected value**, leaving the supplier/workspace, or hiding the document clears the displayed value. Buyers have masks only. These controls preserve current HTTP authorization and revision fences; they do not implement rotation, encrypted owner-include archives, connector-secret lifecycle or complete refusal auditing.
+
+## Request again (INTAKE-001 native slice)
+
+`request-again-preview` takes `{kind:"request"|"order",id}` under the current
+native requester session and the source record’s ordinary read scope. It is
+read-only and returns an editable `draft`, `flags`, unit-price `changes`, source
+attachment metadata and a `fingerprint`. Catalog lines use the current approved,
+in-date price and current requester access. Unavailable lines and inactive
+projects are omitted; unavailable supplier or header coding needs replacement.
+
+`request-again` takes the same source, `fingerprint`, reviewed `draft` and optional
+`attachments:[id]` chosen from that review. It rechecks eligibility, source and
+exact file bytes, then uses the ordinary request and attachment validators in
+one transaction. A stale review returns 409 without creating anything. Catalog
+prices are selected on the server; replace the catalog selection to change the
+item. Custom lines remain editable. Every new line, request and chosen attachment
+has a new identity; bytes and filenames of selected files are preserved.
+
+The result is a requester-owned draft with no policy or approval. Submit it
+separately under current policy. Source email-intake linkage, integration authority,
+quotes, receipts, invoices and commitments are not copied. This native slice
+does not implement conditional forms, arbitrary half-filled autosave, route
+preview, splits, custom fields or pending supplier proposals.

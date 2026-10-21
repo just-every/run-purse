@@ -55,3 +55,16 @@ Compare each currency separately. The savings baseline is the first recorded RFQ
 In Requests, the owner records the business request email address and connects its Resend receiving webhook using the installation's private provider configuration. Saving the address does not create or verify a mailbox. A requester forwards a quote PDF or emails a need and receives a sign-in link to a draft whose title is the subject. The source body and exact private attachments stay available while the requester completes the ordinary supplier, lines and coding fields. Creating the purchase draft does not submit it for approval.
 
 Unknown senders and people without current requester authority are held for the owner. The owner reviews the source and assigns it to an active requester with a reason. Provider-reported sender labels never claim verified employee authorship. Files remain private to the owner and assigned requester, including after the purchase draft is created. The installation accepts up to three 10 MB attachments; mail outcomes say what the provider recorded, and local mail is suppressed. See API.md for webhook setup and bounded source custody.
+
+## Request again
+
+Open a past request or purchase order and expand **Request again**. Choose
+**Review copy** to see current catalog prices and anything left out because it
+is no longer available. Select each evidence file you want to carry over; none
+is selected automatically. Review the new draft, replace missing values and
+choose **Save copied draft**. You can close the tab and reopen that saved draft
+on another signed-in device. Submit it separately for a new approval.
+
+Current catalog prices are fixed in this copy editor. Select a different catalog
+item or a custom line to change what you are requesting. Earlier approvals,
+quotes, receipts and invoices stay with the original purchase.

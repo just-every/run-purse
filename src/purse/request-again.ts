@@ -16,7 +16,7 @@ export async function requestAgain(s: State, a: Actor, op: string, b: Data) {
     let supplierId = source.supplier;
     try { supplier(s, supplierId); } catch { supplierId = ''; flags.push({ field: 'supplier', reason: 'Supplier is unavailable; choose an eligible supplier' }); }
     const draft: Data = {
-        title: b.kind === 'order' ? get(s, 'request', source.request).title : source.title,
+        title: b.kind === 'order' ? (s.get('revision:' + source.request + ':' + source.revision)?.value.title ?? get(s, 'request', source.request).title) : source.title,
         supplier: supplierId, currency: source.currency, needDate: source.needDate,
         location: source.location, costCentre: source.costCentre, terms: source.terms,
         freightMinor: source.freightMinor, taxMinor: source.taxMinor, lines: []
@@ -35,9 +35,9 @@ export async function requestAgain(s: State, a: Actor, op: string, b: Data) {
         }
         const unitMinor = item?.unitMinor ?? original.unitMinor;
         if (unitMinor !== original.unitMinor) changes.push({ label, beforeMinor: original.unitMinor, afterMinor: unitMinor });
-        draft.lines.push({ description: item?.description ?? original.description, quantity: original.quantity,
+        draft.lines.push({ description: original.description, quantity: original.quantity,
             unitMinor, category: original.category, project: original.project, catalogue: original.catalogue,
-            partNumber: item?.partNumber ?? original.partNumber, unit: item?.unit ?? original.unit,
+            partNumber: original.partNumber, unit: original.unit,
             shipTo: original.shipTo });
     }
     const files = all(s, 'attachment').filter(f => f.kind === b.kind && f.record === source.id && !f.privateSupplierDocument);
