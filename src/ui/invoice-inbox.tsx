@@ -1,3 +1,4 @@
+import { Separated } from './separated';
 import { useState } from 'react';
 import { Chip, Field, Form, Table, when, type D } from './shared';
 
@@ -8,7 +9,7 @@ export function InvoiceInbox({ data, actor, mutate }: { data: D; actor: D; mutat
     if (!actor.roles.includes('buyer')) return null;
     const current = captures.find(c => c.id === id), supplier = (sid: string) => data.supplier.find((s: D) => s.id === sid);
     const orders = current ? data.order.filter((o: D) => o.supplier === current.supplier && o.issuedAt && !o.imported && ['issued', 'closed'].includes(o.status)) : [];
-    return <section aria-label="Supplier invoice inbox"><h3>Supplier invoice inbox</h3>
+    return <Separated><section aria-label="Supplier invoice inbox"><h3>Supplier invoice inbox</h3>
         <p className="quiet">Supplier invoice mail sent to the AP address waits here as private drafts for owners and buyers. Senders are provider-reported, not verified; nothing becomes an invoice until you review and confirm its reading.</p>
         {actor.roles.includes('owner') && <details><summary>AP inbox address</summary><Form label="Save AP email address" onSubmit={b => mutate('invoice-inbox-config', b)}><Field label="AP email address" name="address" type="email" defaultValue={data.invoiceInboxConfig?.[0]?.address || ''}/></Form><p className="quiet">Use an address separate from the request address and connect it with your receiving-mail provider. Saving records the address; it does not verify the mailbox or configure delivery.</p></details>}
         {captures.length ? <Table heads={['Received', 'From', 'Subject', 'Status', '']}>{captures.map(c => <tr key={c.id}><td className="figure-cell">{when(c.receivedAt)}</td><td style={{ overflowWrap: 'anywhere' }}>{c.providerSender}</td><td className="record-name">{c.subject}</td><td><Chip>{c.status === 'held' ? 'held for review' : 'draft'}</Chip></td><td className="row-action"><button onClick={() => setId(c.id)}>Open AP email</button></td></tr>)}</Table> : <p className="quiet">No supplier invoice mail yet.</p>}
@@ -19,5 +20,5 @@ export function InvoiceInbox({ data, actor, mutate }: { data: D; actor: D; mutat
             {current.status === 'held' && <><p role="status">Held: {current.holdReason}</p><Form key={current.version} label="Assign AP email" initial={{ id: current.id, version: current.version }} onSubmit={b => mutate('invoice-inbox-assign', b)}><Field label="Assign to supplier" name="supplier" options={data.supplier.filter((s: D) => !s.mergedInto).map((s: D) => ({ value: s.id, label: s.name }))}/><Field label="Assignment reason" name="reason"/></Form></>}
             {current.status === 'draft' && current.files.filter((file: D) => !current.sources.some((s: D) => s.file === file.id)).map((file: D) => <Form key={file.id + ':' + current.version} label={'Start invoice reading: ' + file.name} initial={{ id: current.id, version: current.version, file: file.id }} onSubmit={async b => { const source = await mutate('invoice-inbox-source', b); await mutate('invoice-extract', { source: source.id }); }}><Field label={'Purchase order for ' + file.name} name="order" options={orders.map((o: D) => ({ value: o.id, label: o.number }))}/></Form>)}
         </section>}
-    </section>;
+    </section></Separated>;
 }
