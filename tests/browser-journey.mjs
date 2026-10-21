@@ -21,7 +21,7 @@ export async function journey(browser,root,origin,width,evidence,shared){const s
 export async function protectedPreparationJourney(browser,root,origin,width,evidence){
  const buyer=await session(browser,root,origin,'buyer',width),owner=await session(browser,root,origin,'owner',width);
  try{
-  const marker='9876543210123456',draft='SECURITY-001 safe human preparation '+width;
+  const marker='9876543210123456',draft='SECURITY-001 safe human preparation '+width+'-'+crypto.randomUUID().slice(0,8);
   await clickTab(buyer.page,'Preparation');await buyer.page.getByLabel('Editable draft',{exact:true}).fill(draft);
   // Exercise the real form and native server with an adversarial structured request.
   await buyer.page.route('**/api/purse/command/prepare',async route=>{const input=route.request().postDataJSON();input.fields.bankAccount=marker;await route.continue({postData:JSON.stringify(input)});});
