@@ -115,7 +115,7 @@ export async function integrationTokensJourney(browser, root, origin, width, evi
         token = '';
         await screenshot(owner.page, 'settings-revoked');
         const deleted=owner.page.waitForResponse(r=>/\/api\/purse\/integration-tokens\/[^/]+\/delete$/.test(r.url()));
-        await row.getByRole('button',{name:'Delete token',exact:true}).click();
+        await row.getByRole('button',{name:'Delete integration',exact:true}).click();
         assert.ok((await deleted).ok());await row.waitFor({state:'detached'});
         await screenshot(owner.page,'settings-deleted');
         return { clause: 'INTAKE-007', width, request: requestId };
