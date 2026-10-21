@@ -1,6 +1,8 @@
 import { all, audit, get, put, requireThat, text, type Actor, type Data, type State } from './types';
 import { allowed, requirePermission } from './access';
 import { builtinPermissions, builtinRoles, permissions, scopeDimensions, type AccessScope, type BuyerLimit } from './access-permissions';
+import { unrestrictedAccess } from './access-audit';
+import { memberGrantList, zeroableBuyerGrants, zeroBuyerLimits } from './access-zero';
 
 function scopeInput(s: State, input: unknown): AccessScope {
     if (input === undefined) return {};
@@ -46,6 +48,19 @@ function normalizeGrants(s: State, b: Data) {
     });
 }
 export function accessAdministration(s: State, a: Actor, op: string, b: Data): Data | undefined {
+    if (op === 'buyer-zero-limit') {
+        requirePermission(s, a, 'access.manage');
+        requireThat(Object.keys(b).every(field => ['email', 'grantIndex'].includes(field)), 'Only a buyer grant can be selected; zero limits are fixed');
+        const email = text(b.email, 'Email').toLowerCase(), before = get(s, 'member', email);
+        requireThat(Number.isSafeInteger(b.grantIndex) && b.grantIndex >= 0, 'Choose an existing buyer grant');
+        const subject = zeroableBuyerGrants(s, a, before).find(grant => grant.grantIndex === b.grantIndex);
+        requireThat(subject, 'The whole buyer grant must fit one administrative grant', 403);
+        const grants = memberGrantList(before).map((grant, index) => index === b.grantIndex ? { ...grant, limits: { ...zeroBuyerLimits } } : grant);
+        const after = { ...before, grants };
+        put(s, 'member', email, after);
+        audit(s, a, 'member', email, { operation: op, grantIndex: b.grantIndex, before, after });
+        return { ...subject, limits: { ...zeroBuyerLimits } };
+    }
     if (op === 'member') {
         requireThat(a.owner, 'Current native owner required to change grants', 403);
         const email = text(b.email, 'Email').toLowerCase(); requireThat(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email), 'Valid email required');
@@ -71,11 +86,12 @@ export function accessAdministration(s: State, a: Actor, op: string, b: Data): D
         put(s, 'accessRole', id, after); audit(s, a, 'access-role', id, { before, after }); return get(s, 'accessRole', id);
     }
     if (op === 'buyer-role-limit') {
-        requireThat(a.owner, 'Current native owner required to change buyer limits', 403);
+        requirePermission(s, a, 'access.manage');
         const role = b.role ?? 'buyer', entity = b.entity ?? 'main'; requireThat(roleExists(s, role), 'Invalid buyer role');
         const granted = builtinPermissions[role] ?? s.get('accessRole:' + role)?.value.permissions ?? [];
         requireThat(granted.includes('po.convert'), 'Role has no conversion permission'); scopeInput(s, { entities: [entity] });
         const limits = limitInput(b.limits ?? Object.fromEntries(['absoluteMinor', 'percent', 'quantityPercent'].filter(field => Object.hasOwn(b, field)).map(field => [field, b[field]])));
+        requireThat(a.owner || unrestrictedAccess(s, a, 'access.manage') && Object.entries(zeroBuyerLimits).every(([field, value]) => limits[field as keyof BuyerLimit] === value), 'Only the native owner can raise buyer limits; unrestricted administration can set all limits to zero', 403);
         const id = role + ':' + entity, before = s.get('buyerRoleLimit:' + id)?.value ?? null, after = { role, entity, limits };
         put(s, 'buyerRoleLimit', id, after); audit(s, a, op, id, { before, after }); return get(s, 'buyerRoleLimit', id);
     }

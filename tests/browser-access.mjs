@@ -1,7 +1,7 @@
 import {accessSourceScreens} from './browser-access-sources.mjs';
 import {nativeWebContext} from './native-web-fixture.mjs';
 import {accessFixture} from './access-fixture.mjs';
-import {manageAccess,zeroBuyer,conversionEdit,scopedReports,apTerms} from './browser-access-flows.mjs';
+import {manageAccess,zeroBuyer,zeroBuyerRole,conversionEdit,scopedReports,apTerms} from './browser-access-flows.mjs';
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
@@ -12,11 +12,11 @@ const evidence=resolve(process.env.PURSE_EVIDENCE||'.cache/access');await mkdir(
 const bundle=await build({stdin:{contents:"import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);",resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'esm',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
 const browser=await chromium.launch({headless:true,...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--use-mock-keychain','--password-store=basic']});
 try{for(const width of widths){const f=await accessFixture({withSources:true}),contexts=[],pageErrors=[];try{
- const snap=async(page,name)=>{assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,name+' overflow');await page.screenshot({path:join(evidence,`ACCESS-001-${name}-${width}.png`),fullPage:true});const controls=({'custom-role':'Custom role designer','role-limits':'Buyer role limits','grant-assigned':'Assign member roles','personal-zero':'Assign member roles','admin':'Custom role designer'})[name];if(controls)await page.getByRole('region',{name:controls,exact:true}).screenshot({path:join(evidence,`ACCESS-001-${name}-controls-${width}.png`)});};
+ const snap=async(page,name)=>{assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,name+' overflow');await page.screenshot({path:join(evidence,`ACCESS-001-${name}-${width}.png`),fullPage:true});const controls=({'custom-role':'Custom role designer','role-limits':'Buyer role limits','grant-assigned':'Assign member roles','personal-zero':'Set buyer limits to zero','admin-role-zero':'Set buyer limits to zero','admin':'Custom role designer'})[name];if(controls)await page.getByRole('region',{name:controls,exact:true}).screenshot({path:join(evidence,`ACCESS-001-${name}-controls-${width}.png`)});};
  const open=async role=>{const context=await nativeWebContext(browser,f.h,width,bundle.outputFiles[0].text,f.cookies[role]);contexts.push(context);const page=await context.newPage();page.on('pageerror',error=>pageErrors.push(error.message));return page;};
  const owner=await open('owner');await manageAccess(owner,f,snap);
  const admin=await open('admin');await admin.goto(f.h.origin+'/app?tab=Settings');await admin.getByRole('button',{name:'Save custom role',exact:true}).waitFor();assert.equal(await admin.getByRole('button',{name:'Save role grant',exact:true}).count(),0);await snap(admin,'admin');await accessSourceScreens(admin,f,'admin',snap);
- const approvals=[];for(const title of ['Buyer role allowance','Buyer personal zero']){const r=await f.h.command('request',f.draft(0,title),f.cookies.requester);await f.h.command('submit',{id:r.id,revision:1},f.cookies.requester);await f.h.command('decision',{id:r.id,revision:1,decision:'approved',reason:'Reviewed native web conversion case'},f.cookies.approver);approvals.push(r);}
+ const approvals=[];for(const title of ['Buyer role allowance','Buyer personal zero','Buyer zero decrease']){const r=await f.h.command('request',f.draft(0,title),f.cookies.requester);await f.h.command('submit',{id:r.id,revision:1},f.cookies.requester);await f.h.command('decision',{id:r.id,revision:1,decision:'approved',reason:'Reviewed native web conversion case'},f.cookies.approver);approvals.push(r);}
  for(const role of ['owner','requester','approver','buyer','receiver','ap-clerk','finance-viewer','auditor','lead']){
   console.log('Native access web '+width+' '+role);const page=role==='owner'?owner:await open(role);await page.goto(f.h.origin+'/app?tab=Orders&receipt='+f.orders[0].id);await page.getByRole('heading',{name:f.orders[0].number+' · issued',exact:true}).waitFor();
   if(!['owner'].includes(role))assert.equal(await page.getByText(f.orders[1].number,{exact:true}).count(),0);
@@ -30,7 +30,7 @@ try{for(const width of widths){const f=await accessFixture({withSources:true}),c
   await accessSourceScreens(page,f,role,snap);
   if(['buyer','ap-clerk'].includes(role)){await page.goto(f.h.origin+'/app?tab=Suppliers');await page.getByRole('row').filter({hasText:'Prairie Safety Supply'}).getByRole('button',{name:'Open',exact:true}).click();await page.getByRole('heading',{name:'Protected tax and bank values',exact:true}).waitFor();await page.getByText('Recorded, not verified – not active for payment',{exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'Reveal protected value',exact:true}).count(),0);await snap(page,role+'-masks');}
  }
- const buyer=await open('buyer');await conversionEdit(buyer,f,approvals[0],'10.50',true,snap);await zeroBuyer(owner,f,snap);await conversionEdit(buyer,f,approvals[1],'10.01',false,snap);
+ const buyer=await open('buyer');await conversionEdit(buyer,f,approvals[0],'10.50',true,snap);await zeroBuyer(admin,f,snap);await conversionEdit(buyer,f,approvals[1],'10.01',false,snap);await conversionEdit(buyer,f,approvals[2],'9.99',true,snap,'conversion-decrease');await zeroBuyerRole(admin,f,snap);
  assert.deepEqual(pageErrors,[]);
  }catch(error){for(const [index,context]of contexts.entries()){const page=context.pages().at(-1);if(page)await page.screenshot({path:join(evidence,`ACCESS-001-failure-${width}-${index}.png`),fullPage:true}).catch(()=>{});}throw error;}finally{for(const context of contexts)await context.close();await f.h.close();}}}finally{await browser.close();}
 console.log('Scoped native role web journeys passed at '+widths.join('/'));

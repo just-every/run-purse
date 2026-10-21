@@ -22,6 +22,7 @@ import { accessGrants, allowed, requirePermission, resolvedPermissions } from '.
 import { canReadRecord, mayReadPrivateSupplier, mayReadProtectedSupplier, requireRecordRead, unrestrictedPermission } from './access-records';
 import { analyticState, peopleProjection, projectPurchaseLinks, purchasingProjection, scopeAuditRows } from './access-projection';
 import { scopedAgreementEvidence } from './access-agreement-sources';
+import { buyerZeroSubjects } from './access-zero';
 
 function cashView(s: State, a: Actor, orderIds: Set<string>, invoiceIds: Set<string>) {
     if (!allowed(s, a, 'cash.read')) return null;
@@ -97,6 +98,8 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.registerAnalyticsScoped = !globalProcurement;
     data.accessRole = all(s, 'accessRole').filter(role => allowed(s, a, 'access.manage', role));
     data.buyerRoleLimit = all(s, 'buyerRoleLimit').filter(limit => allowed(s, a, 'access.manage', limit));
+    data.buyerZeroSubjects = buyerZeroSubjects(s, a);
+    data.mayZeroBuyerRoleLimits = unrestrictedPermission(s, a, 'access.manage');
     return { actor: { id: a.id, email: a.email, roles: roles(s, a), permissions, grants: accessGrants(s, a), dev: a.dev }, data };
 }
 

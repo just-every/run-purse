@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { builtinPermissions, permissions } from '../purse/access-permissions';
 import { Field, Form, Table, when, type D } from './shared';
 import { dollarText, limitInput, limitSummary, memberGrants, permissionLabels, roleLabels, scopeLabels, scopeSummary } from './access-ui';
+import { ZeroBuyerLimits } from './access-zero-limits';
 
 type Mutate = (operation: string, input: D) => Promise<any>;
 type Role = { id: string; name: string; permissions: readonly string[]; scope?: D; limits?: D; active?: boolean; custom?: boolean };
@@ -29,7 +30,7 @@ function LimitFields({ prefix, initial = {} }: { prefix: string; initial?: D }) 
         <Field label={prefix + ' dollar increase limit'} name={prefix + 'absoluteMinor'} defaultValue={dollarText(initial.absoluteMinor)} required={false}/>
         <Field label={prefix + ' price increase percent'} name={prefix + 'percent'} defaultValue={initial.percent ?? ''} required={false}/>
         <Field label={prefix + ' quantity increase percent'} name={prefix + 'quantityPercent'} defaultValue={initial.quantityPercent ?? ''} required={false}/>
-        <p className="quiet wide">{prefix === 'Person' ? 'Blank fields use the corresponding role default.' : 'Blank fields allow no increase for that measure.'} Zero is explicit. Dollar or percentage price allowances apply together with the quantity allowance; decreases remain allowed.</p>
+        <p className="quiet wide">{prefix === 'Person' ? 'Blank fields use the corresponding role default.' : 'A blank dollar or percentage field omits that price cap. With neither price cap configured, no price increase is allowed. A blank quantity field allows no quantity increase.'} Zero is explicit. When both price caps apply, both must be met and the lower governs. Decreases remain allowed.</p>
     </>;
 }
 function GrantEditor({ member, data, roles, mutate, saved }: EditorProps & { member: D }) {
@@ -78,7 +79,7 @@ function CustomRoles({ data, roles, owner, mutate, saved }: EditorProps & { owne
     const [id, setId] = useState(''), [selectedPermissions, setPermissions] = useState<string[]>([]), [scope, setScope] = useState<D>({});
     const current = roles.find(role => role.id === id && role.custom);
     function choose(value: string) { const role = roles.find(item => item.id === value && item.custom); setId(value); setPermissions([...(role?.permissions ?? [])]); setScope(role?.scope ?? {}); }
-    return <section aria-label="Custom role designer"><h4>Custom roles</h4><p>Choose explicit permissions. A role's restrictions apply in addition to each member grant's restrictions. Only the native owner assigns roles and changes buyer limits.</p>
+    return <section aria-label="Custom role designer"><h4>Custom roles</h4><p>Choose explicit permissions. A role's restrictions apply in addition to each member grant's restrictions. Only the native owner assigns roles or raises buyer limits. Administrators can set eligible buyer limits to zero.</p>
         <label className="field">Custom role to edit<select aria-label="Custom role to edit" value={id} onChange={e => choose(e.target.value)}><option value="">New custom role</option>{roles.filter(role => role.custom && (owner || role.active !== false)).map(role => <option key={role.id} value={role.id}>{role.name}</option>)}</select></label>
         <Form key={id} label="Save custom role" onSubmit={async input => {
             if (!selectedPermissions.length) throw new Error('Choose at least one role permission.');
@@ -106,7 +107,7 @@ export function AccessSettings({ data, actor, mutate }: { data: D; actor: D; mut
         {notice && <p role="status">{notice}</p>}
         <h4>Current member grants</h4><Table heads={['Member', 'Role', 'Scope', 'Buyer limits', 'Status', ...(owner ? [''] : [])]}>
             {rows.map(({ member, grant, index }: { member: D; grant: D; index: number }) => {
-                const role = roles.find(item => item.id === grant.role), limit = { absoluteMinor: 0, percent: 0, quantityPercent: 0, ...(role ? defaults(role) : {}), ...grant.limits };
+                const role = roles.find(item => item.id === grant.role), limit = { quantityPercent: 0, ...(role ? defaults(role) : {}), ...grant.limits };
                 return <tr key={member.email + ':' + index}><td className="email-cell">{member.name}<br/>{member.email}</td><td>{name(grant.role)}</td><td>{scopeSummary(grant.scope)}{role?.scope && Object.keys(role.scope).length > 0 && <p>Role restriction: {scopeSummary(role.scope)}</p>}{grant.departmentRead && <p>Department purchases included</p>}</td><td>{role?.permissions.includes('po.convert') ? limitSummary(limit, currency) : '—'}</td><td>{member.active && role?.active !== false ? 'Active' : 'Inactive'}</td>{owner && <td><Form label="Revoke grant" onSubmit={async () => { await mutate('member', { email: member.email, name: member.name, active: member.active, grants: memberGrants(member).filter((_, grantIndex) => grantIndex !== index) }); setNotice('Role grant revoked. Remaining grants were retained; the change is recorded in audit history.'); }}>{null}</Form></td>}</tr>;
             })}
         </Table>{!rows.length && <p>No member grants are visible.</p>}
@@ -114,6 +115,7 @@ export function AccessSettings({ data, actor, mutate }: { data: D; actor: D; mut
             {roles.map(role => <tr key={role.id}><td>{role.name}{!role.custom && <p className="quiet">Built-in role</p>}</td><td>{role.permissions.map(permission => permissionLabels[permission] ?? 'Unavailable permission').join(', ')}</td><td>{scopeSummary(role.scope)}</td><td>{role.id === 'owner' ? 'Native owner authority' : role.permissions.includes('po.convert') ? limitSummary(defaults(role), currency) : '—'}</td><td>{role.active === false ? 'Inactive' : 'Active'}</td></tr>)}
         </Table>
         {owner && <><MemberGrants data={data} roles={roles} mutate={mutate} saved={setNotice}/><RoleLimits data={data} roles={roles} mutate={mutate} saved={setNotice}/></>}
+        <ZeroBuyerLimits data={data} mutate={mutate} saved={setNotice}/>
         <CustomRoles data={data} roles={roles} owner={owner} mutate={mutate} saved={setNotice}/>
         {history.length > 0 && <section aria-label="Recent access changes"><h4>Recent access changes</h4><Table heads={['When', 'Changed by', 'Change', 'Before / after']}>
             {history.map((event: D) => <tr key={event.id}><td>{when(event.at)}</td><td className="email-cell">{event.email ?? 'Native operator'}</td><td>{event.action === 'member' ? 'Member grants: ' + event.record : event.action === 'access-role' ? 'Custom role: ' + (event.after?.name ?? event.before?.name ?? name(event.record)) : 'Buyer role limits: ' + name(event.after?.role ?? event.before?.role)}</td><td>{event.action === 'member' ? <><p>Before: {grantHistory(event.before)}</p><p>After: {grantHistory(event.after)}</p></> : event.action === 'buyer-role-limit' ? <><p>Before: {limitSummary(event.before?.limits, currency)}</p><p>After: {limitSummary(event.after?.limits, currency)}</p></> : <><p>Before: {event.before ? scopeSummary(event.before.scope) + ' · ' + (event.before.permissions ?? []).map((permission: string) => permissionLabels[permission] ?? 'Unavailable permission').join(', ') : 'New role'}</p><p>After: {scopeSummary(event.after?.scope)} · {(event.after?.permissions ?? []).map((permission: string) => permissionLabels[permission] ?? 'Unavailable permission').join(', ')}{event.after?.active === false ? ' · Inactive' : ''}</p></>}</td></tr>)}

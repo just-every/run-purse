@@ -18,8 +18,11 @@ export const memberGrants = (member: D): D[] => member.grants ?? (member.roles ?
 export const scopeSummary = (scope: D = {}) => Object.entries(scope).map(([dimension, values]) => (scopeLabels[dimension as keyof typeof scopeLabels] ?? 'scope') + ': ' + (values as string[]).map(value => dimension === 'entities' && value === 'main' ? 'Main business' : value).join(', ')).join(' · ') || 'All departments, locations, projects and entities';
 export function limitSummary(limit: D | undefined, currency: string) {
     if (!limit) return 'No configured increase allowance';
-    const price = [limit.absoluteMinor !== undefined ? money(limit.absoluteMinor, currency) : undefined, limit.percent !== undefined ? limit.percent + '%' : undefined].filter(Boolean).join(' or ');
-    return (price ? price + ' price increase' : 'No price increase allowance') + '; ' + (limit.quantityPercent ?? 0) + '% quantity increase';
+    const price = limit.absoluteMinor !== undefined && limit.percent !== undefined
+        ? money(limit.absoluteMinor, currency) + ' and ' + limit.percent + '% price increase (lower cap governs)'
+        : limit.absoluteMinor !== undefined ? money(limit.absoluteMinor, currency) + ' price increase (no percentage cap)'
+        : limit.percent !== undefined ? limit.percent + '% price increase (no dollar cap)' : '';
+    return (price || 'No price increase allowance') + '; ' + (limit.quantityPercent ?? 0) + '% quantity increase';
 }
 export const dollarText = (value: number | undefined) => value === undefined ? '' : amountText(value);
 function dollars(value: string) {
