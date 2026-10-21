@@ -31,6 +31,9 @@ test('SCIM provisions a scoped member who signs in through a real local IdP; sig
  }
  await h.settings('enable');
  const signInPage=(await h.send('/signin',undefined,'')).value;assert.ok(signInPage.includes('/auth/oidc/company/start'));
+ h.idp.setPrincipal({sub:'synthetic-purse-person-404',email:'requester@example.test'});await h.complete(await h.begin(),403);
+ assert.equal(await h.db.prepare('SELECT 1 FROM oa_external_identities WHERE operator_id=?').bind(provisioned.id).first(),null,'The same email cannot bind a different SCIM identity');
+ h.idp.setPrincipal({sub:'synthetic-purse-person-1',email:'requester@example.test'});
  const transaction=await h.begin();await h.complete({...transaction,cookie:''},400);
  const first=await h.complete(transaction);assert.ok(first.cookie);assert.equal(first.response.headers.get('location'),'/app');
  const identity=(await h.send('/auth/session',undefined,first.cookie)).value;assert.equal(identity.kind,'oidc');assert.equal(identity.operator.id,provisioned.id);assert.equal(identity.operator.email,'requester@example.test');assert.equal(identity.operator.role,'member');

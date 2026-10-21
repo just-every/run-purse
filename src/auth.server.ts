@@ -6,6 +6,7 @@ import { createOperatorAuth, createAuthHandler, createSignInHandler, devNotFound
 import { operatorMail } from './mail.server.mjs'
 import { createOwnerClaimHandler } from './modules/owner-claim/index.mjs'
 import branding from './branding.json'
+import { scimIdentityAdmission } from './purse/identity-scim'
 import { identityProviderConfiguration, type IdentityBindings } from './purse/identity-config'
 import { identitySettingsPath, identitySettingsResponse } from './purse/identity-settings'
 
@@ -50,7 +51,7 @@ export interface Bindings extends IdentityBindings {
 export const runtimeBindings = (env: Bindings): Bindings => env.RER_DEV_ORIGIN && env.AUTH_LOCAL === 'true' ? { ...env, AUTH_ORIGIN: env.RER_DEV_ORIGIN } : env
 export const authConfig = (env: Bindings): AuthConfig => ({ origin: env.AUTH_ORIGIN, local: env.AUTH_LOCAL === 'true', OWNER_EMAIL: env.OWNER_EMAIL, SESSION_SECRET: env.SESSION_SECRET, SETUP_TOKEN: env.SETUP_TOKEN, MAIL_FROM: env.MAIL_FROM, ...identityProviderConfiguration(env), branding: { productName: branding.name, accentColor: branding.primaryColor, signInPath: '/signin', theme: theme.href } })
 export function operatorAuth(env: Bindings) {
- return createOperatorAuth({ db: env.DB, config: authConfig(env), mailSender: operatorMail(env), clientIp: request => request.headers.get('CF-Connecting-IP') ?? '' })
+ return scimIdentityAdmission(createOperatorAuth({ db: env.DB, config: authConfig(env), mailSender: operatorMail(env), clientIp: request => request.headers.get('CF-Connecting-IP') ?? '' }), env.DB)
 }
 
 const privateHeaders = { 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex, nofollow' }
