@@ -75,7 +75,7 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
     // The current invoice door stores inclusive allocation amounts; retain the exact breakdown here.
     const allocations=allocateInvoiceCharges(mapped,amounts.freightMinor+amounts.taxMinor).map(line=>({line:line.line,quantity:line.quantity,amountMinor:line.amountMinor}));
     const result=invoice(s,a,{order:order.id,reference:value('reference'),source:'Confirmed invoice reading '+reading.id,invoiceDate,
-        ...(reading.senderEmail.value?{senderEmail:reading.senderEmail.value}:{}),...(reading.remitTo.value?{remitTo:reading.remitTo.value}:{}),...(b.remit?{remit:b.remit}:{}),document:{name:attachment.name,mediaType:attachment.mediaType,base64:attachment.base64},allocations});
+        ...(source.apSender?{senderEmail:source.apSender}:reading.senderEmail.value?{senderEmail:reading.senderEmail.value}:{}),...(reading.remitTo.value?{remitTo:reading.remitTo.value}:{}),...(b.remit?{remit:b.remit}:{}),document:{name:attachment.name,mediaType:attachment.mediaType,base64:attachment.base64},allocations});
     reading.status='confirmed';reading.version++;reading.invoice=result.id;reading.confirmedBy=a.id;reading.confirmedAt=new Date().toISOString();reading.amounts=amounts;
     put(s,'invoiceReading',reading.id,reading);event(s,a,reading,op,{invoice:result.id,reason,snapshot:structuredClone(reading)});return reading;
 }
