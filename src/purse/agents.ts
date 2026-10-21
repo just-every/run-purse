@@ -1,7 +1,9 @@
+import { rejectProtectedInput } from './protected-input';
 import { recordScope } from './documents';
 import { all, audit, can, get, put, requireThat, text, uid, own, type Actor, type Data, type State, roles } from './types';
 const workflows = { intake: ['need', 'supplied evidence', 'supplier', 'quantity', 'project', 'need date'], rfq: ['nominated suppliers', 'scope', 'response deadline', 'supplied offers'], renewal: ['agreement', 'usage evidence', 'notice date', 'keep/change/cancel options'], exception: ['PO', 'receipt or invoice evidence', 'correction or escalation'], negotiation: ['known counterparty', 'owner price bounds', 'owner term bounds', 'nonbinding draft'] };
 export function preparation(s: State, a: Actor, op: string, b: Data): Data | undefined {
+    if (['prepare', 'edit-preparation', 'propose-action'].includes(op)) { requireThat(roles(s,a).length, 'Active business capability required', 403); rejectProtectedInput(b); }
     if (op === 'prepare') {
         requireThat(roles(s,a).length,'Active business capability required',403);
         requireThat(Object.hasOwn(workflows, b.workflow), 'Unknown preparation workflow');
@@ -38,4 +40,4 @@ export function preparation(s: State, a: Actor, op: string, b: Data): Data | und
         return get(s, 'proposedAction', id);
     }
 }
-export function actionInput(s: State, a: Actor, b: Data) { const p = get(s, 'proposedAction', b.id), run = get(s, 'agentRun', p.run); requireThat(p.status === 'proposed' && p.runVersion === run.version, 'Action or input version stale', 409); requireThat(a.owner || p.actor === a.id, 'Action outside your scope', 403); requireThat(p.references.every((r: Data) => s.get(`${r.kind}:${r.id}`)?.revision === r.version), 'Source records changed', 409); return p; }
+export function actionInput(s: State, a: Actor, b: Data) { const p = get(s, 'proposedAction', b.id), run = get(s, 'agentRun', p.run); requireThat(p.status === 'proposed' && p.runVersion === run.version, 'Action or input version stale', 409); requireThat(a.owner || p.actor === a.id, 'Action outside your scope', 403); requireThat(p.references.every((r: Data) => s.get(`${r.kind}:${r.id}`)?.revision === r.version), 'Source records changed', 409); rejectProtectedInput(p.input); return p; }
