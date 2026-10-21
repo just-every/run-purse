@@ -74,12 +74,14 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.cashExpectation = all(s, 'cashExpectation').filter(expectation => orderIds.has(expectation.order)
         && ['cash.read', 'payable.terms'].some(permission => allowed(s, a, permission, get(s, 'order', expectation.order))));
     data.cashRequirements = cashView(s, a, orderIds, invoiceIds);
-    for (const kind of ['orderChasePolicy', 'orderChaseEvent']) data[kind] = all(s, kind).filter(record => orderIds.has(record.order)
+    data.orderChasePolicy = all(s, 'orderChasePolicy').filter(record => orderIds.has(record.order)
         && allowed(s, a, 'procurement.manage', get(s, 'order', record.order)));
+    data.orderChaseEvent = all(s, 'orderChaseEvent').filter(record => orderIds.has(record.order));
     data.supplierOrderEvidence = all(s, 'supplierOrderEvidence').filter(evidence => orderIds.has(evidence.order)
         && ['procurement.manage', 'performance.read'].some(permission => allowed(s, a, permission, get(s, 'order', evidence.order))));
-    data.orderChaseEvidence = data.supplierOrderEvidence;
-    data.supplierIssue = all(s, 'supplierIssue').filter(issue => orderIds.has(issue.order));
+    data.orderChaseEvidence = all(s, 'supplierOrderEvidence').filter(evidence => orderIds.has(evidence.order));
+    data.supplierIssue = all(s, 'supplierIssue').filter(issue => orderIds.has(issue.order)
+        && ['procurement.manage', 'performance.read'].some(permission => allowed(s, a, permission, get(s, 'order', issue.order))));
     const supplierDocumentIds = new Set<string>();
     data.supplierDocument = all(s, 'supplierDocument').filter(document => mayReadPrivateSupplier(s, a, get(s, 'supplier', document.supplier)))
         .map(document => { supplierDocumentIds.add(document.id); return { ...document, compliance: supplierDocumentStatus(s, document) }; });

@@ -39,7 +39,8 @@ test('STOCK-001 counts create one preferred-item draft; a person submits and out
   assert.equal(repeated.request,draft.id)
   assert.equal(repeated.requestCreated,false)
   assert.equal((await state()).data.request.length,1)
-  await command('submit',{id:draft.id,revision:draft.revision},buyer,403)
+  // Approving purchases does not grant request creation or submission.
+  await command('submit',{id:draft.id,revision:draft.revision},approver,403)
   await command('policy',{name:'Cleaning approval',currency:'USD',category:'Cleaning',project:'Site upkeep',approver:'stock-approver@example.test',limitMinor:100000,budgetMinor:100000})
   const submitted = await command('submit',{id:draft.id,revision:draft.revision})
   assert.equal(submitted.status,'pending')

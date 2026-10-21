@@ -45,6 +45,7 @@ test('PO-003 overdue and unacknowledged POs chase on cadence, escalate once, sha
  const requesterState=(await state(requester)).data
  const replies=requesterState.orderChaseEvidence.find(e=>e.order===order.id)
  assert.equal(replies.history.length,2);assert.equal(replies.source,evidence.source)
+ assert.equal((await state(other)).data.orderChaseEvidence.length,0)
  assert.equal(requesterState.orderChaseEvent.at(-1).reason,'overdue-delivery')
  await cmd('close-order',{id:order.id,version:0,reason:'Supplier wrote off the remaining harness shipment'},buyer)
  const beforeCloseTick=h.messages.length
