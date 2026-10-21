@@ -38,7 +38,6 @@ try {
         });
         const page = await context.newPage();
         const failures=[];page.on('pageerror',error=>failures.push(error.message));
-        page.on('close',()=>{});
         try {
         const openSupplier = async () => {
             await page.goto(h.origin+'/app?tab=Suppliers');

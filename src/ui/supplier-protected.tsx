@@ -87,7 +87,7 @@ export function SupplierProtected({ supplier, owner, reload }: { supplier: D; ow
                 });
             }}>
                 <fieldset disabled={busy} className="wide" style={{ minWidth: 0 }}><legend>Reveal one protected value</legend>
-                    <label className="field">Protected field<select name="field" required>{fields.map(field => <option key={field.name} value={field.name}>{field.label}</option>)}</select></label>
+                    <label className="field">Protected field<select name="field" aria-label="Protected field" required>{fields.map(field => <option key={field.name} value={field.name}>{field.label}</option>)}</select></label>
                     <label className="field">Private reveal reason<input name="reason" type="password" autoComplete="off" required maxLength={2000}/></label>
                     <button className="btn-primary" disabled={busy}>Reveal protected value</button>
                 </fieldset>
