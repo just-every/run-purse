@@ -11,7 +11,7 @@ export default {
   const value=JSON.parse(row.value);
   if(hasUnsafeProtectedContext(row.kind,value))throw new Error('Clean historical protected context before export');
   if(row.kind==='supplierMatchingKey')row.value=JSON.stringify({id:row.id,secret:null,notRestored:true});
-  if(row.kind==='supplier'){if(value.matching&&Object.keys(value.matching).length)value.matchingNotRestored=true;delete value.matching;row.value=JSON.stringify(value);}
+  if(row.kind==='supplier'&&value.matching&&Object.keys(value.matching).length){value.matchingNotRestored=true;delete value.matching;row.value=JSON.stringify(value);}
   if(row.kind==='invoice'&&value.evidenceHash&&!value.evidence)throw new Error('Migrate legacy invoice evidence before export: '+row.id);
   return row;
  },
