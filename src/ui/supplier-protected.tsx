@@ -55,9 +55,9 @@ export function SupplierProtected({ supplier, owner, reload }: { supplier: D; ow
                 void perform(async () => {
                     try {
                         await call(path + '/store', body);
-                        if (active.current) setNotice('Protected values saved. Bank details remain unverified and inactive for payment.');
-                        await refresh(); await reload();
                     } finally { form.reset(); }
+                    if (active.current) setNotice('Protected values saved. Bank details remain unverified and inactive for payment.');
+                    await refresh(); await reload();
                 });
             }}>
                 <p className="quiet wide">Only the current owner can store or reveal these values. Blank fields keep their existing values. Change bank account and routing together. Matching-only identity above cannot recover these values.</p>
