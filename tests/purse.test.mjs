@@ -116,7 +116,10 @@ test('SECURITY-001 / AGENT-010 structured protected fields never enter preparati
  assert.equal(retainedRun.fields.purpose,historical.fields.purpose);assert.equal(retainedRun.fields.nested[0].delivery,'Keep delivery reference');assert.equal(retainedRun.history[0].note,'Retain safe history');assert.equal(retainedRun.draft,historical.draft);assert.equal(retainedRun.version,2);assert.equal(retainedRun.protectedContextCleanup.status,'cleaned');
  assert.ok(retained.proposedAction.filter(p=>p.run===legacyRun).every(p=>p.status==='cancelled'));
  await cmd('execute-action',{id:legacyAction},buyer,409);await cmd('execute-action',{id:legacyTarget},buyer,403);
- const quarantined=retained.agentRun.find(r=>r.id===valueRun.id);assert.equal(quarantined.version,7);assert.equal(quarantined.inputs.retainedEvidence,'Safe historical source');assert.equal(quarantined.protectedContextCleanup.status,'quarantined');assert.equal(quarantined.protectedContextCleanup.authorityInvalidated,true);
+ // This orphaned historical report has no request to authorize a buyer read.
+ // The native owner still verifies its complete retained quarantine history.
+ assert.equal(retained.agentRun.some(r=>r.id===valueRun.id),false);assert.equal(retained.proposedAction.some(p=>p.run===valueRun.id),false);
+ const quarantined=(await h.state(h.owner)).data.agentRun.find(r=>r.id===valueRun.id);assert.ok(quarantined);assert.equal(quarantined.version,7);assert.equal(quarantined.inputs.retainedEvidence,'Safe historical source');assert.equal(quarantined.protectedContextCleanup.status,'quarantined');assert.equal(quarantined.protectedContextCleanup.authorityInvalidated,true);
  await cmd('execute-action',{id:valueAction.id},buyer,409);
  const repeated=await cmd('protected-context-cleanup',{confirmed:true,reason:'Confirm cleanup is complete'},h.owner);assert.equal(repeated.records,0);
  const cleanupAudit=(await h.send('/api/purse/audit?action=protected-context-cleanup',undefined,h.owner)).value.events;assert.equal(cleanupAudit.length,5);assert.ok(cleanupAudit.every(e=>e.actor&&e.at&&e.record&&e.freeTextRedacted===false));
@@ -131,7 +134,7 @@ test('SECURITY-001 / AGENT-010 structured protected fields never enter preparati
 test('INTAKE-001 request again reviews current prices and omissions, copies only chosen bytes and persists a new draft with fresh authority', async t => {
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Canyon Procurement',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Office']});
- const requester=await h.member('again@example.test',['requester']),other=await h.member('other@example.test',['requester']),approver=await h.member('approver@example.test',['approver']),buyer=await h.member('buyer@example.test',['buyer']);
+ const requester=await h.member('again@example.test',['requester']),other=await h.member('other@example.test',['requester']),approver=await h.member('approver@example.test',['approver']),buyer=await h.member('buyer@example.test',['buyer']),finance=await h.member('synthetic-purse-1@example.test',['finance-viewer']);
  const supplier=await cmd('supplier',{name:'Repeat Supplies',status:'preferred',reason:'Reviewed supplier'});
  const policy=await cmd('policy',{name:'Office authority',currency:'USD',category:'*',project:'*',approver:'approver@example.test',limitMinor:1000000,budgetMinor:5000000});
  const items=[];for(const [index,unitMinor]of [1000,2000,3000].entries())items.push(await cmd('catalogue',{description:'Catalog item '+index,supplier:supplier.id,currency:'USD',unitMinor,category:'Office',project:'Office',approved:true}));
@@ -146,7 +149,7 @@ test('INTAKE-001 request again reviews current prices and omissions, copies only
  const before=await h.state();
  await cmd('request-again',{kind:'request',id:source.id,fingerprint:oldReview.fingerprint,draft:oldReview.draft},requester,409);
  await cmd('request-again-preview',{kind:'request',id:source.id},other,403);
- await cmd('request-again-preview',{kind:'request',id:source.id},buyer,403);
+ await cmd('request-again-preview',{kind:'request',id:source.id},finance,403);
  await cmd('request-again-preview',{kind:'request',id:source.id},'',401);
  assert.deepEqual(await h.state(),before,'Refused copies and read-only reviews create no records');
  const review=await cmd('request-again-preview',{kind:'request',id:source.id},requester);
