@@ -1,7 +1,7 @@
 // Hono owns declared HTTP surfaces; Start owns documents and server functions.
 // Keep Worker event handlers and named exports in the edition's server entry.
 export function isHonoRequest(pathname: string): boolean {
-  return pathname === '/health' || pathname === '/api' || pathname.startsWith('/api/')
+  return pathname === '/health' || pathname === '/api' || pathname.startsWith('/api/') || pathname === '/scim/v2' || pathname.startsWith('/scim/v2/')
 }
 
 export function dispatch(

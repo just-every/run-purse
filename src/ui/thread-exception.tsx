@@ -36,7 +36,9 @@ function BudgetBar({ e, currency }: { e: Exception; currency: string }) {
  * verbs for the policy's approver. It hangs under the requests it joins; cerise appears nowhere else. */
 export function ThreadException({ e, data, actor, mutate }: { e: Exception; data: D; actor: D; mutate: (op: string, b: D) => Promise<any> }) {
     const p = e.policy, currency = p.currency, [asking, setAsking] = useState<D>(), [busy, setBusy] = useState(false), [error, setError] = useState('');
-    const can = e.requests.every(r => holdsAuthority(data, actor, r)), approver = p.approver === actor.email ? 'You' : personName(data, p.approver);
+    const can = e.requests.every(r => holdsAuthority(data, actor, r));
+    const holders = [...new Set(e.requests.map(r => r.approvalHolder ?? p.approver))];
+    const approver = holders.map(email => email === actor.email ? 'You' : personName(data, email)).join(' · ');
     const run = async (op: string, body: D) => { setBusy(true); setError(''); try { await mutate(op, body); setAsking(undefined); } catch (x) { setError((x as Error).message); } finally { setBusy(false); } };
     const who = (r: D) => firstName(personName(data, r.requesterEmail)), short = (r: D) => r.lines.length === 1 ? r.lines[0].description : r.title;
     const fitsText = e.fits.map(r => `${who(r)}'s ${money(r.totalMinor, currency)}`).join(' and ');

@@ -1,3 +1,4 @@
+import { currentScimAssignment, scimAssignmentAllows, scimApprovalHolder } from './scim-approvals';
 import { accessGrants, allowed, buyerLimit, buyerLimits } from './access';
 import { canReadRecord, unrestrictedPermission } from './access-records';
 import { blanketPosition } from './blanket-orders';
@@ -11,6 +12,7 @@ import { all, type Actor, type Data, type State } from './types';
 function mayApprove(s: State, a: Actor, request: Data) {
     if (request.status !== 'pending' || !allowed(s, a, 'request.approve', request)
         || request.requester === a.id || request.requesterEmail?.toLowerCase() === a.email.toLowerCase()) return false;
+    if (currentScimAssignment(s, request)) return scimAssignmentAllows(s, a, request);
     const policy = s.get('policy:' + request.policy)?.value;
     return Boolean(policy && (policy.approver === a.email || all(s, 'delegation').some(delegation => delegation.policy === policy.id
         && delegation.from === policy.approver && delegation.delegate === a.email && delegation.active && Date.parse(delegation.expires) > Date.now())));
@@ -21,7 +23,7 @@ export function purchasingProjection(s: State, a: Actor) {
     const invoices = all(s, 'invoice').filter(invoice => allowed(s, a, 'invoice.read', invoice));
     const requestIds = new Set(requests.map(request => request.id)), orderIds = new Set(orders.map(order => order.id)), invoiceIds = new Set(invoices.map(invoice => invoice.id));
     const data: Data = {
-        request: requests.map(request => ({ ...request, mayEdit: allowed(s, a, 'request.edit', request), mayApprove: mayApprove(s, a, request),
+        request: requests.map(request => ({ ...request, approvalHolder: scimApprovalHolder(s, request), approvalTransferred: Boolean(currentScimAssignment(s, request)), mayEdit: allowed(s, a, 'request.edit', request), mayApprove: mayApprove(s, a, request),
             mayPrepareValue: ['request.edit', 'request.approve', 'receive', 'procurement.manage'].some(permission => allowed(s, a, permission, request)),
             mayConvert: allowed(s, a, 'po.convert', request), mayManagePurchasing: allowed(s, a, 'procurement.manage', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
             buyerLimit: buyerLimit(s, a, request), buyerLimits: buyerLimits(s, a, request) })),

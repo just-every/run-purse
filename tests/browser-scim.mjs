@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import {mkdir} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
+import {build} from 'esbuild';
+import {harness} from './purse-harness.mjs';
+import {nativeWebContext} from './native-web-fixture.mjs';
+const {chromium}=await import(process.env.PURSE_PLAYWRIGHT_MODULE||'@playwright/test');
+const selected=process.argv.find(arg=>arg.startsWith('--width='));
+const widths=selected?[Number(selected.split('=')[1])]:[1440,390];
+const evidence=resolve(process.env.PURSE_EVIDENCE||'.cache/identity');await mkdir(evidence,{recursive:true});
+const bundle=await build({stdin:{contents:"import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);",resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'esm',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
+const browser=await chromium.launch({headless:true,...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--use-mock-keychain','--password-store=basic']});
+const userSchema='urn:ietf:params:scim:schemas:core:2.0:User',enterprise='urn:ietf:params:scim:schemas:extension:enterprise:2.0:User',patchSchema='urn:ietf:params:scim:api:messages:2.0:PatchOp';
+async function confirm(h,email,cookie=''){
+ const message=[...h.messages].reverse().find(mail=>mail.to.includes(email));assert.ok(message);
+ const token=new URL(message.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0]).searchParams.get('token');
+ const response=await h.send('/auth/confirm',{token},cookie);assert.equal(response.status,303);return response.cookie;
+}
+try{for(const width of widths){const h=await harness(),contexts=[];try{
+ const errors=[];const open=async cookie=>{const context=await nativeWebContext(browser,h,width,bundle.outputFiles[0].text,cookie);contexts.push(context);const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));return page;};
+ const snap=async(page,name,locator=page)=>{assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,name+' overflow');await locator.screenshot({path:join(evidence,`ACCESS-002-${name}-${width}.png`),...(locator===page?{fullPage:true}:{})});};
+ await h.command('business',{name:'Canyon Field Services',currencies:['USD'],locations:['Denver','Boston'],costCentres:['Operations','Engineering'],projects:['Safety']});
+ const delegateCookie=await h.member('manager@example.test',['approver']);const delegate=(await h.db.prepare('SELECT id FROM oa_operators WHERE email=?').bind('manager@example.test').first()).id;
+ const owner=await open(h.owner);await owner.goto(h.origin+'/app?tab=Settings');
+ const panel=owner.getByRole('heading',{name:'SCIM provisioning',exact:true}).locator('..');
+ await panel.getByRole('button',{name:'Request native reauthentication',exact:true}).click();await panel.getByText('Check your native sign-in email, then return here. Reauthentication lasts ten minutes.',{exact:true}).waitFor();await confirm(h,'owner@example.test',h.owner);
+ await panel.getByLabel('Identity provider issuer',{exact:true}).fill('https://synthetic-purse-301.example.test');
+ await panel.getByLabel('Fallback approval delegate',{exact:true}).selectOption(delegate);
+ await panel.getByRole('button',{name:'Add department access',exact:true}).click();await panel.getByLabel('Role 1.1',{exact:true}).selectOption('approver');
+ await panel.getByLabel('Enable SCIM provisioning',{exact:true}).check();await panel.getByLabel('I authorize this provider to provision identities, apply these grant mappings, end sessions and transfer pending approvals under this configuration.',{exact:true}).check();
+ await panel.getByRole('button',{name:'Save SCIM configuration',exact:true}).click();await panel.getByText('SCIM settings saved. Department mappings apply on the next provisioning update.',{exact:true}).waitFor();
+ await snap(owner,'scim-configured',panel);
+ await panel.getByRole('button',{name:'Create SCIM credential',exact:true}).click();const field=panel.getByLabel('SCIM bearer credential',{exact:true});await field.waitFor();const token=await field.inputValue();assert.ok(token.length>30);
+ await panel.getByRole('button',{name:'Hide credential',exact:true}).click();assert.equal(await panel.getByLabel('SCIM bearer credential',{exact:true}).count(),0);await snap(owner,'scim-credential-hidden',panel);
+ const scim=async(method,path,body)=>{const response=await fetch(h.origin+'/scim/v2'+path,{method,headers:{authorization:'Bearer '+token,'content-type':'application/scim+json'},...(body?{body:JSON.stringify(body)}:{})});return {status:response.status,value:response.status===204?undefined:await response.json()};};
+ const created=await scim('POST','/Users',{schemas:[userSchema,enterprise],externalId:'synthetic-purse-302',userName:'departing@example.test',displayName:'Departing approver',active:true,[enterprise]:{department:'Operations'}});assert.equal(created.status,201);
+ assert.equal((await h.send('/auth/magic-link',{email:'departing@example.test'})).status,202);const departedCookie=await confirm(h,'departing@example.test');
+ const supplier=await h.command('supplier',{name:'Prairie Safety Supply',status:'active',reason:'Existing supplier reviewed'});
+ await h.command('policy',{name:'Safety approval',currency:'USD',category:'Safety',project:'Safety',approver:'departing@example.test',limitMinor:100000,budgetMinor:1000000});
+ const request=await h.command('request',{title:'Denver safety inspection kits',supplier:supplier.id,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre:'Operations',terms:'Net 30',lines:[{description:'Safety kit',quantity:'2',unitMinor:12500,category:'Safety',project:'Safety'}]});await h.command('submit',{id:request.id,revision:1});
+ const departed=await open(departedCookie);await departed.goto(h.origin+'/app?tab=Requests&request='+request.id);await departed.getByRole('button',{name:'Record decision',exact:true}).waitFor();await snap(departed,'departing-approval');
+ const deactivated=await scim('PATCH','/Users/'+created.value.id,{schemas:[patchSchema],Operations:[{op:'replace',path:'active',value:false}]});assert.equal(deactivated.status,200);
+ await departed.reload();await departed.getByRole('alert').filter({hasText:'Sign in required'}).waitFor();await snap(departed,'departed-session-ended');
+ const manager=await open(delegateCookie);await manager.goto(h.origin+'/app?tab=Requests&request='+request.id);await manager.getByRole('button',{name:'Record decision',exact:true}).waitFor();await manager.getByText('You decide · transferred approval',{exact:true}).waitFor();await snap(manager,'transferred-approval');
+ await manager.getByLabel('Decision',{exact:true}).selectOption('approved');await manager.getByLabel('Decision reason',{exact:true}).fill('Owner-named delegate reviewed the exact kits and budget');await manager.getByRole('button',{name:'Record decision',exact:true}).click();await manager.getByText('Saved.',{exact:true}).waitFor();await snap(manager,'delegate-approved');
+ await owner.reload();await panel.getByRole('cell',{name:'departing@example.test',exact:true}).waitFor();await panel.getByRole('cell',{name:'Inactive',exact:true}).waitFor();await snap(owner,'scim-deactivated',panel);
+ await owner.getByRole('navigation').getByRole('button',{name:'Audit',exact:true}).click();await owner.getByLabel('Exact action',{exact:true}).fill('scim-approval-transfer');await owner.getByRole('button',{name:'Filter audit history',exact:true}).click();await owner.getByRole('cell',{name:'scim-approval-transfer',exact:true}).waitFor();await snap(owner,'transfer-audit');
+ await owner.goto(h.origin+'/app?tab=Settings');await panel.getByRole('button',{name:'Revoke SCIM credential',exact:true}).click();await panel.getByText('SCIM credential revoked.',{exact:true}).waitFor();assert.equal((await scim('GET','/Users')).status,401);await snap(owner,'scim-revoked',panel);
+ assert.deepEqual(errors,[]);console.log('Native SCIM web passed at '+width);
+ }finally{for(const context of contexts)await context.close();await h.close();}}}finally{await browser.close();}

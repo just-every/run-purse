@@ -1,3 +1,4 @@
+import { ScimSettings } from './scim-settings';
 import { AccessSettings } from './access-settings';
 import { ProtectedArchive } from './protected-archive';
 import { EvidenceMigration } from './invoice-evidence';
@@ -7,7 +8,7 @@ import { CatalogueGrants } from './catalogue-access';
 import { useState } from 'react';
 import { Form, Field, Table, Chip, money, amountText, when, type D, options } from './shared';
 export function Settings({data,actor,mutate}:{data:D;actor:D;mutate:(op:string,b:D)=>Promise<any>}) {
- return <><AccessSettings data={data} actor={actor} mutate={mutate}/>{actor.roles.includes('owner')&&<OwnerSettings data={data} mutate={mutate}/>}</>;
+ return <><AccessSettings data={data} actor={actor} mutate={mutate}/>{actor.roles.includes('owner')&&<><section className="panel"><h2>Identity and provisioning</h2><p><a href="/auth/purse/identity">Manage single sign-on</a></p><p>Provider identity never grants native owner authority. SCIM provisioning starts only after explicit owner consent and department grant mapping.</p></section><ScimSettings owner/><OwnerSettings data={data} mutate={mutate}/></>}</>;
 }
 function OwnerSettings({ data, mutate }: {
     data: D;

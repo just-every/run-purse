@@ -1,4 +1,5 @@
 import { check, same } from './restore-validation.mjs';
+import { validateScimMember } from './restore-scim.mjs';
 
 // Installer-side schema for the native access-permissions/access-admin doors.
 const permissions = new Set(['access.manage','procurement.manage','request.create','request.read','request.edit','request.approve','po.read','po.convert','po.issue','receive','invoice.read','invoice.capture','invoice.review','payable.terms','payable.approve','cash.read','report.read','performance.read','audit.read','audit.export','rfq.manage','rfq.read','intake.admin']);
@@ -32,10 +33,10 @@ export function validateAccess(all, get) {
         check(evidence(role, 'access-role'), 'access_role_audit');
     }
     for (const member of all('member')) {
-        check(accessShape(member, ['id','email','name','roles','active'], ['grants']) && accessText(member.email) && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(member.email) && member.id === member.email && member.email === member.email.toLowerCase() && accessText(member.name) && typeof member.active === 'boolean', 'access_member');
+        check(accessShape(member, ['id','email','name','roles','active'], ['grants','scim','department','manager']) && accessText(member.email) && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(member.email) && member.id === member.email && member.email === member.email.toLowerCase() && accessText(member.name) && typeof member.active === 'boolean', 'access_member');
         check(Array.isArray(member.roles) && member.roles.every(exists), 'access_member_roles');
         // Pre-ACCESS archives keep their supported roles-only representation.
-        if (!Object.hasOwn(member, 'grants')) continue;
+        if (!Object.hasOwn(member, 'grants')) { check(!['scim','department','manager'].some(field => Object.hasOwn(member,field)),'access_member_provenance'); continue; }
         check(Array.isArray(member.grants) && member.grants.length <= 100, 'access_member_grants');
         for (const grant of member.grants) {
             check(accessShape(grant, ['role','scope'], ['departmentRead','limits']) && exists(grant.role), 'access_grant');
@@ -45,7 +46,8 @@ export function validateAccess(all, get) {
             if (Object.hasOwn(grant, 'limits')) { check(canHaveLimits(grant.role), 'access_grant_limit_role'); validateBuyerLimit(grant.limits); }
         }
         check(same(member.roles, [...new Set(member.grants.map(grant => grant.role))]), 'access_member_grant_roles');
-        check(evidence(member, 'member'), 'access_member_audit');
+        if (Object.hasOwn(member, 'scim')) validateScimMember(member,all,get);
+        else { check(!Object.hasOwn(member,'department') && !Object.hasOwn(member,'manager'),'access_member_provenance'); check(evidence(member, 'member'), 'access_member_audit'); }
     }
     for (const row of all('buyerRoleLimit')) {
         // A revoked custom role may retain inert historical defaults. Restoring

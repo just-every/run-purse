@@ -9,6 +9,10 @@
     {
       "id": "owner",
       "label": "First owner"
+    },
+    {
+      "id": "identity",
+      "label": "Optional single sign-on"
     }
   ],
   "fields": [
@@ -67,6 +71,34 @@
       "input": "managed",
       "generate": "hex",
       "group": "owner"
+    },
+    {
+      "name": "OIDC_PROVIDERS",
+      "label": "OIDC provider metadata (JSON)",
+      "help": "Optional public metadata array using auth, google, microsoft or okta presets. Include id and clientId, plus issuer or tenant where required. Never include credentials. Configure native owner admission at /auth/purse/identity after setup.",
+      "kind": "text",
+      "required": false,
+      "group": "identity"
+    },
+    {
+      "name": "OIDC_CREDENTIALS",
+      "label": "OIDC provider credentials (private JSON)",
+      "help": "Required when OIDC_PROVIDERS contains a provider. Object keyed by provider id; each entry contains clientSecret or privateKey (private JWK with kid). Supply privately, never through command arguments or archives.",
+      "kind": "secret",
+      "required": false,
+      "ownerVisible": false,
+      "group": "identity"
+    },
+    {
+      "name": "OIDC_TRANSACTION_SECRET",
+      "label": "OIDC transaction secret",
+      "help": "Independent installation-local secret for OIDC browser transactions. Required when providers are configured; never reuse SESSION_SECRET or include it in an archive.",
+      "kind": "secret",
+      "required": false,
+      "ownerVisible": false,
+      "input": "managed",
+      "generate": "hex",
+      "group": "identity"
     },
     {
       "name": "PROTECTED_DATA_PREVIOUS_KEY",

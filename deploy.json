@@ -42,6 +42,21 @@
       "binding": "PROTECTED_DATA_KEY",
       "environment": "PROTECTED_DATA_KEY",
       "optional": true
+    },
+    {
+      "binding": "OIDC_PROVIDERS",
+      "environment": "OIDC_PROVIDERS",
+      "optional": true
+    },
+    {
+      "binding": "OIDC_CREDENTIALS",
+      "environment": "OIDC_CREDENTIALS",
+      "optional": true
+    },
+    {
+      "binding": "OIDC_TRANSACTION_SECRET",
+      "environment": "OIDC_TRANSACTION_SECRET",
+      "optional": true
     }
   ],
   "platforms": [

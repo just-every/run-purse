@@ -2,15 +2,17 @@ import { firstRunResponse } from './base/setup'
 import { fontHead } from './base/font-head'
 import { fontDocumentResponse } from './base/font-response'
 import { themeFrame } from './base/theme-frame'
-import { createOperatorAuth, createAuthHandler, createSignInHandler, devNotFound, type AuthConfig } from './modules/operator-auth/index.mjs'
+import { createOperatorAuth, createAuthHandler, createSignInHandler, devNotFound, securityHeaders, type AuthConfig } from './modules/operator-auth/index.mjs'
 import { operatorMail } from './mail.server.mjs'
 import { createOwnerClaimHandler } from './modules/owner-claim/index.mjs'
 import branding from './branding.json'
+import { identityProviderConfiguration, type IdentityBindings } from './purse/identity-config'
+import { identitySettingsPath, identitySettingsResponse } from './purse/identity-settings'
 
 // The edition's declared theme (public/rer-theme.css), as Base frames link it.
 const theme = { href: '/rer-theme.css', productName: branding.name, accentColor: branding.primaryColor }
 
-export interface Bindings {
+export interface Bindings extends IdentityBindings {
  ASSETS?: { fetch(request: Request): Promise<Response> }
  RER_DEPLOY_SOURCE?: string
  RER_DEPLOY_FINGERPRINT?: string
@@ -46,7 +48,7 @@ export interface Bindings {
 }
 
 export const runtimeBindings = (env: Bindings): Bindings => env.RER_DEV_ORIGIN && env.AUTH_LOCAL === 'true' ? { ...env, AUTH_ORIGIN: env.RER_DEV_ORIGIN } : env
-export const authConfig = (env: Bindings): AuthConfig => ({ origin: env.AUTH_ORIGIN, local: env.AUTH_LOCAL === 'true', OWNER_EMAIL: env.OWNER_EMAIL, SESSION_SECRET: env.SESSION_SECRET, SETUP_TOKEN: env.SETUP_TOKEN, MAIL_FROM: env.MAIL_FROM, branding: { productName: branding.name, accentColor: branding.primaryColor, signInPath: '/signin', theme: theme.href } })
+export const authConfig = (env: Bindings): AuthConfig => ({ origin: env.AUTH_ORIGIN, local: env.AUTH_LOCAL === 'true', OWNER_EMAIL: env.OWNER_EMAIL, SESSION_SECRET: env.SESSION_SECRET, SETUP_TOKEN: env.SETUP_TOKEN, MAIL_FROM: env.MAIL_FROM, ...identityProviderConfiguration(env), branding: { productName: branding.name, accentColor: branding.primaryColor, signInPath: '/signin', theme: theme.href } })
 export function operatorAuth(env: Bindings) {
  return createOperatorAuth({ db: env.DB, config: authConfig(env), mailSender: operatorMail(env), clientIp: request => request.headers.get('CF-Connecting-IP') ?? '' })
 }
@@ -61,6 +63,13 @@ async function html(body: string) {
 export async function authResponse(request: Request, original: Bindings): Promise<Response | null> {
  const env = runtimeBindings(original), url = new URL(request.url)
  if (url.pathname.startsWith('/__dev/')) return devNotFound()
+ if (url.pathname === identitySettingsPath) return identitySettingsResponse(request, env, operatorAuth(env), html)
+ // Base pin replacement has no edition transaction fence yet. Keep these
+ // existing direct transports closed as well as omitting their page controls.
+ if (['/auth/providers/relink', '/auth/providers/unlink'].includes(url.pathname) && identityProviderConfiguration(env).providers?.length) {
+  const session = await operatorAuth(env).getSession(request)
+  return Response.json({ error: session ? 'provider_management_unavailable' : 'unauthenticated' }, { status: session ? 403 : 401, headers: securityHeaders() })
+ }
  // The shared server-rendered sign-in page: plain forms that work before any script.
  if (url.pathname === '/signin') {
   const page = await createSignInHandler(operatorAuth(env), {

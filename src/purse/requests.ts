@@ -1,3 +1,4 @@
+import { currentScimAssignment, scimAssignmentAllows } from './scim-approvals';
 import { blanketTerms, blanketBilled } from './blanket-orders';
 import { normalizeValuePromise } from './value-promise';
 import { checkInvoiceAttachment } from './invoice-evidence';
@@ -16,7 +17,20 @@ export function policies(s: State, r: Data) { return coveringPolicies(all(s, 'po
 export const reserved = (s: State, policy: string) => all(s, 'commitment').filter(e => e.policy === policy).reduce((n, e) => n + e.amountMinor, 0);
 export function reservationAvailable(s: State, r: Data, amountMinor: number) { const p = policies(s, r).find(p => p.id === r.policy); return Boolean(p && reserved(s, p.id) + amountMinor <= p.budgetMinor); }
 export function ledger(s: State, a: Actor, r: Data, amountMinor: number, kind: string) { requireThat(amountMinor <= 0 || reservationAvailable(s, r, amountMinor), 'Current policy or budget does not authorize replenishment; renew approval', 409); const balance=all(s,'commitment').filter(e=>e.currency===r.currency).reduce((n,e)=>n+e.amountMinor,0);requireThat(Number.isSafeInteger(balance+amountMinor),'Commitment exceeds supported integer range',409);const id = uid(); put(s, 'commitment', id, { request: r.id, revision: r.revision, policy: r.policy, currency: r.currency, amountMinor, kind, actor: a.id, at: new Date().toISOString() }); }
-export function authorizedApproval(s: State, a: Actor, r: Data) { requirePermission(s, a, 'request.approve', r); requireThat(a.id !== r.requester && a.email !== r.requesterEmail, 'Self approval is prohibited', 403); const p = get(s, 'policy', r.policy); requireThat(policies(s, r).some(x => x.id === p.id), 'Current policy does not cover these terms', 409); const delegated = all(s, 'delegation').find(d => d.policy === p.id && d.from === p.approver && d.delegate === a.email && d.active && Date.parse(d.expires) > Date.now()); requireThat(a.email === p.approver || delegated, 'You do not hold authority for this policy', 403); return { p, delegated }; }
+export function authorizedApproval(s: State, a: Actor, r: Data) {
+    requirePermission(s, a, 'request.approve', r);
+    requireThat(a.id !== r.requester && a.email !== r.requesterEmail, 'Self approval is prohibited', 403);
+    const p = get(s, 'policy', r.policy);
+    requireThat(policies(s, r).some(x => x.id === p.id), 'Current policy does not cover these terms', 409);
+    const assignment = currentScimAssignment(s, r);
+    if (assignment) {
+        requireThat(scimAssignmentAllows(s, a, r), 'The current approval transfer does not authorize you', 403);
+        return { p, delegated: undefined, assignment };
+    }
+    const delegated = all(s, 'delegation').find(d => d.policy === p.id && d.from === p.approver && d.delegate === a.email && d.active && Date.parse(d.expires) > Date.now());
+    requireThat(a.email === p.approver || delegated, 'You do not hold authority for this policy', 403);
+    return { p, delegated, assignment: undefined };
+}
 export function requests(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if (op === 'request' || op === 'amend') {
         let old: Data | undefined;
@@ -97,12 +111,13 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             requiredCatalogueFiles(s, r);
             const p = policies(s, r)[0];
             requireThat(p, 'No amount/category/project authority policy covers this request', 409);
+            requireThat(!all(s, 'scimUser').some(user => user.userName === p.approver && user.active === false), 'The designated approver was deactivated; the owner must select a current approval policy before submission', 409);
             put(s, 'request', r.id, { ...r, status: 'pending', policy: p.id });
             audit(s, a, op, r.id, { revision: r.revision });
             return get(s, 'request', r.id);
         }
         requireThat(r.status === 'pending' && !r.imported, 'Request is not pending native authority', 409);
-        const { p, delegated } = authorizedApproval(s, a, r);
+        const { p, delegated, assignment } = authorizedApproval(s, a, r);
         const decision = b.decision;
         requireThat(['approved', 'rejected', 'returned'].includes(decision), 'Choose approve, reject or return');
         const reason = text(b.reason, 'Decision reason');
@@ -115,7 +130,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
                 ledger(s, a, r, delta, r.amends ? 'amendment-reservation' : 'reservation');
         }
         const id = uid();
-        put(s, 'decision', id, { request: r.id, revision: r.revision, decision, reason, actor: a.id, email: a.email, owner: a.owner, operatorVersion:a.version, at: new Date().toISOString(), policy: p.id, policyVersion:s.get('policy:'+p.id)!.revision, policySnapshot:structuredClone(p), delegation: delegated?.id ?? null });
+        put(s, 'decision', id, { request: r.id, revision: r.revision, decision, reason, actor: a.id, email: a.email, owner: a.owner, operatorVersion:a.version, at: new Date().toISOString(), policy: p.id, policyVersion:s.get('policy:'+p.id)!.revision, policySnapshot:structuredClone(p), delegation: delegated?.id ?? null, ...(assignment ? {scimTransfer: assignment.id} : {}) });
         put(s, 'request', r.id, { ...r, status: decision });
         audit(s, a, op, r.id, { revision: r.revision, decision, reason, decisionId: id });
         return get(s, 'request', r.id);

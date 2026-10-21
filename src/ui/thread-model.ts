@@ -21,11 +21,10 @@ export const decisionOf = (data: D, r: D) => data.decision.filter((d: D) => d.re
 export const isDecided = (data: D, r: D) => Boolean(r.imported || r.status === 'rejected' || (r.status === 'approved' && orderOf(data, r)));
 export const policyOf = (data: D, r: D) => r.policy ? data.policy.find((p: D) => p.id === r.policy) : coveringPolicies(data.policy, r)[0];
 
-export function holdsAuthority(data: D, actor: D, r: D) {
-    const p = data.policy.find((x: D) => x.id === r.policy);
-    if (!p || r.status !== 'pending' || r.imported || mine(actor, r) || !r.mayApprove) return false;
-    return p.approver === actor.email || data.delegation.some((d: D) => d.policy === p.id && d.from === p.approver && d.delegate === actor.email && d.active && Date.parse(d.expires) > Date.now());
+export function holdsAuthority(_data: D, actor: D, r: D) {
+    return r.status === 'pending' && !r.imported && !mine(actor, r) && r.mayApprove === true;
 }
+
 /** The viewer's own next step on a request, if it waits on them. */
 export function verbFor(data: D, actor: D, r: D): 'approve' | 'submit' | 'convert' | null {
     if (r.imported) return null;
@@ -39,6 +38,7 @@ export function nextStep(data: D, actor: D, r: D) {
     const you = (email: string) => email === actor.email ? 'You' : personName(data, email);
     if (['draft', 'returned'].includes(r.status)) return `${you(r.requesterEmail)} ${r.requesterEmail === actor.email ? 'submit' : 'submits'}`;
     if (r.status === 'pending') {
+        if (r.approvalTransferred && r.approvalHolder) return `${you(r.approvalHolder)} ${r.approvalHolder === actor.email ? 'decide' : 'decides'} · transferred approval`;
         const p = data.policy.find((x: D) => x.id === r.policy);
         if (!p) return 'Approver to confirm';
         const eligible = (email: string) => email.toLowerCase() !== r.requesterEmail?.toLowerCase() && !(r.requester === actor.id && email === actor.email);
