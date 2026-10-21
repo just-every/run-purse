@@ -14,15 +14,16 @@ export function receiptAssignment(s: State, order: Data): { email: string; expli
 export function mayReceive(s: State, a: Actor, o: Data): boolean {
     if (a.owner) return true;
     const assigned = receiptAssignment(s, o);
-    return assigned.explicit ? assigned.email.toLowerCase() === a.email.toLowerCase() && allowed(s, a, 'receive', o)
-        : allowed(s, a, 'receive', o) || assigned.email.toLowerCase() === a.email.toLowerCase() && allowed(s, a, 'request.edit', o);
+    return assigned.explicit ? assigned.email?.toLowerCase() === a.email.toLowerCase() && allowed(s, a, 'receive', o)
+        : allowed(s, a, 'receive', o) || assigned.email?.toLowerCase() === a.email.toLowerCase() && allowed(s, a, 'request.edit', o);
 }
 /** A native owner requester is finally checked against native auth at send.
  * Every member recipient must still hold current permission on this PO.
  */
 export function receiptRecipient(s: State, email: string, order: Data) {
+    if (!email) return false;
     const assigned = receiptAssignment(s, order), a = memberActor(email);
-    if (assigned.email.toLowerCase() !== email.toLowerCase()) return false;
+    if (assigned.email?.toLowerCase() !== email.toLowerCase()) return false;
     if (assigned.explicit) return activeReceiver(s, email, order);
     const request = get(s, 'request', order.request);
     return allowed(s, a, 'receive', order) || allowed(s, a, 'request.edit', order)
