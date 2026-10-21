@@ -38,6 +38,8 @@ try {
         });
         const page = await context.newPage();
         const failures=[];page.on('pageerror',error=>failures.push(error.message));
+        page.on('close',()=>{});
+        try {
         const openSupplier = async () => {
             await page.goto(h.origin+'/app?tab=Suppliers');
             await page.getByRole('row').filter({has:page.getByText(supplier.name,{exact:true})}).getByRole('button',{name:'Open',exact:true}).click();
@@ -111,7 +113,7 @@ try {
         const audit=await h.send('/api/purse/audit',undefined,h.owner);
         for(const action of ['protected-store','protected-reveal','protected-refused']) assert.ok(audit.value.events.some(e=>e.action===action));
         for(const value of Object.values(values)) assert.ok(!JSON.stringify(audit.value).includes(value));
-        await context.close();
+        } catch(error) { await page.screenshot({path:join(evidence,`SECURITY-001-web-failure-${width}.png`),fullPage:true}); console.error('Native web acceptance failed at page',page.url()); throw error; } finally { await context.close(); }
         console.log('SECURITY-001 actual App/native HTTP/email-edge web journey passed at '+width);
     }
 } finally { await browser?.close(); await h.close(); }
