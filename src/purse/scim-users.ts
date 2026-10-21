@@ -14,7 +14,7 @@ export async function provisionScimUser(db: D1Database, auth: ScimAuthority, inp
         requireThat(!auth.state.has('member:' + input.userName), 'Purchasing membership already exists; explicit native reconciliation is required', 409);
     }
     const id = previous?.id ?? uid(), at = new Date().toISOString();
-    const user = { ...input, id, issuer: auth.config.issuer, createdAt: previous?.createdAt ?? at, updatedAt: at, version: (previous?.version ?? 0) + 1 };
+    const user: Data = { ...input, id, issuer: auth.config.issuer, createdAt: previous?.createdAt ?? at, updatedAt: at, version: (previous?.version ?? 0) + 1 };
     if (user.manager) requireThat(user.manager !== id && all(auth.state, 'scimUser').some(u => u.id === user.manager && u.issuer === user.issuer), 'manager.value must reference another provisioned User');
     // Refuse cycles even if a provider attempts to update the top of a chain.
     const seen = new Set([id]); let manager = user.manager;
