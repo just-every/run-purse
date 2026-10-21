@@ -166,7 +166,8 @@ a:hover { color: var(--purse-blue-deep); }
 
 .workspace summary { min-height: 44px; padding-top: 10px; padding-bottom: 10px; cursor: pointer; }
 .inline-sep { white-space: nowrap; }
-.inline-sep-end { visibility: hidden; }
+/* Invisible punctuation keeps stable accessible names when a line wraps. */
+.inline-sep-end { opacity: 0; }
 
 /* Figure cards: a quiet label and the slab figure, one per currency. */
 .figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin: 0 0 8px; }
