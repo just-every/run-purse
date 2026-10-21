@@ -16,3 +16,29 @@ export async function journey(browser,root,origin,width,evidence,shared){const s
  await buyer.page.reload();await clickTab(buyer.page,'Orders');await buyer.page.getByRole('row').filter({hasText:order.number}).getByRole('button',{name:'Open order'}).click();await buyer.page.getByText('Add invoice evidence',{exact:true}).click();await fill(buyer.page,'Invoice reference','INV-'+suffix);await fill(buyer.page,'Evidence source','Supplied invoice');await buyer.page.getByLabel('PO line',{exact:true}).selectOption(order.lines[0].id);await fill(buyer.page,'Invoice quantity','2.5');await fill(buyer.page,'Invoice amount','290.00');await buyer.page.getByRole('button',{name:'Save invoice evidence',exact:true}).click();await buyer.page.getByRole('heading',{name:'Invoice INV-'+suffix}).waitFor();await buyer.page.screenshot({path:join(evidence,`buyer-${width}.png`),fullPage:true});const csv=await buyer.context.request.get(origin+'/api/purse/accounting');assert.match(await csv.text(),new RegExp('INV-'+suffix));await current(buyer.context,origin);
  for(const {page} of Object.values(sessions)){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth);assert.equal(overflow,false,`No page overflow at ${width}px`)}return {request:request.id,order:order.id,number:order.number,width};
  }catch(error){for(const [as,{page}] of Object.entries(sessions))await page.screenshot({path:join(evidence,`failure-${as}-${width}.png`),fullPage:true}).catch(()=>{});throw error}finally{for(const {context} of Object.values(sessions))await context.close()}}
+
+
+export async function protectedPreparationJourney(browser,root,origin,width,evidence){
+ const buyer=await session(browser,root,origin,'buyer',width),owner=await session(browser,root,origin,'owner',width);
+ try{
+  const marker='9876543210123456',draft='SECURITY-001 safe human preparation '+width;
+  await clickTab(buyer.page,'Preparation');await buyer.page.getByLabel('Editable draft',{exact:true}).fill(draft);
+  // Exercise the real form and native server with an adversarial structured request.
+  await buyer.page.route('**/api/purse/command/prepare',async route=>{const input=route.request().postDataJSON();input.fields.bankAccount=marker;await route.continue({postData:JSON.stringify(input)});});
+  const refused=buyer.page.waitForResponse(r=>r.url().endsWith('/command/prepare'));
+  await buyer.page.getByRole('button',{name:'Save preparation',exact:true}).click();assert.equal((await refused).status(),400);
+  await buyer.page.getByRole('alert').filter({hasText:'Protected fields are unavailable to preparations and proposed actions'}).waitFor();
+  assert.equal(await buyer.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'SECURITY-001 refusal fits '+width);
+  assert.ok(!(await buyer.page.locator('body').innerText()).includes(marker));
+  await buyer.page.screenshot({path:join(evidence,`SECURITY-001-refusal-${width}.png`),fullPage:true});
+  assert.ok(!(await current(buyer.context,origin)).data.agentRun.some(r=>r.draft===draft));
+  await buyer.page.unroute('**/api/purse/command/prepare');
+  const saved=buyer.page.waitForResponse(r=>r.url().endsWith('/command/prepare'));await buyer.page.getByRole('button',{name:'Save preparation',exact:true}).click();assert.equal((await saved).status(),200);
+  const run=(await current(buyer.context,origin)).data.agentRun.find(r=>r.draft===draft);assert.ok(run);
+  const download=await buyer.context.request.get(origin+'/api/purse/download/agentRun/'+run.id);assert.equal(download.status(),200);assert.ok(!(await download.text()).includes(marker));
+  const audit=await owner.context.request.get(origin+'/api/purse/audit');assert.equal(audit.status(),200);const auditBody=await audit.text();assert.ok(auditBody.includes('protected-input-refused'));assert.ok(!auditBody.includes(marker));
+  await buyer.page.getByLabel('Draft',{exact:true}).last().waitFor();
+  await buyer.page.screenshot({path:join(evidence,`SECURITY-001-safe-${width}.png`),fullPage:true});
+  return {clause:'SECURITY-001',scope:'structured preparation input only',width,run:run.id};
+ }finally{await buyer.context.close();await owner.context.close();}
+}

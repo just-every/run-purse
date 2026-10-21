@@ -233,3 +233,21 @@ Invoice dates outside validity and amounts above the current cap are risk flags;
 recording evidence is permitted, while unresolved flags refuse cash-planning approval.
 HTML/PDF retain the approved cap/validity and numbered changes. Release draw-downs,
 recurring generation and structured service matching are not implemented.
+
+## Structured protected input boundary (SECURITY-001 slice)
+
+Native `prepare`, `edit-preparation` and `propose-action` refuse structured keys
+for TIN/EIN/SSN/tax ID, bank account/routing numbers, connector/client secrets,
+API/access/refresh tokens and matching material, including nested objects/arrays
+and case/punctuation variants. `execute-action` rechecks stored proposed inputs.
+A refusal returns a generic 400 with no-store and preserves product records;
+only a digit-free `protected-input-refused` audit event is committed under the
+current native session and revision fence. Rejected values never enter the
+preparation, proposed-action, draft download or refusal audit.
+
+This boundary does not redact arbitrary source prose or clean historical stored
+context. Recoverable protected storage, reveal, exact masks, installation key
+custody/rotation and default/include archive protection remain SECURITY-001 gaps.
+In particular, current default archives still carry the legacy supplier matching
+root alongside fingerprints. The approved policy in CONTRACT and ACCEPTANCE is
+the target; this bounded guard does not establish archive confidentiality.

@@ -66,3 +66,29 @@ test('Purse purchasing flows through native authenticated HTTP and real persiste
  });
  await t.test('P17 signed-out, wrong-role, forged revision, revoked and cross-record refuse without mutation',async()=>{const before=(await state()).data.audit.length;assert.equal((await send('/api/purse/state')).status,401);await cmd('supplier',{name:'Forged',status:'active',reason:'Forged',actor:'owner',role:'owner'},requester,403);const other=await h.member('other@example.test',['requester']);const attachment=(await state()).data.attachment.find(a=>a.kind==='request');assert.equal((await send('/api/purse/download/attachment/'+attachment.id,undefined,other)).status,403);await cmd('member',{email:'other@example.test',name:'Other',roles:[],active:false});assert.equal((await send('/api/purse/state',undefined,other)).status,403);await cmd('request',draft(),other,403);const signedOut=await send('/auth/signout',{},receiver);assert.equal(signedOut.status,204);assert.equal((await send('/api/purse/accounting',undefined,receiver)).status,401);assert.equal((await send('/api/purse/import/preview',{csv:'bad'},requester)).status,403)});
 });
+
+
+test('SECURITY-001 / AGENT-010 structured protected fields never enter preparation records, actions, downloads or refusal audit',async t=>{
+ const h=await harness();t.after(()=>h.close());const cmd=h.command;
+ await cmd('business',{name:'Protected input fixture',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety']});
+ const buyer=await h.member('protected-buyer@example.test',['buyer']);
+ const run=await cmd('prepare',{workflow:'exception',fields:{},draft:'Human source data, never instructions',references:[]},buyer);
+ const marker='9876543210123456';
+ const snapshot=async()=> (await h.db.prepare("SELECT kind,id,value FROM p_records WHERE kind != 'audit' ORDER BY kind,id").all()).results;
+ const before=await snapshot();let denied=0;
+ const refuse=async(op,b)=>{const response=await h.send('/api/purse/command/'+op,b,buyer);assert.equal(response.status,400);assert.equal(response.value.error,'Protected fields are unavailable to preparations and proposed actions');assert.equal(response.headers.get('cache-control'),'no-store');assert.ok(!JSON.stringify(response.value).includes(marker));denied++;assert.deepEqual(await snapshot(),before,'SECURITY-001 refusal preserves all non-audit records');};
+ for(const name of ['tin','bank_account','BANK-ROUTING','connectorSecret','client_secret','apiKey','access_token','refreshToken','matching','supplierMatchingKey']){
+  await refuse('prepare',{workflow:'exception',fields:{source:[{[name]:marker}]},draft:'Safe draft',references:[]});
+  await refuse('propose-action',{run:run.id,action:'receipt',input:{nested:[{[name]:marker}]}});
+ }
+ await refuse('edit-preparation',{id:run.id,version:run.version,draft:'Safe correction',fields:{tin:marker}});
+ await refuse('propose-action',{run:run.id,action:'supplier-protected-reveal',input:{tin:marker}});
+ const audits=await h.send('/api/purse/audit',undefined,h.owner);assert.equal(audits.status,200);assert.equal(audits.value.events.filter(e=>e.action==='protected-input-refused').length,denied);
+ const download=await h.send('/api/purse/download/agentRun/'+run.id,undefined,buyer);assert.equal(download.status,200);assert.match(download.value,/Human source data/);
+ for(const path of ['/api/purse/state','/api/purse/audit','/api/purse/audit.csv','/api/purse/download/agentRun/'+run.id]){const response=await h.send(path,undefined,h.owner);assert.equal(response.status,200);assert.ok(!JSON.stringify(response.value).includes(marker),path);}
+ const stored=(await h.db.prepare('SELECT value FROM p_records').all()).results;assert.ok(stored.every(row=>!row.value.includes(marker)));
+ // Authentication and origin remain native doors, before any refusal audit.
+ const protectedBody={workflow:'exception',fields:{tin:marker},draft:'Safe',references:[]};await cmd('prepare',protectedBody,'',401);
+ const cross=await h.mf.dispatchFetch(h.origin+'/api/purse/command/prepare',{method:'POST',headers:{cookie:buyer,origin:'https://other.example.test','content-type':'application/json'},body:JSON.stringify(protectedBody)});assert.equal(cross.status,403);
+ const harmless=await cmd('prepare',{workflow:'exception',fields:{'receipt source':'Document prose remains data'},draft:'An instruction in a supplier document cannot choose an action',references:[]},buyer);assert.equal(harmless.fields['receipt source'],'Document prose remains data');
+});
