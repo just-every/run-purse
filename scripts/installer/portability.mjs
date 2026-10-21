@@ -1,13 +1,24 @@
+import { migrateInvoiceArchive } from './migrate-invoice-archive.mjs';
+import { hasUnsafeProtectedContext } from './protected-context-fields.mjs';
 import { validateSearchProjection } from './restore-search.mjs';
 import { check, validatePurchasingArchive } from './restore-validation.mjs';
 export default {
  product: 'just-every/procurement-purse',
  replaceableTables: ['p_meta'],
  excludeTables: ['p_supplier_protected', 'p_search_fts', 'p_search_fts_data', 'p_search_fts_idx', 'p_search_fts_docsize', 'p_search_fts_config', 'p_search_fold', 'p_search_drop', 'p_integration_tokens', 'p_integration_requests', 'p_import_custody', 'p_supplier_document_links', 'p_rfq_links'],
+ exportRow(table,row) {
+  if(table!=='p_records')return row;
+  const value=JSON.parse(row.value);
+  if(hasUnsafeProtectedContext(row.kind,value))throw new Error('Clean historical protected context before export');
+  if(row.kind==='supplierMatchingKey')row.value=JSON.stringify({id:row.id,secret:null,notRestored:true});
+  if(row.kind==='supplier'){if(value.matching&&Object.keys(value.matching).length)value.matchingNotRestored=true;delete value.matching;row.value=JSON.stringify(value);}
+  if(row.kind==='invoice'&&value.evidenceHash&&!value.evidence)throw new Error('Migrate legacy invoice evidence before export: '+row.id);
+  return row;
+ },
  requiredConfiguration: ['OWNER_EMAIL', 'SESSION_SECRET', 'SETUP_TOKEN', 'AUTH_ORIGIN', 'MAIL_PROVIDER', 'MAIL_FROM'],
  buckets: { ORIGINALS: {} },
- validateStaged: async ({ read, manifest }) => {
-  const rows = await read('p_records');
+ validateStaged: async ({ db, tables, read, manifest }) => {
+  const rows = await migrateInvoiceArchive({rows:await read('p_records'),db,tables,manifest,check});
   validatePurchasingArchive(rows);
   validateSearchProjection(rows, await read('p_search'), check);
   for (const row of rows.filter(row => row.kind === 'rfqResponse')) for (const file of JSON.parse(row.value).files) if (file.key) {

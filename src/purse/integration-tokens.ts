@@ -45,16 +45,23 @@ integrationTokensApi.post('/api/purse/integration-tokens', async c => {
 });
 integrationTokensApi.post('/api/purse/integration-tokens/:id/:action', async c => {
     const a = await actor(c.req.raw, c.env); requireThat(a.owner, 'Owner capability required', 403);
-    const action = c.req.param('action'); requireThat(['rotate', 'revoke'].includes(action), 'Unknown token action', 404);
+    const action = c.req.param('action'); requireThat(['rotate', 'revoke', 'delete'].includes(action), 'Unknown token action', 404);
     const row = await c.env.DB.prepare('SELECT * FROM p_integration_tokens WHERE id=?').bind(c.req.param('id')).first<Data>();
-    requireThat(row && !row.revoked_at, 'Integration is unavailable', 409);
+    requireThat(row && (action === 'delete' || !row.revoked_at), 'Integration is unavailable', 409);
     const token = action === 'rotate' ? secret() : undefined, at = new Date().toISOString(), auth = authority(a, true);
-    const next: Data = { ...row, ...(token ? { generation: row.generation + 1, rotated_at: at } : { revoked_at: at }) };
+    const next: Data = { ...row, ...(token ? { generation: row.generation + 1, rotated_at: at } : action === 'revoke' ? { revoked_at: at } : {}) };
+    // Remove replay authority with the credential, retaining purchasing lineage and audit history.
+    const mutation = action === 'delete' ? [
+        c.env.DB.prepare('DELETE FROM p_integration_requests WHERE integration=?').bind(row.id),
+        c.env.DB.prepare('DELETE FROM p_integration_tokens WHERE id=?').bind(row.id),
+    ] : [token
+        ? c.env.DB.prepare('UPDATE p_integration_tokens SET hash=?,generation=?,rotated_at=? WHERE id=?').bind(await hashRfqToken(token), next.generation, at, row.id)
+        : c.env.DB.prepare('UPDATE p_integration_tokens SET revoked_at=? WHERE id=?').bind(at, row.id)];
     await guardedBatch(c.env.DB, [
-        c.env.DB.prepare(`INSERT INTO p_guard SELECT CASE WHEN (${auth.sql}) AND EXISTS(SELECT 1 FROM p_integration_tokens WHERE id=? AND generation=? AND revoked_at IS NULL) THEN 1 ELSE 0 END`).bind(...auth.params, row.id, row.generation),
-        token ? c.env.DB.prepare('UPDATE p_integration_tokens SET hash=?,generation=?,rotated_at=? WHERE id=?').bind(await hashRfqToken(token), next.generation, at, row.id) : c.env.DB.prepare('UPDATE p_integration_tokens SET revoked_at=? WHERE id=?').bind(at, row.id),
+        c.env.DB.prepare(`INSERT INTO p_guard SELECT CASE WHEN (${auth.sql}) AND EXISTS(SELECT 1 FROM p_integration_tokens WHERE id=? AND generation=? AND revoked_at IS ?) THEN 1 ELSE 0 END`).bind(...auth.params, row.id, row.generation, row.revoked_at),
+        ...mutation,
         insertRfqRecord(c.env.DB, 'audit', { id: uid(), actor: a.id, email: a.email, action: 'integration-token-' + action, record: row.id, generation: next.generation, at }),
         c.env.DB.prepare('DELETE FROM p_guard'),
     ]);
-    return c.json({ ...(token ? { token } : {}), integration: integrationMetadata(next) });
+    return c.json({ ...(token ? { token } : {}), ...(action === 'delete' ? { deleted: true } : {}), integration: integrationMetadata(next) });
 });

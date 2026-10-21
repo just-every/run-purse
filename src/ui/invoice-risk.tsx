@@ -1,10 +1,11 @@
+import { InvoiceEvidence } from './invoice-evidence';
 import { openInvoiceFlags } from '../purse/invoice-status';
 import { Form, Field, when, type D } from './shared';
 const labels: Record<string, string> = { 'near-duplicate': 'Possible duplicate invoice', 'duplicate-document': 'Repeated original document', 'remit-baseline-missing': 'Missing bank comparison baseline', 'remit-mismatch': 'Remit details changed', 'remit-details-changed': 'Remit details changed', 'sender-domain': 'Unverified sender domain differs', 'po-balance': 'Invoice exceeds remaining PO value', 'blanket-validity': 'Invoice date outside blanket validity' };
 export function InvoiceRisk({ invoice, data, actor, mutate }: { invoice: D; data: D; actor: D; mutate: (op: string, b: D) => Promise<any> }) {
     const open = openInvoiceFlags(invoice);
     return <section aria-label={'Invoice risk '+invoice.reference}>
-        <h5>Invoice checks</h5><p className="quiet">Buyer-recorded source evidence, not bank verification or sender authentication. A reasoned risk review never resolves price, quantity or receiving discrepancies.</p>
+        <InvoiceEvidence invoice={invoice} owner={actor.roles.includes('owner')}/><h5>Invoice checks</h5><p className="quiet">Buyer-recorded source evidence, not bank verification or sender authentication. A reasoned risk review never resolves price, quantity or receiving discrepancies.</p>
         {invoice.invoiceDate ? <p>Invoice date {invoice.invoiceDate} · {invoice.invoiceDateSource === 'supplied' ? 'Recorded from source' : 'Default UTC entry date'}</p> : <p>Legacy invoice source checks were not recorded.</p>}
         {invoice.sender?.supplied && <p>Recorded sender {invoice.sender.email} · {invoice.sender.comparison} · unverified</p>}
         {invoice.remit?.supplied && <p>Remit comparison {invoice.remit.comparison} · {invoice.remit.baseline === 'matching-only' ? 'Buyer-recorded identity, not bank verification' : 'No bank identity baseline'}</p>}

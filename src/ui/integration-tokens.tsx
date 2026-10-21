@@ -34,12 +34,12 @@ export function IntegrationTokens() {
         setSecret(''); setError(''); setNotice(''); setBusy(true);
         try {
             const body = await request(path, input);
-            setTokens(previous => [body.integration, ...previous.filter(t => t.id !== body.integration.id)]);
+            setTokens(previous => body.deleted ? previous.filter(t => t.id !== body.integration.id) : [body.integration, ...previous.filter(t => t.id !== body.integration.id)]);
             setSecret(body.token || ''); setNotice(message);
         } finally { setBusy(false); }
     }
-    async function action(token: Integration, verb: 'rotate' | 'revoke') {
-        try { await change('/' + encodeURIComponent(token.id) + '/' + verb, {}, verb === 'rotate' ? 'Token rotated. Previous token access has ended.' : 'Token revoked.'); }
+    async function action(token: Integration, verb: 'rotate' | 'revoke' | 'delete') {
+        try { await change('/' + encodeURIComponent(token.id) + '/' + verb, {}, verb === 'rotate' ? 'Token rotated. Previous token access has ended.' : verb === 'revoke' ? 'Token revoked.' : 'Integration deleted. Token access has ended; purchasing history is retained.'); }
         catch (e) { setError((e as Error).message || 'Unable to update integration token.'); }
     }
     return <section className="panel" aria-label="Integration tokens">
@@ -58,7 +58,7 @@ export function IntegrationTokens() {
                 <td style={{ overflowWrap: 'anywhere' }}>{token.name}</td><td className="email-cell">{token.requesterEmail}</td>
                 <td>Create purchase request drafts</td><td><Chip>{token.revokedAt ? 'Revoked' : 'Active'} · generation {token.generation}</Chip>{token.revokedAt && <p>{when(token.revokedAt)}</p>}</td>
                 <td>{when(token.createdAt)}{token.rotatedAt && <p>Rotated {when(token.rotatedAt)}</p>}</td>
-                <td>{!token.revokedAt && <><button type="button" disabled={busy} onClick={() => action(token, 'rotate')}>Rotate token</button>{' '}<button type="button" disabled={busy} onClick={() => action(token, 'revoke')}>Revoke token</button></>}</td>
+                <td>{!token.revokedAt && <><button type="button" disabled={busy} onClick={() => action(token, 'rotate')}>Rotate token</button>{' '}<button type="button" disabled={busy} onClick={() => action(token, 'revoke')}>Revoke token</button>{' '}</>}<button type="button" disabled={busy} onClick={() => action(token, 'delete')}>Delete integration</button></td>
             </tr>)}
         </Table>
         {loaded && tokens.length === 0 && <p>No integration tokens created.</p>}

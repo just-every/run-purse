@@ -316,3 +316,42 @@ separately under current policy. Source email-intake linkage, integration author
 quotes, receipts, invoices and commitments are not copied. This native slice
 does not implement conditional forms, arbitrary half-filled autosave, route
 preview, splits, custom fields or pending supplier proposals.
+
+### Protected evidence and recovery
+
+`GET /api/purse/invoice-evidence` is owner-only and returns the current revision,
+pending legacy invoices and migration receipts. `POST .../migrate` takes
+`{revision}`. Original hashes stay unchanged; retained-input checks, unavailable
+sources and failed checks have distinct labels. New evidence uses an independent
+key. `POST .../reenter` takes `{revision,invoice,remit:{bankRouting,bankAccount},reason,evidence}`
+with native reauthentication within ten minutes. It discards the bank input;
+only a matching original changes the evidence state. Missing legacy keys return
+503. These states never verify a bank or remove invoice holds.
+
+Owner-only `/api/purse/protected-keys` reports key availability and rotation
+progress. POST `/rotate` requires `{revision,reason}` and fresh native proof;
+all old envelopes are authenticated, reencrypted and checked before one commit.
+Keep the previous Worker secret until this succeeds. POST `/recover` also needs
+`acknowledge:"discard-unreadable-and-reenter"`; it discards only unreadable values
+and records key loss. There is no escrow.
+
+The owner may download a separate passphrase-encrypted include supplement using
+POST `/api/purse/protected-archive/export` with
+`{revision,passphrase,reason,evidence,include:"protected-values-and-matching"}`
+and fresh native proof. Keep it with the ordinary `rer export` archive. Restore
+ordinary data first; POST `/restore` takes the same private inputs plus `archive`.
+It validates every supplier and protected field before an atomic restore under
+the destination key. Wrong passphrases change no domain values. Installation
+keys, connector credentials and reveal grants are never included. The default
+archive excludes all protected ciphertext, matching roots and fingerprints.
+
+POST `/api/purse/integration-tokens/:id/delete` deletes an active or revoked
+credential and replay authority, preserving purchasing history and audit.
+Secrets are shown only on creation/rotation; later reads return metadata.
+
+`protected-context-cleanup` takes `{confirmed:true,reason}` from the current
+native owner. It removes historical structured protected fields, cancels affected
+pending actions and records counts without removed values. Unsafe immutable
+reports are explicitly quarantined. Reads withhold unsafe structured fields
+before cleanup; exports and restores refuse unsafe context. Free text remains
+source data and is not claimed to be universally redacted.

@@ -1,5 +1,7 @@
+import { validateInvoiceEvidence } from './restore-invoice-evidence.mjs';
 import { createHash } from 'node:crypto';
 export function validateInvoiceRisk(all,get,check) {
+ validateInvoiceEvidence(all,check);
  const codes=new Set(['near-duplicate','duplicate-document','remit-baseline-missing','remit-mismatch','remit-details-changed','sender-domain','po-balance','blanket-validity']);
  for(const invoice of all('invoice')){
   if(invoice.flags===undefined)continue;

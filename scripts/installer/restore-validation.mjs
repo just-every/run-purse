@@ -1,3 +1,4 @@
+import { hasUnsafeProtectedContext } from './protected-context-fields.mjs';
 import { validateAgentValue } from './restore-agent-value.mjs';
 import { validateAgreementReadings } from './restore-agreement-readings.mjs';
 import { validateAgreementAwards } from './restore-agreement-awards.mjs';
@@ -19,7 +20,7 @@ import { validateSupplierPerformance } from './restore-supplier-performance.mjs'
 import { validateOrderChasing } from './restore-order-chasing.mjs';
 import { validateSupplierDocuments } from './restore-supplier-documents.mjs';
 
-const kinds = new Set(['invoiceInboxConfig','apInvoiceEmail','valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
+const kinds = new Set(['invoiceEvidenceKey','invoiceEvidenceMigration','invoiceInboxConfig','apInvoiceEmail','valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
 export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
 export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
 export const integer = n => Number.isSafeInteger(n) && n >= 0;
@@ -50,6 +51,7 @@ export function validatePurchasingArchive(rows) {
  const records = new Map();
  for (const row of rows) {
   let value; try { value = JSON.parse(row.value); } catch { check(false,'record_json'); }
+  check(!hasUnsafeProtectedContext(row.kind,value),'protected_context');
   check(row.business === 'main' && kinds.has(row.kind) && value?.id === row.id && typeof row.revision === 'string' && row.revision.length, 'record');
   const key = JSON.stringify([row.kind,row.id]); check(!records.has(key),'duplicate_record'); records.set(key,value);
  }
@@ -88,7 +90,7 @@ export function validatePurchasingArchive(rows) {
   check(!seen.has(target.id) && supplier.status === 'merged' && all('supplierMerge').some(m => m.source === supplier.id && m.target === supplier.mergedInto),'supplier_merge_alias');
  }
  for (const merge of all('supplierMerge')) { check(get('supplier',merge.source).mergedInto === merge.target,'supplier_merge_link');get('supplier',merge.target);check(typeof merge.reason === 'string' && merge.reason.trim() && typeof merge.actor === 'string' && Number.isFinite(Date.parse(merge.at)),'supplier_merge'); }
- for (const matchingKey of all('supplierMatchingKey')) check(matchingKey.id === 'main' && /^[a-f0-9]{64}$/.test(matchingKey.secret), 'supplier_matching_key');
+ for (const matchingKey of all('supplierMatchingKey')) check(matchingKey.id === 'main' && (/^[a-f0-9]{64}$/.test(matchingKey.secret) || matchingKey.secret === null && matchingKey.notRestored === true), 'supplier_matching_key');
  for (const supplier of all('supplier')) if (supplier.matching && Object.keys(supplier.matching).length) { get('supplierMatchingKey','main'); check(Object.entries(supplier.matching).every(([k,v]) => ['tin','bank'].includes(k) && typeof v === 'string' && /^[a-f0-9]{64}$/.test(v)), 'supplier_matching'); }
  for (const grant of all('catalogueGrant')) check(get('member',grant.email).email === grant.email && grant.id === grant.email, 'catalogue_grant');
  for (const record of [...all('catalogue'),...all('catalogueBundle')]) if (record.access) for (const field of ['departments','locations','entities','roles']) check(Array.isArray(record.access[field]) && record.access[field].every(v => typeof v === 'string'), 'catalogue_access');

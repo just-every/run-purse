@@ -1,3 +1,4 @@
+import { projectProtectedContext, protectedContextPending } from './protected-context';
 import { approvedValueRequest, buildValueSnapshot, canonicalValue, parseSeatOriginal, valueDigest, valueMode, valueDelivery } from './agent-value-evidence';
 import { all, audit, can, date, get, key, own, put, requireThat, roles, text, uid, type Actor, type Data, type State } from './types';
 export { buildValueSnapshot, valueDelivery } from './agent-value-evidence';
@@ -60,6 +61,7 @@ export async function agentValue(s: State, a: Actor, op: string, b: Data): Promi
         return projectValueRecord(s, a, get(s, 'agentRun', id));
     }
     const run = get(s, 'agentRun', b.id);
+    requireThat(!protectedContextPending('agentRun',run)&&!run.protectedContextCleanup?.authorityInvalidated,'Historical protected context requires a new report',409);
     requireThat(run.workflow === 'value-realization', 'Value report required', 409);
     const request = get(s, 'request', run.request);
     // Owner authority never substitutes for this exact native requester identity.
@@ -96,6 +98,7 @@ export function visibleAgentValue(s: State, a: Actor, visibleRequestIds: Set<str
 
 /** Stored financial provenance retains REPORT-003's buyer-only scope on every read. */
 export function projectValueRecord(s: State, a: Actor, row: Data): Data {
+    row=projectProtectedContext('agentRun',row);
     if (row.inputs?.promise?.kind !== 'quoted-saving' || roles(s, a).includes('buyer')) return row;
     const projected = structuredClone(row), restricted = new Set(['quote', 'quoteAward', 'agreementAward', 'invoice', 'payable']);
     const sources = (values: Data[]) => values.map(source => restricted.has(source.kind)

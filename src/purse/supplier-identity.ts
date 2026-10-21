@@ -17,7 +17,7 @@ export function matchingInputs(s: State, input: unknown, previous: Data = {}): D
     };
     const secret = s.get(key('supplierMatchingKey', 'main'))?.value.secret;
     const digest = (kind: string, value: string) => {
-        requireThat(secret, 'Initialize private supplier matching before importing sensitive columns', 409);
+        requireThat(secret, 'Matching key not restored – restore the owner include archive or recover matching', 503);
         return createHmac('sha256', Buffer.from(secret, 'hex')).update(kind + ':' + value).digest('hex');
     };
     if (values.tin) {
@@ -33,8 +33,8 @@ export function matchingInputs(s: State, input: unknown, previous: Data = {}): D
     return result;
 }
 export function supplierPublicValue(supplier: Data, protectedView?: Data | number): Data {
-    const { matching, sourceRedaction, protectedOnFile, ...value } = supplier;
-    return { ...value, ...(protectedView && typeof protectedView === 'object' && Object.keys(protectedView).length ? { protectedData: protectedView } : {}), ...(sourceRedaction ? { sourceRedaction: { redactedColumns: sourceRedaction.redactedColumns } } : {}), matchingOnly: { tin: Boolean(matching?.tin), bank: Boolean(matching?.bank) } };
+    const { matching, matchingNotRestored, sourceRedaction, protectedOnFile, ...value } = supplier;
+    return { ...value, ...(matchingNotRestored?{matchingStatus:'Not restored – re-enter'}:{}), ...(protectedView && typeof protectedView === 'object' && Object.keys(protectedView).length ? { protectedData: protectedView } : {}), ...(sourceRedaction ? { sourceRedaction: { redactedColumns: sourceRedaction.redactedColumns } } : {}), matchingOnly: { tin: Boolean(matching?.tin), bank: Boolean(matching?.bank) } };
 }
 export function canonicalSupplier(s: State, id: string) {
     const seen = new Set<string>();

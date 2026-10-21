@@ -114,6 +114,10 @@ export async function integrationTokensJourney(browser, root, origin, width, evi
         assert.equal(refusedNew.status(), 401, 'Revoked secret is refused');
         token = '';
         await screenshot(owner.page, 'settings-revoked');
+        const deleted=owner.page.waitForResponse(r=>/\/api\/purse\/integration-tokens\/[^/]+\/delete$/.test(r.url()));
+        await row.getByRole('button',{name:'Delete token',exact:true}).click();
+        assert.ok((await deleted).ok());await row.waitFor({state:'detached'});
+        await screenshot(owner.page,'settings-deleted');
         return { clause: 'INTAKE-007', width, request: requestId };
     } finally {
         // No failure screenshots: an issuance failure may leave a secret on screen.

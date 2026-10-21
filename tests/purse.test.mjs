@@ -87,6 +87,41 @@ test('SECURITY-001 / AGENT-010 structured protected fields never enter preparati
  const download=await h.send('/api/purse/download/agentRun/'+run.id,undefined,buyer);assert.equal(download.status,200);assert.match(download.value,/Human source data/);
  for(const path of ['/api/purse/state','/api/purse/audit','/api/purse/audit.csv','/api/purse/download/agentRun/'+run.id]){const response=await h.send(path,undefined,h.owner);assert.equal(response.status,200);assert.ok(!JSON.stringify(response.value).includes(marker),path);}
  const stored=(await h.db.prepare('SELECT value FROM p_records').all()).results;assert.ok(stored.every(row=>!row.value.includes(marker)));
+ // Imported/legacy context is fenced before the owner explicitly removes structured fields.
+ const legacyMarker='synthetic-purse-historical-protected-suffix',legacyRun='synthetic-purse-historical-run',legacyAction='synthetic-purse-historical-action',legacyTarget='synthetic-purse-historical-target';
+ const actor=(await h.state(buyer)).actor;
+ const historical={id:legacyRun,workflow:'exception',actor:actor.id,mode:'human-preparation',model:null,references:[],fields:{purpose:'Retain receiving business context',nested:[{bank_account:legacyMarker,delivery:'Keep delivery reference'}]},history:[{fields:{TIN:legacyMarker},note:'Retain safe history'}],missing:[],draft:'Historical free text remains source data',version:1,at:new Date().toISOString(),actions:[]};
+ const proposal={id:legacyAction,run:legacyRun,runVersion:1,actor:actor.id,action:'receipt',input:{order:'synthetic-purse-order',nested:[{targetField:'bank_account',value:legacyMarker}]},status:'proposed',references:[]};
+ const target={...proposal,id:legacyTarget,run:run.id,runVersion:run.version,action:'supplier-protected-reveal',input:{supplier:'synthetic-purse-supplier'}};
+ const valueRun={id:'synthetic-purse-historical-value-run',workflow:'value-realization',actor:actor.id,request:'synthetic-purse-historical-request',version:7,inputs:{generic:{client_secret:legacyMarker},retainedEvidence:'Safe historical source'},report:{status:'no-evidence'},references:[],outcomes:[]};
+ const valueAction={...proposal,id:'synthetic-purse-historical-value-action',run:valueRun.id,runVersion:7,action:'value-confirm',input:{id:valueRun.id}};
+ for(const [kind,value] of [['agentRun',historical],['proposedAction',proposal],['proposedAction',target],['agentRun',valueRun],['proposedAction',valueAction]])await h.db.prepare("INSERT INTO p_records(business,kind,id,revision,value) VALUES('main',?,?,?,?)").bind(kind,value.id,crypto.randomUUID(),JSON.stringify(value)).run();
+ for(const path of ['/api/purse/state','/api/purse/download/agentRun/'+legacyRun]){
+  const response=await h.send(path,undefined,buyer);assert.equal(response.status,200);
+  assert.ok(!JSON.stringify(response.value).includes(legacyMarker),path);assert.ok(!JSON.stringify(response.value).includes('historical-protected-suffix'),path);
+ }
+ const withheld=(await h.state(buyer)).data;assert.equal(withheld.agentRun.find(r=>r.id===legacyRun).protectedContextCleanup.status,'pending');assert.equal(withheld.proposedAction.find(p=>p.id===legacyTarget).action,'unavailable');
+ const historicalBefore=await snapshot();
+ await cmd('execute-action',{id:legacyAction},buyer,400);await cmd('execute-action',{id:legacyTarget},buyer,403);
+ await cmd('execute-action',{id:valueAction.id},buyer,400);
+ await cmd('edit-preparation',{id:legacyRun,version:1,draft:'Unsafe source cannot be carried forward'},buyer,400);
+ await cmd('propose-action',{run:legacyRun,action:'receipt',input:{order:'synthetic-purse-order'}},buyer,400);
+ assert.deepEqual(await snapshot(),historicalBefore);
+ await cmd('protected-context-cleanup',{confirmed:true,reason:'Remove legacy structured context'},buyer,403);
+ await cmd('protected-context-cleanup',{confirmed:true,reason:'Remove legacy structured context'},'',401);
+ await cmd('protected-context-cleanup',{confirmed:false,reason:'Not confirmed'},h.owner,400);
+ const cleaned=await cmd('protected-context-cleanup',{confirmed:true,reason:'Remove legacy structured context'},h.owner);
+ assert.equal(cleaned.records,5);assert.equal(cleaned.cancelledActions,3);assert.equal(cleaned.quarantinedReports,1);assert.ok(cleaned.removedFields>=3);assert.equal(cleaned.freeTextRedacted,false);
+ const retained=(await h.state(buyer)).data,retainedRun=retained.agentRun.find(r=>r.id===legacyRun);
+ assert.equal(retainedRun.fields.purpose,historical.fields.purpose);assert.equal(retainedRun.fields.nested[0].delivery,'Keep delivery reference');assert.equal(retainedRun.history[0].note,'Retain safe history');assert.equal(retainedRun.draft,historical.draft);assert.equal(retainedRun.version,2);assert.equal(retainedRun.protectedContextCleanup.status,'cleaned');
+ assert.ok(retained.proposedAction.filter(p=>p.run===legacyRun).every(p=>p.status==='cancelled'));
+ await cmd('execute-action',{id:legacyAction},buyer,409);await cmd('execute-action',{id:legacyTarget},buyer,403);
+ const quarantined=retained.agentRun.find(r=>r.id===valueRun.id);assert.equal(quarantined.version,7);assert.equal(quarantined.inputs.retainedEvidence,'Safe historical source');assert.equal(quarantined.protectedContextCleanup.status,'quarantined');assert.equal(quarantined.protectedContextCleanup.authorityInvalidated,true);
+ await cmd('execute-action',{id:valueAction.id},buyer,409);
+ const repeated=await cmd('protected-context-cleanup',{confirmed:true,reason:'Confirm cleanup is complete'},h.owner);assert.equal(repeated.records,0);
+ const cleanupAudit=(await h.send('/api/purse/audit?action=protected-context-cleanup',undefined,h.owner)).value.events;assert.equal(cleanupAudit.length,5);assert.ok(cleanupAudit.every(e=>e.actor&&e.at&&e.record&&e.freeTextRedacted===false));
+ for(const path of ['/api/purse/state','/api/purse/audit','/api/purse/audit.csv','/api/purse/download/agentRun/'+legacyRun]){const response=await h.send(path,undefined,h.owner);assert.equal(response.status,200);assert.ok(!JSON.stringify(response.value).includes(legacyMarker),path);}
+ assert.ok((await h.db.prepare('SELECT value FROM p_records').all()).results.every(row=>!row.value.includes(legacyMarker)));
  // Authentication and origin remain native doors, before any refusal audit.
  const protectedBody={workflow:'exception',fields:{tin:marker},draft:'Safe',references:[]};await cmd('prepare',protectedBody,'',401);
  const cross=await h.mf.dispatchFetch(h.origin+'/api/purse/command/prepare',{method:'POST',headers:{cookie:buyer,origin:'https://other.example.test','content-type':'application/json'},body:JSON.stringify(protectedBody)});assert.equal(cross.status,403);

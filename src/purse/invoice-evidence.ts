@@ -1,4 +1,6 @@
-import { createHash, createHmac } from 'node:crypto';
+import { mac, v2Hash } from '../../scripts/installer/invoice-evidence-crypto.mjs';
+import { evidenceKey } from './invoice-evidence-history';
+import { createHash } from 'node:crypto';
 import { initializeSupplierMatching, matchingInputs } from './supplier-identity';
 import { invoiceRisk } from './invoice-risk';
 import { audit, get, put, uid, type Actor, type Data, type State } from './types';
@@ -8,10 +10,11 @@ export function invoiceEvidence(s: State, order: Data, candidate: Data, input: D
     let evidenceHash: string | null = null;
     if (['invoiceDate', 'senderEmail', 'remit', 'remitTo', 'document'].some(field => input[field] !== undefined)) {
         initializeSupplierMatching(s);
-        // Domain-separated keyed digest binds all submitted evidence without retaining bank digits.
         const bank = input.remit ? matchingInputs(s, input.remit).bank : null;
-        const value = { invoiceDate: input.invoiceDate ?? null, sender: risk.sender.email ?? null, bank, document: risk.document ?? null, ...(input.remitTo !== undefined ? { remitTo: risk.remitPostal.value } : {}) };
-        evidenceHash = createHmac('sha256', Buffer.from(get(s, 'supplierMatchingKey', 'main').secret, 'hex')).update('invoice-evidence:' + JSON.stringify(value)).digest('hex');
+        const bankBinding=bank?mac(get(s,'supplierMatchingKey','main').secret,'invoice-bank-binding:v2:',bank):null;
+        const evidence={representation:'v2',state:'v2',bankBinding};
+        evidenceHash=v2Hash(evidenceKey(s),risk,bankBinding);
+        return { ...risk, evidenceHash, evidence, flags:risk.flags.map((f:Data)=>({...f,id:uid()})),riskVersion:1,riskReviews:[] };
     }
     return { ...risk, evidenceHash, flags: risk.flags.map((f: Data) => ({ ...f, id: uid() })), riskVersion: 1, riskReviews: [] };
 }

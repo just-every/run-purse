@@ -28,6 +28,8 @@ export interface Bindings {
  OWNER_EMAIL: string
  /** Installation-local encryption key, provisioned by rer setup; never portable. */
  PROTECTED_DATA_KEY?: string
+ /** Retain during owner rotation until all ciphertext has been checked. */
+ PROTECTED_DATA_PREVIOUS_KEY?: string
  SESSION_SECRET: string
  SETUP_TOKEN?: string
  MAIL_PROVIDER?: 'development' | 'resend' | 'sendgrid' | 'cloudflare'

@@ -1,8 +1,10 @@
 import { rejectProtectedInput } from './protected-input';
+import { cleanupProtectedContext, executablePreparationAction, preparationActions } from './protected-context';
 import { recordScope } from './documents';
 import { all, audit, can, get, put, requireThat, text, uid, own, type Actor, type Data, type State, roles } from './types';
 const workflows = { intake: ['need', 'supplied evidence', 'supplier', 'quantity', 'project', 'need date'], rfq: ['nominated suppliers', 'scope', 'response deadline', 'supplied offers'], renewal: ['agreement', 'usage evidence', 'notice date', 'keep/change/cancel options'], exception: ['PO', 'receipt or invoice evidence', 'correction or escalation'], negotiation: ['known counterparty', 'owner price bounds', 'owner term bounds', 'nonbinding draft'] };
 export function preparation(s: State, a: Actor, op: string, b: Data): Data | undefined {
+    if (op === 'protected-context-cleanup') return cleanupProtectedContext(s, a, b);
     if (['prepare', 'edit-preparation', 'propose-action'].includes(op)) { requireThat(roles(s,a).length, 'Active business capability required', 403); rejectProtectedInput(b); }
     if (op === 'prepare') {
         requireThat(roles(s,a).length,'Active business capability required',403);
@@ -22,6 +24,7 @@ export function preparation(s: State, a: Actor, op: string, b: Data): Data | und
         const run = get(s, 'agentRun', b.id);
         requireThat(run.workflow!=='value-realization','Value reports are immutable; prepare a new report for changed evidence',409);
         requireThat(a.owner || run.actor === a.id, 'Preparation outside your scope', 403);
+        rejectProtectedInput(run);
         requireThat(run.version === b.version, 'Preparation changed', 409);
         put(s, 'agentRun', run.id, { ...run, draft: text(b.draft, 'Draft', 20000), version: run.version + 1 });
         audit(s, a, op, run.id);
@@ -32,7 +35,8 @@ export function preparation(s: State, a: Actor, op: string, b: Data): Data | und
         const run = get(s, 'agentRun', b.run);
         requireThat(run.workflow!=='value-realization','Value reports propose requester confirmation only',409);
         requireThat(run.actor === a.id || a.owner, 'Preparation outside your scope', 403);
-        requireThat(['submit', 'decision', 'convert', 'issue', 'receipt'].includes(b.action), 'Unsupported action');
+        rejectProtectedInput(run);
+        requireThat(preparationActions.includes(b.action), 'Unsupported action');
         requireThat(b.input && typeof b.input === 'object', 'Action input required');
         const id = uid();
         put(s, 'proposedAction', id, { run: run.id, runVersion: run.version, actor: a.id, action: b.action, input: b.input, status: 'proposed', references: run.references });
@@ -40,4 +44,13 @@ export function preparation(s: State, a: Actor, op: string, b: Data): Data | und
         return get(s, 'proposedAction', id);
     }
 }
-export function actionInput(s: State, a: Actor, b: Data) { const p = get(s, 'proposedAction', b.id), run = get(s, 'agentRun', p.run); requireThat(p.status === 'proposed' && p.runVersion === run.version, 'Action or input version stale', 409); requireThat(a.owner || p.actor === a.id, 'Action outside your scope', 403); requireThat(p.references.every((r: Data) => s.get(`${r.kind}:${r.id}`)?.revision === r.version), 'Source records changed', 409); rejectProtectedInput(p.input); return p; }
+export function actionInput(s: State, a: Actor, b: Data) {
+    const p = get(s, 'proposedAction', b.id), run = get(s, 'agentRun', p.run);
+    requireThat(a.owner || p.actor === a.id, 'Action outside your scope', 403);
+    rejectProtectedInput(p); rejectProtectedInput(run);
+    requireThat(run.protectedContextCleanup?.authorityInvalidated !== true, 'Historical report quarantined after protected context removal', 409);
+    requireThat(executablePreparationAction(p.action), 'Protected or unsupported historical action target is unavailable', 403);
+    requireThat(p.status === 'proposed' && p.runVersion === run.version, 'Action or input version stale', 409);
+    requireThat(p.references.every((r: Data) => s.get(`${r.kind}:${r.id}`)?.revision === r.version), 'Source records changed', 409);
+    return p;
+}

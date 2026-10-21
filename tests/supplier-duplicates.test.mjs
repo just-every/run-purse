@@ -133,7 +133,8 @@ test('SECURITY-001 encrypted owner storage, native reveal, role masks, atomic ma
  const metadata=async(cookie=h.owner)=>{const r=await h.send(base,undefined,cookie);assert.equal(r.status,200,JSON.stringify(r.value));return r.value};
  const body=async(extra={})=>({revision:(await metadata()).revision,values,reason:'Synthetic private reason',evidence:'synthetic-source-reference',...extra});
  const snapshot=async()=>({product:(await h.db.prepare("SELECT * FROM p_records WHERE kind!='audit' ORDER BY kind,id").all()).results,ciphertext:(await h.db.prepare('SELECT * FROM p_supplier_protected ORDER BY supplier,field').all()).results});
- const refused=async(input,cookie,status=400,operation='store')=>{const before=await snapshot();const r=await h.send(base+'/'+operation,input,cookie);assert.equal(r.status,status,JSON.stringify(r.value));assert.deepEqual(await snapshot(),before);assert.equal(r.headers.get('cache-control'),'no-store');for(const value of Object.values(values))assert.ok(!JSON.stringify(r.value).includes(value));return r};
+ const refusalCount=async()=>(await h.db.prepare("SELECT COUNT(*) AS n FROM p_records WHERE kind='audit' AND json_extract(value,'$.action')='protected-refused'").first()).n;
+ const refused=async(input,cookie,status=400,operation='store')=>{const before=await snapshot(),count=await refusalCount();const r=await h.send(base+'/'+operation,input,cookie);assert.equal(r.status,status,JSON.stringify(r.value));assert.deepEqual(await snapshot(),before);assert.equal(await refusalCount(),count+1,'Each refusal, including a revision conflict, appends its own safe event');assert.equal(r.headers.get('cache-control'),'no-store');for(const value of Object.values(values))assert.ok(!JSON.stringify(r.value).includes(value));return r};
  await refused(await body(),buyer,403);
  await refused(await body({reason:''}),h.owner);
  await refused(await body({evidence:''}),h.owner);
@@ -176,9 +177,20 @@ test('SECURITY-001 encrypted owner storage, native reveal, role masks, atomic ma
  try{await replaceTin(bankRow);const corrupt=await h.send(base,undefined,h.owner);assert.equal(corrupt.status,503);assert.ok(!JSON.stringify(corrupt.value).includes(values.bankAccount));}finally{await replaceTin(tinRow);}
  const other=await h.command('supplier',{name:'Synthetic separate encryption identity',status:'active',reason:'Synthetic ciphertext identity proof'},buyer);
  try{await h.db.prepare('INSERT INTO p_supplier_protected(business,supplier,field,key_id,nonce,ciphertext,tag) VALUES(?,?,?,?,?,?,?)').bind('main',other.id,'tin',tinRow.key_id,tinRow.nonce,tinRow.ciphertext,tinRow.tag).run();const corrupt=await h.send('/api/purse/supplier-protected/'+other.id,undefined,h.owner);assert.equal(corrupt.status,503);assert.ok(!JSON.stringify(corrupt.value).includes(values.tin));}finally{await h.db.prepare('DELETE FROM p_supplier_protected WHERE supplier=?').bind(other.id).run();}
- const noAuth=await h.send(base+'/store',await body());assert.equal(noAuth.status,401);
- const cross=await h.mf.dispatchFetch(h.origin+base+'/store',{method:'POST',headers:{cookie:h.owner,origin:'https://synthetic-other.example.test','content-type':'application/json'},body:JSON.stringify(await body())});assert.equal(cross.status,403);
- const signout=await h.send('/auth/signout',{},h.owner);assert.equal(signout.status,204);assert.equal((await h.send(base+'/reveal',{revision:0,field:'tin',reason:'Synthetic revoked'},h.owner)).status,401);
+ await refused(await body(),undefined,401);
+ const count=await refusalCount(),beforeCross=await snapshot();
+ const cross=await h.mf.dispatchFetch(h.origin+base+'/store',{method:'POST',headers:{cookie:h.owner,origin:'https://synthetic-other.example.test','content-type':'application/json'},body:JSON.stringify(await body())});assert.equal(cross.status,403);for(const value of Object.values(values))assert.ok(!(await cross.clone().text()).includes(value));assert.equal(await refusalCount(),count+1,'Cross-origin refusal is audited before returning');assert.deepEqual(await snapshot(),beforeCross);
+ // Session-version and revocation refusals cannot save under that authority,
+ // but must still append a refusal without touching the supplier or ciphertext.
+ await h.db.prepare('UPDATE oa_sessions SET operator_version=operator_version+1 WHERE token_hash IS NOT NULL AND revoked_at IS NULL AND operator_id=(SELECT id FROM oa_operators WHERE email=?)').bind('owner@example.test').run();
+ await refused({revision:0,values,reason:'synthetic-purse-1',evidence:'synthetic-purse-2'},h.owner,401);
+ await h.db.prepare('UPDATE oa_sessions SET operator_version=(SELECT version FROM oa_operators WHERE id=operator_id) WHERE revoked_at IS NULL').run();
+ const bearerBefore=await refusalCount();const bearer=await h.mf.dispatchFetch(h.origin+base+'/reveal',{method:'POST',headers:{origin:h.origin,authorization:'Bearer synthetic-purse-3','content-type':'application/json'},body:JSON.stringify({revision:0,field:'tin',reason:values.tin})});assert.equal(bearer.status,401);assert.equal(await refusalCount(),bearerBefore+1);
+ const signout=await h.send('/auth/signout',{},h.owner);assert.equal(signout.status,204);await refused({revision:0,field:'tin',reason:'synthetic-purse-4'},h.owner,401,'reveal');
+ const refusals=(await h.db.prepare("SELECT value FROM p_records WHERE kind='audit' AND json_extract(value,'$.action')='protected-refused'").all()).results.map(row=>JSON.parse(row.value));
+ assert.ok(refusals.some(event=>event.status===409));assert.ok(refusals.some(event=>event.status===401));assert.ok(refusals.some(event=>event.status===403));
+ for(const event of refusals){assert.equal(event.record,'supplier-protected');assert.ok(['read','store','reveal'].includes(event.operation));for(const value of Object.values(values))assert.ok(!JSON.stringify(event).includes(value));assert.ok(!JSON.stringify(event).includes('synthetic-purse-3'));}
+
 });
 
 test('SECURITY-001 unavailable installation key returns 503 without protected or matching writes',async t=>{
@@ -186,4 +198,50 @@ test('SECURITY-001 unavailable installation key returns 503 without protected or
  const supplier=await h.command('supplier',{name:'Synthetic key unavailable supplier',status:'active',reason:'Synthetic acceptance'}),base='/api/purse/supplier-protected/'+supplier.id;
  const metadata=await h.send(base,undefined,h.owner),before=(await h.db.prepare("SELECT * FROM p_records WHERE kind!='audit' ORDER BY kind,id").all()).results;
  const r=await h.send(base+'/store',{revision:metadata.value.revision,values:{tin:'987651234'},reason:'Synthetic reason',evidence:'synthetic-source'},h.owner);assert.equal(r.status,503,JSON.stringify(r.value));assert.equal(r.headers.get('cache-control'),'no-store');assert.equal((await h.db.prepare('SELECT COUNT(*) AS n FROM p_supplier_protected').first()).n,0);assert.deepEqual((await h.db.prepare("SELECT * FROM p_records WHERE kind!='audit' ORDER BY kind,id").all()).results,before);
+});
+
+test('SECURITY-001 owner rotation authenticates all values atomically and key-loss recovery requires explicit audited reentry',async t=>{
+ const {createHash,createCipheriv,createDecipheriv,randomBytes}=await import('node:crypto');
+ const activeKey=createHash('sha256').update('synthetic-purse-1').digest('hex'),oldKey=createHash('sha256').update('synthetic-purse-2').digest('hex');
+ const h=await harness({protectedKey:activeKey,protectedPreviousKey:oldKey});t.after(()=>h.close());
+ await h.command('business',{name:'synthetic-purse-3',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Office']});
+ const buyer=await h.member('synthetic-purse-4@example.test',['buyer']);
+ const supplier=await h.command('supplier',{name:'synthetic-purse-5',status:'active',reason:'synthetic-purse-6'}),base='/api/purse/supplier-protected/'+supplier.id;
+ const values={tin:'987651234',bankAccount:'9876543215678',bankRouting:'123456789'},payloads={};
+ const keyStatus=async()=>{const r=await h.send('/api/purse/protected-keys',undefined,h.owner);assert.equal(r.status,200,JSON.stringify(r.value));return r.value};
+ const metadata=await h.send(base,undefined,h.owner);assert.equal((await h.send(base+'/store',{revision:metadata.value.revision,values,reason:'synthetic-purse-7',evidence:'synthetic-purse-8'},h.owner)).status,200);
+ const oldId=createHash('sha256').update(Buffer.from(oldKey,'hex')).digest('hex');
+ for(const [field,value] of Object.entries(values)){
+  const nonce=randomBytes(12),cipher=createCipheriv('aes-256-gcm',Buffer.from(oldKey,'hex'),nonce);cipher.setAAD(Buffer.from(JSON.stringify(['main',supplier.id,field,oldId])));
+  payloads[field]={value,reason:'synthetic-purse-7',evidence:'synthetic-purse-8'};
+  const ciphertext=Buffer.concat([cipher.update(JSON.stringify(payloads[field]),'utf8'),cipher.final()]);
+  await h.db.prepare('UPDATE p_supplier_protected SET key_id=?,nonce=?,ciphertext=?,tag=? WHERE supplier=? AND field=?').bind(oldId,nonce.toString('base64'),ciphertext.toString('base64'),cipher.getAuthTag().toString('base64'),supplier.id,field).run();
+ }
+ const snapshot=async()=>({product:(await h.db.prepare("SELECT * FROM p_records WHERE kind!='audit' ORDER BY kind,id").all()).results,encrypted:(await h.db.prepare('SELECT * FROM p_supplier_protected ORDER BY supplier,field').all()).results});
+ const input=async(extra={})=>({revision:(await keyStatus()).revision,reason:'synthetic-purse-9',...extra});
+ const refuse=async(operation,body,cookie,status)=>{const before=await snapshot();const r=await h.send('/api/purse/protected-keys/'+operation,body,cookie);assert.equal(r.status,status,JSON.stringify(r.value));assert.equal(r.headers.get('cache-control'),'no-store');assert.deepEqual(await snapshot(),before);for(const value of Object.values(values))assert.ok(!JSON.stringify(r.value).includes(value));};
+ assert.equal((await keyStatus()).awaitingRotation,3);assert.equal((await keyStatus()).previousKeyMayBeRemoved,false);
+ await refuse('rotate',await input(),buyer,403);await refuse('rotate',await input(),h.owner,403);
+ const step=await h.send('/auth/step-up',{action:'export'},h.owner);assert.equal(step.status,202);
+ const message=[...h.messages].reverse().find(m=>m.to.includes('owner@example.test')),token=new URL(message.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0]).searchParams.get('token');assert.equal((await h.send('/auth/confirm',{token},h.owner)).status,303);
+ const original=(await snapshot()).encrypted.find(row=>row.field==='tin');
+ await h.db.prepare("UPDATE p_supplier_protected SET tag=? WHERE field='tin' AND supplier=?").bind(Buffer.alloc(16).toString('base64'),supplier.id).run();
+ await refuse('rotate',await input(),h.owner,503);
+ await h.db.prepare("UPDATE p_supplier_protected SET tag=? WHERE field='tin' AND supplier=?").bind(original.tag,supplier.id).run();
+ const stale=await input();await h.command('supplier',{...supplier,reason:'synthetic-purse-10'});await refuse('rotate',stale,h.owner,409);
+ const before=await snapshot(),rotated=await h.send('/api/purse/protected-keys/rotate',await input(),h.owner);assert.equal(rotated.status,200,JSON.stringify(rotated.value));assert.equal(rotated.value.checked,3);assert.deepEqual((await snapshot()).product,before.product);
+ assert.equal((await keyStatus()).previousKeyMayBeRemoved,true);assert.equal((await keyStatus()).awaitingRotation,0);
+ const activeId=createHash('sha256').update(Buffer.from(activeKey,'hex')).digest('hex');
+ for(const row of (await snapshot()).encrypted){assert.equal(row.key_id,activeId);const decipher=createDecipheriv('aes-256-gcm',Buffer.from(activeKey,'hex'),Buffer.from(row.nonce,'base64'));decipher.setAAD(Buffer.from(JSON.stringify(['main',supplier.id,row.field,row.key_id])));decipher.setAuthTag(Buffer.from(row.tag,'base64'));assert.deepEqual(JSON.parse(Buffer.concat([decipher.update(Buffer.from(row.ciphertext,'base64')),decipher.final()]).toString()),payloads[row.field]);const r=await h.send(base+'/reveal',{revision:(await keyStatus()).revision,field:row.field,reason:'synthetic-purse-11'},h.owner);assert.equal(r.status,200);assert.equal(r.value.value,values[row.field]);}
+ // A lost key is represented honestly, never replaced by a pretend mask.
+ await h.db.prepare("UPDATE p_supplier_protected SET key_id=? WHERE field='tin' AND supplier=?").bind(createHash('sha256').update('synthetic-purse-12').digest('hex'),supplier.id).run();
+ assert.equal((await keyStatus()).unreadable,1);assert.equal((await keyStatus()).previousKeyMayBeRemoved,false);
+ assert.equal((await h.state()).data.supplier.find(row=>row.id===supplier.id).protectedData.tin,'Key unavailable – re-enter');
+ assert.equal((await h.send(base,undefined,h.owner)).status,503);
+ await refuse('recover',await input(),h.owner,400);await refuse('recover',await input({acknowledge:'discard-unreadable-and-reenter'}),buyer,403);
+ const recovered=await h.send('/api/purse/protected-keys/recover',await input({acknowledge:'discard-unreadable-and-reenter'}),h.owner);assert.equal(recovered.status,200,JSON.stringify(recovered.value));assert.equal(recovered.value.discarded,1);
+ const after=await h.send(base,undefined,h.owner);assert.equal(after.value.masks.tin,'Not restored – re-enter');assert.equal(after.value.masks.bankAccount,'••••5678');
+ assert.equal((await h.send(base+'/store',{revision:after.value.revision,values:{tin:values.tin},reason:'synthetic-purse-13',evidence:'synthetic-purse-14'},h.owner)).status,200);
+ const revealed=await h.send(base+'/reveal',{revision:(await keyStatus()).revision,field:'tin',reason:'synthetic-purse-15'},h.owner);assert.equal(revealed.status,200);assert.equal(revealed.value.value,values.tin);
+ const audit=await h.send('/api/purse/audit',undefined,h.owner);for(const action of ['protected-key-rotation','protected-key-loss','protected-refused'])assert.ok(audit.value.events.some(row=>row.action===action));for(const value of [...Object.values(values),activeKey,oldKey])assert.ok(!JSON.stringify(audit.value).includes(value));
 });

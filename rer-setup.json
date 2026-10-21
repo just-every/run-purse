@@ -67,6 +67,15 @@
       "input": "managed",
       "generate": "hex",
       "group": "owner"
+    },
+    {
+      "name": "PROTECTED_DATA_PREVIOUS_KEY",
+      "label": "Previous protected supplier data key",
+      "help": "Optional rotation secret. Keep the previous installation key here while the active key changes. Run owner rotation and verify its receipt before removing this secret. Supply privately; never use command arguments or archives.",
+      "kind": "secret",
+      "required": false,
+      "ownerVisible": false,
+      "group": "owner"
     }
   ],
   "steps": [

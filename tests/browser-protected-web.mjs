@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { build } from 'esbuild';
-import { chromium } from '@playwright/test';
+const { chromium } = await import(process.env.PURSE_PLAYWRIGHT_MODULE || '@playwright/test');
 import { harness } from './purse-harness.mjs';
 
 const widthArg = process.argv.find(arg => arg.startsWith('--width='));
@@ -91,6 +91,17 @@ try {
             await region.getByRole('button',{name:'Hide protected value',exact:true}).click();
             assert.equal(await panel.getByRole('region',{name:'Revealed protected value',exact:true}).count(),0);
         }
+        // The owner performs the real installation ceremony through its form.
+        await panel.getByText('Installation encryption and recovery',{exact:true}).click();
+        await panel.getByLabel('Private rotation reason',{exact:true}).fill('synthetic-purse-1');
+        const rotation=page.waitForResponse(r=>r.url().endsWith('/protected-keys/rotate'));
+        await panel.getByRole('button',{name:'Reencrypt and check all protected values',exact:true}).click();
+        assert.equal((await rotation).status(),200);
+        await panel.getByRole('status').filter({hasText:'Rotation complete'}).waitFor();
+        assert.equal(await panel.getByLabel('Private rotation reason',{exact:true}).inputValue(),'');
+        await panel.getByText('All stored fields are readable under the active key. The previous Worker secret may be removed privately.',{exact:true}).waitFor();
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+        await page.screenshot({path:join(evidence,`SECURITY-001-web-rotation-${width}.png`),fullPage:true});
         // Navigation removes the value and returning never restores a reveal.
         await panel.getByLabel('Private reveal reason',{exact:true}).fill('Synthetic navigation check');
         await panel.getByRole('button',{name:'Reveal protected value',exact:true}).click();
@@ -99,6 +110,27 @@ try {
         for(const value of Object.values(values)) assert.ok(!(await page.locator('body').innerText()).includes(value));
         await openSupplier();
         assert.equal(await panel.getByRole('region',{name:'Revealed protected value',exact:true}).count(),0);
+        // Lost-key state leaves the actual app usable for explicit recovery.
+        await h.db.prepare("UPDATE p_supplier_protected SET key_id=? WHERE supplier=? AND field='tin'").bind(createHash('sha256').update('synthetic-purse-2').digest('hex'),supplier.id).run();
+        await page.goto(h.origin+'/app?tab=Suppliers');
+        await page.getByRole('row').filter({has:page.getByText(supplier.name,{exact:true})}).getByRole('button',{name:'Open',exact:true}).click();
+        await panel.getByRole('alert').waitFor();
+        await panel.getByText('Installation encryption and recovery',{exact:true}).click();
+        await panel.getByLabel('Private recovery reason',{exact:true}).fill('synthetic-purse-3');
+        await panel.getByRole('checkbox').check();
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+        await page.screenshot({path:join(evidence,`SECURITY-001-web-key-loss-${width}.png`),fullPage:true});
+        const recovery=page.waitForResponse(r=>r.url().endsWith('/protected-keys/recover'));
+        await panel.getByRole('button',{name:'Discard unreadable values for reentry',exact:true}).click();
+        assert.equal((await recovery).status(),200);
+        await panel.getByRole('status').filter({hasText:'Unreadable values discarded'}).waitFor();
+        await panel.getByText('Not restored – re-enter',{exact:true}).waitFor();
+        await panel.getByLabel('TIN to store',{exact:true}).fill(values.tin);
+        await panel.getByLabel('Private storage reason',{exact:true}).fill('synthetic-purse-4');
+        await panel.getByLabel('Private evidence reference',{exact:true}).fill('synthetic-purse-5');
+        const reentry=page.waitForResponse(r=>r.url().endsWith('/store'));
+        await panel.getByRole('button',{name:'Store protected values',exact:true}).click();assert.equal((await reentry).status(),200);
+        await panel.getByRole('status').filter({hasText:'Protected values saved'}).waitFor();
         // Buyer sees the same masks and no store, reveal or reauthentication controls.
         const [buyerName,buyerValue]=buyer.split('=');
         await context.clearCookies();await context.addCookies([{name:buyerName,value:buyerValue,url:h.origin}]);
@@ -110,7 +142,7 @@ try {
         await page.screenshot({path:join(evidence,`SECURITY-001-web-buyer-${width}.png`),fullPage:true});
         assert.deepEqual(failures,[]);
         const audit=await h.send('/api/purse/audit',undefined,h.owner);
-        for(const action of ['protected-store','protected-reveal','protected-refused']) assert.ok(audit.value.events.some(e=>e.action===action));
+        for(const action of ['protected-store','protected-reveal','protected-refused','protected-key-rotation','protected-key-loss']) assert.ok(audit.value.events.some(e=>e.action===action));
         for(const value of Object.values(values)) assert.ok(!JSON.stringify(audit.value).includes(value));
         } catch(error) { await page.screenshot({path:join(evidence,`SECURITY-001-web-failure-${width}.png`),fullPage:true}); console.error('Native web acceptance failed at page',page.url()); throw error; } finally { await context.close(); }
         console.log('SECURITY-001 actual App/native HTTP/email-edge web journey passed at '+width);

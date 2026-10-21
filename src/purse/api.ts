@@ -1,3 +1,6 @@
+import { protectedArchiveApi } from './protected-archive';
+import { protectedKeysApi } from './protected-keys';
+import { invoiceEvidenceApi } from './invoice-evidence-api';
 import { requestAgain } from './request-again';
 import { supplierProtectedApi, protectedSupplierState } from './supplier-protected';
 import { ProtectedInputFault } from './protected-input';
@@ -73,6 +76,9 @@ api.route('/',emailIntakeApi);
 api.route('/',invoiceInboxApi);
 api.route('/',searchApi);
 api.route('/',supplierProtectedApi);
+api.route('/',protectedKeysApi);
+api.route('/',protectedArchiveApi);
+api.route('/',invoiceEvidenceApi);
 api.all('/api/purse/supplier-refresh/:token', c => supplierRefresh(c.req.raw, runtimeBindings(c.env), c.req.param('token')));
 api.get('/api/purse/state', async (c) => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const capabilities=roles(state,a); requireThat(capabilities.length,'No active business membership',403); const masks = await protectedSupplierState(runtimeBindings(c.env),a,capabilities,all(state,'supplier')); const result = visible(state, a, masks);if(a.owner) result.data.importJobs = await importJobs(c.env.DB, a); await readFence(c.env.DB, a, revision); return c.json(result); });
 api.get('/api/purse/spend-report', async c => { const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB); const result = spendReport(visible(state, a).data, c.req.query()); await readFence(c.env.DB, a, revision); return c.json(result); });
