@@ -5,6 +5,7 @@ import { allocateInvoiceCharges, readingAmounts } from './invoice-amounts';
 import { invoiceHeaders, invoiceItems, invoiceEmailSender, parseInvoiceFields } from './invoice-reading-fields';
 import { invoiceReadingText, postalRemit } from './invoice-reading-values';
 import { invoiceInstructions, proposedInvoice } from './invoice-reading-proposal';
+import { invoiceXmlFields, invoiceXmlKind } from './invoice-xml';
 import { quoteSourceDescriptor } from './quote-reading-proposal';
 import { readQuoteSource } from './quote-reading-source';
 import { normalizedSupplierText } from './supplier-matching';
@@ -39,7 +40,9 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
         if (op==='invoice-reading-propose') Object.assign(reading,proposedInvoice(b,descriptor));
         else {
             try {
-                const rows=await readQuoteSource(attachment); reading.searchText=purchasingSearchText(rows); Object.assign(reading,parseInvoiceFields(rows,attachment.id));const sender=invoiceEmailSender(attachment);if(sender)reading.senderEmail=sender;
+                const bytes=Uint8Array.from(atob(attachment.base64),c=>c.charCodeAt(0));
+                if(invoiceXmlKind(bytes)){ Object.assign(reading,invoiceXmlFields(bytes,attachment.id,order)); reading.searchText=purchasingSearchText([...invoiceHeaders.map(key=>reading[key]),...reading.lines.flatMap((line:Data)=>invoiceItems.map(key=>line[key]))].filter(field=>field.value!==null).map(field=>({text:field.value}))); }
+                else { const rows=await readQuoteSource(attachment); reading.searchText=purchasingSearchText(rows); Object.assign(reading,parseInvoiceFields(rows,attachment.id));const sender=invoiceEmailSender(attachment);if(sender)reading.senderEmail=sender; }
                 const fields=[...invoiceHeaders.map(key=>reading[key]),...reading.lines.flatMap((line:Data)=>invoiceItems.map(key=>line[key]))];
                 requireThat(reading.lines.length>0&&reading.lines.length<=100&&fields.every(field=>field.value===null||field.value.length<=2000),'Invoice needs 1–100 recognizable items and fields of at most 2,000 characters');
             } catch(error) { reading.status='unsupported'; reading.reason=(error as Error).message.replace(/quotes?/gi,'invoices'); reading.lines=[]; }

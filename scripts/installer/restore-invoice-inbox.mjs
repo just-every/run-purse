@@ -23,6 +23,12 @@ export function validateInvoiceInbox(all, get, check) {
             check(file.key === `ap-inbox/${capture.id}/${file.id}` && !keys.has(file.key) && file.base64 === undefined && Number.isSafeInteger(file.size) && file.size >= 0 && file.size <= (file.id === 'original' ? 2_000_000 : 10_000_000), 'invoice_inbox_file_custody');
             keys.add(file.key); if (file.id !== 'original') total += file.size;
         }
+        check(capture.embedded === undefined || Array.isArray(capture.embedded), 'invoice_inbox_embedded');
+        for (const file of capture.embedded ?? []) {
+            check(string(file.id, 200) && file.id.length && string(file.name) && file.mediaType === 'application/pdf' && /^[a-f0-9]{64}$/.test(file.sha256) && capture.files.some(f => f.id === file.embeddedIn) && string(file.path), 'invoice_inbox_embedded_file');
+            check(file.key === `ap-inbox/${capture.id}/${file.id}` && !keys.has(file.key) && Number.isSafeInteger(file.size) && file.size > 0 && file.size <= 10_000_000, 'invoice_inbox_embedded_custody');
+            keys.add(file.key); total += file.size;
+        }
         check(total <= 30_000_000, 'invoice_inbox_file_total');
         if (capture.status === 'held') check(capture.supplier === null && string(capture.holdReason) && !capture.sources.length, 'invoice_inbox_hold');
         else get('supplier', capture.supplier);

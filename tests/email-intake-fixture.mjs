@@ -56,6 +56,13 @@ export async function prepareHeldIntakeArchive(path) {
             const received = await h.mf.dispatchFetch(h.origin + '/api/purse/email-intake/inbound', signedInbound(email.id));
             assert.equal(received.status, 202, await received.text());
         }
+        // INVOICE-001: unknown-sender AP mail through the same signed door, held for the browser journey.
+        await h.command('invoice-inbox-config', { address: 'ap@example.test' });
+        for (const width of [1440, 390]) {
+            const email = edge.addMail('browser_ap_invoice_' + width, 'billing@unknown-supplier.example.test', 'ap@example.test'); email.subject = 'Supplier invoice ' + width;
+            const received = await h.mf.dispatchFetch(h.origin + '/api/purse/email-intake/inbound', signedInbound(email.id));
+            assert.equal(received.status, 202, await received.text());
+        }
         const records = (await h.db.prepare('SELECT kind,value FROM p_records').all()).results;
         assert.ok(!records.some(r => ['member', 'request'].includes(r.kind)), 'The producer creates no requester or purchasing request');
         assert.equal(records.filter(r => r.kind === 'emailIntake').length, 2);

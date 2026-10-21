@@ -14,7 +14,7 @@ invoiceInboxApi.get('/api/purse/invoice-inbox/:id', async c => {
 invoiceInboxApi.get('/api/purse/invoice-inbox/:id/files/:file', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB);
     apScope(state, a); const capture = get(state, 'apInvoiceEmail', c.req.param('id'));
-    const file = [capture.original, ...capture.files].find((f: Data) => f.id === c.req.param('file'));
+    const file = [capture.original, ...capture.files, ...(capture.embedded ?? [])].find((f: Data) => f.id === c.req.param('file'));
     requireThat(file, 'AP email file not found', 404);
     requireThat(file.key === apFileKey(capture.id, file.id), 'Invalid AP email custody', 409);
     const original = await c.env.ORIGINALS.get(file.key); requireThat(original, 'AP email original unavailable', 409);
