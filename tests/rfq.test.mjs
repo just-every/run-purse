@@ -64,9 +64,10 @@ assert.equal(historical.lines[0].unitMinor,95000);assert.equal(winner.lines[0].u
  assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
  await cmd('rfq-create',{...config,request:singleRequest.id,revision:2,deadline:new Date(Date.now()+1800000).toISOString(),reminderAt:new Date(Date.now()+1000).toISOString()},buyer,400); const jsonRevision={...payload('900'),lines:uncertainRfq.lines.map(l=>({...l,requestLine:l.id,unitAmount:'900'})),files:[{name:'json-drawing.pdf',mediaType:'application/pdf',base64:largeFiles[0].toString('base64')}]};assert.equal((await respond(newLink.value.url,jsonRevision)).status,200);const jsonResponse=(await h.state(buyer)).data.rfqResponse.find(r=>r.rfq===uncertainRfq.id);const jsonDownload=await fetch(h.origin+`/api/purse/rfq-original/${jsonResponse.id}/${jsonResponse.files[0].id}`,{headers:{cookie:buyer}});assert.deepEqual(Buffer.from(await jsonDownload.arrayBuffer()),largeFiles[0],'SOURCE-001 JSON retains a 10 MB original');
  // Finer native grants bind configuration, invitations, response history, awards and private bytes to the RFQ's request.
+ const scopedAp=await h.member('synthetic-rfq-ap@example.test',['ap-clerk']);
  const scopedBuyer=await h.member('synthetic-rfq-buyer@example.test',['buyer']),scopedReader=await h.member('synthetic-rfq-reader@example.test',['finance-viewer']);
  const scope={departments:['Operations'],locations:['Denver'],projects:['Safety'],entities:['main']};
- for(const [email,role]of [['synthetic-rfq-buyer@example.test','buyer'],['synthetic-rfq-reader@example.test','finance-viewer']])await cmd('member',{email,name:email,grants:[{role,scope}]});
+ for(const [email,role]of [['synthetic-rfq-buyer@example.test','buyer'],['synthetic-rfq-reader@example.test','finance-viewer'],['synthetic-rfq-ap@example.test','ap-clerk']])await cmd('member',{email,name:email,grants:[{role,scope}]});
  const scopedRequest=await cmd('request',{...draft,title:'Scoped supplier quotations'},requester),outsideRequest=await cmd('request',{...draft,title:'Private IT quotations',location:'Boulder',costCentre:'IT'},requester);
  const scopedRfq=await cmd('rfq-create',{...config,request:scopedRequest.id},scopedBuyer),outsideRfq=await cmd('rfq-create',{...config,request:outsideRequest.id},buyer);
  await cmd('rfq-create',{...config,request:outsideRequest.id},scopedBuyer,403);
@@ -77,13 +78,15 @@ assert.equal(historical.lines[0].unitMinor,95000);assert.equal(winner.lines[0].u
  assert.equal((await respond(scopedReissue.value.url,scopedOffer(scopedRfq,'990'))).status,200);assert.equal((await respond(outsideLink.value.url,scopedOffer(outsideRfq,'980'))).status,200);
  const responses=(await h.state(buyer)).data.rfqResponse,scopedResponse=responses.find(response=>response.rfq===scopedRfq.id),outsideResponse=responses.find(response=>response.rfq===outsideRfq.id);
  const privatePath=response=>`/api/purse/rfq-original/${response.id}/${response.files[0].id}`;
- for(const session of [scopedBuyer,scopedReader]){
+ for(const session of [scopedBuyer,scopedReader,scopedAp]){
   const visible=(await h.state(session)).data;assert.ok(visible.rfq.some(record=>record.id===scopedRfq.id));assert.ok(!visible.rfq.some(record=>record.id===outsideRfq.id));assert.ok(!visible.rfqResponse.some(record=>record.rfq===outsideRfq.id));assert.ok(!visible.rfqMailEvent.some(record=>record.rfq===outsideRfq.id));
   assert.equal((await h.send(privatePath(scopedResponse),undefined,session)).value,'Original supplier quotation 990');assert.equal((await h.send(privatePath(outsideResponse),undefined,session)).status,403);
  }
+ const apPerformance=await h.send('/api/purse/performance-report',undefined,scopedAp);assert.equal(apPerformance.status,200);assert.deepEqual(apPerformance.value.savings.totals,savings.totals);
  const beforeDeniedMail=h.messages.length;
  for(const operation of ['send','reissue'])assert.equal((await h.send('/api/purse/rfq/'+operation,{rfq:outsideRfq.id,supplier:suppliers[0].id},scopedBuyer)).status,403);
  assert.equal((await h.send('/api/purse/rfq/reissue',{rfq:scopedRfq.id,supplier:suppliers[0].id},scopedReader)).status,403);assert.equal(h.messages.length,beforeDeniedMail);
+ await cmd('rfq-award',{rfq:scopedRfq.id,revision:1,firstResponse:scopedResponse.id,response:scopedResponse.id,reason:'AP cannot award'},scopedAp,403);
  await cmd('rfq-award',{rfq:outsideRfq.id,revision:1,firstResponse:outsideResponse.id,response:outsideResponse.id,reason:'Cross-scope award'},scopedBuyer,403);
  await cmd('rfq-award',{rfq:scopedRfq.id,revision:1,firstResponse:scopedResponse.id,response:scopedResponse.id,reason:'Reader cannot award'},scopedReader,403);
  const scopedAward=await cmd('rfq-award',{rfq:scopedRfq.id,revision:1,firstResponse:scopedResponse.id,response:scopedResponse.id,reason:'Scoped buyer reviewed exact supplier response'},scopedBuyer);assert.equal(scopedAward.status,'draft');assert.equal(scopedAward.revision,2);

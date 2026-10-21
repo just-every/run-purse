@@ -30,7 +30,7 @@ export function holdsAuthority(data: D, actor: D, r: D) {
 export function verbFor(data: D, actor: D, r: D): 'approve' | 'submit' | 'convert' | null {
     if (r.imported) return null;
     if (holdsAuthority(data, actor, r)) return 'approve';
-    if (['draft', 'returned'].includes(r.status) && r.mayEdit) return 'submit';
+    if (['draft', 'returned'].includes(r.status) && r.mayEdit && (mine(actor,r)||actor.roles.includes('owner'))) return 'submit';
     if (r.status === 'approved' && !orderOf(data, r) && r.mayConvert) return 'convert';
     return null;
 }

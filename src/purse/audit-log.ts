@@ -1,7 +1,7 @@
 import { auditEventAllowed } from './access-audit';
-import { requirePermission } from './access';
+import { allowed, requirePermission } from './access';
 import { all, can, date, get, type Actor, type Data, type State } from './types';
-function context(s: State, event: Data) {
+function context(s: State, event: Data, a:Actor,permission:string) {
     const detail: Data = {};
     if (['request', 'amend', 'submit', 'decision'].includes(event.action) && event.revision) {
         const revision = s.get('revision:' + event.record + ':' + event.revision)?.value;
@@ -10,7 +10,8 @@ function context(s: State, event: Data) {
     }
     if (event.action === 'decision') {
         const decision = event.decisionId ? s.get('decision:' + event.decisionId)?.value : all(s, 'decision').find(d => d.request === event.record && d.revision === event.revision && d.actor === event.actor && d.decision === event.decision);
-        if (decision) detail.approval = { decision: decision.id, policy: decision.policy, policyVersion: decision.policyVersion, policySnapshot: decision.policySnapshot ?? null, snapshotBasis: decision.policySnapshot ? 'Policy retained at decision' : 'Historical policy snapshot unavailable', delegation: decision.delegation, reason: decision.reason };
+        const policyVisible=decision&&['request','revision','decision','commitment'].flatMap(kind=>all(s,kind)).filter(record=>record.policy===decision.policy).every(record=>allowed(s,a,permission,record));
+        if (decision) detail.approval = { decision: decision.id, policy: decision.policy, policyVersion: decision.policyVersion, policySnapshot: policyVisible?decision.policySnapshot ?? null:null, snapshotBasis: !policyVisible?'Whole-policy snapshot outside your audit scope':decision.policySnapshot ? 'Policy retained at decision' : 'Historical policy snapshot unavailable', delegation: decision.delegation, reason: decision.reason };
     }
     return { ...event, evidence: detail };
 }
@@ -26,7 +27,7 @@ export function auditLog(s: State, a: Actor, filters: Data = {}, permission='aud
         for (const c of all(s, 'orderClosure').filter(c => c.order === order.id)) subjects.add(c.id);
     }
     return all(s, 'audit').filter(e=>auditEventAllowed(s,a,e,permission)).filter(e => (!subject || subjects.has(e.record)) && (!action || e.action === action) && (!from || e.at.slice(0, 10) >= from) && (!through || e.at.slice(0, 10) <= through))
-        .sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id)).map(e => context(s, e));
+        .sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id)).map(e => context(s, e,a,permission));
 }
 export function auditCsv(events: Data[]) {
     const cell = (v: unknown) => '"' + String(v ?? '').replace(/^[\s]*[=+@-]/, "' $&").replace(/"/g, '""') + '"';

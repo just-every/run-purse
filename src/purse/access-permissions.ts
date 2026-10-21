@@ -13,7 +13,7 @@ export const builtinPermissions: Record<string, readonly Permission[]> = {
     approver: ['request.read', 'request.approve', 'po.read', 'report.read'],
     buyer: ['procurement.manage', 'request.create', 'request.read', 'request.edit', 'po.read', 'po.convert', 'po.issue', 'receive', 'invoice.read', 'invoice.capture', 'invoice.review', 'payable.terms', 'payable.approve', 'cash.read', 'report.read', 'performance.read', 'rfq.manage', 'rfq.read'],
     receiver: ['request.read', 'po.read', 'receive'],
-    'ap-clerk': ['request.read', 'po.read', 'invoice.read', 'invoice.capture', 'invoice.review', 'payable.terms', 'payable.approve', 'cash.read', 'report.read', 'performance.read'],
+    'ap-clerk': ['request.read', 'po.read', 'invoice.read', 'invoice.capture', 'invoice.review', 'payable.terms', 'payable.approve', 'cash.read', 'report.read', 'performance.read', 'rfq.read'],
     'finance-viewer': reads,
     auditor: [...reads, 'audit.read', 'audit.export'],
 };

@@ -63,6 +63,9 @@ jobs:
       - run: node tests/browser-protected-web.mjs --width=${{ matrix.width }}
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
+      - run: node tests/browser-access.mjs --width=${{ matrix.width }}
+        env:
+          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
       - run: node tests/browser-evidence-history.mjs --width=${{ matrix.width }}
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof

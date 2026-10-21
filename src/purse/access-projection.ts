@@ -52,8 +52,9 @@ export function purchasingProjection(s: State, a: Actor) {
     const unscopedRequestRead = unrestrictedPermission(s, a, 'request.read');
     data.policy = all(s, 'policy').filter(policy => (unscopedRequestRead || allowed(s, a, 'access.manage', policy)
         || requests.some(request => request.policy === policy.id || coveringPolicies([policy], request).length > 0))
-        && !policyUsers.some(record => record.policy === policy.id && !requestIds.has(record.request)));
+        && !policyUsers.some(record => record.policy === policy.id && (!requestIds.has(record.request)||!allowed(s,a,'request.read',record))));
     const policyIds = new Set(data.policy.map((policy: Data) => policy.id));
+    data.decision=data.decision.map((decision:Data)=>decision.policySnapshot&&!policyIds.has(decision.policy)?{...decision,policySnapshot:null,snapshotBasis:'Whole-policy snapshot outside your purchase scope'}:decision);
     data.delegation = all(s, 'delegation').filter(delegation => policyIds.has(delegation.policy));
     data.totals = data.commitment.reduce((totals: Data, event: Data) => ({ ...totals, [event.currency]: (totals[event.currency] ?? 0) + event.amountMinor }), {});
     return { data, requestIds, orderIds, invoiceIds };
@@ -77,6 +78,7 @@ export function peopleProjection(s: State, a: Actor, orders: Data[]) {
 export function scopeAuditRows(s: State, a: Actor, data: Data) {
     if (a.owner) return all(s, 'audit');
     const policyIds = new Set(data.policy.map((policy: Data) => policy.id));
+    data.decision=data.decision.map((decision:Data)=>decision.policySnapshot&&!policyIds.has(decision.policy)?{...decision,policySnapshot:null,snapshotBasis:'Whole-policy snapshot outside your purchase scope'}:decision);
     return all(s, 'audit').filter(event => {
         const action = typeof event.action === 'string' ? event.action : '';
         if ((action.startsWith('invoice') || event.invoice) && !allowed(s, a, 'invoice.read', event)) return false;
