@@ -10,7 +10,7 @@ import { collectProtectedSection, restoreProtectedSection } from './protected-ar
 export const protectedArchiveApi = new Hono<{ Bindings: Bindings }>();
 protectedArchiveApi.post('/api/purse/protected-archive/:operation', async c => {
     c.header('cache-control', 'no-store');
-    const env = runtimeBindings(c.env), operation = c.req.param('operation'); let a: Actor | undefined; let stage='authority';
+    const env = runtimeBindings(c.env), operation = c.req.param('operation'); let a: Actor | undefined;
     try {
         a = await actor(c.req.raw, env); requireThat(a.owner, 'Current native owner required', 403);
         requireThat(['export', 'restore'].includes(operation), 'Protected archive operation unavailable', 404);
@@ -28,17 +28,17 @@ protectedArchiveApi.post('/api/purse/protected-archive/:operation', async c => {
         if (operation === 'export') {
             const section = await collectProtectedSection(env, state), archive = await sealProtectedArchive(section, body.passphrase);
             audit(state, a, 'protected-archive-export', 'supplier-protected', { fields: section.values.length, suppliers: section.suppliers.length, reason: 'Owner explicitly included protected values and matching; private reason and evidence supplied' });
-            stage='save';await save(env.DB, a, before, state, revision, { statements: [], proofSince: since });
+            await save(env.DB, a, before, state, revision, { statements: [], proofSince: since });
             return c.json({ archive, fields: section.values.length, suppliers: section.suppliers.length });
         }
         requireThat(!(await protectedRows(env)).length && !state.get('supplierMatchingKey:main')?.value.secret && ![...state.values()].some(row => row.kind === 'supplier' && Object.keys(row.value.matching ?? {}).length), 'Protected data or matching already exists; restore into the ordinary archive before making protected changes', 409);
-        stage='open';const section = await openProtectedArchive(body.archive, body.passphrase);stage='validate';const values = restoreProtectedSection(state, section);stage='encrypt';
+        const section = await openProtectedArchive(body.archive, body.passphrase), values = restoreProtectedSection(state, section);
         const encrypted = values.map(value => encryptProtected(env, value.supplier, value.field, value.payload));
         audit(state, a, 'protected-archive-restore', 'supplier-protected', { fields: values.length, reason: 'Owner restored encrypted include; private reason and evidence supplied', authority: 'Current native session only; no reveal proof or grants restored' });
-        stage='save';await save(env.DB, a, before, state, revision, { statements: [
+        await save(env.DB, a, before, state, revision, { statements: [
             env.DB.prepare("INSERT INTO p_guard SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM p_supplier_protected WHERE business='main') THEN 1 ELSE 0 END"),
             ...encrypted.map(row => writeProtected(env, row)),
         ], proofSince: since });
         return c.json({ restored: encrypted.length, result: 'Protected values and matching restored under this installation key. Reveal still requires the current native owner and fresh native reauthentication.' });
-    } catch (error) { c.header('x-protected-stage',stage);c.header('x-protected-error',error instanceof Error?error.name:'unknown'); return protectedRefusal(env, c.req.raw, operation === 'export' ? 'archive-export' : 'archive-restore', error, a); }
+    } catch (error) { return protectedRefusal(env, c.req.raw, operation === 'export' ? 'archive-export' : 'archive-restore', error, a); }
 });

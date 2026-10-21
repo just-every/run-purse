@@ -1,3 +1,4 @@
+import { ensureSearchStorage } from './search-storage';
 import { Hono } from 'hono';
 import type { Bindings } from '../auth.server';
 import { actor, readFence } from './store';
@@ -26,7 +27,7 @@ async function context(request: Request, env: Bindings, q = ''): Promise<SearchC
     requireThat(roles.length, 'No active business membership', 403);
     // Portability restores the exact projection while suppressing domain triggers.
     // FTS is derived storage, rebuilt before exposing the ready search workspace.
-    await env.DB.prepare("INSERT INTO p_search_fts(p_search_fts) SELECT 'rebuild' WHERE (SELECT count(*) FROM p_search_fts_docsize)!=(SELECT count(*) FROM p_search)").run();
+    await ensureSearchStorage(env.DB);
     return { actor: a, roles, revision: Number(meta.results[0].revision), normalized: String(folded.results[0].normalized), grant: grants.results[0] ? JSON.parse(String(grants.results[0].value)) : {} };
 }
 
