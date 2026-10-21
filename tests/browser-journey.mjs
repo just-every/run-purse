@@ -49,7 +49,14 @@ export async function protectedPreparationJourney(browser,root,origin,width,evid
 export async function protectedStorageJourney(browser,root,origin,width,evidence){
  const owner=await session(browser,root,origin,'owner',width),buyer=await session(browser,root,origin,'buyer',width),requester=await session(browser,root,origin,'requester',width);
  try{
-  const supplier=await api(owner.context,origin,'supplier',{name:'Synthetic protected storage '+width+' '+crypto.randomUUID().slice(0,8),status:'active',reason:'Synthetic SECURITY-001 storage proof'});
+  // Seed this slice through the real reviewed import door; SECURITY-001 does
+  // not depend on a fresh sanctions-network request for fixture creation.
+  const sourceId='synthetic-protected-'+width+'-'+crypto.randomUUID().slice(0,8),csv='kind,sourceId,name,status\nsupplier,'+sourceId+',Synthetic protected storage '+sourceId+',active\n';
+  const input={csv,filename:'synthetic-protected.csv',mapping:{columns:{},decimal:'.',date:'YYYY-MM-DD',statuses:{active:'active'}}};
+  const preview=await owner.context.request.post(origin+'/api/purse/import/preview',{headers:{origin},data:input});assert.equal(preview.status(),200);const plan=await preview.json();
+  const committed=await owner.context.request.post(origin+'/api/purse/import/commit',{headers:{origin},data:{...input,fingerprint:plan.plan.fingerprint}});assert.equal(committed.status(),200,await committed.text());
+  const supplier=(await current(owner.context,origin)).data.supplier.find(s=>s.sourceId===sourceId);assert.ok(supplier);
+
   const path='/api/purse/supplier-protected/'+supplier.id;
   const call=async(page,path,body)=>page.evaluate(async({path,body})=>{const r=await fetch(path,body===undefined?{}:{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});return {status:r.status,value:await r.json(),cache:r.headers.get('cache-control')}},{path,body});
   let metadata=await call(owner.page,path);assert.equal(metadata.status,200);
