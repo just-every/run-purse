@@ -23,7 +23,7 @@ export function purchasingProjection(s: State, a: Actor) {
     const data: Data = {
         request: requests.map(request => ({ ...request, mayEdit: allowed(s, a, 'request.edit', request), mayApprove: mayApprove(s, a, request),
             mayPrepareValue: ['request.edit', 'request.approve', 'receive', 'procurement.manage'].some(permission => allowed(s, a, permission, request)),
-            mayConvert: allowed(s, a, 'po.convert', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
+            mayConvert: allowed(s, a, 'po.convert', request), mayManagePurchasing: allowed(s, a, 'procurement.manage', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
             buyerLimit: buyerLimit(s, a, request), buyerLimits: buyerLimits(s, a, request) })),
         order: orders.map(order => ({ ...order, ...(order.poDetails?.blanket ? { blanketPosition: blanketPosition(s, order) } : {}),
             receiverAssignment: receiptAssignment(s, order), mayReceive: mayReceive(s, a, order), receiptVersion: receiptVersion(s, order),
