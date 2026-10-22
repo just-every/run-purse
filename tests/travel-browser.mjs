@@ -53,8 +53,20 @@ try {
             await form.getByLabel('Travel department', { exact: true }).selectOption('synthetic-purse-3');
             await form.getByLabel('Travel project', { exact: true }).selectOption('synthetic-purse-4');
             for (const [label, value] of [['Airfare estimate', '1000.00'], ['Lodging estimate', '800.00'], ['Ground transport estimate', '200.00'], ['Registration fees estimate', '200.00']]) await form.getByLabel(label, { exact: true }).fill(value);
-            await form.getByText('GSA default:', { exact: false }).waitFor();
-            await capture(page, 'gsa-draft');
+            const checkRate = async (destination, name) => {
+                await form.getByLabel('Destination 1 city', { exact: true }).fill(destination.city);
+                await form.getByLabel('Destination 1 state or province', { exact: true }).fill(destination.state);
+                await form.getByLabel('Destination 1 county (optional)', { exact: true }).fill(destination.county);
+                await form.getByLabel('Destination 1 uses published standard CONUS rate', { exact: true }).setChecked(Boolean(destination.standardConus));
+                const response=await page.context().request.post(h.origin+'/api/purse/travel/per-diem',{data:{destination:{...destination,country:'US'},departureDate:'2026-10-19',returnDate:'2026-10-21'}});
+                assert.equal(response.status(),200);const rate=await response.json();assert.equal(rate.available,true);
+                const amount=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(rate.amountMinor/100);
+                await form.getByText('GSA default: '+amount,{exact:false}).waitFor();
+                await capture(page,name);
+            };
+            await checkRate({city:'Thornton',state:'CO',county:'Adams'},'gsa-county-draft');
+            await checkRate({city:'Wheeler',state:'TX',county:'Wheeler',standardConus:true},'gsa-standard-draft');
+            await checkRate({city:'Austin',state:'TX',county:'Travis'},'gsa-draft');
             const draft = await mutation(page, 'travel-request', () => form.getByRole('button', { name: 'Save travel draft', exact: true }).click());
             assert.equal(draft.totalMinor, 240000); assert.equal(draft.travel.costs.mealsIncidentalsMinor, 20000);
             await page.goto(h.origin + '/app?tab=Requests&request=' + draft.id);

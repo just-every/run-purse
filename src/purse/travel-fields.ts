@@ -13,7 +13,11 @@ export function travelFields(input: Data) {
     requireThat(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(travelerEmail), 'Use a traveler email');
     const traveler = text(raw.traveler, 'Traveler', 200), purpose = text(raw.purpose, 'Trip purpose'), origin = text(raw.origin, 'Trip origin', 300);
     requireThat(Array.isArray(raw.destinations) && raw.destinations.length >= 1 && raw.destinations.length <= 20, 'Provide 1–20 destinations');
-    const destinations = raw.destinations.map((destination: Data) => ({ city: text(destination.city, 'Destination city', 200), state: destination.state ? text(destination.state, 'Destination state', 100).toUpperCase() : '', country: text(destination.country, 'Destination country', 2).toUpperCase() }));
+    const destinations = raw.destinations.map((destination: Data) => {
+        requireThat(destination.standardConus === undefined || typeof destination.standardConus === 'boolean', 'Choose whether the published standard CONUS rate applies');
+        return { city: text(destination.city, 'Destination city', 200), state: destination.state ? text(destination.state, 'Destination state', 100).toUpperCase() : '', country: text(destination.country, 'Destination country', 2).toUpperCase(),
+            ...(destination.county ? { county: text(destination.county, 'Destination county', 200) } : {}), ...(destination.standardConus ? { standardConus: true } : {}) };
+    });
     requireThat(destinations.every((destination: Data) => /^[A-Z]{2}$/.test(destination.country)), 'Use two-letter destination country codes');
     const departureDate = date(raw.departureDate, 'Departure date'), returnDate = date(raw.returnDate, 'Return date');
     requireThat(departureDate <= returnDate, 'Return date must follow departure');

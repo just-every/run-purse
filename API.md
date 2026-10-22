@@ -576,10 +576,15 @@ snapshots remain withheld, including command responses, embedded value reports,
 and audit reads/exports. Material changes still renew the affected approvals.
 
 A policy’s `budgetPeriod:{from,through}` selects inclusive request need dates
-for a month, quarter or fiscal year of at most 366 days. Its department/project
-allocations consume their corresponding dated policy budgets. A used period,
-department, project, category and currency cannot be relabelled; create another
-policy. Cross-period amendment dispositions remain unbuilt and refuse.
+for a month, quarter or fiscal year of at most 366 days. Optional `location`,
+`glAccount` and `budgetFields:{form,header:{field:value},line:{field:value}}` select
+native coding and form fields in combination with department/project/category.
+Native field selectors bind the exact form and header/line scope; no ledger
+dimension sync is implied. An allocation's explicit location/GL overrides its
+line and header defaults. Each share consumes its selected dated budget. A used
+period or coding selector cannot be relabelled; create another policy. Historical
+purchases retain their recorded budget identity. Ambiguous current mappings refuse
+rather than choosing a budget by identifier. Cross-period amendment dispositions remain unbuilt and refuse.
 `overBudget:"block"|"owner"` and `budgetOwner` select refusal or an independent
 budget-owner step for each allocation’s overage. Reservation waits for every
 required owner’s exact decision. A later increase requires new budget authority.
@@ -593,8 +598,9 @@ on a budget means no figures. Received-but-unbilled value remains committed;
 recorded invoices, imported deposit/net-credit evidence and approved travel
 reports consume exposure once. Invoice identifiers keep their invoice-read gate.
 This is not a claim of matched/synced bills, payment or card settlement.
-Location/GL/custom-field/combined budgets and native deposit/card integrations
-remain BUDGET-001 gaps.
+Report filters and groupings include GL and the permitted native custom field
+keys returned in `customDimensions`. Cross-period dispositions, native deposits,
+matched/synced bills and provider-funded/settled cards remain BUDGET-001 gaps.
 
 ## Buyer conversion revisions
 
@@ -622,28 +628,63 @@ The current issued face and earlier invoices govern remaining balances and risk.
 requester or a scoped approver. It creates an exact nonmaterial revision and
 carries approvals. Issued documents retain their number and immutable earlier
 faces, with receiving custody carried. The result honestly records supplier
-change-order delivery as `not-sent` pending PO-004. Supplier groups, notification
+change-order delivery as pending at creation; a buyer explicitly sends that exact
+issued revision through the change-order door below. Supplier groups, notification
 execution and Slack/Teams transports/qualification remain PO-012 gaps.
+
+## Explicit supplier change orders
+
+`POST /api/purse/order-send` accepts `{order,revision,recipient,consent:true,reason}`
+from a current scoped buyer for an exact issued native approved amendment or
+cancellation. It freezes the numbered change content, PDF and applicable original
+terms/certificate, claims one send attempt, then invokes the configured native mail
+adapter. It reports provider acceptance, suppression, refusal or uncertainty;
+provider acceptance is never called mailbox delivery. An uncertain attempt cannot
+be silently retried. This does not send initial POs or adopted historical POs.
+
+`GET /api/purse/order-send/:order` gives scoped PO readers the safe current outcome
+and exact acknowledged revision. `POST /api/purse/order-send/:order/revoke` lets a
+current scoped buyer withdraw link access. The random, hashed, seven-day supplier
+link reads only that exact approved change and its PDF/originals, and accepts a
+reasoned acknowledgment. Supplier-stated identity remains unverified. Expiry,
+withdrawal, superseding revisions and source erasure refuse the link; archives
+retain private send/acknowledgment evidence without restoring bearer authority.
+No automatic outbound action is added to date editing.
 
 ## Travel pre-approvals and returned Coaster reports
 
-The private native travel routes also have `command/travel-*` equivalents:
+The private native travel mutations also have `command/travel-*` equivalents:
 
 - `POST /api/purse/travel/per-diem`: `{destination:{city,state,country},departureDate,returnDate}`.
 - `POST /api/purse/travel/request`: ordinary `title,currency,location,costCentre,project`
   plus `travel:{traveler,travelerEmail,purpose,origin,destinations,departureDate,returnDate,costs}`.
+  Each destination has `city,state,country` and optional `county` and an explicit
+  `standardConus:true` selection; known nonstandard-area conflicts refuse that selection.
   `costs` accepts currency-text `airfareAmount`, `lodgingAmount`,
   `groundTransportAmount`, `mealsIncidentalsAmount`, `registrationAmount` and
   `otherAmount` (or their integer `Minor` counterparts). Omitted meals use the
-  retained GSA Austin rate for supported dates; unknown destinations/years need
+  official FY2025–2027 GSA CONUS rate for exact city/county matches or an explicitly
+  selected standard area. Unmatched/ambiguous destinations or years need
   an explicit estimate. No supplier or purchase order is fabricated.
 - `POST /api/purse/travel/submit` and `/decision` use exact native request revisions
   and existing ordered approval decisions. Final approval returns
   `travel.approvalReference` for the booking tool and Coaster item custom field
-  `purse_reference`. Booking happens outside Purse.
+  `purse_reference`. Booking happens outside Purse. An optional owner-configured
+  `internationalTravelReviewer` on the policy adds an independent final step when
+  any destination country is outside the US; omitted settings preserve the current
+  value and an empty string clears it.
 - `POST /api/purse/travel/amend`: the current `{id,revision,reason}` and full new
   travel request fields. Date/estimate changes release old reservation authority
   and need fresh approval; generic purchase/date-edit doors refuse travel.
+- `GET /api/purse/travel/references`: the active signed-in traveler's references,
+  revisions and statuses only, including assistant-created trips. This grants no
+  itinerary, request, policy, budget or original-document access.
+- `POST /api/purse/travel/release-policy`: `{id,revision,version,enabled,days,confirmed,acceptLateActual,reason}`.
+  Default OFF. The current native owner explicitly consents to one approved trip
+  revision and 1–3650 business-calendar days after return, acknowledging that a
+  late report may consume budget after funds were freed. The real Cron releases
+  once at or after the due date in the current business timezone; owner/version,
+  trip revision or timezone changes pause it for renewed consent.
 - `POST /api/purse/travel/expense-return`: `{id,revision,original,sourceUrl,confirmed:true,closed:true,reason}`.
   `original` is the exact JSON from an authenticated local Coaster
   `GET /api/coaster/claims/:id`, with its current frozen revision/items/decisions.
@@ -654,10 +695,17 @@ The private native travel routes also have `command/travel-*` equivalents:
 
 Default ADOPTED pending ct: only the current native owner may review and confirm
 that source and explicitly close the final report. It moves reported spend to
-recorded actual, releases the remainder and links the current approved report on the request; only the native owner can read the retained original.
+recorded actual, releases the remainder and links the current approved report on
+the request; only the native owner can read the retained original. A report after
+a timed release records actual without a second reservation release, retaining
+the earlier release and the remaining estimate as separate facts. Retained native
+approval evidence allows later financial facts after an approver's departure; it
+does not restore that person's purchase authority.
 An exact replay cannot repeat either movement; conflicting or wrong-reference
 reports refuse. Archives preserve the financial/source links and custody audit,
-without restoring another principal’s authority. No automatic settlement or
+without restoring another principal’s authority. Timed-release consent and narrow
+traveler reference access share this conservative default pending ct. No automatic
+report fetch, settlement or
 outbound booking/payment is performed. INTAKE-002/003, API-001 and IMPORT-001
 inherit these rules when adding travel doors; ERASURE-001 inherits the new
 traveler and original-report personal fields.

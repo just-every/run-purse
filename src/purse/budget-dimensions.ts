@@ -80,5 +80,5 @@ export function selectBudgetPolicy(candidates: Data[], primaryId?: string) {
 }
 export function budgetPositionDimensions(policy: Data) {
     return { department: policy.costCentre ?? '*', project: policy.project, category: policy.category,
-        location: policy.location ?? '*', glAccount: policy.glAccount ?? '*', authorityLimitMinor: policy.limitMinor, ...(policy.budgetFields ? { budgetFields: policy.budgetFields } : {}) };
+        location: policy.location ?? '*', glAccount: policy.glAccount ?? '*', ...(policy.budgetFields ? { budgetFields: policy.budgetFields } : {}) };
 }

@@ -152,6 +152,9 @@ jobs:
       - run: node tests/browser-intake.mjs --width=${{ matrix.width }}
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
+      - run: node tests/browser-order-send.mjs --width=${{ matrix.width }}
+        env:
+          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
       - run: node tests/browser-evidence-history.mjs --width=${{ matrix.width }}
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof

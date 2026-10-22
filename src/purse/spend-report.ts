@@ -99,7 +99,8 @@ export function spendReport(data: Data, filters: Data = {}) {
                 && budget.sources.some((source:Data)=>!source.hidden&&source.request===row.request)) : [];
             const recorded=new Set(data.commitment.filter((event:Data)=>event.request===row.request&&event.revision===row.revision&&event.amountMinor>0).flatMap((event:Data)=>(event.budgetAllocations??[]).map((share:Data)=>share.policy)));
             const eligible=recorded.size?candidates.filter((budget:Data)=>recorded.has(budget.id)):candidates;
-            const budget=selectBudgetPolicy(eligible.map((budget:Data)=>({...budget,limitMinor:budget.authorityLimitMinor})),terms.policy);
+            const retained=eligible.find((budget:Data)=>budget.id===terms.policy);
+            const budget=retained ?? selectBudgetPolicy(eligible);
             return { ...row, department: code.costCentre, project: code.project, location: code.location,
                 glAccount: code.glAccount, ...(line?.allocations?.length?{allocation:index}:{}), amountMinor: amounts[index], policy: budget?.id ?? row.policy };
         }).filter((row: Data) => row.amountMinor);
