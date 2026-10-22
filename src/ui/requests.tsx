@@ -1,4 +1,5 @@
 import { TravelNewRequest } from './travel-form';
+import { TravelReferences } from './travel-reference';
 import { ApprovalEditNotices } from './approval-edit-notices';
 import { GuidedIntake } from './guided-intake';
 import { Fragment, useEffect, useState } from 'react';
@@ -48,7 +49,7 @@ export function Requests({ data, actor, mutate }: {
                 <label className="filter-select"><select aria-label="Channel" value={channel} onChange={e => setChannel(e.target.value)}><option value="">{channels.join(' · ') || 'All channels'}</option>{channels.map(c => <option key={c} value={c}>{c}</option>)}</select></label>
             </div>
         </div>
-        <ApprovalEditNotices data={data}/><div className="thread-waiting">{waiting.length ? <button type="button" className="waiting-chip" onClick={() => { const el = document.getElementById('request-' + waiting[0].id); el?.scrollIntoView({ block: 'center' }); el?.querySelector<HTMLButtonElement>('.card-verbs button, .verbs button')?.focus({ preventScroll: true }); }}>Waiting on you · {waiting.length}</button> : shown.length > 0 && <p className="waiting-none">Nothing waiting on you.</p>}</div>
+        <ApprovalEditNotices data={data}/><TravelReferences references={data.travelReference}/><div className="thread-waiting">{waiting.length ? <button type="button" className="waiting-chip" onClick={() => { const el = document.getElementById('request-' + waiting[0].id); el?.scrollIntoView({ block: 'center' }); el?.querySelector<HTMLButtonElement>('.card-verbs button, .verbs button')?.focus({ preventScroll: true }); }}>Waiting on you · {waiting.length}</button> : shown.length > 0 && <p className="waiting-none">Nothing waiting on you.</p>}</div>
         {actor.roles.includes('owner') && shown.some((r: D) => r.approvalNeedsReassignment) && <section aria-label="Needs reassignment"><h2>Needs reassignment</h2><p>Self-interested approvals are held. <a href="/app?tab=Settings">Choose another approver in SCIM settings</a>.</p>{shown.filter((r: D) => r.approvalNeedsReassignment).map((r: D) => <p key={r.id}>{r.title} · revision {r.revision}</p>)}</section>}
         <div className="thread">
             {folded.length > 0 && <details className="thread-fold" open={folded.some((request:D)=>request.id===id)}><summary>Earlier · {folded.length}</summary>{folded.map(item)}</details>}

@@ -1,3 +1,4 @@
+import { orderSendApi } from './order-send-api';
 import { travelCommands, travelGuard } from './travel';
 import { travelExpenses } from './travel-expenses';
 import { travelApi } from './travel-api';
@@ -85,6 +86,7 @@ export async function command(s: State, a: Actor, op: string, b: Data, env?: Bin
     audit(s, a, op, p.id);
     return result;
 } const result = travelCommands(s,a,op,b) ?? await travelExpenses(s,a,op,b) ?? approverEdits(s,a,op,b) ?? intakeForms(s,a,op,b) ?? await guidedIntake(s,a,op,b,env) ?? adoptOrder(s,a,op,b) ?? adoptionAmendments(s,a,op,b) ?? recurringOrders(s,a,op,b) ?? blanketReleases(s,a,op,b) ?? await requestAgain(s,a,op,b) ?? await agentValue(s,a,op,b) ?? await agreementReading(s,a,op,b) ?? agreementAwards(s,a,op,b) ?? agreements(s, a, op, b) ?? await emailIntake(s, a, op, b, env) ?? await invoiceInbox(s, a, op, b, env) ?? rfq(s, a, op, b) ?? await invoiceReading(s, a, op, b) ?? await quoteReading(s, a, op, b) ?? receiptRouting(s, a, op, b) ?? invoiceReview(s, a, op, b) ?? quoteAwards(s, a, op, b) ?? await poProfiles(s, a, op, b) ?? payables(s, a, op, b) ?? orderChasing(s, a, op, b) ?? supplierDocuments(s, a, op, b) ?? await suppliers(s, a, op, b) ?? supplierMerge(s, a, op, b) ?? supplierPerformance(s, a, op, b) ?? catalogueGrants(s, a, op, b) ?? catalogue(s, a, op, b) ?? administration(s, a, op, b) ?? catalogueRequests(s, a, op, b) ?? requests(s, a, op, b) ?? orders(s, a, op, b) ?? orderClosure(s, a, op, b) ?? stockroom(s, a, op, b) ?? preparation(s, a, op, b); requireThat(result, 'Unknown action', 404); return result; }
+api.route('/',orderSendApi);
 api.route('/',travelApi);
 api.route('/',erasureApi);
 api.route('/',scimApi);

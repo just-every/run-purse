@@ -7,6 +7,7 @@ import type { Bindings } from '../auth.server';
 import { runSupplierReminders } from './supplier-reminders';
 import { runOrderChases } from './order-chasing';
 import { runReceiptPrompts } from './receipt-prompts';
+import { runTravelReleases } from './travel-release-schedule';
 
 export async function runPurchasingSchedule(env: Bindings, now: number) {
     await sendEmailIntakeLinks(env);
@@ -17,5 +18,6 @@ export async function runPurchasingSchedule(env: Bindings, now: number) {
     const receipts = await runReceiptPrompts(env, now);
     const values = await runValueCheckins(env,now);
     const agreements = await runAgreementReminders(env, now);
-    return { recurring, documents, orders, receipts, rfqs, agreements, values };
+    const travelReleases = await runTravelReleases(env, now);
+    return { recurring, documents, orders, receipts, rfqs, agreements, values, travelReleases };
 }
