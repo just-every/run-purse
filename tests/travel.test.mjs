@@ -11,6 +11,7 @@ test('INTAKE-006 native Austin travel estimate, manager and finance chain, date 
     const request = await approvedAmendedTrip(fixture);
     await travel('decision', { id: request.id, revision: request.revision, decision: 'approved', reason: 'synthetic-purse-23' }, finance, 409);
     assert.equal(await balance(request.id), 270000);
+    await h.command('need-date-edit', { id: request.id, revision: request.revision, line: request.lines[0].id, needDate: '2026-10-25', reason: 'Travel dates require renewed approval' }, requester, 409);
     await h.command('convert', { id: request.id, revision: request.revision }, h.owner, 409);
     await h.command('amend', { id: request.id, revision: request.revision }, requester, 409);
     await travel('amend', { ...input, id: request.id, revision: request.revision, reason: 'synthetic-purse-24' }, stranger, 403);

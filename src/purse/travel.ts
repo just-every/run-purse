@@ -16,8 +16,8 @@ export function travelGuard(s: State, op: string, input: Data) {
     const id = input.id ?? input.request;
     const request = typeof id === 'string' ? s.get('request:' + id)?.value : undefined;
     if (request?.purchaseType !== 'travel') return;
-    const forbidden = ['request', 'amend', 'submit', 'decision', 'convert', 'approver-edit', 'request-again-preview', 'request-again', 'quote', 'quote-award', 'agreement-award', 'rfq', 'rfq-create', 'rfq-award', 'need-date-edit', 'quote-extract', 'quote-reading-propose'];
-    requireThat(!forbidden.includes(op), 'Use the travel request actions; booking and expense processing happen in the travel or expense tool', 409);
+    const forbidden = ['request', 'amend', 'submit', 'decision', 'convert', 'need-date-edit', 'approver-edit', 'request-again-preview', 'request-again', 'quote', 'quote-award', 'agreement-award', 'rfq', 'rfq-create', 'rfq-award', 'need-date-edit', 'quote-extract', 'quote-reading-propose'];
+    requireThat(!forbidden.includes(op) && !op.startsWith('rfq-') && !op.startsWith('quote-reading-'), 'Use the travel request actions; booking and expense processing happen in the travel or expense tool', 409);
 }
 export function travelCommands(s: State, a: Actor, op: string, input: Data): Data | undefined {
     if (op === 'travel-request' || op === 'travel-amend') {
