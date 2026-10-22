@@ -1,3 +1,4 @@
+import { budgetDimensionInput } from './budget-dimensions';
 import { budgetOwnerSteps } from './budget-position';
 import { correctApprovalFields, correctionFields, defaultMaterialFields } from './approver-corrections';
 import { stepAuthority, stepHolderEmail, validateStepDecision, carryApprovalDecisions } from './approval-chain-authority';
@@ -11,7 +12,7 @@ import { ledger, policies, approvalAmount, reservationAvailable } from './reques
 export const headerFields = correctionFields;
 export const materialDefaults = defaultMaterialFields;
 export function policyWorkflow(input: Data, previous?: Data) {
-    const result: Data = {};
+    const result: Data = budgetDimensionInput(input, previous);
     const reviewer = input.internationalTravelReviewer === undefined ? previous?.internationalTravelReviewer : input.internationalTravelReviewer;
     if (reviewer !== undefined) {
         requireThat(typeof reviewer === 'string', 'Use an international travel reviewer email');

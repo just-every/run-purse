@@ -1,3 +1,4 @@
+import { budgetDimensionInput, sameBudgetDimensions } from './budget-dimensions';
 import { budgetPeriod } from './budget-position';
 import { policyWorkflow } from './approval-chain';
 import { accessAdministration, requireAdministrativeEdit } from './access-admin';
@@ -22,12 +23,13 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
     if (op === 'policy') {
         currency(s, b.currency);
         const id = b.id ?? uid();
-        const next = { name: text(b.name, 'Policy name'), currency: b.currency, category: b.category || '*', project: b.project || '*', limitMinor: moneyInput(b, 'limitAmount', 'limitMinor', 'Authority limit'), budgetMinor: moneyInput(b, 'budgetAmount', 'budgetMinor', 'Budget'), approver: text(b.approver, 'Approver email').toLowerCase(), active: b.active !== false, ...policyWorkflow(b,s.get('policy:'+id)?.value), ...(budgetPeriod(b,s.get('policy:'+id)?.value) ? {budgetPeriod:budgetPeriod(b,s.get('policy:'+id)?.value)} : {}), ...(b.costCentre ? { costCentre: text(b.costCentre,'Policy department') } : {}) };
+        const next = { name: text(b.name, 'Policy name'), currency: b.currency, category: b.category || '*', project: b.project || '*', limitMinor: moneyInput(b, 'limitAmount', 'limitMinor', 'Authority limit'), budgetMinor: moneyInput(b, 'budgetAmount', 'budgetMinor', 'Budget'), approver: text(b.approver, 'Approver email').toLowerCase(), active: b.active !== false, ...policyWorkflow(b,s.get('policy:'+id)?.value), ...budgetDimensionInput(b,s.get('policy:'+id)?.value,all(s,'intakeForm')), ...(budgetPeriod(b,s.get('policy:'+id)?.value) ? {budgetPeriod:budgetPeriod(b,s.get('policy:'+id)?.value)} : {}), ...(b.costCentre ? { costCentre: text(b.costCentre,'Policy department') } : {}) };
         const previous=s.get('policy:'+id)?.value, used=['request','revision','order','decision','commitment'].some(kind=>all(s,kind).some(record=>record.policy===id||(record.budgetAllocations??[]).some((share:Data)=>share.policy===id)));
         requireThat(a.owner || previous?.internationalTravelReviewer === next.internationalTravelReviewer, 'Only the current native owner may configure international travel review',403);
         requireThat(!used || JSON.stringify(previous?.budgetPeriod??null)===JSON.stringify(next.budgetPeriod??null),'A used budget period is fixed; create another dated policy',409);
         requireThat(!used || !previous?.budgetPeriod || previous.costCentre===next.costCentre,'A used dated budget retains its department; create another policy',409);
         requireThat(!used || !previous?.budgetPeriod || (['currency','category','project'] as const).every(field=>previous[field]===next[field]),'A used dated budget retains its coding and currency; create another policy',409);
+        requireThat(!used || !previous?.budgetPeriod || sameBudgetDimensions(previous,next),'A used dated budget retains its dimensions; create another policy',409);
         if(next.budgetPeriod)requireThat(all(s,'request').filter(request=>request.policy===id).every(request=>request.needDate>=next.budgetPeriod!.from&&request.needDate<=next.budgetPeriod!.through),'Existing purchases fall outside that budget period',409);
         requireAdministrativeEdit(s, a, s.get('policy:' + id)?.value, next);
         put(s, 'policy', id, next);
