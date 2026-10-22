@@ -30,8 +30,8 @@ export async function travelExpenses(s: State, a: Actor, op: string, input: Data
     requireThat(balance === request.totalMinor, 'Exact approved travel reservation is required', 409);
     const id = uid(), attachment = uid(), at = new Date().toISOString(), bytes = new TextEncoder().encode(input.original);
     let raw = ''; for (const byte of bytes) raw += String.fromCharCode(byte);
-    put(s, 'attachment', attachment, { kind: 'request', record: request.id, name: `coaster-report-${report.id}.json`, mediaType: 'application/json', base64: btoa(raw), size: bytes.length, actor: a.id, at });
-    audit(s,a,'attachment',request.id,{attachment,kind:'request',name:`coaster-report-${report.id}.json`,size:bytes.length,revision:request.revision});
+    put(s, 'attachment', attachment, { kind: 'travelExpense', record: id, name: `coaster-report-${report.id}.json`, mediaType: 'application/json', base64: btoa(raw), size: bytes.length, actor: a.id, at });
+    audit(s,a,'attachment',id,{attachment,kind:'travelExpense',name:`coaster-report-${report.id}.json`,size:bytes.length,revision:request.revision});
     const expense = { id, request: request.id, revision: request.revision, approvalReference, policy: request.policy, currency: request.currency, totalMinor: report.totalMinor, releasedMinor: balance - report.totalMinor,
         externalId: report.id, externalRevision: report.revision, externalNumber: report.number, title: report.title, employeeEmail: report.employeeEmail, sourceStatus: report.status, ...source, sha256, attachment, items: report.items,
         sourceBasis: 'Manually imported native Coaster report; original retained for review', actor: a.id, at, reason: text(input.reason, 'Expense return reason') };

@@ -21,6 +21,7 @@ export function auditLog(s: State, a: Actor, filters: Data = {}, permission='aud
     const subject = String(filters.subject ?? '').trim(), action = String(filters.action ?? '').trim();
     const from = filters.from ? date(filters.from, 'From date') : '', through = filters.through ? date(filters.through, 'Through date') : '';
     const subjects = new Set([subject]);
+    for(const expense of all(s,'travelExpense').filter(expense=>expense.request===subject))subjects.add(expense.id);
     const order = all(s, 'order').find(o => o.id === subject || o.number === subject);
     if (order) {
         const family = all(s, 'order').filter(record => record.request === order.request);

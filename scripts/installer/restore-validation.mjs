@@ -122,7 +122,7 @@ export function validatePurchasingArchive(rows) {
  for (const e of all('commitment')) { get('revision',e.request + ':' + e.revision); get('policy',e.policy); check(Number.isSafeInteger(e.amountMinor),'commitment_amount'); if(e.budgetAllocations){check(Array.isArray(e.budgetAllocations)&&e.budgetAllocations.reduce((sum,share)=>sum+share.amountMinor,0)===e.amountMinor,'commitment_allocations');for(const share of e.budgetAllocations){check(Number.isSafeInteger(share.amountMinor),'commitment_allocation');check(get('policy',share.policy).currency===e.currency,'commitment_allocation_currency');}} }
  for (const a of all('attachment')) {
   check(a.privateSupplierDocument === undefined || typeof a.privateSupplierDocument === 'boolean' && (!a.privateSupplierDocument || a.kind === 'supplier'),'supplier_document_private');
-  check(['intakeDraft','request','supplier','order','invoice','invoiceSource','agreement'].includes(a.kind),'attachment_kind'); get(a.kind,a.record);
+  check(['travelExpense','intakeDraft','request','supplier','order','invoice','invoiceSource','agreement'].includes(a.kind),'attachment_kind'); get(a.kind,a.record);
   check(all('audit').some(e => e.action === 'attachment' && e.attachment === a.id && e.record === a.record),'attachment_link');
   check(typeof a.base64 === 'string','attachment_bytes');
   let bytes; try { bytes = atob(a.base64); } catch { check(false,'attachment_bytes'); }

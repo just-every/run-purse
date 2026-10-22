@@ -74,5 +74,5 @@ export function travelCommands(s: State, a: Actor, op: string, input: Data): Dat
 }
 export function visibleTravel(s: State, a: Actor, requestIds?: Set<string>) {
     const visible = (request: string) => (!requestIds || requestIds.has(request)) && allowed(s, a, 'request.read', get(s, 'request', request));
-    return { travelExpense: all(s, 'travelExpense').filter(expense => visible(expense.request)) };
+    return { travelExpense: all(s, 'travelExpense').filter(expense => visible(expense.request)).map(expense=>a.owner?expense:Object.fromEntries(['id','request','revision','approvalReference','currency','totalMinor','releasedMinor','externalId','externalRevision','externalNumber','title','items','at','sourceBasis'].map(field=>[field,expense[field]]))) };
 }

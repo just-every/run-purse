@@ -65,10 +65,12 @@ export async function assertTravelSettlement(fixture, request, original, sourceU
     assert.equal(state.travelExpense.filter(row => row.request === request.id).length, 1);
     const budget = state.periodBudgets.find(row => row.id === policy.id);
     assert.equal(budget.reservedMinor, 0); assert.equal(budget.actualMinor, 215000); assert.equal(budget.availableMinor, 785000);
-    const download = await h.send('/api/purse/download/attachment/' + settled.attachment, undefined, requester);
+    const download = await h.send('/api/purse/download/attachment/' + settled.attachment, undefined, h.owner);
     assert.equal(download.status, 200);
-    const exact = await fetch(h.origin + '/api/purse/download/attachment/' + settled.attachment, { headers: { cookie: requester } });
+    const exact = await fetch(h.origin + '/api/purse/download/attachment/' + settled.attachment, { headers: { cookie: h.owner } });
     assert.equal(await exact.text(), original, 'Native report original downloads byte for byte');
+    assert.equal((await h.send('/api/purse/download/attachment/' + settled.attachment, undefined, requester)).status, 403);
+    const summary=(await h.state(requester)).data.travelExpense.find(report=>report.id===settled.id);assert.equal(summary.attachment,undefined);assert.equal(summary.sourceUrl,undefined);assert.equal(summary.totalMinor,215000);assert.equal(summary.items.reduce((sum,item)=>sum+item.amountMinor,0),215000);
     assert.equal((await h.send('/api/purse/download/attachment/' + settled.attachment, undefined, stranger)).status, 403);
     assert.equal((await h.send('/api/purse/download/attachment/' + settled.attachment)).status, 401);
     const report = await h.send('/api/purse/spend-report?groupBy=department', undefined, finance);

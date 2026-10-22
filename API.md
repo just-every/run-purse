@@ -654,7 +654,7 @@ The private native travel routes also have `command/travel-*` equivalents:
 
 Default ADOPTED pending ct: only the current native owner may review and confirm
 that source and explicitly close the final report. It moves reported spend to
-recorded actual, releases the remainder and links the request-scoped original.
+recorded actual, releases the remainder and links the current approved report on the request; only the native owner can read the retained original.
 An exact replay cannot repeat either movement; conflicting or wrong-reference
 reports refuse. Archives preserve the financial/source links and custody audit,
 without restoring another principal’s authority. No automatic settlement or

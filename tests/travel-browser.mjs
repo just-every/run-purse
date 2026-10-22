@@ -95,9 +95,11 @@ try {
             await ownerTab.getByRole('region', { name: 'Linked travel expense report', exact: true }).waitFor();
             await capture(ownerTab, 'actual-and-release');
             await page.reload();
-            await page.getByRole('link', { name: 'Download exact original Coaster report', exact: true }).waitFor();
+            await page.getByRole('region', { name: 'Linked travel expense report', exact: true }).waitFor();
+            assert.equal(await page.getByRole('link', { name: 'Download exact original Coaster report', exact: true }).count(),0);
             await capture(page, 'requester-linked-report');
-            const linked = await page.context().request.get(h.origin + '/api/purse/download/attachment/' + expense.attachment);
+            const denied=await page.context().request.get(h.origin + '/api/purse/download/attachment/' + expense.attachment);assert.equal(denied.status(),403);
+            const linked = await ownerTab.context().request.get(h.origin + '/api/purse/download/attachment/' + expense.attachment);
             assert.equal(await linked.text(), source.bytes);
             assert.deepEqual(errors, []);
             results.push({ width, request: draft.id, actualMinor: expense.totalMinor, releasedMinor: expense.releasedMinor, sha256: expense.sha256, coaster: source.source });

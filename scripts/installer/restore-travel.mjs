@@ -19,7 +19,7 @@ export function validateTravel(all, get, check, same) {
         const request = get('request', expense.request), revision = get('revision', expense.request + ':' + expense.revision);
         const attachment = get('attachment', expense.attachment), bytes = Buffer.from(attachment.base64, 'base64');
         check(request.purchaseType === 'travel' && revision.travel.approvalReference === expense.approvalReference && expense.policy === revision.policy && expense.currency === revision.currency, 'travel_expense_reference');
-        check(attachment.kind === 'request' && attachment.record === request.id && attachment.size === bytes.length && createHash('sha256').update(bytes).digest('hex') === expense.sha256, 'travel_expense_original');
+        check(attachment.kind === 'travelExpense' && attachment.record === expense.id && attachment.size === bytes.length && createHash('sha256').update(bytes).digest('hex') === expense.sha256, 'travel_expense_original');
         let original; try { original = JSON.parse(bytes.toString('utf8')); } catch { check(false, 'travel_expense_original'); }
         const frozen = original.revisions?.find(source => source.revision === expense.externalRevision);
         check(original.claim?.id === expense.externalId && ['approved', 'reimbursed'].includes(original.claim.status) && original.claim.employee_email === revision.travel.travelerEmail && original.claim.revision === expense.externalRevision, 'travel_expense_source');
