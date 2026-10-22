@@ -53,7 +53,8 @@ test('Native current buyer scope, exact approval and claim-before-send prevent s
     assert.equal((await f.send()).status,409);assert.equal(h.messages.filter(message=>message.subject.startsWith('Change order ')).length,1);
     const link=orderLink(h);assert.equal((await publicGet(h,link)).status,200);
     const next=await h.command('need-date-edit',{id:f.request.id,revision:2,needDate:'2026-11-09',reason:'New exact correction'},f.requester);assert.equal(next.revision,3);assert.equal((await publicGet(h,link)).status,410);assert.equal((await ack(h,link,2)).status,410);
-    await h.command('member',{email:'synthetic-purse-2804@example.test',name:'synthetic-purse-2804',active:false,roles:['buyer']});assert.equal((await f.send()).status,401);
+    await h.command('member',{email:'synthetic-purse-2804@example.test',name:'synthetic-purse-2804',active:false,roles:['buyer']});assert.equal((await f.send()).status,403,'Deactivated purchasing membership refuses its retained native session');
+    assert.equal((await h.send('/auth/signout',{},f.buyer)).status,204);assert.equal((await f.send()).status,401,'Revoked native session refuses the send door');
 });
 
 test('Real supplier-link expiry and explicit withdrawal fence read, original and acknowledgment doors without restoring bearer authority', async t => {
