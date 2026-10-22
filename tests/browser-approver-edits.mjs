@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import {join} from 'node:path';
+export async function pendingApprovalJourney({h,context,width,evidence}) {
+ const cmd=h.command;
+ await cmd('business',{...(await h.state()).data.business[0],costCentres:['Operations','Research']});
+ const requester=await h.member('synthetic-purse-1701@example.test',['requester']);
+ const manager=await h.member('synthetic-purse-1702@example.test',['approver']);
+ const finance=await h.member('synthetic-purse-1703@example.test',['approver']);
+ await h.member('synthetic-purse-1704@example.test',['approver']);
+ const supplier=await cmd('supplier',{name:'synthetic-purse-1705',status:'preferred',reason:'Reviewed source'});
+ const policy={name:'Equipment approvals',currency:'USD',category:'Equipment',project:'Office',costCentre:'Operations',approver:'synthetic-purse-1702@example.test',limitMinor:1000000,budgetMinor:2000000,approvalSteps:[{email:'synthetic-purse-1703@example.test',minMinor:200000}],editRules:{'*':{allowed:['class','needDate','costCentre'],material:['costCentre']}}};
+ const operations=await cmd('policy',policy);
+ const research=await cmd('policy',{...policy,name:'Research equipment',costCentre:'Research',approvalSteps:[{email:'synthetic-purse-1703@example.test'},{email:'synthetic-purse-1704@example.test'}]});
+ const create=async title=>{let r=await cmd('request',{title,supplier:supplier.id,currency:'USD',needDate:'2026-11-02',location:'Denver',costCentre:'Operations',terms:'Net 30',lines:[{description:'Equipment',quantity:'1',unitMinor:400000,category:'Equipment',project:'Office'}]},requester);await cmd('submit',{id:r.id,revision:1},requester);await cmd('decision',{id:r.id,revision:1,decision:'approved',reason:'Exact equipment reviewed'},manager);return r;};
+ const ctx=await context(finance,width),page=await ctx.newPage(),snap=async name=>{await page.screenshot({path:join(evidence,`APPROVAL-004-${width}-${name}.png`),fullPage:true});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No horizontal page overflow');};
+ const first=await create('Pending class and date correction');
+ await page.goto(h.origin+'/app?tab=Requests&request='+first.id);
+ await page.getByText('Correct header and coding',{exact:true}).click();
+ await page.getByLabel('Correct Class',{exact:true}).fill('Equipment renewal');
+ await page.getByLabel('Correct Need date',{exact:true}).fill('2026-11-06');
+ await page.getByLabel('Correction reason',{exact:true}).fill('Classification and delivery date clarified');
+ await page.getByRole('button',{name:'Save approver corrections',exact:true}).click();
+ await page.getByRole('heading',{name:'Pending class and date correction · revision 2',exact:true}).waitFor();
+ await page.getByRole('region',{name:'Approver revision changes'}).getByText('Equipment renewal',{exact:true}).waitFor();
+ assert.ok(await page.getByText('1 earlier approval(s) carried forward; 0 asked again.',{exact:false}).count());
+ await snap('nonmaterial');
+ const requesterCtx=await context(requester,width),requesterPage=await requesterCtx.newPage();await requesterPage.goto(h.origin+'/app?tab=Requests&request='+first.id);await requesterPage.getByRole('region',{name:'Approver revision changes'}).waitFor();assert.equal(await requesterPage.getByText('Correct header and coding',{exact:true}).count(),0);await requesterPage.screenshot({path:join(evidence,`APPROVAL-004-${width}-requester-differences.png`),fullPage:true});
+ const article=page.locator('#request-'+first.id);await article.getByLabel('Decision',{exact:true}).selectOption('approved');await article.getByLabel('Decision reason',{exact:true}).fill('Reviewed corrected revision');await article.getByRole('button',{name:'Record decision',exact:true}).click();await page.getByText('Saved.',{exact:true}).waitFor();assert.equal((await h.state()).data.request.find(r=>r.id===first.id).status,'approved');
+ const second=await create('Department correction renews approval');await page.goto(h.origin+'/app?tab=Requests&request='+second.id);await page.getByText('Correct header and coding',{exact:true}).click();await page.getByLabel('Correct Department',{exact:true}).selectOption('Research');await page.getByLabel('Correction reason',{exact:true}).fill('Research owns the equipment');await page.getByRole('button',{name:'Save approver corrections',exact:true}).click();await page.getByRole('heading',{name:'Department correction renews approval · revision 2',exact:true}).waitFor();await page.getByRole('region',{name:'Approver revision changes'}).getByText('Research',{exact:true}).waitFor();await snap('material-renewal');
+ const state=(await h.state()).data,balance=id=>state.commitment.filter(e=>e.policy===id).reduce((n,e)=>n+e.amountMinor,0);assert.equal(balance(operations.id),400000);assert.equal(balance(research.id),400000);assert.equal(state.request.find(r=>r.id===second.id).approverEdit.renewed.length,1);
+ const settings=await context(h.owner,width),settingsPage=await settings.newPage();await settingsPage.goto(h.origin+'/app?tab=Settings');await settingsPage.getByRole('heading',{name:'Approval policies',exact:true}).waitFor();await settingsPage.getByRole('row').filter({hasText:'Equipment approvals'}).getByRole('button',{name:'Edit policy',exact:true}).click();await settingsPage.getByLabel('Additional approvers (one email per line)',{exact:true}).waitFor();assert.equal(await settingsPage.getByLabel('Additional approvers (one email per line)',{exact:true}).inputValue(),'synthetic-purse-1703@example.test');await settingsPage.screenshot({path:join(evidence,`APPROVAL-004-${width}-policy-controls.png`),fullPage:true});
+}

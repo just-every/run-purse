@@ -185,3 +185,41 @@ test('INTAKE-001 request again reviews current prices and omissions, copies only
 test('INTAKE-001 category configuration, private unfinished drafts, current routes, split and custom copy, pending suppliers and email authority', async t => {
  const { intakeFlow } = await import('./intake-flow.mjs'); await intakeFlow(t);
 });
+
+test('APPROVAL-004 exact pending header edits carry or renew chain approvals and move one reservation',async t=>{
+ const h=await harness();t.after(()=>h.close());const cmd=h.command;
+ await cmd('business',{name:'synthetic-purse-1',currencies:['USD'],locations:['Austin'],costCentres:['Operations','Research'],projects:['General']});
+ const requester=await h.member('synthetic-purse-requester@example.test',['requester']);
+ const manager=await h.member('synthetic-purse-manager@example.test',['approver']);
+ const finance=await h.member('synthetic-purse-finance@example.test',['approver']);
+ const owner=await h.member('synthetic-purse-budget@example.test',['approver']);
+ const supplier=await cmd('supplier',{name:'synthetic-purse-2',status:'preferred',reason:'synthetic-purse-3'});
+ const workflow={approvalSteps:[{email:'synthetic-purse-finance@example.test',minMinor:200000}],editRules:{'*':{allowed:['class','needDate','costCentre'],material:['costCentre']}}};
+ const policy=await cmd('policy',{...workflow,name:'synthetic-purse-4',currency:'USD',category:'*',project:'*',costCentre:'Operations',limitMinor:1000000,budgetMinor:1000000,approver:'synthetic-purse-manager@example.test'});
+ const research=await cmd('policy',{...workflow,name:'synthetic-purse-5',currency:'USD',category:'*',project:'*',costCentre:'Research',limitMinor:1000000,budgetMinor:1000000,approver:'synthetic-purse-manager@example.test',approvalSteps:[{email:'synthetic-purse-finance@example.test'},{email:'synthetic-purse-budget@example.test'}]});
+ const input={title:'synthetic-purse-6',supplier:supplier.id,currency:'USD',needDate:'2026-11-01',location:'Austin',costCentre:'Operations',terms:'synthetic-purse-7',lines:[{description:'synthetic-purse-8',quantity:'1',unitMinor:400000,category:'goods',project:'General'}]};
+ const create=async()=>{const r=await cmd('request',input,requester);await cmd('submit',{id:r.id,revision:r.revision},requester);return r};
+ const decide=(r,cookie)=>cmd('decision',{id:r.id,revision:r.revision,decision:'approved',reason:'synthetic-purse-9'},cookie);
+ const balance=async(id)=> (await h.state()).data.commitment.filter(e=>e.policy===id).reduce((n,e)=>n+e.amountMinor,0);
+ const r=await create();assert.equal(await balance(policy.id),400000);
+ await decide(r,finance).then(()=>assert.fail('later approver cannot skip first'),error=>assert.match(error.message,/403/));
+ assert.equal((await decide(r,manager)).status,'pending');
+ const edited=await cmd('approver-edit',{id:r.id,revision:1,changes:{class:'Equipment',needDate:'2026-11-04'},reason:'synthetic-purse-10'},finance);
+ assert.equal(edited.revision,2);assert.equal(edited.status,'pending');assert.equal(edited.class,'Equipment');assert.equal(edited.approverEdit.carried.length,1);assert.equal(edited.approverEdit.renewed.length,0);
+ assert.equal((await h.state(requester)).data.request.find(row=>row.id===r.id).approverEdit.differences.length,2);
+ await cmd('approver-edit',{id:r.id,revision:1,changes:{class:'Old'},reason:'synthetic-purse-11'},finance,409);
+ const before=(await h.state()).data;await cmd('approver-edit',{id:r.id,revision:2,changes:{quantity:'2'},reason:'synthetic-purse-12'},finance,403);assert.deepEqual((await h.state()).data,before);
+ assert.equal((await decide(edited,finance)).status,'approved');assert.equal(await balance(policy.id),400000);
+ const order=await cmd('convert',{id:r.id,revision:2});await cmd('issue',{id:order.id,revision:2,reason:'synthetic-purse-13'});
+ const second=await create();await decide(second,manager);
+ const moved=await cmd('approver-edit',{id:second.id,revision:1,changes:{costCentre:'Research'},reason:'synthetic-purse-14'},finance);
+ assert.equal(moved.approvalRoute.length,3);assert.equal(moved.approverEdit.carried.length,0);assert.equal(moved.approverEdit.renewed.length,1);assert.equal(await balance(policy.id),400000);assert.equal(await balance(research.id),400000);
+ await cmd('approver-edit',{id:second.id,revision:1,changes:{costCentre:'Research'},reason:'synthetic-purse-15'},finance,409);
+ assert.equal(await balance(research.id),400000);
+ await decide(moved,manager);assert.equal((await decide(moved,finance)).status,'pending');assert.equal((await decide(moved,owner)).status,'approved');
+ const audit=await h.send('/api/purse/audit?subject='+r.id,undefined,h.owner);assert.equal(audit.status,200);assert.ok(audit.value.events.some(e=>e.action==='approver-edit'&&e.revision===2&&e.carried.length===1&&e.differences.some(d=>d.field==='class'&&d.after==='Equipment')));
+ const csv=await h.send('/api/purse/audit.csv?subject='+second.id,undefined,h.owner);assert.equal(csv.status,200);assert.ok(csv.value.includes('approver-edit'));assert.ok(csv.value.includes('Research'));
+ const self=await h.member('synthetic-purse-self@example.test',['requester','approver']);await cmd('policy',{...workflow,name:'synthetic-purse-16',currency:'USD',category:'self',project:'*',limitMinor:500000,budgetMinor:500000,approver:'synthetic-purse-self@example.test'});
+ const selfRequest=await cmd('request',{...input,lines:input.lines.map(l=>({...l,category:'self'}))},self);await cmd('submit',{id:selfRequest.id,revision:1},self);
+ await cmd('approver-edit',{id:selfRequest.id,revision:1,changes:{class:'Forbidden'},reason:'synthetic-purse-17'},self,403);
+});

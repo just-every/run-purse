@@ -39,7 +39,7 @@ export function nextStep(data: D, actor: D, r: D) {
     if (['draft', 'returned'].includes(r.status)) return `${you(r.requesterEmail)} ${r.requesterEmail === actor.email ? 'submit' : 'submits'}`;
     if (r.status === 'pending') {
         if (r.approvalNeedsReassignment) return 'Needs reassignment · held in the native owner queue';
-        if (r.approvalTransferred && r.approvalHolder) return `${you(r.approvalHolder)} ${r.approvalHolder === actor.email ? 'decide' : 'decides'} · transferred approval`;
+        if ((r.approvalTransferred || r.approvalRoute) && r.approvalHolder) return `${you(r.approvalHolder)} ${r.approvalHolder === actor.email ? 'decide' : 'decides'} · transferred approval`;
         const p = data.policy.find((x: D) => x.id === r.policy);
         if (!p) return 'Approver to confirm';
         const eligible = (email: string) => email.toLowerCase() !== r.requesterEmail?.toLowerCase() && !(r.requester === actor.id && email === actor.email);

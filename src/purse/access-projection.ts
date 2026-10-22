@@ -1,3 +1,4 @@
+import { chainHolder, currentStep } from './approval-chain';
 import { adoptionDeposits, orderAdoption } from './adoption-position';
 import { releasePosition } from './blanket-releases';
 import { servicePosition } from './service-orders';
@@ -15,6 +16,7 @@ import { all, type Actor, type Data, type State } from './types';
 function mayApprove(s: State, a: Actor, request: Data) {
     if (request.status !== 'pending' || !allowed(s, a, 'request.approve', request)
         || request.requester === a.id || request.requesterEmail?.toLowerCase() === a.email.toLowerCase()) return false;
+    if (request.approvalRoute) return chainHolder(s,a,request);
     if (currentScimAssignment(s, request)) return scimAssignmentAllows(s, a, request);
     const policy = s.get('policy:' + request.policy)?.value;
     return Boolean(policy && (policy.approver === a.email || all(s, 'delegation').some(delegation => delegation.policy === policy.id
@@ -26,7 +28,7 @@ export function purchasingProjection(s: State, a: Actor) {
     const invoices = all(s, 'invoice').filter(invoice => allowed(s, a, 'invoice.read', invoice));
     const requestIds = new Set(requests.map(request => request.id)), orderIds = new Set(orders.map(order => order.id)), invoiceIds = new Set(invoices.map(invoice => invoice.id));
     const data: Data = {
-        request: requests.map(request => ({ ...request, approvalHolder: scimApprovalHolder(s, request), approvalTransferred: Boolean(currentScimAssignment(s, request)), approvalNeedsReassignment: currentScimAssignment(s, request)?.held === true, mayEdit: allowed(s, a, 'request.edit', request), mayApprove: mayApprove(s, a, request),
+        request: requests.map(request => ({ ...request, approvalHolder: request.approvalRoute ? currentStep(s,request)?.email : scimApprovalHolder(s, request), approvalTransferred: Boolean(currentScimAssignment(s, request)), approvalNeedsReassignment: currentScimAssignment(s, request)?.held === true, mayEdit: allowed(s, a, 'request.edit', request), mayApprove: mayApprove(s, a, request), approverEditRule: request.approvalRoute ? (s.get('policy:'+request.policy)?.value.editRules?.[request.purchaseType ?? request.lines[0].category.toLowerCase()] ?? s.get('policy:'+request.policy)?.value.editRules?.['*']) : undefined,
             mayPrepareValue: ['request.edit', 'request.approve', 'receive', 'procurement.manage'].some(permission => allowed(s, a, permission, request)),
             mayConvert: allowed(s, a, 'po.convert', request), mayManagePurchasing: allowed(s, a, 'procurement.manage', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
             buyerLimit: buyerLimit(s, a, request), buyerLimits: buyerLimits(s, a, request) })),

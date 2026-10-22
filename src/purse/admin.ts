@@ -1,3 +1,4 @@
+import { policyWorkflow } from './approval-chain';
 import { accessAdministration, requireAdministrativeEdit } from './access-admin';
 import { initializeSupplierMatching } from './supplier-identity';
 import { moneyInput } from './money';
@@ -20,7 +21,7 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
     if (op === 'policy') {
         currency(s, b.currency);
         const id = b.id ?? uid();
-        const next = { name: text(b.name, 'Policy name'), currency: b.currency, category: b.category || '*', project: b.project || '*', limitMinor: moneyInput(b, 'limitAmount', 'limitMinor', 'Authority limit'), budgetMinor: moneyInput(b, 'budgetAmount', 'budgetMinor', 'Budget'), approver: text(b.approver, 'Approver email').toLowerCase(), active: b.active !== false };
+        const next = { name: text(b.name, 'Policy name'), currency: b.currency, category: b.category || '*', project: b.project || '*', limitMinor: moneyInput(b, 'limitAmount', 'limitMinor', 'Authority limit'), budgetMinor: moneyInput(b, 'budgetAmount', 'budgetMinor', 'Budget'), approver: text(b.approver, 'Approver email').toLowerCase(), active: b.active !== false, ...policyWorkflow(b,s.get('policy:'+id)?.value), ...(b.costCentre ? { costCentre: text(b.costCentre,'Policy department') } : {}) };
         requireAdministrativeEdit(s, a, s.get('policy:' + id)?.value, next);
         put(s, 'policy', id, next);
         audit(s, a, op, id);

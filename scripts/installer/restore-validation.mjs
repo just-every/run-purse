@@ -1,3 +1,4 @@
+import { validateApprovalChains } from './restore-approval-chain.mjs';
 import { validateIntake } from './restore-intake.mjs';
 import { validateAdoptionAmendments } from './restore-adoption-amendments.mjs';
 import { validateOrderAdoptions } from './restore-order-adoption.mjs';
@@ -70,6 +71,7 @@ export function validatePurchasingArchive(rows) {
  if (!rows.length) return true;
  check(all('business').length === 1, 'business'); get('business','main');
  validateAccess(all,get);
+ validateApprovalChains(all,get,check,same);
  validateIntake(all,get,check);
  validateScim(all,get,rows);
  for (const kind of ['request','revision','order']) for (const r of all(kind)) {

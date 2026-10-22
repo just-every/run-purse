@@ -1,3 +1,4 @@
+import {pendingApprovalJourney} from './browser-approver-edits.mjs';
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
@@ -27,6 +28,7 @@ try {
    await h.command('policy',{name:'Current office authority',currency:'USD',category:'Office',project:'Office',approver:'synthetic-purse-1602@example.test',limitMinor:10000000,budgetMinor:100000000});
    const supplier=await h.command('supplier',{name:'synthetic-purse-1603',status:'preferred',reason:'Reviewed office supplier',contacts:[{name:'Office purchasing',email:'synthetic-purse-1604@example.test'}]});
    await guidedIntakeJourney({h,context,width,evidence,requester,supplier,edge});
+   await pendingApprovalJourney({h,context,width,evidence});
    const source=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});
    const archive=join(evidence,`INTAKE-001-${width}.rer`);await exportArchive(source,archive,[]);
    restored=await harness();const target=await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability});

@@ -1,3 +1,4 @@
+import { startChain, chainDecision } from './approval-chain';
 import { operationalOrder } from './adoption-position';
 import { applyIntakeFields, splitValues, intakeDefaults } from './intake-fields';
 import { requestSupplier } from './supplier-proposals';
@@ -105,7 +106,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             for(const g of groups.values()){const target=g.policy===issued.policy&&g.currency===issued.currency?Math.min(originalLiability,g.amount):0;if(g.amount!==target)ledger(s,a,{...old,policy:g.policy,currency:g.currency},target-g.amount,'unissued-amendment-release')}
             put(s, 'order', issued.id, { ...issued, status: 'amendment-pending' });
         }
-        else if (old?.status === 'approved') {
+        else if (old?.status === 'approved' || old?.approvalRoute) {
             const current = all(s, 'commitment').filter(e => e.request === id).reduce((n, e) => n + e.amountMinor, 0);
             ledger(s, a, old, -current, 'amendment-release');
         }
@@ -134,11 +135,12 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             const p = policies(s, r)[0];
             requireThat(p, 'No amount/category/project authority policy covers this request', 409);
             requireThat(!all(s, 'scimUser').some(user => user.userName === p.approver && user.active === false), 'The designated approver was deactivated; the owner must select a current approval policy before submission', 409);
-            put(s, 'request', r.id, { ...r, status: 'pending', policy: p.id });
+            startChain(s,a,r,p) ?? put(s, 'request', r.id, { ...r, status: 'pending', policy: p.id });
             audit(s, a, op, r.id, { revision: r.revision });
             return get(s, 'request', r.id);
         }
         requireThat(r.status === 'pending' && !r.imported, 'Request is not pending native authority', 409);
+        const chained=chainDecision(s,a,r,b); if(chained) return chained;
         const { p, delegated, assignment } = authorizedApproval(s, a, r);
         const decision = b.decision;
         requireThat(['approved', 'rejected', 'returned'].includes(decision), 'Choose approve, reject or return');
