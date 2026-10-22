@@ -2,6 +2,50 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { travelFixture, approvedAmendedTrip, syntheticCoasterReport, assertTravelSettlement } from './travel-helpers.mjs';
 
+test('Published GSA meals defaults use exact fiscal-year city or county scope and explicit standard CONUS selection', async t => {
+    const f = await travelFixture(); t.after(() => f.h.close());
+    const quote = (destination, departureDate = '2026-10-19', returnDate = '2026-10-21') => f.travel('per-diem', { destination, departureDate, returnDate });
+    for (const [city, state, county, dailyMinor] of [
+        ['San Francisco', ' California ', '', 9200], [' Phoenix ', 'az', '', 8600],
+        ['St. Petersburg', 'FL', '', 8000], ['Golden', 'Colorado', 'Jefferson County', 9200],
+        ['New Orleans', 'LA', 'Orleans Parish', 8000], ['Rockville', 'MD', 'Montgomery County', 9200],
+    ]) {
+        const rate = await quote({ city, state, county, country: 'US' });
+        assert.equal(rate.available, true, city); assert.equal(rate.dailyMinor, dailyMinor, city);
+        assert.equal(rate.boundaryMinor, dailyMinor * 3 / 4); assert.equal(rate.amountMinor, dailyMinor * 2.5);
+        assert.equal(rate.ratePeriods[0].fiscalYear, 2027); assert.equal(rate.standardConus, false);
+    }
+    const halfDollar = await quote({ city: 'Nashville', state: 'TN', country: 'US' }, '2026-10-19', '2026-10-19');
+    assert.equal(halfDollar.amountMinor, 6450); assert.equal(halfDollar.days, 1);
+    for (const [departure, returning, fiscalYear] of [['2024-10-19', '2024-10-21', 2025], ['2026-05-19', '2026-05-21', 2026]]) {
+        const rate = await quote({ city: 'San Francisco', state: 'CA', country: 'US' }, departure, returning);
+        assert.equal(rate.amountMinor, 23000); assert.equal(rate.ratePeriods[0].fiscalYear, fiscalYear);
+    }
+    const crossed = await quote({ city: 'Austin', state: 'TX', country: 'US' }, '2026-09-30', '2026-10-02');
+    assert.equal(crossed.amountMinor, 20000); assert.deepEqual(crossed.ratePeriods.map(rate => rate.fiscalYear), [2026, 2027]);
+    assert.equal((await quote({ city: 'Allentown', state: 'PA', country: 'US' }, '2026-05-19', '2026-05-21')).dailyMinor, 7400);
+    for (const destination of [
+        { city: 'Allentown', state: 'PA', country: 'US' },
+        { city: 'Springfield', state: '', country: 'US' },
+        { city: 'Austin', state: 'TX', county: 'Harris County', country: 'US' },
+        { city: 'Beverly Hills', state: 'CA', county: 'Los Angeles County', country: 'US' },
+        { city: 'Honolulu', state: 'HI', country: 'US', standardConus: true },
+        { city: 'Georgetown', state: 'DC', country: 'US', standardConus: true },
+        { city: 'Austin', state: 'TX', country: 'US', standardConus: true },
+        { city: 'Golden', state: 'CO', county: 'Jefferson County', country: 'US', standardConus: true },
+    ]) assert.equal((await quote(destination)).available, false, JSON.stringify(destination));
+    assert.equal((await quote({ city: 'Austin', state: 'TX', country: 'US' }, '2027-10-19', '2027-10-21')).available, false);
+    const standard = { city: 'Dickinson', state: 'North Dakota', country: 'US' };
+    assert.equal((await quote(standard)).available, false, 'Unknown city never silently falls back to standard');
+    const rate = await quote({ ...standard, standardConus: true });
+    assert.equal(rate.amountMinor, 17000); assert.equal(rate.standardConus, true);
+    assert.equal(rate.matchBasis, 'traveler-selected-standard-conus');
+    const unknown = { ...f.input.travel, destinations: [{ city: 'Springfield', state: '', country: 'US' }] };
+    await f.travel('request', { ...f.input, travel: unknown }, f.requester, 400);
+    const estimated = await f.travel('request', { ...f.input, travel: { ...unknown, costs: { ...unknown.costs, mealsIncidentalsMinor: 12345 } } });
+    assert.equal(estimated.travel.mealsBasis, 'explicit-estimate'); assert.equal(estimated.travel.costs.mealsIncidentalsMinor, 12345);
+});
+
 test('INTAKE-006 native Austin travel estimate, manager and finance chain, date amendments and exact reservations', async t => {
     const fixture = await travelFixture(); t.after(() => fixture.h.close());
     const { h, travel, input, requester, manager, finance, stranger, balance } = fixture;
