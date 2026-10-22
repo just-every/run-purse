@@ -1,3 +1,4 @@
+import { fieldValues, splitValues } from './intake-fields';
 import { supplier } from './admin';
 import { catalogueAllows } from './catalogue-access';
 import { currentPrice } from './catalogue';
@@ -38,7 +39,36 @@ export async function requestAgain(s: State, a: Actor, op: string, b: Data) {
         draft.lines.push({ description: original.description, quantity: original.quantity,
             unitMinor, category: original.category, project: original.project, catalogue: original.catalogue,
             partNumber: original.partNumber, unit: original.unit,
-            shipTo: original.shipTo });
+            shipTo: original.shipTo, allocations: structuredClone(original.allocations ?? []), customFields: structuredClone(original.customFields ?? {}) });
+    }
+    if (source.intakeForm) {
+        const form = s.get('intakeForm:' + source.intakeForm)?.value;
+        if (!form?.active) flags.push({ field: 'intakeForm', reason: 'Purchase form is inactive; select a current form' });
+        else {
+            draft.intakeForm = form.id;
+            for (const [key, definitions] of [['answers', 'questions'], ['customFields', 'headerFields']]) {
+                const values: Data = {};
+                for (const [id, value] of Object.entries(source[key] ?? {})) {
+                    const definition = form[definitions].find((field: Data) => field.id === id && field.active);
+                    if (definition && (definition.type !== 'choice' || definition.options.includes(value))) values[id] = value;
+                    else flags.push({ field: key, label: id, reason: 'Field or value is inactive; left out' });
+                }
+                draft[key] = fieldValues(form[definitions], values);
+            }
+            draft.lines.forEach((line: Data) => {
+                const values: Data = {};
+                for (const [id, value] of Object.entries(line.customFields ?? {})) {
+                    const definition = form.lineFields.find((field: Data) => field.id === id && field.active);
+                    if (definition && (definition.type !== 'choice' || definition.options.includes(value))) values[id] = value;
+                    else flags.push({ field: 'line field', label: id, reason: 'Field or value is inactive; left out' });
+                }
+                line.customFields = fieldValues(form.lineFields, values);
+            });
+        }
+    }
+    for (const line of draft.lines) {
+        try { line.allocations = splitValues(s, line.allocations); }
+        catch { line.allocations = []; flags.push({field: 'split', label: line.description, reason: 'Split has inactive coding; replace it'}); }
     }
     const files = all(s, 'attachment').filter(f => f.kind === b.kind && f.record === source.id && !f.privateSupplierDocument);
     const review = { draft, flags, changes, files: files.map(({ id, name, mediaType, size }) => ({ id, name, mediaType, size })) };

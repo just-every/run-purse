@@ -37,6 +37,7 @@ export async function suppliers(s: State, a: Actor, op: string, b: Data): Promis
     const desired = requestedStatus === 'pending_review' ? previous?.requestedStatus : requestedStatus;
     requireThat(['active', 'preferred', 'blocked'].includes(desired), 'Choose supplier status');
     const reason = text(input.reason, 'Reason');
+    if (previous?.status === 'proposed' && desired !== 'blocked') requireThat(previous.proposedBy !== a.id, 'The proposer cannot activate their own supplier', 403);
     requireThat(input.contractRef == null || typeof input.contractRef === 'string', 'Agreement reference must be text');
     const screenings = [...(previous?.screenings ?? [])];
     if (!screenings.length || name !== previous?.name || address !== (previous?.address ?? '') || op === 'screen-supplier') screenings.push(await screenSupplier(name, address));

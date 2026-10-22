@@ -47,5 +47,5 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
         return { id: b.id };
     }
 }
-export function supplier(s: State, id: string) { const v = get(s, 'supplier', id); requireThat(!v.mergedInto, 'Supplier merged; choose the surviving supplier and renew purchasing authority', 409); requireThat(v.status !== 'blocked', 'Supplier blocked: ' + v.reason, 409); requireThat(v.status !== 'pending_review', 'Supplier pending OFAC compliance review', 409); requireThat(v.screenings?.length, 'Supplier requires OFAC screening before activation', 409); return v; }
+export function supplier(s: State, id: string) { const v = get(s, 'supplier', id); requireThat(!v.mergedInto, 'Supplier merged; choose the surviving supplier and renew purchasing authority', 409); requireThat(v.status !== 'blocked', 'Supplier blocked: ' + v.reason, 409); requireThat(v.status !== 'proposed', 'Supplier pending vendor approval', 409); requireThat(v.status !== 'pending_review', 'Supplier pending OFAC compliance review', 409); requireThat(v.screenings?.length, 'Supplier requires OFAC screening before activation', 409); return v; }
 export function currency(s: State, c: string) { requireThat(get(s, 'business', 'main').currencies.includes(c), 'Currency is not enabled for this business'); }

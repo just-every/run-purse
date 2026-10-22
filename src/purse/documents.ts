@@ -1,3 +1,4 @@
+import { visibleIntakeForms } from './intake-forms';
 import { projectProtectedContext } from './protected-context';
 import { publicEvidence } from './invoice-status';
 import { visibleAgentValue, projectValueRecord } from './agent-value';
@@ -40,10 +41,14 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     for (const kind of ['business', 'code']) data[kind] = all(s, kind);
     Object.assign(data, visibleAgentValue(s, a, requestIds), visibleEmailIntakes(s, a), visibleRfqs(s, a),
         visibleQuoteReadings(s, requestIds), visibleInvoiceReadings(s, a), visibleInvoiceInbox(s, a), peopleProjection(s, a, data.order));
+    Object.assign(data, visibleIntakeForms(s, a));
+    data.intakeDraft = allowed(s,a,'request.create') ? all(s,'intakeDraft').filter(draft => draft.requester === a.id && draft.requesterEmail === a.email && draft.status === 'draft') : [];
+    data.supplierProposal = all(s,'supplierProposal').filter(proposal => proposal.requester === a.id || unrestrictedPermission(s,a,'procurement.manage'));
     const globalProcurement = unrestrictedPermission(s, a, 'procurement.manage');
     data.mayManageSupplierRegister = globalProcurement;
     data.supplier = all(s, 'supplier').map(supplier => {
         const eligible = mayReadProtectedSupplier(s, a, supplier), value: Data = supplierPublicValue(supplier, eligible ? protectedViews?.get(supplier.id) : undefined);
+        delete value.proposedBy;
         if (!eligible) { delete value.matchingOnly; delete value.sourceRedaction; }
         return { ...value, mayReadProtected: eligible, mayManagePurchasing: globalProcurement, documents: (supplier.documents ?? []).filter((id: string) => {
             const attachment = s.get('attachment:' + id)?.value;

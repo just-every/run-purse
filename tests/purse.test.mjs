@@ -181,3 +181,7 @@ test('INTAKE-001 request again reviews current prices and omissions, copies only
  await cmd('request-again',{kind:'request',id:source.id,fingerprint:blocked.fingerprint,draft:review.draft},secondDevice,409);
  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;const {validatePurchasingArchive}=await import('../scripts/installer/restore-validation.mjs');assert.equal(validatePurchasingArchive(rows),true,'New draft, exact selected bytes and provenance remain portable');
 });
+
+test('INTAKE-001 category configuration, private unfinished drafts, current routes, split and custom copy, pending suppliers and email authority', async t => {
+ const { intakeFlow } = await import('./intake-flow.mjs'); await intakeFlow(t);
+});

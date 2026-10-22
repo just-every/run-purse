@@ -34,7 +34,7 @@ function recordContext(s: State, record: Data, visited = new Set<Data>()): Conte
     for (const value of record.projects ?? []) add('projects', value);
     for (const line of record.lines ?? []) {
         add('projects', line.project); add('departments', line.costCentre ?? line.department); add('locations', line.location); add('entities', line.entity ?? line.entityId);
-        for (const allocation of line.allocations ?? []) add('departments', allocation.costCentre ?? allocation.department);
+        for (const allocation of line.allocations ?? []) { add('departments', allocation.costCentre ?? allocation.department); add('projects', allocation.project); }
     }
     const references: [string, unknown][] = [['request', record.request ?? record.requestId], ['order', record.order ?? record.orderId], ['invoice', record.invoice ?? record.invoiceId], ['rfq', record.rfq], ['emailIntake', record.intake ?? record.emailIntake], ['invoiceReading', record.reading]];
     if (typeof record.record === 'string') {

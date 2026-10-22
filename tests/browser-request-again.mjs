@@ -1,3 +1,5 @@
+import { createEmailIntakeEdge } from './email-intake-fixture.mjs';
+import { guidedIntakeJourney } from './browser-guided-intake.mjs';
 // The shipped purchasing App and native Worker/auth are real. Only static asset
 // delivery and outbound provider network edges use the existing test harness.
 import assert from 'node:assert/strict';
@@ -13,7 +15,7 @@ assert.ok(widths.every(width=>[1440,390].includes(width)));
 const evidence=resolve(process.env.PURSE_EVIDENCE??'.cache/purse-browser-proof');
 await mkdir(evidence,{recursive:true});
 const bundle=await build({stdin:{contents:"import React from 'react'; import {createRoot} from 'react-dom/client'; import {App} from './src/ui/app'; createRoot(document.getElementById('root')).render(<App/>);",resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'esm',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
-const h=await harness();let browser;
+const edge=await createEmailIntakeEdge(),h=await harness({mailRequest:edge.mailRequest});let browser;
 try {
  const cmd=h.command;
  await cmd('business',{name:'Canyon Procurement',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Office']});
@@ -37,8 +39,10 @@ try {
  for(const width of widths){
   const requester=await h.member('requester-'+width+'@example.test',['requester']);
   const supplier=await cmd('supplier',{name:'Stationery '+width,status:'preferred',reason:'Fixture reviewed supplier'});
+  await guidedIntakeJourney({h,context,width,evidence,requester,supplier,edge});
   const items=[];for(const [index,unitMinor]of [1000,2000,3000].entries())items.push(await cmd('catalogue',{description:['Paper','Envelopes','Restricted stationery'][index]+' '+width,supplier:supplier.id,currency:'USD',unitMinor,category:'Office',project:'Office',approved:true}));
-  const source=await cmd('request',{title:'Last month stationery '+width,supplier:supplier.id,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre:'Operations',terms:'Net 30',lines:items.map(item=>({catalogue:item.id,quantity:'3',project:'Office'}))},requester);
+  const form=(await h.state()).data.intakeForm.find(f=>f.name==='synthetic-purse-'+(100+width));
+  const source=await cmd('request',{intakeForm:form.id,answers:{customer_data:'Yes',security:'Synthetic security assessment'},customFields:{purpose:'Synthetic operational need'},title:'Last month stationery '+width,supplier:supplier.id,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre:'Operations',terms:'Net 30',lines:items.map(item=>({catalogue:item.id,quantity:'3',project:'Office',customFields:{license_owner:'synthetic-purse-'+(500+width)}}))},requester);
   for(const name of ['specification.txt','unchecked.txt'])await cmd('attachment',{kind:'request',record:source.id,name,mediaType:'text/plain',base64:Buffer.from('Exact chosen source '+name+'\r\n').toString('base64')},requester);
   await cmd('submit',{id:source.id,revision:1},requester);await cmd('decision',{id:source.id,revision:1,decision:'approved',reason:'Prior approval'},approver);
   const order=await cmd('convert',{id:source.id,revision:1});await cmd('issue',{id:order.id,revision:1,reason:'Prior issued document'});
@@ -61,6 +65,7 @@ try {
    await page.screenshot({path:join(evidence,`INTAKE-001-copy-review-${width}.png`),fullPage:true});
    const saved=page.waitForResponse(r=>r.url().endsWith('/command/request-again'));await review.getByRole('button',{name:'Save copied draft',exact:true}).click();const result=await saved;assert.equal(result.status(),200,await result.text());const copy=await result.json();
    await page.getByRole('link',{name:'Open the new draft',exact:true}).waitFor();
+   assert.deepEqual(copy.answers,source.answers);assert.deepEqual(copy.customFields,source.customFields);assert.deepEqual(copy.lines[0].customFields,source.lines[0].customFields);assert.equal(copy.lines[0].allocations[0].basisPoints,6000);assert.equal(copy.lines[0].allocations.reduce((n,a)=>n+a.amountMinor,0),copy.lines[0].totalMinor);
    assert.equal(copy.status,'draft');assert.equal(copy.policy,null);assert.equal(copy.lines.length,2);assert.equal(copy.totalMinor,10500);
    await active.close();active=undefined;
    // Close the tab and sign in natively from a separate browser context/device.

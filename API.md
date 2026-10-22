@@ -313,9 +313,7 @@ has a new identity; bytes and filenames of selected files are preserved.
 
 The result is a requester-owned draft with no policy or approval. Submit it
 separately under current policy. Source email-intake linkage, integration authority,
-quotes, receipts, invoices and commitments are not copied. This native slice
-does not implement conditional forms, arbitrary half-filled autosave, route
-preview, splits, custom fields or pending supplier proposals.
+quotes, receipts, invoices and commitments are not copied. Current active category fields and split coding copy as well. Inactive field choices and split coding are flagged and excluded; the new draft must satisfy current required fields and files before submission.
 
 ### Protected evidence and recovery
 
@@ -482,3 +480,70 @@ unreceived quantity and commits the separately numbered replacement. Changed
 source receipt, invoice, payable or commitment positions require a fresh proposal.
 The current approver and issuing buyer must cover both scopes. No historical
 approval or supplier send is fabricated.
+
+
+## Category intake forms and unfinished drafts (INTAKE-001)
+
+`intake-form` requires unrestricted native `intake.admin` permission and
+`consent:true`. It takes `{id?,version?,name,purchaseType,active,questions,
+headerFields,lineFields,requiredFiles,defaults}`. Purchase types are `goods`,
+`software`, `services`, `contractors` and `equipment`. Each field is
+`{id,label,type:"text"|"choice",options?,required,active,when?:{field,equals}}`;
+a condition names an earlier choice in the same field list. The form permits
+30 fields per list, 50 choices per choice, and 10 required filename fragments.
+Required files are exact retained uploads whose filenames contain the configured
+fragment. Definitions for protected tax, bank or credential fields are refused;
+those values retain their dedicated native owner storage/reveal boundary.
+
+Defaults set configured `currency`, `location`, `costCentre`, `project`,
+`category` and optional `allocations:[{costCentre,project,basisPoints}]`.
+Line shares sum to 10,000 basis points. Amounts are calculated from each net
+line total with largest-remainder cent allocation, including current-price
+copies and permitted buyer conversion edits. Every split department/project
+must fit the current complete authority grant; policies must cover every split
+project. Splits do not duplicate the request's existing policy reservation.
+Full CODING-001 accounting/budget distribution and CODING-002 reporting/provider
+mapping retain their separate contract obligations.
+
+`intake-draft` takes `{id?,version?,fields,proposal?,emailIntake?,emailIntakeVersion?}`.
+It saves arbitrary incomplete answers and lines, up to 100 kB and 100 lines,
+under the current requester only. It never creates a submitted request.
+`fields` is a whitelist of ordinary purchasing inputs plus `intakeForm`,
+`answers`, header `customFields`, and line `customFields`/`allocations`.
+`intake-draft-file` takes `{id,version,name,mediaType,base64}` for an exact private
+file of up to 1 MB. Both commands return the new version. State lists only the
+current requester's unfinished drafts; current native sessions on another
+device see the same saved values/files. A stale version returns 409.
+
+`intake-route` takes `{id,version}` and validates a clone of those current
+fields through the ordinary request validator. It returns the predicted policy
+name/approver and a new-supplier review step where applicable, or the missing
+input preventing prediction. It creates no request, approval or reservation.
+`intake-complete` takes `{id,version,consent:true}` and atomically creates one
+ordinary draft with its uploaded files. Ordinary `submit` remains a separate
+explicit action, checks current required questions/fields/files and routing,
+and retains the category definition, answers, splits and file IDs on the exact
+request revision. Copy review and PO conversion preserve category values.
+
+An optional supplier `proposal` contains `name`, `contactEmail`, `reason`,
+`consent:true`, and optional `contactName`, `website`, `phone`, `address`,
+`category`. Existing name/email-domain matches are refused for register review.
+The supplier is `proposed`, while contact and justification details remain
+private to its requester and unrestricted procurement staff. The request may
+submit and obtain purchase approval/reservation while the supplier is pending;
+conversion and issue refuse it. Existing supplier management and screening
+remain the buyer's explicit activation door, and a proposer cannot activate
+their own proposal. No invitation or supplier message is sent by intake.
+SUPPLIER-008 retains full onboarding, configurable vendor chains, TIN/website
+matching, provider imports, notifications and automatic post-activation actions.
+
+For an assigned email source, the draft also binds the exact
+`emailIntakeVersion`. Only its assigned current requester can save or complete
+it. A changed source must be reviewed and saved against its new version before
+completion. Completion calls the existing email-intake command in the same
+transaction, preserving private originals, one source/request link, durable
+provider replay and the existing draft-link mail outcome. It never resends mail
+or treats source text as authority. Portable archives validate the new records,
+revision snapshots, exact split arithmetic, files, consent and email links;
+archived principal IDs never create a session or grant another account access
+to a private unfinished draft.

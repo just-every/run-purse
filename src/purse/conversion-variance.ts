@@ -1,3 +1,4 @@
+import { splitValues } from './intake-fields';
 import { buyerLimits, type BuyerLimit } from './access';
 import { extended, minor, quantity, requireThat, text, type Actor, type Data, type State } from './types';
 
@@ -46,7 +47,7 @@ export function conversionEdits(s: State, a: Actor, request: Data, input: unknow
         const unitMinor = Object.hasOwn(edit, 'unitMinor') ? minor(edit.unitMinor, 'Conversion unit price') : line.unitMinor;
         const q = Object.hasOwn(edit, 'quantity') ? quantity(edit.quantity) : line.q;
         requireThat(q >= (line.carriedAccepted ?? 0) + (line.carriedCancelled ?? 0), 'Conversion cannot remove received or cancelled quantities', 409);
-        return { ...line, quantity: q === line.q ? line.quantity : edit.quantity, q, unitMinor, totalMinor: extended(q, unitMinor) };
+        return { ...line, quantity: q === line.q ? line.quantity : edit.quantity, q, unitMinor, totalMinor: extended(q, unitMinor), ...(line.allocations ? {allocations: splitValues(s,line.allocations,extended(q,unitMinor))} : {}) };
     });
     after.totalMinor = minor(after.lines.reduce((total: number, line: Data) => total + line.totalMinor, 0) + after.freightMinor + after.taxMinor, 'Conversion total');
     if (JSON.stringify(before) === JSON.stringify(after)) return;

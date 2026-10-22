@@ -2,7 +2,7 @@ import { check, same, lineAmounts, purchasing } from './restore-validation.mjs';
 import { accessObject, accessShape, accessText, validateBuyerLimit } from './restore-access.mjs';
 
 const face = record => ({ lines: record.lines.map(({ sourceLine, ...line }) => line), freightMinor: record.freightMinor, taxMinor: record.taxMinor, totalMinor: record.totalMinor });
-const immutableLine = ({ quantity, q, unitMinor, totalMinor, ...line }) => line;
+const immutableLine = ({ quantity, q, unitMinor, totalMinor, allocations, ...line }) => ({...line,...(allocations ? {allocations:allocations.map(({amountMinor,...share})=>share)} : {})});
 function percentage(before, after, limit = 0) {
     if (after <= before) return true;
     const [coefficient, exponent = '0'] = String(limit).split('e'), [whole, fraction = ''] = coefficient.split('.'), power = Number(exponent) - fraction.length;

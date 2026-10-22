@@ -1,4 +1,6 @@
 import { operationalOrder } from './adoption-position';
+import { applyIntakeFields, splitValues, intakeDefaults } from './intake-fields';
+import { requestSupplier } from './supplier-proposals';
 import { serviceTerms, servicePosition } from './service-orders';
 import { currentScimAssignment, scimAssignmentAllows } from './scim-approvals';
 import { blanketTerms, blanketBilled } from './blanket-orders';
@@ -13,7 +15,7 @@ import { all, audit, can, get, put, requireThat, requirePermission, text, minor,
 import { supplier, currency } from './admin';
 import { approvalAmount as approvalOf, coveringPolicies } from './policy-match';
 export function lines(s: State, input: unknown, a: Actor) { requireThat(Array.isArray(input) && input.length > 0 && input.length <= 100, 'Provide 1–100 lines'); return input.map((x: Data) => { const item = x.catalogue ? get(s, 'catalogue', x.catalogue) : undefined; if (item)
-    { requireCatalogueAccess(s, a, item); requireThat(item.approved, 'Catalogue item is not approved'); requireThat(currentPrice(item), 'Catalogue price is outside its validity dates', 409); } const unitMinor = moneyInput(x, 'unitAmount', 'unitMinor', 'Unit price', { fallback: item?.unitMinor }), q = quantity(x.quantity); return { id: x.id ?? uid(), description: text(x.description ?? item?.description, 'Line description'), quantity: x.quantity, q, unitMinor, totalMinor: extended(q, unitMinor), category: text(x.category ?? item?.category, 'Category'), project: text(x.project || item?.project, 'Project'), catalogue: item?.id ?? null, partNumber: item?.partNumber ?? x.partNumber ?? '', unit: item?.unit ?? x.unit ?? 'each', shipTo: optionalPoText(x.shipTo, 'Line ship to'), lineTaxMinor: Object.hasOwn(x, 'lineTaxAmount') || Object.hasOwn(x, 'lineTaxMinor') ? moneyInput(x, 'lineTaxAmount', 'lineTaxMinor', 'Line tax', { optional: true }) : null, requiredAttachments: item?.requiredAttachments ?? x.requiredAttachments ?? [], ...(x.service != null ? { service: serviceTerms(x.service, extended(q, unitMinor)) } : {}) }; }); }
+    { requireCatalogueAccess(s, a, item); requireThat(item.approved, 'Catalogue item is not approved'); requireThat(currentPrice(item), 'Catalogue price is outside its validity dates', 409); } const unitMinor = moneyInput(x, 'unitAmount', 'unitMinor', 'Unit price', { fallback: item?.unitMinor }), q = quantity(x.quantity); return { id: x.id ?? uid(), description: text(x.description ?? item?.description, 'Line description'), quantity: x.quantity, q, unitMinor, totalMinor: extended(q, unitMinor), category: text(x.category ?? item?.category, 'Category'), project: text(x.project || item?.project, 'Project'), catalogue: item?.id ?? null, partNumber: item?.partNumber ?? x.partNumber ?? '', unit: item?.unit ?? x.unit ?? 'each', shipTo: optionalPoText(x.shipTo, 'Line ship to'), lineTaxMinor: Object.hasOwn(x, 'lineTaxAmount') || Object.hasOwn(x, 'lineTaxMinor') ? moneyInput(x, 'lineTaxAmount', 'lineTaxMinor', 'Line tax', { optional: true }) : null, requiredAttachments: item?.requiredAttachments ?? x.requiredAttachments ?? [], allocations: splitValues(s, x.allocations, extended(q, unitMinor)), ...(x.service != null ? { service: serviceTerms(x.service, extended(q, unitMinor)) } : {}) }; }); }
 export function requestTotal(r: Data) { const total = r.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0) + r.freightMinor + r.taxMinor; return minor(total, 'Request total'); }
 export function policies(s: State, r: Data) { return coveringPolicies(all(s, 'policy'), r); }
 export const reserved = (s: State, policy: string) => all(s, 'commitment').filter(e => e.policy === policy).reduce((n, e) => n + e.amountMinor, 0);
@@ -35,13 +37,14 @@ export function authorizedApproval(s: State, a: Actor, r: Data) {
 }
 export function requests(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if (op === 'request' || op === 'amend') {
+        b = intakeDefaults(s,b);
         let old: Data | undefined;
         if (b.id) {
             old = get(s, 'request', b.id);requireThat(b.revision===old.revision,'Stale request revision',409);
             requirePermission(s, a, 'request.edit', old);
             requireThat(!old.imported, 'Imported historical records cannot grant native authority', 409);
         }
-        const counterparty = supplier(s, b.supplier);
+        const counterparty = requestSupplier(s, a, b.supplier, old);
         currency(s, b.currency);
         const id = old?.id ?? uid();
         const supplierSnapshot = { id: counterparty.id, name: counterparty.name, address: counterparty.address || '', remitTo: counterparty.remitTo || '', postalState: counterparty.postalState || '', contacts: structuredClone(counterparty.contacts), contractRef: counterparty.contractRef };
@@ -54,6 +57,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         if(old?.emailIntake) (r as Data).emailIntake = old.emailIntake;
         if(old?.quoteTerms) (r as Data).quoteTerms = structuredClone(old.quoteTerms);
         (r as Data).poDetails = { blanket: blanketTerms((b.poDetails ?? old?.poDetails)?.blanket), depositTerms: optionalPoText((b.poDetails ?? old?.poDetails)?.depositTerms, 'Deposit/prepayment terms'), notes: optionalPoText((b.poDetails ?? old?.poDetails)?.notes, 'Notes to supplier'), shippingTerms: optionalPoText((b.poDetails ?? old?.poDetails)?.shippingTerms, 'Shipping terms'), buyerContact: optionalPoText((b.poDetails ?? old?.poDetails)?.buyerContact, 'Buyer contact') };
+        applyIntakeFields(s, r, { ...old, ...b });
         allocateLineTax(r.lines, r.taxMinor);
         const business = get(s, 'business', 'main');
         requireThat(business.locations.includes(r.location) && business.costCentres.includes(r.costCentre) && r.lines.every(l => business.projects.includes(l.project)), 'Use configured location, cost centre and project');
@@ -116,7 +120,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         const r = get(s, 'request', b.id);
         requirePermission(s,a,op==='decision'?'request.approve':'request.edit',r);
         requireThat(r.revision === b.revision, 'Stale request revision', 409);
-        supplier(s, r.supplier);
+        requestSupplier(s, a, r.supplier, r);
         requireThat(!r.imported, 'Imported status cannot grant native authority', 409);
         if (op === 'submit') {
             requirePermission(s, a, 'request.edit', r);
@@ -124,6 +128,9 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             requireThat(['draft', 'returned', 'rejected'].includes(r.status), 'Request is not a draft', 409);
             for (const line of r.lines) if (line.catalogue) { const item = get(s, 'catalogue', line.catalogue); requireCatalogueAccess(s, a, item); requireThat(item.approved && currentPrice(item), 'Catalogue item is unapproved or outside price validity; revise the draft', 409); }
             requiredCatalogueFiles(s, r);
+            applyIntakeFields(s, r, r, true);
+            r.attachmentIds = all(s, 'attachment').filter(file => file.kind === 'request' && file.record === r.id && !file.erasure).map(file => file.id);
+            put(s, 'revision', `${r.id}:${r.revision}`, {...r, request: r.id});
             const p = policies(s, r)[0];
             requireThat(p, 'No amount/category/project authority policy covers this request', 409);
             requireThat(!all(s, 'scimUser').some(user => user.userName === p.approver && user.active === false), 'The designated approver was deactivated; the owner must select a current approval policy before submission', 409);
@@ -166,11 +173,17 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
     }
     if (op === 'attachment') {
         const kind = text(b.kind, 'Record kind');
-        requireThat(['request', 'supplier', 'order', 'invoice', 'agreement'].includes(kind), 'Unsupported attachment record');
+        requireThat(['request', 'intakeDraft', 'supplier', 'order', 'invoice', 'agreement'].includes(kind), 'Unsupported attachment record');
         const r = get(s, kind, b.record);
         requireThat(b.privateSupplierDocument === undefined || typeof b.privateSupplierDocument === 'boolean', 'Private supplier document flag must be boolean');
         requireThat(!b.privateSupplierDocument || kind === 'supplier', 'Private compliance evidence belongs to a supplier');
-        if (kind === 'request') {
+        if (kind === 'intakeDraft') {
+            requirePermission(s, a, 'request.create');
+            requireThat(r.requester === a.id && r.requesterEmail === a.email && r.status === 'draft', 'Draft outside your scope', 403);
+            requireThat(b.version === r.version, 'Draft changed; reload before attaching', 409);
+            if(r.emailIntake){const intake=get(s,'emailIntake',r.emailIntake);requireThat(intake.requester===a.id&&intake.status==='draft','Email intake is no longer assigned and editable',409);}
+        }
+        else if (kind === 'request') {
             requirePermission(s, a, 'request.edit', r);
         }
         else if (kind === 'agreement') can(s, a, 'owner');
@@ -187,6 +200,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         const id = uid();
         put(s, 'attachment', id, { kind, record: r.id, ...(b.privateSupplierDocument ? { privateSupplierDocument: true } : {}), name: text(b.name, 'Filename', 200), mediaType: text(b.mediaType ?? 'application/octet-stream', 'Media type', 150), base64: b.base64, size: bytes!.length, actor: a.id, at: new Date().toISOString() });
         audit(s, a, op, r.id, { attachment: id });
+        if(kind==='intakeDraft') put(s,'intakeDraft',r.id,{...r,version:r.version+1});
         if (kind === 'invoice') checkInvoiceAttachment(s, a, get(s, 'attachment', id));
         return { id };
     }
