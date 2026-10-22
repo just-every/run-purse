@@ -6,8 +6,9 @@ export function OrderChasing({ order, data, actor, mutate, reload }: { order: D;
     const policy = data.orderChasePolicy.find((p: D) => p.order === order.id);
     const events = data.orderChaseEvent.filter((e: D) => e.order === order.id);
     const evidence = data.orderChaseEvidence.find((e: D) => e.order === order.id);
+    const nativeAcknowledgment = order.supplierChangeAcknowledgment;
     return <section className="panel"><h3>Supplier follow-up</h3>
-        {evidence ? <><p>Supplier promise: {evidence.promisedDate}. Acknowledgment: {evidence.acknowledgedAt ? when(evidence.acknowledgedAt) : 'not recorded'}.</p><details><summary>Buyer-recorded supplier replies and promises</summary><ul className="ruled-list">{evidence.history.map((h: D) => <li key={h.version}>{when(h.at)} · {h.source} · promised {h.promisedDate}{h.acknowledgedAt && <> · acknowledged {when(h.acknowledgedAt)}</>}</li>)}</ul></details></> : <p>No supplier acknowledgment or promise has been recorded. Issuance alone is not an acknowledgment.</p>}
+        {evidence ? <><p>Supplier promise: {evidence.promisedDate}. Acknowledgment: {evidence.acknowledgedAt ? when(evidence.acknowledgedAt) : 'not recorded'}.</p><details><summary>Buyer-recorded supplier replies and promises</summary><ul className="ruled-list">{evidence.history.map((h: D) => <li key={h.version}>{when(h.at)} · {h.source} · promised {h.promisedDate}{h.acknowledgedAt && <> · acknowledged {when(h.acknowledgedAt)}</>}</li>)}</ul></details></> : nativeAcknowledgment ? <p>Supplier acknowledged approved revision {nativeAcknowledgment.revision} at {when(nativeAcknowledgment.at)}. The link holder’s stated identity is unverified. No delivery promise has been recorded.</p> : <p>No supplier acknowledgment or promise has been recorded. Issuance alone is not an acknowledgment.</p>}
         {order.mayManagePurchasing && ['issued', 'closed'].includes(order.status) && !order.imported && <>
             <Form key={policy?.version ?? 0} label="Save chase schedule" initial={{ order: order.id, version: policy?.version ?? 0 }} onSubmit={b => mutate('order-chase-policy', { ...b, enabled: b.enabled === 'yes', cadenceDays: Number(b.cadenceDays), maxChases: Number(b.maxChases) })}>
                 <Field label="Automatic supplier chases" name="enabled" defaultValue={policy?.enabled ? 'yes' : 'no'} options={[{ value: 'yes', label: 'Enabled' }, { value: 'no', label: 'Paused' }]}/>
@@ -22,6 +23,6 @@ export function OrderChasing({ order, data, actor, mutate, reload }: { order: D;
         <Table heads={['When', 'Action', 'Reason', 'Recipient', 'Outcome']}>
             {events.map((e: D) => <tr key={e.id}><td>{when(e.at)}</td><td>{e.kind === 'chase' ? `Chase attempt ${e.sequence}` : 'Buyer escalation'}</td><td>{e.reason.replaceAll('-', ' ')}</td><td>{e.outcome.recipient || 'Contact not configured'}</td><td>{e.outcome.status === 'development' ? 'Suppressed locally' : e.outcome.status === 'accepted' ? 'Provider accepted; delivery unconfirmed' : e.outcome.status}</td></tr>)}
         </Table>
-        <p className="quiet">Every attempt retains its outcome. An interrupted attempt stays unknown and is not sent again. Supplier replies shown here are recorded by a buyer. Check your usual email inbox for new replies.</p>
+        <p className="quiet">Every attempt retains its outcome. An interrupted attempt stays unknown and is not sent again. Supplier promises shown here are recorded by a buyer; exact-revision supplier-link acknowledgment stops acknowledgment-only chasing. Check your usual email inbox for new replies.</p>
     </section>;
 }

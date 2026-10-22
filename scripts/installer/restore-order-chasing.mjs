@@ -78,7 +78,7 @@ function dueReason(event, order, policy, check) {
     const today = `${part('year')}-${part('month')}-${part('day')}`;
     const deliveryDate = event.evidence?.promisedDate || order.needDate;
     const overdue = Boolean(deliveryDate && today > deliveryDate);
-    const unacknowledged = !event.evidence?.acknowledgedAt && Date.parse(event.at) >= Date.parse(order.issuedAt) + policy.cadenceDays * dayMs;
+    const unacknowledged = !event.supplierAcknowledgment && !event.evidence?.acknowledgedAt && Date.parse(event.at) >= Date.parse(order.issuedAt) + policy.cadenceDays * dayMs;
     const reason = overdue && unacknowledged ? 'unacknowledged-and-overdue-delivery' : overdue ? 'overdue-delivery' : unacknowledged ? 'unacknowledged' : null;
     check(reason !== null && event.reason === reason, 'order_chase_reason');
 }
@@ -112,6 +112,13 @@ export function validateOrderChasing(all, get, check) {
         const next = entries[event.policyVersion];
         check(timestamp(event.at) && Date.parse(event.at) >= Date.parse(policy.at)
             && (!next || Date.parse(event.at) <= Date.parse(next.at)), 'order_chase_event_time');
+        if (event.supplierAcknowledgment) {
+            const acknowledgment = event.supplierAcknowledgment, sent = get('orderSend', acknowledgment.send);
+            check(sent.order === event.order && acknowledgment.revision === order.revision
+                && sent.revision === acknowledgment.revision && sent.pdf.sha256 === acknowledgment.pdfSha256
+                && sent.acknowledgment?.at === acknowledgment.at && timestamp(acknowledgment.at)
+                && Date.parse(acknowledgment.at) <= Date.parse(event.at), 'order_chase_supplier_acknowledgment');
+        }
         evidenceSnapshot(event, get, check);
         if (event.evidence === null) {
             const first = evidenceByOrder.get(event.order)?.history?.[0];

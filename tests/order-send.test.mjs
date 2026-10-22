@@ -50,6 +50,10 @@ test('Explicit native buyer change send freezes exact numbered PDF and originals
     const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(!JSON.stringify(erasedRows).includes('synthetic-purse-2820@example.test'));assert.equal(validatePurchasingArchive(erasedRows),true);
     const quantityHarness=await harness();t.after(()=>quantityHarness.close());const quantity=await orderSendFixture(quantityHarness,{kind:'quantity'}),quantitySent=await quantity.send();assert.equal(quantitySent.status,200,JSON.stringify(quantitySent.value));assert.equal(quantitySent.value.changeLabel,'Change order 1');
     const quantityLink=orderLink(quantityHarness),quantityFace=await publicGet(quantityHarness,quantityLink);assert.match(await quantityFace.text(),/quantity: 2 to 3/);assert.equal((await ack(quantityHarness,quantityLink,2)).status,200);assert.equal((await quantityHarness.send('/api/purse/order-send/'+quantity.order.id,undefined,quantity.requester)).value.event.acknowledgment.revision,2);
+    await quantityHarness.command('order-chase-policy',{order:quantity.order.id,version:0,enabled:true,cadenceDays:1,maxChases:2,escalateTo:'synthetic-purse-2804@example.test'},quantity.buyer);
+    const overdueTick=await quantityHarness.mf.dispatchFetch(quantityHarness.origin+'/cdn-cgi/local/scheduled?time='+(Date.parse(quantity.order.needDate+'T17:00:00Z')+86400000));assert.equal(overdueTick.status,200);
+    const overdue=(await quantityHarness.state()).data.orderChaseEvent.filter(row=>row.order===quantity.order.id);assert.equal(overdue.length,1);assert.equal(overdue[0].reason,'overdue-delivery');assert.equal(overdue[0].supplierAcknowledgment.revision,2);
+    assert.equal(validatePurchasingArchive((await quantityHarness.db.prepare('SELECT * FROM p_records').all()).results),true,'Overdue delivery retains exact native supplier acknowledgment through archive validation');
 
 });
 

@@ -93,6 +93,10 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.orderChasePolicy = all(s, 'orderChasePolicy').filter(record => orderIds.has(record.order)
         && allowed(s, a, 'procurement.manage', get(s, 'order', record.order)));
     data.orderChaseEvent = all(s, 'orderChaseEvent').filter(record => orderIds.has(record.order));
+    data.order = data.order.map((order: Data) => {
+        const acknowledgment = all(s, 'orderSend').find(sent => sent.order === order.id && sent.revision === order.revision)?.acknowledgment;
+        return { ...order, ...(acknowledgment ? { supplierChangeAcknowledgment: { revision: acknowledgment.revision, at: acknowledgment.at } } : {}) };
+    });
     data.supplierOrderEvidence = all(s, 'supplierOrderEvidence').filter(evidence => orderIds.has(evidence.order)
         && ['procurement.manage', 'performance.read'].some(permission => allowed(s, a, permission, get(s, 'order', evidence.order))));
     data.orderChaseEvidence = all(s, 'supplierOrderEvidence').filter(evidence => orderIds.has(evidence.order));

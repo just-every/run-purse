@@ -46,21 +46,23 @@ function eligible(s: State, order: Data, now: number): boolean {
     } catch (error) { if (error instanceof Fault && [404, 409].includes(error.status)) return false; throw error; }
 }
 
-function due(s: State, order: Data, policy: Data, now: number): { reason: string; evidence: Data | null } | null {
+function due(s: State, order: Data, policy: Data, now: number): { reason: string; evidence: Data | null; supplierAcknowledgment: Data | null } | null {
     const evidence = all(s, 'supplierOrderEvidence').find(row => row.order === order.id) ?? null;
+    const sent = all(s, 'orderSend').find(row => row.order === order.id && row.revision === order.revision && row.acknowledgment?.revision === order.revision);
+    const supplierAcknowledgment = sent ? { send: sent.id, revision: sent.revision, pdfSha256: sent.pdf.sha256, at: sent.acknowledgment.at } : null;
     const parts = calendar.formatToParts(now), part = (name: string) => parts.find(p => p.type === name)!.value;
     const today = `${part('year')}-${part('month')}-${part('day')}`;
     const deliveryDate = evidence?.promisedDate || order.needDate;
     const overdue = Boolean(deliveryDate && today > deliveryDate);
-    const unacknowledged = !evidence?.acknowledgedAt && now >= Date.parse(order.issuedAt) + policy.cadenceDays * dayMs;
+    const unacknowledged = !supplierAcknowledgment && !evidence?.acknowledgedAt && now >= Date.parse(order.issuedAt) + policy.cadenceDays * dayMs;
     if (!overdue && !unacknowledged) return null;
     return { reason: overdue && unacknowledged ? 'unacknowledged-and-overdue-delivery' : overdue ? 'overdue-delivery' : 'unacknowledged',
-        evidence: evidence ? { id: evidence.id, version: evidence.version, acknowledgedAt: evidence.acknowledgedAt,
+        supplierAcknowledgment, evidence: evidence ? { id: evidence.id, version: evidence.version, acknowledgedAt: evidence.acknowledgedAt,
             promisedDate: evidence.promisedDate, source: evidence.source, actor: evidence.actor, at: evidence.at } : null };
 }
 
-function communication(order: Data, evidence: Data | null): string {
-    const acknowledgment = evidence?.acknowledgedAt ? `Acknowledgment recorded by a buyer: ${evidence.acknowledgedAt}.` : 'No supplier acknowledgment has been recorded by a buyer.';
+function communication(order: Data, evidence: Data | null, supplierAcknowledgment: Data | null): string {
+    const acknowledgment = supplierAcknowledgment ? `Supplier-link acknowledgment of approved revision ${supplierAcknowledgment.revision}: ${supplierAcknowledgment.at}; stated identity is unverified.` : evidence?.acknowledgedAt ? `Acknowledgment recorded by a buyer: ${evidence.acknowledgedAt}.` : 'No supplier acknowledgment has been recorded by a buyer.';
     return `${acknowledgment} ${evidence?.promisedDate ? `Buyer-recorded supplier promise: ${evidence.promisedDate}.` : `PO need date: ${order.needDate}.`}`;
 }
 
@@ -95,7 +97,7 @@ async function send(env: Bindings, event: Data, order: Data, policy: Data, autho
     try {
         const sender = operatorMail(env);
         if (!sender) return outcome;
-        const context = communication(order, event.evidence);
+        const context = communication(order, event.evidence, event.supplierAcknowledgment ?? null);
         const body = event.kind === 'chase'
             ? `Please confirm acknowledgment and current delivery timing for ${order.number}. ${context} Scheduled chase ${event.sequence} of ${policy.maxChases}.`
             : `${order.number} reached its configured limit of ${policy.maxChases} scheduled chase attempts. ${context} Mail acceptance does not establish delivery. Review the PO in Purse: ${new URL('/app', env.AUTH_ORIGIN).href}`;
@@ -125,7 +127,7 @@ async function attempt(env: Bindings, policyId: string, escalation: boolean, now
     const authorized = !escalation || Boolean(recipient);
     const id = `${order.id}:${policy.version}:${escalation ? 'escalation' : `chase:${sequence}`}`;
     const event: Data = { id, order: order.id, policyVersion: policy.version, sequence, kind, reason: current.reason,
-        at: new Date(now).toISOString(), evidence: current.evidence,
+        at: new Date(now).toISOString(), evidence: current.evidence, supplierAcknowledgment: current.supplierAcknowledgment,
         outcome: { recipient: escalation ? policy.escalateTo : order.supplierSnapshot?.contacts?.[0]?.email ?? '', status: 'unknown' } };
     // The state revision also fences receipts, closures, evidence, supplier merges and compliance edits.
     const recipientFence = recipient ? ` AND ${recipient.sql}` : '';

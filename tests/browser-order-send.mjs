@@ -38,6 +38,7 @@ export async function orderSendJourney(browser, bundle, width, evidence) {
         await supplier.getByRole('heading',{name:'Change order 1 acknowledged',exact:true}).waitFor();
         await supplier.screenshot({path:join(evidence,`PO-004-supplier-acknowledged-${width}.png`),fullPage:true});
         await panel.getByRole('button',{name:'Refresh supplier acknowledgment',exact:true}).click();await panel.getByText(/Supplier acknowledged Change order 1, approved revision 2/).waitFor();
+        await buyer.locator('section.panel').filter({has:buyer.getByRole('heading',{name:'Supplier follow-up',exact:true})}).getByText(/Supplier acknowledged approved revision 2/).waitFor();
         await buyer.screenshot({path:join(evidence,`PO-004-buyer-acknowledged-${width}.png`),fullPage:true});
         await requester.goto(h.origin+'/app?tab=Requests');await requester.getByRole('article').filter({hasText:'synthetic-purse-2815'}).getByRole('button',{name:'Open request',exact:true}).click();
         const requesterPanel=requester.getByRole('region',{name:'Supplier change order',exact:true});await requesterPanel.getByText(/Supplier acknowledged Change order 1, approved revision 2/).waitFor();
