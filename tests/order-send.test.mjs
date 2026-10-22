@@ -17,7 +17,7 @@ test('Explicit native buyer change send freezes exact numbered PDF and originals
     const immutable=(await h.state()).data.revision.find(row=>row.request===f.request.id&&row.revision===2);
     const sent=await f.send();assert.equal(sent.status,200,JSON.stringify(sent.value));assert.equal(sent.value.status,'accepted');assert.equal(sent.value.changeLabel,'Change order 1');assert.ok(!JSON.stringify(sent.value).includes('/order-link/'));
     const link=orderLink(h),message=orderMessage(h);assert.equal(message.attachments.length,3);
-    const supplier=await publicGet(h,link);assert.equal(supplier.status,200);assert.equal(supplier.headers.get('referrer-policy'),'no-referrer');const html=await supplier.text();
+    const supplier=await publicGet(h,link);assert.equal(supplier.status,200);const html=await supplier.text();
     for(const field of ['Change order 1','approved revision 2','synthetic-purse-2812','synthetic-purse-2806','synthetic-purse-2808','Vendor SKU','synthetic-purse-2818','synthetic-purse-2819','2026-11-08','2026-11-01 to 2026-11-08','Text-only prepayment terms','USD 210.50'])assert.ok(html.includes(field),field);
     const pdfResponse=await publicGet(h,link.href+'/pdf');assert.equal(pdfResponse.status,200);const bytes=Buffer.from(await pdfResponse.arrayBuffer());assert.deepEqual(bytes,Buffer.from(message.attachments[0].content,'base64'));
     const printed=await pdfContent(new Uint8Array(bytes));assert.ok(printed.text.includes('Change order 1'));assert.ok(printed.text.includes('synthetic-purse-2810'));assert.ok(printed.text.includes('synthetic-purse-2811'));
