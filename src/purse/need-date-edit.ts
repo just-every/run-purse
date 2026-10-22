@@ -6,7 +6,7 @@ import { servicePosition } from './service-orders';
 import { all, allowed, audit, date, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
 /** A date-only revision retains buying authority. Supplier delivery is explicit:
- * native document generation is available; PO-004 sending remains unbuilt. */
+ * native document generation never implies supplier mail acceptance. */
 export function changeNeedDate(s: State, a: Actor, input: Data) {
     const previous=get(s,'request',input.id);
     requireThat(previous.status==='approved'&&previous.revision===input.revision&&!previous.imported,'Exact approved request revision required',409);
@@ -45,7 +45,7 @@ export function changeNeedDate(s: State, a: Actor, input: Data) {
                 return {...line,carriedAccepted:position.accepted,carriedCancelled:position.cancelled,...(service?{carriedAcceptedMinor:service.acceptedMinor,carriedCancelledMinor:service.cancelledMinor,carriedMilestones:[...(old.carriedMilestones??[]),...all(s,'receipt').filter(receipt=>receipt.order===prior.id&&receipt.line===old.id&&receipt.milestone).map(receipt=>receipt.milestone)]}:{})};
             });
         }
-        const id=uid(), order:Data={...structuredClone(prior),id,revision:next.revision,lines:next.lines.map((line:Data)=>({...line,sourceLine:line.id})),needDate:next.needDate,generatedAt:new Date().toISOString(),needDateChange:{...next.needDateEdit,priorOrder:prior.id,supplierDelivery:issued?'not-sent':'not-issued',...(issued?{blockedBy:'PO-004 supplier change-order sending is not implemented'}:{})}};
+        const id=uid(), order:Data={...structuredClone(prior),id,revision:next.revision,lines:next.lines.map((line:Data)=>({...line,sourceLine:line.id})),needDate:next.needDate,generatedAt:new Date().toISOString(),needDateChange:{...next.needDateEdit,priorOrder:prior.id,supplierDelivery:issued?'not-sent':'not-issued',...(issued?{blockedBy:'PO-004 requires an explicit buyer send of this exact change order'}:{})}};
         delete order.conversionVariance;delete order.amendedBy;
         const approval=currentDecision(s,next);
         order.approvalActor=approval.actor;order.approvalVersion=approval.operatorVersion;

@@ -40,7 +40,7 @@ export function poContent(s: State, order: Data): PoPdfContent {
         }
         const changes = order.lines.flatMap((l: Data) => {
             const old = prior.lines.find((v: Data) => v.id === l.id);
-            return !old ? ['Added: ' + l.description] : ['description', 'quantity', 'unitMinor', 'partNumber', 'unit', 'shipTo', 'lineTaxMinor', 'service'].filter(k => JSON.stringify(old[k]) !== JSON.stringify(l[k])).map(k => `${l.description} · ${k}: ${value(old[k])} to ${value(l[k])}`);
+            return !old ? ['Added: ' + l.description] : ['description', 'quantity', 'unitMinor', 'partNumber', 'unit', 'shipTo', 'lineTaxMinor', 'service', 'needDate'].filter(k => JSON.stringify(old[k]) !== JSON.stringify(l[k])).map(k => `${l.description} · ${k}: ${value(old[k])} to ${value(l[k])}`);
         });
         for (const k of ['supplier', 'currency', 'terms', 'needDate', 'freightMinor', 'taxMinor']) if (prior[k] !== order[k]) changes.push(`${k}: ${value(prior[k])} to ${value(order[k])}`);
         if(JSON.stringify(prior.charges??[])!==JSON.stringify(order.charges??[]))changes.push('Charge lines: '+JSON.stringify(prior.charges??[])+' to '+JSON.stringify(order.charges??[]));

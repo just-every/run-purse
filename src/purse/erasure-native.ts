@@ -36,6 +36,7 @@ export async function eraseNativeCopies(env:Bindings,plan:ErasurePlan,a:Actor) {
  for(const row of (await db.prepare('SELECT sequence,message FROM rer_mail_development_outbox').all<Data>()).results) {
   if(JSON.stringify(plan.scrub(row.message))!==JSON.stringify(row.message))statements.push(sql('DELETE FROM rer_mail_development_outbox WHERE sequence=?',row.sequence));
  }
+ for(const send of plan.affected.filter(r=>r.kind==='orderSend'))statements.push(sql('DELETE FROM p_order_send_links WHERE send=?',send.id));
  for(const rfq of plan.affected.filter(r=>r.kind==='rfq'))statements.push(sql('DELETE FROM p_rfq_links WHERE rfq=?',rfq.id));
  if(plan.subject.supplier)statements.push(sql('DELETE FROM p_supplier_document_links WHERE supplier=?',plan.subject.supplier));
  let protectedMetadata=0;
