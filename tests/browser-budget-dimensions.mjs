@@ -30,6 +30,7 @@ export async function budgetDimensionsJourney({h,context,width,evidence}) {
  await show('reserved',['$600.00','$400.00']);assert.equal((await position(first.id)).reservedMinor,60000);assert.equal((await position(second.id)).reservedMinor,40000);
  await cmd('decision',{id:request.id,revision:1,decision:'approved',reason:'Exact quarter and native fields reviewed'},approver);
  const order=await cmd('convert',{id:request.id,revision:1},buyer);await cmd('issue',{id:order.id,revision:1,reason:'Issue exact native shares'},buyer);await show('committed',['$600.00','$400.00']);
+ await cmd('receipt',{order:order.id,line:order.lines[0].id,event:'receive',quantity:'0.5',reason:'Combined budget goods received',ownerOverride:true});
  const invoice=await cmd('invoice',{order:order.id,reference:'synthetic-purse-2413',source:'Recorded exact split invoice',allocations:[{line:order.lines[0].id,quantity:'0.5',amountMinor:50000}]},buyer);await show('actual',['$300.00','$200.00']);
  assert.deepEqual([(await position(first.id)).committedMinor,(await position(first.id)).actualMinor,(await position(second.id)).committedMinor,(await position(second.id)).actualMinor],[30000,30000,20000,20000]);
  await page.getByLabel('Group by',{exact:true}).selectOption('glAccount');await page.getByLabel('GL account',{exact:true}).selectOption('synthetic-purse-2411');await page.getByRole('button',{name:'Filter spend',exact:true}).click();
