@@ -28,7 +28,7 @@ export function validateConversionVariance(order, revision, all) {
     check([variance.before, variance.after].every(value => accessShape(value, ['lines','freightMinor','taxMinor','totalMinor'])), 'conversion_face');
     check(same(variance.before, face(revision)) && same(variance.after, face(order)) && !same(variance.before, variance.after), 'conversion_snapshot');
     lineAmounts(variance.before); lineAmounts(variance.after);
-    check(variance.after.lines.every(line=>accessText(line.unit)&&typeof line.partNumber==='string'&&line.partNumber.length<=200),'conversion_unit_sku');
+    check(variance.after.lines.every((line,index)=>(same(line.unit,variance.before.lines[index]?.unit)||accessText(line.unit)&&line.unit.length<=200)&&(same(line.partNumber,variance.before.lines[index]?.partNumber)||accessText(line.partNumber)&&line.partNumber.length<=200)),'conversion_unit_sku');
     check(variance.before.lines.length === variance.after.lines.length && variance.before.lines.every((line, index) => same(immutableLine(line), immutableLine(variance.after.lines[index]))), 'conversion_line_identity');
     check(same(purchasing({ ...order, lines: variance.before.lines, freightMinor:variance.before.freightMinor,taxMinor:variance.before.taxMinor,totalMinor: variance.before.totalMinor }), purchasing(revision)), 'conversion_purchase_identity');
     check(order.location === revision.location && order.costCentre === revision.costCentre && (order.entity ?? 'main') === (revision.entity ?? 'main'), 'conversion_scope_identity');
