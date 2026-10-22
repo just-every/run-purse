@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { reauthenticateErasure } from './erasure-flow.mjs';
 import { coasterTravelReport } from './travel-coaster.mjs';
 
 export async function travelReferenceAndReleaseJourney({ fixture, open, mutation, capture }) {
@@ -40,5 +41,28 @@ export async function travelReferenceAndReleaseJourney({ fixture, open, mutation
     await travelerTab.reload();
     await travelerTab.getByText('expense-report-closed', { exact: false }).waitFor();
     assert.equal(await travelerTab.getByRole('region', { name: 'Linked travel expense report', exact: true }).count(), 0);
-    return { request: request.id, approvalReference: request.travel.approvalReference, earlierReleaseMinor: 270000, actualMinor: expense.totalMinor, releasedAgainMinor: expense.releasedMinor };
+    return { request: request.id, report: expense.id, approvalReference: request.travel.approvalReference, earlierReleaseMinor: 270000, actualMinor: expense.totalMinor, releasedAgainMinor: expense.releasedMinor };
+}
+
+
+// Invoke after other requester journeys: erasure revokes this assistant's native session.
+export async function travelWithdrawnOriginalJourney({ fixture, open, capture, trip }) {
+    const { h } = fixture;
+    await h.command('member', { email: 'synthetic-purse-6@example.test', name: 'synthetic-purse-6@example.test', roles: ['requester'], active: false });
+    await reauthenticateErasure(h);
+    const meta = await h.send('/api/purse/erasure', undefined, h.owner);
+    const preview = await h.send('/api/purse/erasure/preview', { kind: 'member', id: 'synthetic-purse-6@example.test', revision: meta.value.revision }, h.owner);
+    assert.equal(preview.status, 200, JSON.stringify(preview.value));
+    assert.ok(preview.value.affected.some(row => row.kind === 'travelExpense' && row.id === trip.report));
+    const erased = await h.send('/api/purse/erasure/execute', { ...preview.value.subject, revision: preview.value.revision, review: preview.value.review, fingerprint: preview.value.fingerprint, consent: true }, h.owner);
+    assert.equal(erased.status, 200, JSON.stringify(erased.value));
+    const owner = await open(h.owner, trip.request), financial = owner.getByRole('region', { name: 'Linked travel expense report', exact: true });
+    await financial.getByText('Original withdrawn by personal-data erasure. Anonymous financial evidence', { exact: false }).waitFor();
+    assert.equal(await financial.getByRole('link', { name: 'Download exact original Coaster report', exact: true }).count(), 0);
+    assert.equal(await financial.getByRole('link', { name: 'Open source report', exact: true }).count(), 0);
+    const report = (await h.state()).data.travelExpense.find(row => row.id === trip.report);
+    assert.equal(report.totalMinor, 215000); assert.equal(report.originalSourceVerified, false);
+    assert.equal((await h.send('/api/purse/download/attachment/' + report.attachment, undefined, h.owner)).status, 410);
+    await capture(owner, 'erased-travel-original-financial-custody');
+    return { originalWithdrawn: true, financialActualMinor: report.totalMinor };
 }

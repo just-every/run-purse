@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { erasedOriginal, erasedField } from '../../src/purse/erasure-journal.mjs';
 
 /** Travel is an approval and budget record, never fabricated supplier authority. */
 export function validateTravel(all, get, check, same) {
@@ -43,11 +44,18 @@ export function validateTravel(all, get, check, same) {
         const request = get('request', expense.request), revision = get('revision', expense.request + ':' + expense.revision);
         const attachment = get('attachment', expense.attachment), bytes = Buffer.from(attachment.base64, 'base64');
         check(request.purchaseType === 'travel' && revision.travel.approvalReference === expense.approvalReference && expense.policy === revision.policy && expense.currency === revision.currency, 'travel_expense_reference');
-        check(attachment.kind === 'travelExpense' && attachment.record === expense.id && attachment.size === bytes.length && createHash('sha256').update(bytes).digest('hex') === expense.sha256, 'travel_expense_original');
-        let original; try { original = JSON.parse(bytes.toString('utf8')); } catch { check(false, 'travel_expense_original'); }
-        const frozen = original.revisions?.find(source => source.revision === expense.externalRevision);
-        check(original.claim?.id === expense.externalId && ['approved', 'reimbursed'].includes(original.claim.status) && original.claim.employee_email === revision.travel.travelerEmail && original.claim.revision === expense.externalRevision, 'travel_expense_source');
-        check(frozen?.total_minor === expense.totalMinor && frozen.snapshot?.total_minor === expense.totalMinor && frozen.snapshot.currency === expense.currency && frozen.snapshot.items.every(item => item.fields?.purse_reference === expense.approvalReference), 'travel_expense_source');
+        check(attachment.kind === 'travelExpense' && attachment.record === expense.id && Number.isSafeInteger(attachment.size) && attachment.size > 0 && /^[a-f0-9]{64}$/.test(expense.sha256), 'travel_expense_original');
+        if (expense.erasure) {
+            check(attachment.erasure === expense.erasure && erasedOriginal(all, attachment) && attachment.sha256 === expense.sha256 && expense.originalStatus === 'withdrawn' && expense.originalSourceVerified === false, 'travel_expense_withdrawn_original');
+            for (const field of ['erasure','originalStatus','originalSourceVerified','sourceBasis']) check(erasedField(all,'travelExpense',expense.id,[field],expense[field]), 'travel_expense_erasure_evidence');
+        } else {
+            check(!attachment.erasure && expense.originalStatus !== 'withdrawn' && expense.originalSourceVerified !== false && attachment.size === bytes.length && createHash('sha256').update(bytes).digest('hex') === expense.sha256, 'travel_expense_original');
+            let original; try { original = JSON.parse(bytes.toString('utf8')); } catch { check(false, 'travel_expense_original'); }
+            const frozen = original.revisions?.find(source => source.revision === expense.externalRevision);
+            check(original.claim?.id === expense.externalId && ['approved', 'reimbursed'].includes(original.claim.status) && original.claim.employee_email === revision.travel.travelerEmail && original.claim.revision === expense.externalRevision, 'travel_expense_source');
+            check(frozen?.total_minor === expense.totalMinor && frozen.snapshot?.total_minor === expense.totalMinor && frozen.snapshot.currency === expense.currency && frozen.snapshot.items.every(item => item.fields?.purse_reference === expense.approvalReference), 'travel_expense_source');
+        }
+        check(Array.isArray(expense.items) && expense.items.length > 0 && new Set(expense.items.map(item=>item.id)).size === expense.items.length && expense.items.every(item=>Number.isSafeInteger(item.amountMinor) && item.amountMinor >= 0 && validDate(item.date)) && expense.items.reduce((sum,item)=>sum+item.amountMinor,0) === expense.totalMinor, 'travel_expense_items');
         check(expense.totalMinor > 0 && Number.isSafeInteger(expense.releasedMinor) && expense.releasedMinor >= 0 && (expense.earlierRelease ? expense.releasedMinor === 0 && Number.isSafeInteger(expense.remainingEstimateMinor) && expense.remainingEstimateMinor >= 0 && expense.totalMinor + expense.remainingEstimateMinor === revision.totalMinor : expense.totalMinor + expense.releasedMinor === revision.totalMinor), 'travel_expense_total');
         const identity = expense.sourceOrigin + ':' + expense.externalId;
         check(!external.has(identity), 'travel_expense_duplicate'); external.add(identity);

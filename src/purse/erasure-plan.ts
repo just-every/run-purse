@@ -9,7 +9,8 @@ export type ErasurePlan = { state:State; fields:Data[]; blobs:string[]; affected
 export function planErasure(before:State,subject:ErasureSubject,id:string,revision:number):ErasurePlan {
  requireThat(/^[a-f0-9-]{36}$/.test(id),'Review identifier invalid');
  const alias='erased-'+id,email=alias+'@erased.invalid',state=structuredClone(before),fields:Data[]=[],blobs=new Set<string>();
- const replacements=new Map(subject.values.map(v=>[v.toLowerCase(),v.includes('@')?email:v===subject.operator?alias:erasedText]));
+ const travelerNames=[...before.values()].filter(row=>row.value.travel?.travelerEmail===subject.email).map(row=>row.value.travel.traveler).filter((value):value is string=>typeof value==='string'&&value.length>0);
+ const replacements=new Map([...subject.values,...travelerNames].map(v=>[v.toLowerCase(),v.includes('@')?email:v===subject.operator?alias:erasedText]));
  // A separate opaque pseudonym preserves joins while removing native identity.
  const replace=(value:string,field='')=>{
   const exact=replacements.get(value.toLowerCase());if(exact)return exact;
@@ -28,7 +29,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
  // cannot prove the absence of identity in a PDF, image or provider attachment.
  let changed=true;
  while(changed){changed=false;for(const row of before.values()){
-  if(!['orderSend','orderAcknowledgment','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
+  if(!['orderSend','orderAcknowledgment','travelExpense','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
   const v=row.value;
   if([v.request,v.order,v.record,v.source,v.reading,v.emailIntake,v.apInvoiceEmail,v.attachment,v.rfq].some(ref=>linked.has(ref))&&!linked.has(row.id)){linked.add(row.id);changed=true;}
  }}
@@ -63,6 +64,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   if(['supplierMatchingKey','invoiceEvidenceKey','erasureReceipt'].includes(row.kind))continue;
   const affected=linked.has(row.id),value=visit(row.value,'',affected);
   if(row.kind==='orderSend'&&affected)value.erasure=id;
+  if(row.kind==='travelExpense'&&affected)Object.assign(value,{erasure:id,originalStatus:'withdrawn',originalSourceVerified:false,sourceBasis:'Original withdrawn by personal-data erasure; normalized financial evidence retained. The original source cannot be reverified.'});
   if(row.kind==='attachment'&&affected)Object.assign(value,eraseFile(value));
   if(row.kind==='emailIntakeMailEvent'&&value.status==='pending'&&contains(row.value)){value.status='suppressed';}
   if(row.kind==='rfq')for(let index=0;index<value.suppliers.length;index++)if(contains(row.value.suppliers[index]))value.suppliers[index].contactErased=id;

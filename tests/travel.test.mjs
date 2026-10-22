@@ -50,6 +50,10 @@ test('Published GSA meals defaults use exact fiscal-year city or county scope an
     await f.travel('request', { ...f.input, travel: unknown }, f.requester, 400);
     const estimated = await f.travel('request', { ...f.input, travel: { ...unknown, costs: { ...unknown.costs, mealsIncidentalsMinor: 12345 } } });
     assert.equal(estimated.travel.mealsBasis, 'explicit-estimate'); assert.equal(estimated.travel.costs.mealsIncidentalsMinor, 12345);
+    await f.h.command('business', { ...(await f.h.state()).data.business[0], currencies: ['USD','AUD'] });
+    await f.travel('request', { ...f.input, currency: 'AUD' }, f.requester, 400);
+    const explicitAud = await f.travel('request', { ...f.input, currency: 'AUD', travel: { ...f.input.travel, costs: { ...f.input.travel.costs, mealsIncidentalsMinor: 12345 } } });
+    assert.equal(explicitAud.currency, 'AUD'); assert.equal(explicitAud.travel.mealsBasis, 'explicit-estimate'); assert.equal(explicitAud.travel.costs.mealsIncidentalsMinor, 12345);
 });
 
 test('INTAKE-006 native Austin travel estimate, manager and finance chain, date amendments and exact reservations', async t => {
