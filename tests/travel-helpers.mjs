@@ -76,6 +76,8 @@ export async function assertTravelSettlement(fixture, request, original, sourceU
     const report = await h.send('/api/purse/spend-report?groupBy=department', undefined, finance);
     assert.equal(report.status, 200); assert.equal(report.value.totals.find(row => row.currency === 'USD').actualMinor, 215000);
     assert.equal(report.value.rows.filter(row => row.travelExpense === settled.id).reduce((sum, row) => sum + row.amountMinor, 0), 215000);
+    const history=await h.send('/api/purse/audit?subject='+request.id,undefined,h.owner);assert.equal(history.status,200);assert.ok(history.value.events.some(event=>event.action==='travel-expense-return'&&event.report===settled.id&&event.actualMinor===215000&&event.releasedMinor===55000));assert.ok(history.value.events.some(event=>event.action==='attachment'&&event.record===settled.id&&event.attachment===settled.attachment));
+    const csv=await h.send('/api/purse/audit.csv?subject='+request.id,undefined,h.owner);assert.equal(csv.status,200);assert.ok(csv.value.includes('travel-expense-return'));assert.ok(csv.value.includes(settled.sha256));
     assert.equal(state.order.length, 0); assert.equal(state.invoice.length, 0);
     return settled;
 }
