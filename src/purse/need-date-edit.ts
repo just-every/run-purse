@@ -2,6 +2,7 @@ import { carryApprovalDecisions } from './approval-chain';
 import { currentDecision } from './approval';
 import { policies } from './requests';
 import { linePosition } from './orders';
+import { servicePosition } from './service-orders';
 import { all, allowed, audit, date, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
 /** A date-only revision retains buying authority. Supplier delivery is explicit:
@@ -12,9 +13,11 @@ export function changeNeedDate(s: State, a: Actor, input: Data) {
     const own=previous.requester===a.id||previous.requesterEmail===a.email;
     requireThat(a.owner || own&&allowed(s,a,'request.edit',previous) || allowed(s,a,'request.approve',previous),'Only this requester or a scoped approver may correct the need date',403);
     currentDecision(s,previous);
+    requireThat(!all(s,'orderClosure').some(closure=>closure.active&&get(s,'order',closure.order).request===previous.id),'Reopen closed balances before correcting this purchase date',409);
     const policy=get(s,'policy',previous.policy), kind=previous.purchaseType??previous.lines[0].category.toLowerCase(), rule=policy.editRules?.[kind]??policy.editRules?.['*'];
     requireThat(!(rule?.material??[]).includes('needDate'),'This policy classifies need date as material; amend and renew approval',409);
     const needDate=date(input.needDate), reason=text(input.reason,'Need date correction reason');
+    requireThat(!policy.budgetPeriod||needDate>=policy.budgetPeriod.from&&needDate<=policy.budgetPeriod.through,'Need date moves the line outside its approved budget period; amend and renew approval',409);
     requireThat(!input.line||previous.lines.some((line:Data)=>line.id===input.line),'Line is outside this request');
     const next:Data={...structuredClone(previous),revision:previous.revision+1};
     delete next.approverEdit;delete next.buyerConversion;delete next.needDateEdit;
@@ -34,7 +37,14 @@ export function changeNeedDate(s: State, a: Actor, input: Data) {
     if(prior) {
         requireThat(!prior.imported&&!prior.adoption&&!prior.cancellation&&!prior.poDetails?.blanket,'This order requires its native amendment path',409);
         const issued=prior.status==='issued';
-        if(issued){next.amends=prior.id;next.lines=next.lines.map((line:Data)=>{const old=prior.lines.find((item:Data)=>item.id===line.id),position=linePosition(s,prior.id,old);return {...line,carriedAccepted:position.accepted,carriedCancelled:position.cancelled};});}
+        if(issued){
+            next.amends=prior.id;
+            next.lines=next.lines.map((line:Data)=>{
+                const old=prior.lines.find((item:Data)=>item.id===line.id),position=linePosition(s,prior.id,old);
+                const service=old.service?servicePosition(s,prior,old):undefined;
+                return {...line,carriedAccepted:position.accepted,carriedCancelled:position.cancelled,...(service?{carriedAcceptedMinor:service.acceptedMinor,carriedCancelledMinor:service.cancelledMinor,carriedMilestones:[...(old.carriedMilestones??[]),...all(s,'receipt').filter(receipt=>receipt.order===prior.id&&receipt.line===old.id&&receipt.milestone).map(receipt=>receipt.milestone)]}:{})};
+            });
+        }
         const id=uid(), order:Data={...structuredClone(prior),id,revision:next.revision,lines:next.lines.map((line:Data)=>({...line,sourceLine:line.id})),needDate:next.needDate,generatedAt:new Date().toISOString(),needDateChange:{...next.needDateEdit,priorOrder:prior.id,supplierDelivery:issued?'not-sent':'not-issued',...(issued?{blockedBy:'PO-004 supplier change-order sending is not implemented'}:{})}};
         delete order.conversionVariance;delete order.amendedBy;
         const approval=currentDecision(s,next);
@@ -43,6 +53,10 @@ export function changeNeedDate(s: State, a: Actor, input: Data) {
         if(issued){order.issuedAt=new Date().toISOString();order.issuedBy=a.id;order.issueReason=reason;next.needDateEdit.supplierDelivery='not-sent';next.needDateEdit.blockedBy=order.needDateChange.blockedBy;}
         put(s,'order',prior.id,{...prior,status:issued?'amended':'superseded',...(issued?{amendedBy:id}:{})});
         put(s,'order',id,order);
+        for(const rule of all(s,'receiptRule').filter(rule=>rule.order===prior.id)) {
+            const ruleId=uid();put(s,'receiptRule',ruleId,{...rule,id:ruleId,order:id,carriedFrom:rule.id});
+            audit(s,a,'need-date-receiver-carry',id,{rule:ruleId,sourceRule:rule.id,receiver:rule.receiver});
+        }
         next.needDateEdit.order=id;
         audit(s,a,'need-date-document',id,{request:next.id,revision:next.revision,priorOrder:prior.id,...next.needDateEdit});
     }

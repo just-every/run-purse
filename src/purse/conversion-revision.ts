@@ -1,4 +1,4 @@
-import { carryApprovalDecisions, startChain } from './approval-chain';
+import { carryApprovalDecisions, routeFor, startChain } from './approval-chain';
 import { currentDecision } from './approval';
 import { budgetOwnerSteps } from './budget-position';
 import { approvalAmount, ledger, policies, reservationAvailable } from './requests';
@@ -17,7 +17,8 @@ export function reviseForConversion(s: State, a: Actor, previous: Data, edit: Da
     next.policy = candidate.id;
     const balance = all(s,'commitment').filter(event => event.request === previous.id && event.policy === next.policy && event.currency === next.currency).reduce((sum,event)=>sum+event.amountMinor,0);
     const inBudget = reservationAvailable(s,next,Math.max(0,approvalAmount(next,s)-balance));
-    const carry = edit.variance.withinLimit && candidate.id === previous.policy && inBudget;
+    const sameRoute=!previous.approvalRoute||JSON.stringify(routeFor(candidate,next))===JSON.stringify(previous.approvalRoute);
+    const carry = edit.variance.withinLimit && candidate.id === previous.policy && sameRoute && inBudget;
     next.buyerConversion = { ...structuredClone(edit.variance), carried: [], renewed: [], routing: carry ? 'carried' : !inBudget ? 'budget-owner' : 'renewal' };
     if (carry) {
         next.buyerConversion.carried = carryApprovalDecisions(s,a,previous,next);

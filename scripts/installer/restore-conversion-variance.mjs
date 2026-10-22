@@ -73,7 +73,7 @@ export function validateConversionRevisions(all,get) {
         if(date&&date.fromRevision===revision.revision-1){
             const source=get('revision',revision.request+':'+date.fromRevision);
             check(accessText(date.actor)&&accessText(date.email)&&accessText(date.reason)&&Number.isFinite(Date.parse(date.at))&&Array.isArray(date.carried)&&date.carried.length>0&&Array.isArray(date.differences)&&date.differences.length>0,'date_correction');
-            const strip=record=>{const value=purchasing(record);delete value.needDate;value.lines=value.lines.map(({needDate,carriedAccepted,carriedCancelled,...line})=>line);return value;};
+            const strip=record=>{const value=purchasing(record);delete value.needDate;value.lines=value.lines.map(({needDate,carriedAccepted,carriedCancelled,carriedAcceptedMinor,carriedCancelledMinor,carriedMilestones,...line})=>line);return value;};
             check(same(strip(source),strip(revision)),'date_nonmaterial');
             for(const difference of date.differences){const before=source.lines.find(line=>line.id===difference.line),after=revision.lines.find(line=>line.id===difference.line);check(before&&after&&difference.field==='needDate'&&difference.before===(before.needDate??source.needDate)&&difference.after===after.needDate,'date_difference');}
             check(all('audit').some(event=>event.action==='need-date-edit'&&event.record===revision.request&&event.revision===revision.revision&&event.actor===date.actor&&same(event.differences,date.differences)),'date_correction_audit');
