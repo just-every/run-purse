@@ -6,7 +6,7 @@ import { load } from './store';
 import { get, requireThat, text, uid, type Data } from './types';
 
 const escape = (value: unknown) => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]!));
-const headers = { 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex, nofollow', 'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; img-src data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'" };
+const headers = { 'cache-control': 'no-store', 'referrer-policy': 'strict-origin', 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex, nofollow', 'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; img-src data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'" };
 function page(body: string, status = 200) {
     return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Supplier change order</title><style>body{font:16px Arial;margin:24px auto;padding:0 20px;max-width:900px;overflow-wrap:anywhere}p{white-space:pre-wrap}img{max-width:160px;max-height:90px}label{display:block;margin:16px 0}input:not([type=checkbox]){box-sizing:border-box;max-width:100%;font:inherit;padding:8px}button{font:inherit;padding:12px}section{margin:24px 0}</style></head><body><main>${body}</main></body></html>`, { status, headers: { ...headers, 'content-type': 'text/html; charset=utf-8' } });
 }
