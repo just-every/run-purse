@@ -42,7 +42,7 @@ export function ConversionVariance({ request, limit, suppliers = [], mutate }: {
                     <label className="field">Conversion unit of measure for line {index+1}<input name={'unit:'+line.id} placeholder={line.unit} maxLength={200}/></label>
                     <label className="field">Conversion SKU for line {index+1}<input name={'part:'+line.id} placeholder={line.partNumber} maxLength={200}/></label>
                 </fieldset>)}
-                <label className="field">Conversion supplier<select name="supplier" defaultValue={request.supplier}><option value={request.supplier}>{request.supplierSnapshot?.name}</option>{suppliers.filter(supplier=>supplier.id!==request.supplier).map(supplier=><option key={supplier.id} value={supplier.id}>{supplier.name} · {supplier.status}</option>)}</select></label>
+                <label className="field">Conversion supplier<select name="supplier" aria-label="Conversion supplier" defaultValue={request.supplier}><option value={request.supplier}>{request.supplierSnapshot?.name}</option>{suppliers.filter(supplier=>supplier.id!==request.supplier).map(supplier=><option key={supplier.id} value={supplier.id}>{supplier.name} · {supplier.status}</option>)}</select></label>
                 <label className="field">Conversion freight<input name="freightMinor" inputMode="decimal" placeholder={amountText(request.freightMinor)}/></label>
                 <label className="field">Conversion supplied tax<input name="taxMinor" inputMode="decimal" placeholder={amountText(request.taxMinor)}/></label>
                 <label className="field">Conversion other charge<input name="otherChargesMinor" inputMode="decimal" placeholder={amountText(request.otherChargesMinor??0)}/></label>
