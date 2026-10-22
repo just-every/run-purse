@@ -71,6 +71,9 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.recurringSeries = all(s, 'recurringSeries').filter(series => orderIds.has(series.order)).map(series => ({...series, mayAuthorize: allowed(s,a,'request.approve',get(s,'request',series.request)) && get(s,'request',series.request).requester !== a.id, mayDecide: a.owner && series.owner === a.id}));
     data.recurringEvent = all(s, 'recurringEvent').filter(event => data.recurringSeries.some((series: Data) => series.id === event.series));
     data.poProfile = a.owner ? all(s, 'poProfile') : [];
+    data.deposit = all(s, 'deposit').filter(deposit => orderIds.has(deposit.order) && allowed(s, a, 'invoice.read', get(s, 'order', deposit.order)));
+    data.budget = a.owner ? all(s, 'budget') : [];
+    data.orderAdoption = a.owner ? all(s, 'orderAdoption').filter(adoption => orderIds.has(adoption.order)) : [];
     data.payable = all(s, 'payable').filter(payable => invoiceIds.has(payable.invoice) && ['cash.read', 'payable.terms', 'payable.approve']
         .some(permission => allowed(s, a, permission, get(s, 'invoice', payable.invoice))));
     data.cashExpectation = all(s, 'cashExpectation').filter(expectation => orderIds.has(expectation.order)
@@ -121,7 +124,7 @@ export function download(s: State, a: Actor, kind: string, id: string) {
             'content-type': 'text/plain; charset=utf-8', 'content-disposition': 'attachment; filename="preparation.txt"' } });
     }
     requireThat(kind === 'order', 'Unsupported document', 404);
-    const supplier = record.imported ? get(s, 'supplier', record.supplier) : record.supplierSnapshot;
+    const supplier = record.supplierSnapshot ?? (record.imported ? get(s, 'supplier', record.supplier) : undefined);
     requireThat(supplier?.id === record.supplier, 'Approved supplier identity is missing; renew purchasing authority', 409);
     return new Response(poHtml(poContent(s, record)), { headers: { 'content-type': 'text/html; charset=utf-8',
         'content-disposition': `attachment; filename="${record.number.replace(/[^a-zA-Z0-9._-]/g, '_')}.html"`,

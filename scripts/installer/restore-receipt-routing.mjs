@@ -3,7 +3,7 @@ export function validateReceiptRouting(all,get,check){
  const email=v=>typeof v==='string'&&/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v),scopes=new Set();
  for(const r of all('receiptRule')){
   const scope=JSON.stringify([r.order,r.location,r.purchaseType]);check(!scopes.has(scope),'receipt_rule_duplicate');scopes.add(scope);
-  if(r.order)check(!get('order',r.order).imported,'receipt_rule_order');
+  if(r.order)check(!get('order',r.order).imported||get('order',r.order).adoption,'receipt_rule_order');
   check(typeof r.location==='string'&&r.location.length&&typeof r.purchaseType==='string'&&r.purchaseType.length,'receipt_rule_scope');
   check(Number.isSafeInteger(r.version)&&r.version>0&&Array.isArray(r.history)&&r.history.length===r.version,'receipt_rule_history');
   for(const [index,e] of r.history.entries())check(e.version===index+1&&email(e.receiver)&&typeof e.active==='boolean'&&typeof e.reason==='string'&&e.reason.trim()&&typeof e.actor==='string'&&Number.isFinite(Date.parse(e.at)),'receipt_rule_entry');

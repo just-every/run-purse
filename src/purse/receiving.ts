@@ -1,3 +1,4 @@
+import { operationalOrder, orderAdoption } from './adoption-position';
 import { mayReceive, receiptVersion } from './receipt-routing';
 import { audit, requirePermission, get, put, requireThat, text, quantity, uid, type Actor, type Data, type State } from './types';
 import { linePosition, commitment, remainingValue } from './orders';
@@ -7,7 +8,7 @@ export function receipt(s: State, a: Actor, b: Data) {
     const o = get(s, 'order', b.order);
     requireThat(mayReceive(s,a,o), 'Receipt outside your receiver assignment',403);
     if(b.receiptVersion !== undefined) requireThat(b.receiptVersion === receiptVersion(s,o), 'Receipt position changed; reload before confirming',409);
-    requireThat(o.status === 'issued' && !o.imported, 'Only a natively issued PO can be received', 409);
+    requireThat(['issued', 'adopted'].includes(o.status) && operationalOrder(s, o), 'Only an issued or explicitly adopted PO can be received', 409);
     const l = o.lines.find((l: Data) => l.id === b.line);
     requireThat(l, 'PO line not found', 404);
     requireThat(!l.service, 'Record structured service value through service receiving', 409);
@@ -15,6 +16,7 @@ export function receipt(s: State, a: Actor, b: Data) {
     requireThat(['receive', 'return', 'reject', 'cancel'].includes(event), 'Choose a receipt event');
     requireThat(event === 'return' ? q <= position.accepted : q <= position.outstanding, 'Quantity exceeds received or outstanding quantity', 409);
     requireThat(event !== 'receive' || o.replenishmentStatus !== 'held', 'Replenishment is held for review; amend the request and obtain new approval before receiving replacements', 409);
+    if (event === 'cancel' && orderAdoption(s, o)) requireThat(false, 'An adopted PO cancellation needs a native approved amendment; record physical receiving separately', 409);
     if (event === 'cancel') requirePermission(s, a, 'procurement.manage', o);
     const id = uid();
     const record = { order: o.id, line: l.id, event, q, quantity: b.quantity,

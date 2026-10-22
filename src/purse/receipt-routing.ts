@@ -1,3 +1,4 @@
+import { operationalOrder } from './adoption-position';
 import { accessGrants, allowed, all, audit, get, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
 import { discrepancies, linePosition } from './orders';
 
@@ -38,11 +39,11 @@ export function receiptRouting(s: State, a: Actor, op: string, b: Data): Data | 
     requireThat(b.version === (previous?.version ?? 0), 'Receiver assignment changed; reload', 409);
     const order = b.order ? get(s, 'order', b.order) : undefined;
     if (op === 'reassign-receipt') {
-        requireThat(order?.status === 'issued' && mayReceive(s,a,order), 'Only the current receiver may reassign this PO', 403);
+        requireThat(['issued','adopted'].includes(order?.status) && mayReceive(s,a,order), 'Only the current receiver may reassign this PO', 403);
         requirePermission(s,a,'receive',order);
     } else if (order) requirePermission(s,a,'procurement.manage',order);
     else requireThat(unrestrictedProcurement(s,a), 'Unrestricted procurement permission required for receiver rules',403);
-    if (order) requireThat(!order.imported && ['prepared','issued','closed'].includes(order.status), 'Choose a current native PO', 409);
+    if (order) requireThat((!order.imported || operationalOrder(s, order)) && ['prepared','issued','adopted','closed'].includes(order.status), 'Choose a current native PO', 409);
     const location = order ? '*' : text(b.location || '*', 'Location'), purchaseType = order ? '*' : text(b.purchaseType || '*', 'Purchase category');
     requireThat(order || location !== '*' || purchaseType !== '*', 'Choose a location or purchase category');
     requireThat(location === '*' || get(s,'business','main').locations.includes(location), 'Unknown location');
@@ -66,13 +67,14 @@ export function receiptPrompts(s: State, now = Date.now()): Data[] {
     });
 }
 export function receiptMatch(s: State, invoice: Data) {
+    if (invoice.imported && !invoice.adoptedVia) return 'Imported historical evidence; PO not adopted';
     const rows = discrepancies(s).filter(d=>d.invoiceId===invoice.id);
     return rows.some(d=>d.receiptShortfall) ? 'Held for receipt' : rows.some(d=>d.priceMismatch||d.quantityMismatch||d.closedBalance||d.exception) ? 'Matching exception' : 'Ready for matching';
 }
 
 /** Operational receiving state only; invoice identities and evidence stay private. */
 export function receiptMatchingStatus(s: State, order: Data) {
-    const matches = all(s, 'invoice').filter(invoice => !invoice.imported && invoice.order === order.id).map(invoice => receiptMatch(s, invoice));
+    const matches = all(s, 'invoice').filter(invoice => (!invoice.imported || invoice.adoptedVia) && invoice.order === order.id).map(invoice => receiptMatch(s, invoice));
     if (!matches.length) return;
     return matches.includes('Held for receipt') ? 'Held for receipt' : matches.includes('Matching exception') ? 'Matching exception' : 'Ready for matching';
 }

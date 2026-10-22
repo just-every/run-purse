@@ -3,11 +3,11 @@ import { validateInvoiceEvidence } from './restore-invoice-evidence.mjs';
 import { createHash } from 'node:crypto';
 export function validateInvoiceRisk(all,get,check) {
  validateInvoiceEvidence(all,check);
- const codes=new Set(['near-duplicate','duplicate-document','remit-baseline-missing','remit-mismatch','remit-details-changed','sender-domain','po-balance','blanket-validity','release-balance','release-allocation']);
+ const codes=new Set(['source-date-missing','near-duplicate','duplicate-document','remit-baseline-missing','remit-mismatch','remit-details-changed','sender-domain','po-balance','blanket-validity','release-balance','release-allocation']);
  for(const invoice of all('invoice')){
   if(invoice.flags===undefined)continue;
   check(Array.isArray(invoice.flags)&&Array.isArray(invoice.riskReviews)&&Number.isSafeInteger(invoice.riskVersion)&&invoice.riskVersion>=1+invoice.riskReviews.length,'invoice_risk');
-  check(/^\d{4}-\d{2}-\d{2}$/.test(invoice.invoiceDate)&&new Date(invoice.invoiceDate).toISOString().slice(0,10)===invoice.invoiceDate,'invoice_source_date');
+  check(invoice.imported&&invoice.invoiceDate===null&&invoice.invoiceDateSource==='not-recorded'||/^\d{4}-\d{2}-\d{2}$/.test(invoice.invoiceDate)&&new Date(invoice.invoiceDate).toISOString().slice(0,10)===invoice.invoiceDate,'invoice_source_date');
   check(invoice.evidenceHash===null||/^[a-f0-9]{64}$/.test(invoice.evidenceHash),'invoice_evidence_digest');
   check(invoice.remit?.verified===false&&Object.keys(invoice.remit).every(k=>['supplied','baseline','comparison','verified'].includes(k)),'invoice_remit_safe');
   check(invoice.sender?.authentication==='unverified','invoice_sender');

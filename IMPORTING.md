@@ -68,3 +68,69 @@ remain under the owner's custody. Post-erasure archives retain anonymized
 financial chronology and the sealed field journal; they reject restored erased
 values or source objects. A protected include must match the same erasure
 checkpoint, preventing older encrypted metadata from restoring identity.
+
+## Reviewed open-PO adoption (IMPORT-003 native door)
+
+The documented fixture CSV also accepts `invoice` and `deposit` rows. This is a
+synthetic-format qualification, not a claim of a real incumbent export adapter.
+Source IDs remain exact strings under the existing source namespace. A `budget`
+row retains its `sourceId`, `name`, `currency`, `amount` and optional `location`,
+`costCentre` and `project`. It stays inert until the adopting owner reviews its
+exact source mapping to a current native policy budget. The first adoption
+transfers the source budget amount once, preserving native approver/limits;
+repeated adoptions reuse the same mapping and cannot duplicate budget capacity.
+
+- An invoice references `orderId`, uses `number` for its original supplier invoice
+  reference, `currency`, `quantity`, `unitPrice` and optional `amount` (currency
+  text, default quantity × price). `date` is the actual source invoice date;
+  blank stays not recorded. Optional `email` and postal `remitTo` retain supplied
+  provenance without claiming sender authentication or bank verification.
+  `approvalEvidence` retains historical approval evidence. Optional `paidDate`
+  requires `paymentEvidence`; this is historical payment evidence, never a payment
+  made by Purse. `documentName`, `documentMediaType` and `documentBase64` retain
+  the exact original, within the existing 1 MB CSV and 1 MB document limits.
+- A deposit references `orderId`, `number`, `currency`, `amount`, `appliedAmount`
+  (zero when absent), and required `paymentEvidence`. These are imported prepaid
+  balances. Purse neither posts nor pays them. Applied value cannot exceed the
+  deposit and deposits together cannot exceed the PO face.
+- Request/order rows may retain source `location`, `costCentre`, `budget` and
+  `approvalEvidence`. An owner explicitly maps configured coding and an existing
+  budget during adoption. Imported source budgets must map exactly; this native
+  CSV source door does not implement BUDGET-002 ownership, alerts or provider pulls.
+
+In Orders, open an imported PO, screen/review its supplier and choose **Adopt this
+imported open PO**. Select its budget, configured location/department and a current
+scoped receiver. Review ordered, received, billed, deposit and remaining commitment
+figures, then confirm with a reason. A changed source or mapping needs another
+review. Adoption retains the original number and source request, freezes the
+supplier snapshot and creates an operational request with no native approval.
+It sends no supplier mail and never records a native issuance timestamp.
+
+For ten ordered, four received and two billed, adoption commits six units of
+remaining receiving value; receiving three more leaves three. Bills still consume
+the same purchase across subsequent approved amendments. An imported bill requires
+explicit source-bound confirmation through Invoice document review before any new
+cash-planning terms or approval. **Review retained historical original** stages
+its retained exact bytes. Missing originals require the actual original; dates
+and verification are never invented from source status. Source approvals remain
+historical evidence. Risk dispositions cannot bypass quantity/receipt matching.
+
+Imported prepaid balances show separately. An authorized invoice capture may
+explicitly apply a deposit credit up to the current unapplied balance and invoice
+gross amount. Allocations retain gross three-way evidence; cash planning uses the
+net bill. The deposit appears once in source spend, and its credit reduces the
+later bill once. Native deposit creation, provider prepayment posting and automatic
+matching remain PO-011/MATCH-001 work. Supplied paid-history bills are excluded from
+current unpaid bills only after current source confirmation and planning review.
+
+Later amendments use the operational request and ordinary native submit/approval/
+conversion/issuance. Direct unapproved cancellation is refused. **Propose cancellation for native
+approval** creates a normal amendment draft; submit, independent approval,
+conversion and issuance settle its cancellation quantities without sending mail.
+**Replace the unreceived remainder** is the explicit supplier/currency change:
+only unreceived supply moves to a fresh native purchase after approval, while old
+received liabilities, bills and prepaid credits stay with the original supplier
+and currency. Changed source balances require a fresh disposition proposal. Chasing stays disabled on adopted history.
+Original import undo retains adopted targets and their downstream source links;
+complete archive restore preserves adoption, opening balances, originals and
+reviews without restoring historical authority.

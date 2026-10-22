@@ -1,3 +1,5 @@
+import { linePosition } from './orders';
+import { adoptionDeposits, currentOperationalOrder } from './adoption-position';
 import { releaseInvoiceRisk } from './blanket-releases';
 import { createHash } from 'node:crypto';
 import { postalRemit } from './invoice-reading-values';
@@ -52,17 +54,19 @@ export function documentMetadata(input: unknown): Data {
 
 /** Detection only: reads state, returns safe evidence, and grants no authority. */
 export function invoiceRisk(s: State, order: Data, candidate: Data, input: Data): Data {
-    const invoiceDate = date(input.invoiceDate === undefined ? new Date().toISOString().slice(0, 10) : input.invoiceDate, 'Invoice date');
+    const missingHistoricalDate = candidate.imported && input.historicalDateMissing === true;
+    const invoiceDate = missingHistoricalDate ? null : date(input.invoiceDate === undefined ? new Date().toISOString().slice(0, 10) : input.invoiceDate, 'Invoice date');
     const flags: Data[] = releaseInvoiceRisk(s, order, candidate);
+    if (missingHistoricalDate) flags.push({ code: 'source-date-missing', reason: 'Imported invoice date is not recorded; confirm the private original before new cash-planning approval' });
     const validity=order.poDetails?.blanket;
-    if(validity && (invoiceDate<validity.validFrom || invoiceDate>validity.validThrough)) flags.push({code:'blanket-validity',reason:'Invoice date falls outside the approved blanket PO inclusive validity period'});
-    const result: Data = { invoiceDate, invoiceDateSource: input.invoiceDate === undefined ? 'default-current-utc' : 'supplied', flags };
+    if(validity && invoiceDate && (invoiceDate<validity.validFrom || invoiceDate>validity.validThrough)) flags.push({code:'blanket-validity',reason:'Invoice date falls outside the approved blanket PO inclusive validity period'});
+    const result: Data = { invoiceDate, invoiceDateSource: missingHistoricalDate ? 'not-recorded' : input.invoiceDate === undefined ? 'default-current-utc' : 'supplied', flags };
     const invoices = all(s, 'invoice').filter(i => i.id !== candidate.id);
     const supplierId = canonicalSupplier(s, candidate.supplier);
     for (const previous of invoices) {
         const previousDate = previous.invoiceDate ?? s.get('payable:' + previous.id)?.value.invoiceDate ?? previous.at?.slice(0, 10);
         if (previous.reference !== candidate.reference && previous.currency === candidate.currency &&
-            previous.totalMinor === candidate.totalMinor && previousDate === invoiceDate &&
+            (previous.grossMinor ?? previous.totalMinor) === (candidate.grossMinor ?? candidate.totalMinor) && previousDate === invoiceDate &&
             canonicalSupplier(s, get(s, 'order', previous.order).supplier) === supplierId) {
             flags.push({ code: 'near-duplicate', reason: 'Same supplier, currency, amount and invoice date with a different reference', relatedInvoice: previous.id });
         }
@@ -121,11 +125,12 @@ export function invoiceRisk(s: State, order: Data, candidate: Data, input: Data)
     // continues to consume the same request's balance. Currencies stay separate.
     const orders = all(s, 'order').filter(o => o.request === order.request && o.currency === candidate.currency);
     const orderIds = new Set(orders.map(o => o.id));
-    const currentIssued = orders.filter(o => o.issuedAt && !o.amendedBy && o.status !== 'amended');
-    const faceMinor = currentIssued.length ? Math.max(...currentIssued.map(o => o.totalMinor)) : null;
-    const billedMinor = invoices.filter(i => orderIds.has(i.order) && i.currency === candidate.currency).reduce((n, i) => n + i.totalMinor, 0);
+    const currentIssued = orders.filter(o => currentOperationalOrder(s, o));
+    const faceMinor = currentIssued.length ? Math.max(...currentIssued.map(o => { if (!o.cancelledByApproval) return o.totalMinor; const base = o.lines.reduce((sum: number,line: Data)=>sum+line.totalMinor,0); const active = o.lines.reduce((sum: number,line: Data)=>sum+Number((BigInt(Math.max(0,line.q-linePosition(s,o.id,line).cancelled))*BigInt(line.unitMinor)+500n)/1000n),0); return base ? Number((BigInt(o.totalMinor)*BigInt(active)+BigInt(base)/2n)/BigInt(base)) : 0; })) : null;
+    const deposits = adoptionDeposits(s, order);
+    const billedMinor = deposits.amountMinor + invoices.filter(i => orderIds.has(i.order) && i.currency === candidate.currency).reduce((n, i) => n + i.totalMinor, 0);
     result.balance = { basis: 'current-issued-po-face-across-request-amendments', currency: candidate.currency, faceMinor, billedMinor, candidateMinor: candidate.totalMinor,
-        remainingMinor: faceMinor === null ? null : Math.max(0, faceMinor - billedMinor), depositAccounting: 'not-implemented' };
+        remainingMinor: faceMinor === null ? null : Math.max(0, faceMinor - billedMinor), depositAccounting: deposits.sources.length ? 'imported-prepaid-balance-and-once-only-credit' : 'not-implemented', unappliedDepositMinor: deposits.unappliedMinor };
     if (faceMinor !== null && billedMinor + candidate.totalMinor > faceMinor) {
         flags.push({ code: 'po-balance', reason: 'Invoice plus prior invoice evidence exceeds the current issued PO face total across request amendments' });
     }

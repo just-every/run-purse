@@ -14,7 +14,7 @@ export function validateOrderLinks({get,all}) {
  };
  for (const o of orders) {
   const request = get('request',o.request);
-  if (o.imported) { check(request.imported && !Object.hasOwn(o,'conversionVariance'),'import_order_link'); continue; }
+  if (o.imported) { check((o.adoption ? request.adoption === o.adoption : request.imported) && !Object.hasOwn(o,'conversionVariance'),'import_order_link'); continue; }
   const revision = get('revision',o.request + ':' + o.revision);
   const clean = {...o,lines:o.lines.map(({sourceLine,...l}) => l)};
   check(o.lines.every(l => l.sourceLine === l.id),'order_revision');
@@ -36,17 +36,18 @@ export function validateOrderLinks({get,all}) {
  for (const r of receipts) {
   const o=get('order',r.order); check(o.lines.some(l => l.id === r.line),'receipt_line'); check(quantity(r.quantity) === r.q,'receipt_quantity');
   if (r.imported) check(o.imported && r.event === 'historical','import_receipt');
-  else check(o.issuedAt && ['receive','return','reject','cancel'].includes(r.event),'receipt_issue');
+  else check((o.issuedAt || o.adoption) && ['receive','return','reject','cancel'].includes(r.event),'receipt_issue');
   if (r.replenishmentStatus) check(r.replenishmentStatus === 'held' && r.event !== 'receive' && money(r.replenishmentMinor) && r.replenishmentMinor > 0 && typeof r.replenishmentReason === 'string','return_exception');
  }
  const identities = new Set();
  for (const i of all('invoice')) {
-  const o=get('order',i.order); check(o.issuedAt && i.currency === o.currency,'invoice_order');
+  const o=get('order',i.order); check((o.issuedAt || o.adoption || o.imported && i.imported) && i.currency === o.currency,'invoice_order');
   const identity = JSON.stringify([o.supplier,i.reference]);
   check(typeof i.reference === 'string' && i.reference.trim() === i.reference && i.reference.length && i.supplier === o.supplier && !identities.has(identity),'invoice_identity');
   identities.add(identity);
   check(Array.isArray(i.allocations) && i.allocations.length > 0 && new Set(i.allocations.map(a=>a.line)).size===i.allocations.length,'invoice_allocations');
   for (const a of i.allocations) { const l=o.lines.find(l=>l.id===a.line); check(l && quantity(a.quantity)===a.q && money(a.amountMinor) && a.orderedMinor===amount(a.q,l.unitMinor),'invoice_line'); }
-  check(i.totalMinor === i.allocations.reduce((n,a)=>n+a.amountMinor,0),'invoice_total');
+  const gross = i.allocations.reduce((n,a)=>n+a.amountMinor,0), credit = i.depositAppliedMinor ?? 0;
+  check(money(credit) && credit <= gross && i.totalMinor === gross - credit && (!credit || i.grossMinor === gross),'invoice_total');
  }
 }

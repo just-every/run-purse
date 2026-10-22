@@ -40,7 +40,7 @@ export function spendReport(data: Data, filters: Data = {}) {
         if (b.amount <= 0) continue;
         const request = requestById.get(b.request);
         if (!request || request.imported) continue;
-        const order = data.order.filter((o: Data) => o.request === b.request && o.issuedAt && !o.imported && ['issued', 'amendment-pending', 'closed'].includes(o.status)).sort((a: Data, b: Data) => b.revision - a.revision)[0];
+        const order = data.order.filter((o: Data) => o.request === b.request && (o.issuedAt || o.adoption) && ['issued', 'adopted', 'amendment-pending', 'closed'].includes(o.status)).sort((a: Data, b: Data) => b.revision - a.revision)[0];
         // Receipt/cancellation/closure events have already released ledger authority.
         const committed = order && order.currency === b.currency && order.policy === b.policy ? Math.min(b.amount, outstanding(order)) : 0;
         for (const [kind, amount, terms] of [['committed', committed, order], ['reserved', b.amount - committed, request]] as const) {
@@ -57,14 +57,21 @@ export function spendReport(data: Data, filters: Data = {}) {
     }
     for (const invoice of data.invoice) {
         const order = orderById.get(invoice.order), request = order && requestById.get(order.request);
-        if (!order || !request || order.imported) continue;
+        if (!order || !request || order.imported && !order.adoption) continue;
         const revision = data.revision.find((r: Data) => r.request === request.id && r.revision === order.revision) || request;
         for (const allocation of invoice.allocations) {
             const line = order.lines.find((l: Data) => l.id === allocation.line);
-            if (line) rows.push({ ...source(revision, line), kind: 'actual', amountMinor: allocation.amountMinor, date: invoice.at.slice(0, 10),
+            if (line) rows.push({ ...source(revision, line), kind: 'actual', amountMinor: allocation.amountMinor - (invoice.depositAppliedMinor ? distribute(invoice.depositAppliedMinor, invoice.allocations.map((a: Data) => ({ totalMinor: a.amountMinor })))[invoice.allocations.indexOf(allocation)] : 0), date: (invoice.imported ? invoice.invoiceDate || invoice.at?.slice(0, 10) || order.adoptedAt?.slice(0, 10) : invoice.at.slice(0, 10)), sourceBasis: invoice.imported ? 'Imported invoice evidence; source approval is historical' : 'Recorded invoice evidence',
                 currency: invoice.currency, policy: order.policy, order: order.id, number: order.number, invoice: invoice.id, reference: invoice.reference,
                 exception: data.discrepancies.some((d: Data) => d.invoiceId === invoice.id && (d.priceMismatch || d.quantityMismatch || d.receiptShortfall || d.closedBalance)) });
         }
+    }
+    for (const deposit of data.deposit ?? []) {
+        const order = orderById.get(deposit.order), request = order && requestById.get(order.request);
+        if (!order?.adoption || !request) continue;
+        const values = distribute(deposit.amountMinor, order.lines);
+        order.lines.forEach((line: Data, index: number) => { if (values[index]) rows.push({ ...source(request, line), kind: 'actual', amountMinor: values[index], date: order.adoptedAt.slice(0, 10),
+            currency: order.currency, policy: order.policy, order: order.id, number: order.number, deposit: deposit.id, reference: deposit.reference, sourceBasis: 'Imported prepaid deposit evidence; not a payment executed by Purse' }); });
     }
     const selected = rows.filter(r => (!from || r.date >= from) && (!through || r.date <= through) && reportDimensions.every(d => !filters[d] || r[d] === filters[d]));
     const groups = new Map<string, Data>();

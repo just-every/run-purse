@@ -426,3 +426,59 @@ blocked until the receipt is complete. No financial retention expiry runs
 automatically. TIN/bank values remain encrypted with existing owner-only reveal;
 private reason/evidence metadata is scrubbed. Invoice evidence hashes, state and
 attestations remain, with “source values since erased” and exact journal proof.
+
+## Reviewed imported PO custody (IMPORT-003 native door)
+
+`adopt-order-preview` is current-native-owner-only and takes
+`{id,policy,budget?,location,costCentre,receiver}`. It returns a no-write review fingerprint,
+original number, exact opening ordered/received/billed positions, remaining
+commitment and unapplied deposit. `adopt-order` adds
+`{fingerprint,reviewed:true,reason}`. Source/mapping/receiver/budget changes refuse
+stale review. Adoption creates a distinct native operational request/revision with
+status `adopted`; no decision, native PO issuance or supplier message is created.
+The PO stays `imported:true`, keeps its source number and has `issuedAt:null`.
+
+Receiving and invoice evidence accept explicitly adopted POs. Existing scope,
+receiver position and risk checks still apply. `invoice-source` may take
+`{order,invoice}` for an adopted historical bill with a retained private original;
+it stages those same bytes through the ordinary source-bound invoice reading.
+Confirmation must reconcile the exact imported identity, amount, quantities and
+available original digest. Historical approval cannot set native `approvedBy`.
+New cash-planning approval requires this current confirmation and resolved current
+risk/matching checks. Missing historical document dates stay explicitly unknown
+until source confirmation supplies the actual date.
+
+`invoice` and `invoice-reading-confirm` accept optional `depositAppliedAmount`
+(currency text) for an adopted imported prepaid balance. Stored allocations and
+`grossMinor` retain gross evidence, `depositAppliedMinor` records its once-only
+credit, and `totalMinor` is net due. Credit cannot exceed current unapplied deposit
+or gross invoice value; exact repeated evidence remains idempotent. The existing
+cash view and spend report include adopted remaining commitments, bill balances
+and source deposit credits once, with original-number sources and separate
+currencies. This neither creates a native deposit nor posts or pays anything.
+
+
+When the source PO names a budget, `budget` must identify that exact imported
+`budget` row. Owner review transfers its amount to the selected policy budget
+once, preserving the policy's native approver and limits. Subsequent adoptions
+reuse that source mapping; a source cannot fund two policy budgets. Insufficient
+imported capacity refuses the whole adoption before writes.
+
+
+`propose-adopted-cancellation` takes `{id,revision,reason}` from the current
+native owner. It creates an exact native amendment draft; ordinary submit,
+independent non-self decision, conversion and issuance remain mandatory. Issuance
+records approved cancellation quantities and releases the old remainder once,
+retaining received liabilities, bills and deposits. It sends no supplier message.
+
+`replace-adopted-remainder` takes the current adopted order `{id,revision}`,
+`reviewedDisposition:true`, `reason` and ordinary complete new-request fields.
+Each `lines[]` supplies `sourceLine` in original outstanding-line order; the server
+sets its quantity to that source remainder and creates fresh native line IDs.
+This is the explicit supplier/currency disposition: old received goods, invoices,
+liabilities and unapplied prepaid credits stay with the original supplier and
+currency. After independent native approval, issuance atomically cancels the old
+unreceived quantity and commits the separately numbered replacement. Changed
+source receipt, invoice, payable or commitment positions require a fresh proposal.
+The current approver and issuing buyer must cover both scopes. No historical
+approval or supplier send is fabricated.

@@ -1,3 +1,4 @@
+import { adoptionDeposits, operationalOrder } from './adoption-position';
 import { publicInvoice } from './invoice-status';
 import { invoiceEvidence, storeInvoiceOriginal } from './invoice-evidence';
 import { canonicalSupplier } from './supplier-identity';
@@ -18,15 +19,15 @@ export function scopedInvoice(s: State, a: Actor, value: Data) {
 // submitted evidence and normalized allocations, independently of line order.
 function evidence(i: Data) {
     return JSON.stringify({ order: i.order, currency: i.currency, source: i.source,
-        evidenceHash: i.evidenceHash ?? null, release: i.release ?? null, allocations: i.allocations.map((x: Data) => [x.line, x.q, x.amountMinor])
+        evidenceHash: i.evidenceHash ?? null, depositAppliedMinor: i.depositAppliedMinor ?? 0, release: i.release ?? null, allocations: i.allocations.map((x: Data) => [x.line, x.q, x.amountMinor])
             .sort((a: any[], b: any[]) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0) });
 }
 
-export function invoice(s: State, a: Actor, b: Data) {
+export function invoice(s: State, a: Actor, b: Data, confirmation?: { reading: string }) {
     requirePermission(s, a, 'invoice.capture');
     const o = get(s, 'order', b.order);
     requirePermission(s, a, 'invoice.capture', o);
-    requireThat(o.issuedAt && !o.imported, 'Issued PO required', 409);
+    requireThat(operationalOrder(s, o), 'Issued or explicitly adopted PO required', 409);
     const reference = text(b.reference, 'Invoice reference'), source = text(b.source, 'Invoice evidence source');
     requireThat(Array.isArray(b.allocations) && b.allocations.length > 0, 'Allocate invoice lines');
     const seen = new Set();
@@ -39,21 +40,41 @@ export function invoice(s: State, a: Actor, b: Data) {
             orderedMinor: extended(q, l.unitMinor), receivedQ: linePosition(s, o.id, l).accepted };
     });
     const candidate: Data = { ...(b.release ? { release: text(b.release, 'Blanket release') } : {}), order: o.id, supplier: o.supplier, reference, source, currency: o.currency, allocations, totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total') };
+    const identityPrior = all(s, 'invoice').find(i => canonicalSupplier(s, get(s, 'order', i.order).supplier) === canonicalSupplier(s, o.supplier) && i.reference === reference);
+    const grossMinor = candidate.totalMinor;
+    const depositAppliedMinor = b.depositAppliedAmount !== undefined || b.depositAppliedMinor !== undefined ? moneyInput(b, 'depositAppliedAmount', 'depositAppliedMinor', 'Deposit credit') : 0;
+    if (depositAppliedMinor) {
+        const deposits = adoptionDeposits(s, o);
+        requireThat(deposits.sources.length && depositAppliedMinor <= deposits.unappliedMinor + (identityPrior?.depositAppliedMinor ?? 0) && depositAppliedMinor <= grossMinor, 'Deposit credit exceeds the imported unapplied balance or invoice amount', 409);
+        Object.assign(candidate, { grossMinor, depositAppliedMinor, totalMinor: grossMinor - depositAppliedMinor });
+    }
+    const priorSource = confirmation ? all(s, 'invoice').find(i => i.imported && i.order === o.id && i.reference === reference) : undefined;
+    if (priorSource) { candidate.id = priorSource.id; candidate.imported = true; }
     Object.assign(candidate, invoiceEvidence(s, o, candidate, b));
     const existing = all(s, 'invoice').filter(i => canonicalSupplier(s, get(s, 'order', i.order).supplier) === canonicalSupplier(s, o.supplier) && i.reference === reference);
     if (existing.length) {
+        if (priorSource && existing.length === 1) {
+            const reading = get(s, 'invoiceReading', confirmation!.reading);
+            requireThat(reading.status === 'review' && reading.order === o.id && reading.sourceDescriptor.sha256 === candidate.document?.sha256, 'Historical evidence requires the current source-bound reading', 409);
+            requireThat(priorSource.totalMinor === candidate.totalMinor && JSON.stringify(priorSource.allocations.map((x: Data) => [x.line,x.q,x.amountMinor])) === JSON.stringify(candidate.allocations.map((x: Data) => [x.line,x.q,x.amountMinor])) && (!priorSource.document || priorSource.document.sha256 === candidate.document?.sha256), 'Confirmed source conflicts with the imported invoice balances or original; reconcile instead of overwriting', 409);
+            const at = new Date().toISOString();
+            put(s, 'invoice', priorSource.id, { ...priorSource, ...candidate, sourceConfirmation: 'confirmed', confirmedReading: reading.id, confirmedAt: at, confirmedBy: a.id, sourceOriginalDate: priorSource.invoiceDate, at: priorSource.at });
+            if (!priorSource.document) storeInvoiceOriginal(s, a, get(s, 'invoice', priorSource.id), b);
+            audit(s, a, 'confirm-imported-invoice', priorSource.id, { reading: reading.id, source: reading.source, historicalApproval: 'Imported evidence only' });
+            return scopedInvoice(s, a, get(s, 'invoice', priorSource.id));
+        }
         requireThat(existing.length === 1 && evidence(existing[0]) === evidence(candidate),
             'Invoice reference already exists for this supplier with different evidence or allocations; review the existing invoice before correction', 409);
         return scopedInvoice(s, a, existing[0]);
     }
-    requireThat(['issued', 'closed'].includes(o.status), 'Issued PO required for new invoice evidence', 409);
+    requireThat(['issued', 'adopted', 'closed', 'cancelled'].includes(o.status), 'Issued PO required for new invoice evidence', 409);
     const closedBalance = allocations.some((x: Data) => {
         const l = o.lines.find((l: Data) => l.id === x.line);
         const billed = all(s, 'invoice').filter(i => get(s, 'order', i.order).request === o.request).flatMap(i => i.allocations).filter((z: Data) => z.line === l.id).reduce((n: number, z: Data) => n + z.q, 0);
         return linePosition(s, o.id, l).closed > 0 && billed + x.q > l.q - linePosition(s, o.id, l).closed;
     });
     const id = uid();
-    put(s, 'invoice', id, { ...candidate, id, entrySequence: all(s,'invoice').reduce((n,i)=>Math.max(n,i.entrySequence??0),0)+1, ...(closedBalance ? { status: 'exception', exception: 'Invoice exceeds the closed PO balance' } : {}), totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total'), actor: a.id, at: new Date().toISOString() });
+    put(s, 'invoice', id, { ...candidate, id, entrySequence: all(s,'invoice').reduce((n,i)=>Math.max(n,i.entrySequence??0),0)+1, ...(closedBalance ? { status: 'exception', exception: 'Invoice exceeds the closed PO balance' } : {}), totalMinor: candidate.totalMinor, actor: a.id, at: new Date().toISOString() });
     storeInvoiceOriginal(s, a, get(s, 'invoice', id), b);
     if(o.poDetails?.blanket) {
         const r=get(s,'request',o.request), target=remainingValue(s,o), current=commitment(s,r);

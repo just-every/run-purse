@@ -28,7 +28,7 @@ export function storeInvoiceOriginal(s: State, a: Actor, invoice: Data, input: D
 /** The existing later-upload door must apply the same document identity check. */
 export function checkInvoiceAttachment(s: State, a: Actor, attachment: Data) {
     const invoice = get(s, 'invoice', attachment.record);
-    if (invoice.imported) return;
+    if (invoice.imported && !invoice.adoptedVia) return;
     const order = get(s, 'order', invoice.order);
     const risk = invoiceRisk(s, order, invoice, { invoiceDate: invoice.invoiceDate, document: { ...attachment, base64: Buffer.from(atob(attachment.base64), 'binary').toString('base64') } });
     const existing = new Set((invoice.flags ?? []).map((f: Data) => f.code + ':' + (f.relatedInvoice ?? '') + ':' + (f.documentHash ?? '')));

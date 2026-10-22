@@ -1,3 +1,4 @@
+import { operationalOrder, orderAdoption } from './adoption-position';
 import { purchasingSearchText } from './search-text';
 import { invoice } from './invoices';
 import { documentMetadata } from './invoice-risk';
@@ -26,15 +27,23 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
     const permission = op === 'invoice-reading-instructions' ? 'invoice.read' : 'invoice.capture';
     requirePermission(s, a, permission);
     if (op === 'invoice-source') {
-        const order = get(s,'order',b.order); requirePermission(s, a, permission, order); requireThat(!order.imported && order.issuedAt && ['issued','closed'].includes(order.status),'Use a current issued native PO',409);
-        const metadata = documentMetadata(b.document), id=uid(), attachment=uid(), at=new Date().toISOString();
+        const order = get(s,'order',b.order); requirePermission(s, a, permission, order); requireThat(operationalOrder(s, order) && ['issued','adopted','closed','cancelled'].includes(order.status),'Use a current issued native PO',409);
+        let document = b.document;
+        if (b.invoice) {
+            const historical = get(s, 'invoice', b.invoice);
+            requireThat(historical.imported && historical.adoptedVia && historical.order === order.id, 'Choose a historical bill on this adopted PO', 409);
+            const retained = all(s, 'attachment').find(file => file.kind === 'invoice' && file.record === historical.id && file.sha256 === historical.document?.sha256);
+            requireThat(retained && !retained.erased, 'Retained private original is unavailable; stage the actual original for source confirmation', 409);
+            document = retained;
+        }
+        const metadata = documentMetadata(document), id=uid(), attachment=uid(), at=new Date().toISOString();
         put(s,'invoiceSource',id,{ order:order.id, orderRevision:order.revision, attachment, actor:a.id, at });
-        put(s,'attachment',attachment,{ ...metadata, kind:'invoiceSource', record:id, base64:b.document.base64, actor:a.id, at });
+        put(s,'attachment',attachment,{ ...metadata, kind:'invoiceSource', record:id, base64:document.base64, actor:a.id, at });
         audit(s,a,'attachment',id,{attachment}); audit(s,a,op,order.id,{source:id}); return get(s,'invoiceSource',id);
     }
     const prior = ['invoice-reading-edit','invoice-reading-confirm'].includes(op)?get(s,'invoiceReading',b.id):null;
     const source = get(s,'invoiceSource',prior?.source ?? (typeof b.source==='string'?b.source:b.source?.id));
-    const order = get(s,'order',source.order); requirePermission(s, a, permission, order); requireThat(!order.imported && order.issuedAt && order.revision===source.orderRevision && ['issued','closed'].includes(order.status),'Invoice source belongs to a superseded or unavailable PO',409);
+    const order = get(s,'order',source.order); requirePermission(s, a, permission, order); requireThat(operationalOrder(s, order) && order.revision===source.orderRevision && ['issued','adopted','closed','cancelled'].includes(order.status),'Invoice source belongs to a superseded or unavailable PO',409);
     const attachment = get(s,'attachment',source.attachment), descriptor: Data = { id:source.id, ...await quoteSourceDescriptor(attachment,s.get('attachment:'+attachment.id)!.revision) };
     requireThat(attachment.kind==='invoiceSource'&&attachment.record===source.id,'Invoice original is outside this source',409);
     if (op==='invoice-reading-instructions') return invoiceInstructions(descriptor);
@@ -70,7 +79,7 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
     requireThat(b.reviewed===true,'Review every value, confidence, missing field and original before confirming');
     const reason=invoiceReadingText(b.reason,'Confirmation reason'), value=(key:string)=>text(reading[key]?.value,key);
     requireThat(value('currency')===order.currency,'Invoice currency must match the selected PO');
-    requireThat(value('poNumber')===order.number,'Invoice PO number must match the selected order');
+    requireThat([order.number, orderAdoption(s, order)?.sourceOrder.number].includes(value('poNumber')),'Invoice PO number must match the selected order or its original adopted reference');
     const named=normalizedSupplierText(value('supplier'));
     requireThat([order.supplierSnapshot.name,order.supplierSnapshot.dba].some(name=>normalizedSupplierText(name)===named),'Invoice supplier must match the immutable PO supplier; correct or review the source');
     const invoiceDate=date(value('invoiceDate'),'Invoice document date'); if(reading.dueDate.value!==null) date(reading.dueDate.value,'Document due date');
@@ -82,7 +91,7 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
     // The current invoice door stores inclusive allocation amounts; retain the exact breakdown here.
     const allocations=allocateInvoiceCharges(mapped,amounts.freightMinor+amounts.taxMinor).map(line=>({line:line.line,quantity:line.quantity,amountMinor:line.amountMinor}));
     const result:Data=invoice(s,a,{order:order.id,reference:value('reference'),source:'Confirmed invoice reading '+reading.id,invoiceDate,
-        ...(source.apSender?{senderEmail:source.apSender}:reading.senderEmail.value?{senderEmail:reading.senderEmail.value}:{}),...(reading.remitTo.value?{remitTo:reading.remitTo.value}:{}),...(b.remit?{remit:b.remit}:{}),document:{name:attachment.name,mediaType:attachment.mediaType,base64:attachment.base64},allocations});
+        ...(source.apSender?{senderEmail:source.apSender}:reading.senderEmail.value?{senderEmail:reading.senderEmail.value}:{}),...(reading.remitTo.value?{remitTo:reading.remitTo.value}:{}),...(b.remit?{remit:b.remit}:{}),document:{name:attachment.name,mediaType:attachment.mediaType,base64:attachment.base64},allocations, ...(b.depositAppliedAmount !== undefined ? { depositAppliedAmount: b.depositAppliedAmount } : {})}, { reading: reading.id });
     reading.status='confirmed';reading.version++;reading.invoice=result.id;reading.confirmedBy=a.id;reading.confirmedAt=new Date().toISOString();reading.amounts=amounts;
     put(s,'invoiceReading',reading.id,reading);event(s,a,reading,op,{invoice:result.id,reason,snapshot:structuredClone(reading)});return reading;
 }

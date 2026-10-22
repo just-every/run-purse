@@ -1,3 +1,4 @@
+import { importedInvoice, importedDeposit } from './import-invoice';
 import { matchingInputs } from './supplier-identity';
 import { sensitiveSupplierColumns, redactSupplierCsv } from './supplier-csv-custody';
 import { supplierMatches } from './supplier-matching';
@@ -57,7 +58,7 @@ export function mappedSource(s: State, b: Data) {
     for (const r of records) {
         const kind = col(r, 'kind'), sourceId = col(r, 'sourceId');
         requireThat(typeof sourceId === 'string' && sourceId.length > 0 && sourceId.length <= 2000, 'Source key required (maximum 2000 characters)');
-        requireThat(['supplier', 'code', 'request', 'order', 'receipt'].includes(kind), 'Import suppliers/codes, requests, orders or receipts');
+        requireThat(['supplier', 'code', 'budget', 'request', 'order', 'receipt', 'invoice', 'deposit'].includes(kind), 'Import suppliers/codes/budgets, requests, orders, receipts, invoices or deposits');
         const sourceStatus = col(r, 'status'), status = config.statuses?.[sourceStatus];
         requireThat(status, 'Map every source status explicitly');
         statusMappings.push({ source: sourceStatus, mapped: status });
@@ -72,13 +73,17 @@ export function mappedSource(s: State, b: Data) {
             value = { ...value, name: text(col(r, 'name'), 'Supplier name'), matching: matchingBySource.get(sourceId) ?? {}, sourceRedaction: redaction ? { redactedColumns: redaction.custody.redactedColumns } : null, status: status === 'blocked' ? 'blocked' : 'pending_review', requestedStatus: status === 'blocked' ? 'blocked' : status === 'preferred' ? 'preferred' : 'active', reason: 'Imported historical supplier status: ' + sourceStatus, dba: col(r, 'dba'), address: col(r, 'address'), phone: col(r, 'phone'), contacts: col(r, 'email') ? [{ name: col(r, 'contactName') || col(r, 'name'), email: col(r, 'email') }] : [], contractRef: col(r, 'contractRef'), renewal: col(r, 'renewal') ? sourceDate(col(r, 'renewal')) : '', documents: [] };
         if (kind === 'code')
             value = { ...value, codeType: text(col(r, 'codeType'), 'Code type'), name: text(col(r, 'name'), 'Code name') };
+        if (kind === 'budget') {
+            const currency = col(r, 'currency'); requireThat(/^[A-Z]{3}$/.test(currency) && get(s, 'business', 'main').currencies.includes(currency), 'Enable the imported budget currency first'); currencies.add(currency);
+            value = { ...value, name: text(col(r, 'name'), 'Budget name'), currency, amountMinor: money(col(r, 'amount')), location: col(r, 'location'), costCentre: col(r, 'costCentre'), project: col(r, 'project') };
+        }
         if (kind === 'request' || kind === 'order') {
             const c = col(r, 'currency');
             requireThat(/^[A-Z]{3}$/.test(c), 'Currency required');
             currencies.add(c);
             requireThat(get(s, 'business', 'main').currencies.includes(c), 'Enable all imported currencies first');
             const q = quantity(decimal(col(r, 'quantity'))), unitMinor = money(col(r, 'unitPrice')), line = { id: id('line', sourceId), sourceLine: id('line', sourceId), description: text(col(r, 'description'), 'Description'), quantity: decimal(col(r, 'quantity')), q, unitMinor, totalMinor: extended(q, unitMinor), category: col(r, 'category'), project: col(r, 'project') };
-            value = { ...value, title: col(r, 'name'), supplier: ref('supplierId', 'supplier'), currency: c, lines: [line], needDate: sourceDate(col(r, 'needDate')), revision: 1, freightMinor: money(col(r, 'freight') || '0'), taxMinor: money(col(r, 'tax') || '0'), terms: col(r, 'terms'), requester: 'historical', policy: null };
+            value = { ...value, title: col(r, 'name'), supplier: ref('supplierId', 'supplier'), currency: c, lines: [line], needDate: sourceDate(col(r, 'needDate')), revision: 1, freightMinor: money(col(r, 'freight') || '0'), taxMinor: money(col(r, 'tax') || '0'), terms: col(r, 'terms'), requester: 'historical', location: col(r, 'location'), costCentre: col(r, 'costCentre'), sourceBudget: col(r, 'budget'), sourceApproval: { status: sourceStatus, evidence: col(r, 'approvalEvidence') || null }, policy: null };
             value.totalMinor = line.totalMinor + value.freightMinor + value.taxMinor;
             if (kind === 'order')
                 value = { ...value, request: ref('requestId', 'request'), number: col(r, 'number') || sourceId, sequence: 0, issuedAt: null };
@@ -87,7 +92,30 @@ export function mappedSource(s: State, b: Data) {
         }
         if (kind === 'receipt')
             value = { ...value, order: ref('orderId', 'order'), line: id('line', col(r, 'orderId')), quantity: decimal(col(r, 'quantity')), q: quantity(decimal(col(r, 'quantity'))), event: 'historical', at: sourceDate(col(r, 'date')), reason: 'Imported historical receipt, no native commitment effect' };
+        if (kind === 'invoice') value = importedInvoice(r, col, { quantity: v => quantity(decimal(v)), money, date: sourceDate }, ref, value);
+        if (kind === 'deposit') value = importedDeposit(r, col, money, ref, value);
         values.set(`${kind}:${sourceId}`, value);
+    }
+    const extras = new Map<string, Data[]>();
+    for (const value of values.values()) {
+        if (value.lines) {
+            const counterparty = [...values.values()].find(v => v.id === value.supplier) ?? s.get('supplier:' + value.supplier)?.value;
+            if (counterparty) value.supplierSnapshot = { id: value.supplier, name: counterparty.name, dba: counterparty.dba || '', address: counterparty.address || '', remitTo: counterparty.remitTo || '', contacts: structuredClone(counterparty.contacts ?? []), contractRef: counterparty.contractRef || '' };
+        }
+        if (value.allocations) {
+            const order = [...values.values()].find(v => v.id === value.order) ?? s.get('order:' + value.order)?.value;
+            if (order) {
+                requireThat(value.currency === order.currency && value.allocations.every((a: Data) => order.lines.some((l: Data) => l.id === a.line)), 'Imported invoice currency and line must match its source PO');
+                for (const allocation of value.allocations) allocation.orderedMinor = extended(allocation.q, order.lines.find((line: Data) => line.id === allocation.line).unitMinor);
+                value.supplier = order.supplier;
+            }
+            if (value.original) {
+                const attachment = { ...value.original, id: id('invoice-original', value.sourceId), kind: 'invoice', record: value.id, actor: 'historical', at: value.at };
+                value.document = Object.fromEntries(Object.entries(value.original).filter(([key]) => key !== 'base64'));
+                extras.set(value.sourceId, [{ targetKind: 'attachment', targetId: attachment.id, value: attachment }, { targetKind: 'audit', targetId: id('invoice-original-audit', value.sourceId), value: { id: id('invoice-original-audit', value.sourceId), actor: 'historical', action: 'attachment', record: value.id, attachment: attachment.id, at: value.at, imported: true } }]);
+            }
+            delete value.original;
+        }
     }
     const supplierDuplicates: Data[] = [];
     const batchSuppliers = [...values.values()].filter(v => v.id.startsWith('procurify:supplier:'));
@@ -99,7 +127,7 @@ export function mappedSource(s: State, b: Data) {
         if (matches.length) supplierDuplicates.push({ sourceId: value.sourceId, supplier: value.id, matches });
     }
     const bytes = new TextEncoder().encode(raw), hash = sha256(bytes);
-    const source: SourceBundle = { diagnostics: unresolved.map(message => ({ severity: 'error', code: 'UNRESOLVED_REFERENCE', message })), artifacts: [{ name: b.filename || 'procurify-shape.csv', sha256: hash, size: bytes.length, original: { status: 'available', base64: Buffer.from(bytes).toString('base64') } }, ...(redaction ? [{ name: (b.filename || 'procurify-shape.csv') + '.custody.json', sha256: sha256(canonicalJson(redaction.custody)), size: new TextEncoder().encode(canonicalJson(redaction.custody)).length, original: { status: 'available' as const, base64: Buffer.from(canonicalJson(redaction.custody)).toString('base64') } }] : [])], records: records.map((r, i) => { const kind = col(r, 'kind'), sourceId = col(r, 'sourceId'); return { namespace: 'procurify', kind, sourceId, payload: r, payloadHash: sha256(canonicalJson(r)), artifactHash: hash, location: { artifact: b.filename || 'procurify-shape.csv', row: i + 2 } }; }).sort((a, b) => ['supplier', 'code', 'request', 'order', 'receipt'].indexOf(a.kind) - ['supplier', 'code', 'request', 'order', 'receipt'].indexOf(b.kind)) };
-    const mapping: ImportMapping = { version: sha256(canonicalJson(config)), map: r => ({ effects: unresolved.length ? [] : [{ targetKind: r.kind, targetId: id(r.kind, r.sourceId), value: values.get(`${r.kind}:${r.sourceId}`)! }], ...(unresolved.length ? { rejection: 'Resolve references before commit' } : {}) }) };
+    const source: SourceBundle = { diagnostics: unresolved.map(message => ({ severity: 'error', code: 'UNRESOLVED_REFERENCE', message })), artifacts: [{ name: b.filename || 'procurify-shape.csv', sha256: hash, size: bytes.length, original: { status: 'available', base64: Buffer.from(bytes).toString('base64') } }, ...(redaction ? [{ name: (b.filename || 'procurify-shape.csv') + '.custody.json', sha256: sha256(canonicalJson(redaction.custody)), size: new TextEncoder().encode(canonicalJson(redaction.custody)).length, original: { status: 'available' as const, base64: Buffer.from(canonicalJson(redaction.custody)).toString('base64') } }] : [])], records: records.map((r, i) => { const kind = col(r, 'kind'), sourceId = col(r, 'sourceId'); return { namespace: 'procurify', kind, sourceId, payload: r, payloadHash: sha256(canonicalJson(r)), artifactHash: hash, location: { artifact: b.filename || 'procurify-shape.csv', row: i + 2 } }; }).sort((a, b) => ['supplier', 'code', 'budget', 'request', 'order', 'receipt', 'invoice', 'deposit'].indexOf(a.kind) - ['supplier', 'code', 'budget', 'request', 'order', 'receipt', 'invoice', 'deposit'].indexOf(b.kind)) };
+    const mapping: ImportMapping = { version: sha256(canonicalJson(config)), map: r => ({ effects: unresolved.length ? [] : [{ targetKind: r.kind, targetId: id(r.kind, r.sourceId), value: values.get(`${r.kind}:${r.sourceId}`)! }, ...(r.kind === 'invoice' ? extras.get(r.sourceId) ?? [] : [])], ...(unresolved.length ? { rejection: 'Resolve references before commit' } : {}) }) };
     return { source, mapping, report: { supplierRedaction: redaction?.custody ?? null, supplierDuplicates, currencies: [...currencies], unresolved, statusMappings, missingAttachments: warnings, fixtureOnly: true } };
 }

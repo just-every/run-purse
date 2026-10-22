@@ -8,7 +8,7 @@ export function invoiceReview(s: State, a: Actor, op: string, b: Data): Data | u
     requirePermission(s, a, 'invoice.review');
     const invoice = get(s, 'invoice', b.invoice);
     requirePermission(s, a, 'invoice.review', invoice);
-    requireThat(!invoice.imported, 'Native invoice required', 409);
+    requireThat(!invoice.imported || invoice.adoptedVia, 'Native or adopted invoice evidence required', 409);
     requireThat(b.version === (invoice.riskVersion ?? 0), 'Invoice risk review changed; reload', 409);
     const flag = openInvoiceFlags(invoice).find(f => f.id === b.flag);
     requireThat(flag, 'Flag is missing or already reviewed', 409);

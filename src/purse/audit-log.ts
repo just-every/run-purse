@@ -26,8 +26,8 @@ export function auditLog(s: State, a: Actor, filters: Data = {}, permission='aud
         for (const i of all(s, 'invoice').filter(i => i.order === order.id)) subjects.add(i.id);
         for (const c of all(s, 'orderClosure').filter(c => c.order === order.id)) subjects.add(c.id);
     }
-    return all(s, 'audit').filter(e=>auditEventAllowed(s,a,e,permission)).filter(e => (!subject || subjects.has(e.record)) && (!action || e.action === action) && (!from || e.at.slice(0, 10) >= from) && (!through || e.at.slice(0, 10) <= through))
-        .sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id)).map(e => context(s, e,a,permission));
+    return all(s, 'audit').filter(e=>auditEventAllowed(s,a,e,permission)).filter(e => (!subject || subjects.has(e.record)) && (!action || e.action === action) && (!from || (e.at ?? '').slice(0, 10) >= from) && (!through || (e.at ?? '').slice(0, 10) <= through))
+        .sort((a, b) => (a.at ?? '').localeCompare(b.at ?? '') || a.id.localeCompare(b.id)).map(e => context(s, e,a,permission));
 }
 export function auditCsv(events: Data[]) {
     const cell = (v: unknown) => '"' + String(v ?? '').replace(/^[\s]*[=+@-]/, "' $&").replace(/"/g, '""') + '"';

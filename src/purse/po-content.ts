@@ -1,3 +1,4 @@
+import { orderAdoption } from './adoption-position';
 import { all, get, requireThat, type Data, type State } from './types';
 import { poLabels } from './po-profiles';
 import type { PoPdfContent } from './po-pdf';
@@ -22,6 +23,10 @@ export function poContent(s: State, order: Data): PoPdfContent {
     if(order.poDetails?.blanket) sections.unshift({heading:'Blanket purchase order',lines:['Approved cap: '+money(order.totalMinor,order.currency),'Valid from: '+order.poDetails.blanket.validFrom,'Valid through (inclusive): '+order.poDetails.blanket.validThrough,'Draw-down basis: recorded invoice evidence; not a supplier send or payment']});
     for (const line of order.lines.filter((l: Data) => l.service)) sections.push({ heading: 'Service receiving: ' + line.description, lines: ['Basis: ' + line.service.mode, ...(line.service.milestones ?? []).map((m: Data) => m.name + ': ' + money(m.valueMinor, order.currency))] });
     if (order.recurring) sections.unshift({heading:'Scheduled recurring purchase',lines:['Scheduled for: '+order.recurring.scheduledFor,'Source PO: '+get(s,'order',order.recurring.sourceOrder).number,'Series: '+order.recurring.series,'Explicit recurring authorization version: '+order.recurring.authorizationVersion]});
+    if (order.cancellation) sections.unshift({ heading: 'Approved cancellation', lines: ['Original PO: ' + order.cancellation.number, 'Cancellation requires current native approval; supplier send is recorded separately', ...order.cancellation.lines.map((line: Data) => 'Cancel source line ' + line.line + ': ' + line.q / 1000)] });
+    if (order.adoptedDisposition) sections.unshift({ heading: 'Replacement of adopted remainder', lines: ['Original PO: ' + order.adoptedDisposition.number, order.adoptedDisposition.basis, 'Disposition: ' + order.adoptedDisposition.reason] });
+    const adoption = orderAdoption(s, order);
+    if (adoption && adoption.sourceOrder.number !== order.number) sections.unshift({ heading: 'Original adopted PO reference', lines: [adoption.sourceOrder.number, 'Original imported approval remains historical evidence; this revision requires native approval'] });
     const revision = s.get('revision:' + order.request + ':' + order.revision)?.value;
     if (revision?.amends) {
         const prior = get(s, 'order', revision.amends);

@@ -1,6 +1,8 @@
+import { validateAdoptionAmendments } from './restore-adoption-amendments.mjs';
+import { validateOrderAdoptions } from './restore-order-adoption.mjs';
+import { validatePoKinds } from './restore-po-kinds.mjs';
 import { validateErasure } from './restore-erasure.mjs';
 import { erasedOriginal } from '../../src/purse/erasure-journal.mjs';
-import { validatePoKinds } from './restore-po-kinds.mjs';
 import { hasUnsafeProtectedContext } from '../../src/purse/protected-context-fields.mjs';
 import { validateAgentValue } from './restore-agent-value.mjs';
 import { validateAgreementReadings } from './restore-agreement-readings.mjs';
@@ -25,7 +27,7 @@ import { validateSupplierDocuments } from './restore-supplier-documents.mjs';
 import { validateAccess } from './restore-access.mjs';
 import { validateScim } from './restore-scim.mjs';
 
-const kinds = new Set(['erasureReceipt','blanketRelease','recurringSeries','recurringEvent','scimUser','scimApprovalTransfer','accessRole','buyerRoleLimit','invoiceEvidenceKey','invoiceEvidenceMigration','invoiceInboxConfig','apInvoiceEmail','valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
+const kinds = new Set(['orderAdoption','deposit','budget','blanketRelease','recurringSeries','recurringEvent','erasureReceipt','scimUser','scimApprovalTransfer','accessRole','buyerRoleLimit','invoiceEvidenceKey','invoiceEvidenceMigration','invoiceInboxConfig','apInvoiceEmail','valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
 export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
 export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
 export const integer = n => Number.isSafeInteger(n) && n >= 0;
@@ -76,7 +78,7 @@ export function validatePurchasingArchive(rows) {
    check(identity.contacts.every(c => typeof c.name === 'string' && typeof c.email === 'string'),'supplier_contacts');
   }
   for (const l of r.lines) if (l.catalogue) get('catalogue',l.catalogue);
-  if (r.imported) check(r.status === 'imported' && !r.issuedAt && r.policy === null, 'import_authority');
+  if (r.imported) check(r.adoption && kind === 'order' ? !r.issuedAt && ['adopted','amendment-pending','amended','closed','cancelled'].includes(r.status) : r.status === 'imported' && !r.issuedAt && r.policy === null, 'import_authority');
  }
  for (const r of all('request').filter(r => !r.imported)) {
   const snapshot = get('revision',r.id + ':' + r.revision);
@@ -126,6 +128,8 @@ export function validatePurchasingArchive(rows) {
   check(stock.count === null ? stock.countQ === null : typeof stock.count === 'string' && (stock.count === '0' ? stock.countQ === 0 : quantity(stock.count) === stock.countQ),'stockroom_count');
  }
  validatePoKinds(all,get,check,same);
+ validateOrderAdoptions(all,get);
+ validateAdoptionAmendments(all,get,check);
  validateAgentValue(all,get,check,rows);
  validateAgreements(all,get,check,same);
  validateAgreementReadings(all,get,check,same);

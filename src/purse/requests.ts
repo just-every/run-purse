@@ -46,6 +46,9 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         const supplierSnapshot = { id: counterparty.id, name: counterparty.name, address: counterparty.address || '', remitTo: counterparty.remitTo || '', postalState: counterparty.postalState || '', contacts: structuredClone(counterparty.contacts), contractRef: counterparty.contractRef };
         const r = { id, requester: old?.requester ?? a.id, requesterEmail:old?.requesterEmail??a.email, requesterOwner:old?.requesterOwner??a.owner, title: text(b.title, 'Request title'), supplier: b.supplier, supplierSnapshot, currency: b.currency, needDate: date(b.needDate), location: text(b.location, 'Location'), costCentre: text(b.costCentre, 'Cost centre'), lines: lines(s, b.lines, old && !a.owner ? { ...a, id: old.requester, email: old.requesterEmail, owner: old.requesterOwner === true } : a), freightMinor: moneyInput(b, 'freightAmount', 'freightMinor', 'Freight', { fallback: 0 }), taxMinor: moneyInput(b, 'taxAmount', 'taxMinor', 'Supplied tax', { fallback: 0 }), terms: text(b.terms, 'Supplier-supplied terms'), revision: (old?.revision ?? 0) + 1, status: 'draft', policy: null, totalMinor: 0 };
         if(Object.hasOwn(b,'valuePromise')||Object.hasOwn(old??{},'valuePromise')) (r as Data).valuePromise=normalizeValuePromise(Object.hasOwn(b,'valuePromise')?b.valuePromise:old?.valuePromise,r.currency,r.needDate);
+        if (old?.cancellation) requireThat(false, 'A cancellation revision is frozen for independent approval; submit it or create a new proposal', 409);
+        if (old?.adoptedDisposition) (r as Data).adoptedDisposition = structuredClone(old.adoptedDisposition);
+        if (old?.adoption) { (r as Data).adoption = old.adoption; (r as Data).importedSourceRequest = old.importedSourceRequest; }
         if(old?.integration) (r as Data).integration = structuredClone(old.integration);
         if(old?.emailIntake) (r as Data).emailIntake = old.emailIntake;
         if(old?.quoteTerms) (r as Data).quoteTerms = structuredClone(old.quoteTerms);
@@ -65,8 +68,9 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             }
         }
         r.totalMinor = requestTotal(r);
-        const issued = all(s, 'order').find(o => o.request === id && (o.status === 'issued' || o.status === 'amendment-pending'));
+        const issued = all(s, 'order').find(o => o.request === id && (o.status === 'issued' || o.status === 'adopted' || o.status === 'amendment-pending'));
         if (issued) {
+            if (old?.adoption) { requireThat(r.currency === issued.currency, 'Use the reviewed replacement-remainder disposition to change an adopted currency', 409); requireThat(r.supplier === issued.supplier, 'Use the reviewed replacement-remainder disposition to change an adopted supplier', 409); }
             requireThat(Boolean(issued.poDetails?.blanket) === Boolean((r as Data).poDetails.blanket), 'An issued PO retains its blanket or ordinary basis; create a separate request for another basis', 409);
             if (issued.poDetails?.blanket) requireThat(r.currency === issued.currency, 'A blanket amendment retains its currency', 409);
             (r as Data).amends = issued.id;

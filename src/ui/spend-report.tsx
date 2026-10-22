@@ -29,16 +29,17 @@ export function SpendReport({ data }: { data: D }) {
         {detail && <section className="record" key={detail.label} aria-label="Report source records"><h2>{detail.label}</h2>
             {detail.policy && <p>Policy {detail.policy.id} · budget {money(detail.policy.budgetMinor, detail.policy.currency)} · available {money(detail.policy.availableMinor, detail.policy.currency)}. Available subtracts all outstanding authority in your visible scope, including outside this period.</p>}
             <Table heads={['Request / source', 'Line / coding', 'Date / basis', 'Amount']}>
-                {detail.rows.map((r: D, i: number) => <tr key={i}><td><strong>{r.title}</strong><p>{r.request}</p>{r.order && <a href={`/api/purse/download/order/${r.order}`}>{r.number}</a>}{r.invoice && <p>Invoice {r.reference} · {r.exception ? 'Exception present' : 'Recorded evidence'}</p>}
+                {detail.rows.map((r: D, i: number) => <tr key={i}><td><strong>{r.title}</strong><p>{r.request}</p>{r.order && <a href={`/api/purse/download/order/${r.order}`}>{r.number}</a>}{r.deposit && <p>Imported prepaid deposit {r.reference} · counted once</p>}{r.invoice && <p>Invoice {r.reference} · {r.exception ? 'Exception present' : 'Recorded evidence'}</p>}
                     <details><summary>Source record</summary><ReportSource data={data} row={r}/></details></td>
-                    <td>{r.description}<br/>{r.department} · {r.project} · {r.location}<br/>{r.category} · {r.supplierName}</td><td>{r.date}<br/>{r.kind}</td><td>{money(r.amountMinor, r.currency)}</td></tr>)}
+                    <td>{r.description}<br/>{r.department} · {r.project} · {r.location}<br/>{r.category} · {r.supplierName}</td><td>{r.date}<br/>{r.kind}{r.sourceBasis && <p>{r.sourceBasis}</p>}</td><td>{money(r.amountMinor, r.currency)}</td></tr>)}
             </Table><p>Source rows total: {detail.rows.length ? money(detail.rows.reduce((n: number, r: D) => n + r.amountMinor, 0), detail.rows[0].currency) : 'No amount'}</p><button onClick={() => setDetail(undefined)}>Close report detail</button>
         </section>}
     </section>;
 }
 function ReportSource({ data, row }: { data: D; row: D }) {
+    const deposit = (data.deposit ?? []).find((deposit: D) => deposit.id === row.deposit);
     const request = data.request.find((r: D) => r.id === row.request), order = data.order.find((o: D) => o.id === row.order), invoice = data.invoice.find((i: D) => i.id === row.invoice);
-    return <><p>Request revision {request?.revision} · {request?.status}</p>{order && <p>{order.number} · revision {order.revision} · {order.status}</p>}{invoice && <p>Invoice {invoice.reference} · {invoice.source} · {money(invoice.totalMinor, invoice.currency)}</p>}
+    return <>{deposit && <p>Imported prepaid deposit {deposit.reference} · {money(deposit.amountMinor, row.currency)} · {deposit.evidence}. Source payment evidence is unverified.</p>}<p>Request revision {request?.revision} · {request?.status}</p>{order && <p>{order.number} · revision {order.revision} · {order.status}</p>}{invoice && <p>Invoice {invoice.reference} · {invoice.source} · {money(invoice.totalMinor, invoice.currency)}</p>}
         {(invoice ? invoice.allocations.map((a: D) => ({ ...a, description: order.lines.find((l: D) => l.id === a.line)?.description })) : order?.lines || request?.lines || []).map((l: D, i: number) => <p key={i}>{l.description} · {l.quantity} · {money(l.amountMinor ?? l.totalMinor, row.currency)}</p>)}
         {data.attachment.filter((f: D) => [row.request, row.order, row.invoice].includes(f.record)).map((f: D) => <p key={f.id}><a href={`/api/purse/download/attachment/${f.id}`}>{f.name}</a></p>)}</>;
 }

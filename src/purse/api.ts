@@ -1,4 +1,6 @@
+import { adoptionAmendments } from './adoption-amendments';
 import { erasureApi } from './erasure-api';
+import { adoptOrder } from './order-adoption';
 import { recurringOrders } from './recurring-orders';
 import { blanketReleases } from './blanket-releases';
 import { scimApi, scimSettingsApi } from './scim';

@@ -1,3 +1,5 @@
+import { checkAdoptedDisposition, settleAdoptedDisposition } from './adoption-amendments';
+import { operationalOrder } from './adoption-position';
 import { servicePosition, serviceInvoiceMatches, serviceReceipt } from './service-orders';
 import { blanketRemaining, requireBlanketValidity } from './blanket-orders';
 import { openInvoiceFlags } from './invoice-status';
@@ -24,6 +26,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         documentHold(s, r.supplier);
         requireThat(r.supplierSnapshot?.id === r.supplier, 'Supplier identity missing; amend the request and renew approval', 409);
         const approval=currentDecision(s, r);
+        checkAdoptedDisposition(s, r);
         requireThat(!all(s, 'order').some(o => o.request === r.id && o.revision === r.revision), 'Approved lines already allocated to a PO', 409);
         requireThat(all(s, 'decision').some(d => d.request === r.id && d.revision === r.revision && d.decision === 'approved'), 'Approval decision missing', 409);
         const edit = conversionEdits(s, a, r, b.conversionEdits), face = edit ? { ...r, ...edit.face } : r;
@@ -33,8 +36,12 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
             requireThat(reservationAvailable(s, face, Math.max(0, approvalAmount(face, s) - reservedHere)), 'Edited PO exceeds the current budget; amend and renew approval', 409);
         }
         const id = uid();
-        const sequence = all(s, 'order').reduce((n, o) => Math.max(n, o.sequence || 0), 0) + 1;
+        let sequence = all(s, 'order').reduce((n, o) => Math.max(n, o.sequence || 0), 0) + 1;
+        const occupied = new Set(all(s, 'order').map(order => order.number));
+        while (occupied.has(`PO-${String(sequence).padStart(6, '0')}`)) sequence++;
         const o = { id, sequence, documentProfile: poProfileSnapshot(s, r, a), ...(r.poDetails ? { poDetails: structuredClone(r.poDetails) } : {}), ...(r.entity ? { entity: r.entity } : {}), location: r.location, costCentre: r.costCentre, approvalActor:approval.actor,approvalVersion:approval.operatorVersion, number: `PO-${String(sequence).padStart(6, '0')}`, request: r.id, policy:r.policy, revision: r.revision, supplier: r.supplier, supplierSnapshot: structuredClone(r.supplierSnapshot), currency: r.currency, lines: face.lines.map((l: Data) => ({ ...l, sourceLine: l.id })), freightMinor: r.freightMinor, taxMinor: r.taxMinor, totalMinor: face.totalMinor, terms: r.terms, needDate: r.needDate, status: 'prepared', generatedAt: new Date().toISOString(), issuedAt: null, ...(edit ? { conversionVariance: edit.variance } : {}) };
+        if (r.cancellation) (o as Data).cancellation = structuredClone(r.cancellation);
+        if (r.adoptedDisposition) (o as Data).adoptedDisposition = structuredClone(r.adoptedDisposition);
         if(Object.hasOwn(r,'valuePromise')) (o as Data).valuePromise=structuredClone(r.valuePromise);
         put(s, 'order', id, o);
         if (edit) audit(s, a, 'buyer-conversion-edit', id, { request: r.id, ...edit.variance });
@@ -50,6 +57,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         requireThat(o.status === 'prepared' && r.status === 'approved' && r.revision === o.revision && b.revision === o.revision && !o.imported, 'PO document or authority is stale', 409);
         requireThat(policies(s, r).some(p => p.id === r.policy), 'Approval policy changed', 409);
         currentDecision(s, r);
+        checkAdoptedDisposition(s, r);
         const conversionLimit = o.conversionVariance ? requireConversionSource(s, a, r, o) : undefined;
         const issuedFace = o.conversionVariance ? { ...r, lines: o.lines, totalMinor: o.totalMinor } : r;
         if (o.conversionVariance) requireThat(policies(s, issuedFace).some(p => p.id === r.policy), 'Edited PO exceeds current approval policy; amend and renew approval', 409);
@@ -67,6 +75,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
             if (delta) ledger(s, a, issuedFace, delta, 'conversion-issued-adjustment');
         }
         put(s, 'order', o.id, { ...o, status: 'issued', issuedAt: new Date().toISOString(), issuedBy: a.id, issueReason: text(b.reason, 'Issue confirmation') });
+        settleAdoptedDisposition(s, a, r, get(s, 'order', o.id));
         audit(s, a, op, o.id, { revision: o.revision, ...(conversionLimit ? { conversionLimit, conversionSourceRevision: r.revision } : {}) });
         return get(s, 'order', o.id);
     }
@@ -80,7 +89,7 @@ export function discrepancies(s: State) {
     const invoices = all(s, 'invoice'), orders = all(s, 'order');
     return invoices.flatMap(i => i.allocations.map((x: Data) => {
         const o = get(s, 'order', i.order), l = o.lines.find((l: Data) => l.id === x.line);
-        const lineage = orders.filter(p => p.request === o.request && p.issuedAt && p.lines.some((z: Data) => z.id === l.id));
+        const lineage = orders.filter(p => p.request === o.request && operationalOrder(s, p) && p.lines.some((z: Data) => z.id === l.id));
         const current = lineage.reduce((latest, p) => p.revision > latest.revision ? p : latest, o);
         const currentLine = current.lines.find((z: Data) => z.id === l.id);
         const orderIds = new Set(lineage.map(p => p.id));
