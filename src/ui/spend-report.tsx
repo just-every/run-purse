@@ -24,7 +24,7 @@ export function SpendReport({ data }: { data: D }) {
         <h2>By {dimensions.find(([id]) => id === report.groupBy)?.[1].toLowerCase()}</h2><Table heads={['Group', 'Currency', 'Reserved', 'Committed', 'Actual invoice evidence']}>
             {report.groups.map((r: D) => <tr key={r.value + r.currency}><td>{r.label}</td><td>{r.currency}</td>{['reserved', 'committed', 'actual'].map(k => <td key={k}><button aria-label={`${r.label} ${k} ${r.currency}`} onClick={() => setDetail({ label: r.label + ' · ' + k, rows: r.rows.filter((s: D) => s.kind === k) })}>{money(r[k + 'Minor'], r.currency)}</button></td>)}</tr>)}
         </Table>
-        <h2>Policy budgets</h2><Table heads={['Policy', 'Budget', 'Available in visible scope', 'Reserved', 'Committed', 'Actual invoice evidence']}>
+        <h2>Undated policy budgets</h2><Table heads={['Policy', 'Budget', 'Available in visible scope', 'Reserved', 'Committed', 'Actual invoice evidence']}>
             {report.budgets.map((r: D) => <tr key={r.id}><td>{r.name}</td><td><button onClick={() => setDetail({ label: r.name, policy: r, rows: r.scopeRows })}>{money(r.budgetMinor, r.currency)}</button></td><td><button onClick={() => setDetail({ label: r.name, policy: r, rows: r.scopeRows })}>{money(r.availableMinor, r.currency)}</button></td>{['reserved', 'committed', 'actual'].map(k => <td key={k}><button onClick={() => setDetail({ label: r.name + ' · ' + k, policy: r, rows: r.rows.filter((s: D) => s.kind === k) })}>{money(r[k + 'Minor'], r.currency)}</button></td>)}</tr>)}
         </Table></>}
         {detail && <section className="record" key={detail.label} aria-label="Report source records"><h2>{detail.label}</h2>

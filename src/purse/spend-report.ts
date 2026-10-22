@@ -88,7 +88,12 @@ export function spendReport(data: Data, filters: Data = {}) {
         if (!line?.allocations?.length) return [row];
         const amounts = budgetApportion(row.amountMinor, line.allocations.map((allocation: Data) => allocation.amountMinor));
         return line.allocations.map((allocation: Data, index: number) => {
-            const budget = (data.periodBudgets ?? []).find((budget: Data) => budget.currency === row.currency && budget.department === allocation.costCentre && (!budget.project || budget.project === '*' || budget.project === allocation.project) && terms.needDate >= budget.from && terms.needDate <= budget.through);
+            const dated = (data.periodBudgets ?? []).some((budget: Data) => budget.id === row.policy);
+            const budget = dated ? data.periodBudgets.find((budget: Data) => budget.currency === row.currency && budget.department === allocation.costCentre
+                && (!budget.project || budget.project === '*' || budget.project === allocation.project)
+                && (!budget.category || budget.category === '*' || budget.category === row.category)
+                && terms.needDate >= budget.from && terms.needDate <= budget.through
+                && budget.sources.some((source: Data) => !source.hidden && source.request === row.request)) : undefined;
             return { ...row, department: allocation.costCentre, project: allocation.project, location: allocation.location ?? row.location,
                 glAccount: allocation.glAccount, allocation: index, amountMinor: amounts[index], policy: budget?.id ?? row.policy };
         }).filter((row: Data) => row.amountMinor);
@@ -103,7 +108,7 @@ export function spendReport(data: Data, filters: Data = {}) {
     }
     const totals = [...new Set(selected.map(r => r.currency))].sort().map(currency => ({ currency, ...Object.fromEntries(['reserved', 'committed', 'actual'].map(kind => [kind + 'Minor', selected.filter(r => r.currency === currency && r.kind === kind).reduce((n, r) => n + r.amountMinor, 0)])) }));
     const policyIds = new Set(selected.map(r => r.policy));
-    const budgets = data.policy.filter((p: Data) => policyIds.has(p.id)).map((p: Data) => {
+    const budgets = data.policy.filter((p: Data) => !p.budgetPeriod && policyIds.has(p.id)).map((p: Data) => {
         const selectedRows = selected.filter(r => r.policy === p.id && r.currency === p.currency);
         const outstanding = data.commitment.filter((e: Data) => e.policy === p.id && e.currency === p.currency).reduce((n: number, e: Data) => n + e.amountMinor, 0);
         return { id: p.id, name: p.name, currency: p.currency, budgetMinor: p.budgetMinor, availableMinor: p.budgetMinor - outstanding - (data.travelExpense ?? []).filter((expense:Data)=>expense.policy===p.id).reduce((sum:number,expense:Data)=>sum+expense.totalMinor,0),
