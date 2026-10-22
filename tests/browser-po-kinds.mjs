@@ -44,7 +44,8 @@ try {
    assert.deepEqual(restored.positions,order.positions,'Restored service value balances remain exact');
   }
   const service=after.order.find(o=>o.lines.some(l=>l.service)&&o.positions.some(p=>p.acceptedMinor===400000));assert.ok(service);
-  await owner.page.goto(server.origin+'/app?tab=Orders&order='+service.id);
+  await owner.page.goto(server.origin+'/app?tab=Orders');
+  await owner.page.getByRole('row').filter({has:owner.page.getByText(service.number,{exact:true})}).getByRole('button',{name:'Open order',exact:true}).click();
   await owner.page.getByRole('heading',{name:service.number+' · issued',exact:true}).waitFor();
   await owner.page.getByText('Exception · Invoice exceeds received service value',{exact:true}).waitFor();
   assert.equal(await owner.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
