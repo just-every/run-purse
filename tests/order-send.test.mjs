@@ -5,6 +5,7 @@ import { PDFName, decodePDFRawStream } from 'pdf-lib';
 import { harness } from './purse-harness.mjs';
 import { pdfContent } from './pdf-content.mjs';
 import { orderSendFixture, orderMessage, orderLink } from './order-send-fixture.mjs';
+import { reauthenticateErasure } from './erasure-flow.mjs';
 import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 
 const publicGet = (h, path) => fetch(new URL(path,h.origin));
@@ -37,6 +38,17 @@ test('Explicit native buyer change send freezes exact numbered PDF and originals
     const history=await h.send('/api/purse/audit.csv?subject='+f.order.id,undefined,h.owner);for(const event of ['order-change-send-claimed','order-change-send-outcome','order-change-acknowledged',sent.value.pdfSha256])assert.ok(history.value.includes(event),event);
     const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
     const corrupt=structuredClone(rows),event=corrupt.find(row=>row.kind==='orderSend');const value=JSON.parse(event.value);value.pdf.base64=Buffer.from('%PDF-synthetic-purse-2826').toString('base64');event.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt),/order_send_pdf_digest/);
+    const changedContent=structuredClone(rows),frozen=changedContent.find(row=>row.kind==='orderSend'),tampered=JSON.parse(frozen.value);tampered.content.sections[0].lines.push('synthetic-purse-2827');frozen.value=JSON.stringify(tampered);assert.throws(()=>validatePurchasingArchive(changedContent),/order_send_content_digest/);
+    // A nominated contact exists only on this explicit send, never in the directory.
+    const inventory=await h.send('/api/purse/erasure',undefined,h.owner);assert.ok(inventory.value.choices.some(choice=>choice.kind==='contact'&&choice.id===f.supplier.id&&choice.email==='synthetic-purse-2820@example.test'));
+    await reauthenticateErasure(h);
+    const meta=await h.send('/api/purse/erasure',undefined,h.owner),preview=await h.send('/api/purse/erasure/preview',{kind:'contact',id:f.supplier.id,email:'synthetic-purse-2820@example.test',revision:meta.value.revision},h.owner);assert.equal(preview.status,200,JSON.stringify(preview.value));assert.ok(preview.value.fields.some(field=>field.kind==='orderSend'&&field.path.includes('base64')));
+    const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
+    for(const suffix of ['', '/pdf','/original/0'])assert.equal((await publicGet(h,link.href+suffix)).status,410);
+    const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(!JSON.stringify(erasedRows).includes('synthetic-purse-2820@example.test'));assert.equal(validatePurchasingArchive(erasedRows),true);
+    const quantityHarness=await harness();t.after(()=>quantityHarness.close());const quantity=await orderSendFixture(quantityHarness,{kind:'quantity'}),quantitySent=await quantity.send();assert.equal(quantitySent.status,200,JSON.stringify(quantitySent.value));assert.equal(quantitySent.value.changeLabel,'Change order 1');
+    const quantityLink=orderLink(quantityHarness),quantityFace=await publicGet(quantityHarness,quantityLink);assert.match(await quantityFace.text(),/quantity: 2 to 3/);assert.equal((await ack(quantityHarness,quantityLink,2)).status,200);assert.equal((await quantityHarness.send('/api/purse/order-send/'+quantity.order.id,undefined,quantity.requester)).value.event.acknowledgment.revision,2);
+
 });
 
 test('Native current buyer scope, exact approval and claim-before-send prevent stale, duplicate and uncertain automatic sends', async t => {
@@ -45,6 +57,8 @@ test('Native current buyer scope, exact approval and claim-before-send prevent s
     for(const [body,cookie,status]of [[{},'',401],[{},f.requester,403],[{revision:1},f.buyer,409],[{consent:false},f.buyer,400]])assert.equal((await f.send(body,cookie)).status,status);
     await h.command('member',{email:'synthetic-purse-2804@example.test',name:'synthetic-purse-2804',active:true,grants:[{role:'buyer',scope:{locations:['Denver']}}]});assert.equal((await f.send()).status,403);
     await h.command('member',{email:'synthetic-purse-2804@example.test',name:'synthetic-purse-2804',active:true,roles:['buyer']});
+    await h.command('member',{email:'synthetic-purse-2803@example.test',name:'synthetic-purse-2803',active:false,roles:['approver']});assert.equal((await f.send()).status,409,'Revoked exact approver authority holds supplier delivery');
+    await h.command('member',{email:'synthetic-purse-2803@example.test',name:'synthetic-purse-2803',active:true,roles:['approver']});
     await h.configureMail({MAIL_PROVIDER:''});
     assert.equal((await f.send()).status,409,'A real unconfigured native mail binding refuses an exact approved order');
     let db=await h.mf.getD1Database('DB');assert.equal((await db.prepare("SELECT count(*) AS n FROM p_records WHERE kind='orderSend'").first()).n,0);assert.equal((await db.prepare('SELECT count(*) AS n FROM p_order_send_links').first()).n,0);

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { termsPdf } from './po-documents-fixtures.mjs';
 import { documentProfileFixture } from './document-profile-fixture.mjs';
 
-export async function orderSendFixture(h) {
+export async function orderSendFixture(h, { kind = 'date' } = {}) {
     const business = { name: 'synthetic-purse-2801', currencies: ['USD'], locations: ['Austin','Denver'], costCentres: ['Operations'], projects: ['General'] };
     await h.command('business', business);
     const requester = await h.member('synthetic-purse-2802@example.test',['requester']);
@@ -18,7 +18,14 @@ export async function orderSendFixture(h) {
     await h.command('submit',{id:request.id,revision:1},requester);
     await h.command('decision',{id:request.id,revision:1,decision:'approved',reason:'Exact initial approval'},approver);
     const initial = await h.command('convert',{id:request.id,revision:1,issue:true},buyer);
-    const changed = await h.command('need-date-edit',{id:request.id,revision:1,line:request.lines[0].id,needDate:'2026-11-08',reason:'Requester corrected the needed date'},requester);
+    let changed;
+    if(kind==='quantity'){
+        changed=await h.command('amend',{...request,id:request.id,revision:1,lines:request.lines.map(line=>({...line,quantity:'3'})),reason:'Supplier quantity amendment needs renewed approval'},requester);
+        await h.command('submit',{id:request.id,revision:changed.revision},requester);
+        await h.command('decision',{id:request.id,revision:changed.revision,decision:'approved',reason:'Exact quantity amendment approved'},approver);
+        const issued=await h.command('convert',{id:request.id,revision:changed.revision,issue:true},buyer);
+        changed={...changed,needDateEdit:{order:issued.id}};
+    }else changed = await h.command('need-date-edit',{id:request.id,revision:1,line:request.lines[0].id,needDate:'2026-11-08',reason:'Requester corrected the needed date'},requester);
     const order = (await h.state()).data.order.find(order=>order.id===changed.needDateEdit.order);
     assert.equal(order.status,'issued');
     const send = async (body={}, cookie=buyer) => h.send('/api/purse/order-send',{order:order.id,revision:order.revision,recipient:'synthetic-purse-2820@example.test',reason:'Explicit supplier date correction',consent:true,...body},cookie);

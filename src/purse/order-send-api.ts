@@ -15,14 +15,14 @@ orderSendApi.post('/api/purse/order-send', async c => {
 orderSendApi.get('/api/purse/order-send/:order', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB), order = get(state, 'order', c.req.param('order'));
     requirePermission(state, a, 'po.read', order);
-    const event = state.get('orderSend:' + order.id)?.value;
+    const event = state.get('orderSend:order-send:' + order.id)?.value;
     await readFence(c.env.DB, a, revision);
     return c.json({ event: event ? orderSendSummary(event) : null });
 });
 orderSendApi.post('/api/purse/order-send/:order/revoke', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB), order = get(state, 'order', c.req.param('order'));
     requirePermission(state, a, 'po.issue', order);
-    const event = get(state, 'orderSend', order.id), auth = authority(a), at = new Date().toISOString();
+    const event = get(state, 'orderSend', 'order-send:' + order.id), auth = authority(a), at = new Date().toISOString();
     await c.env.DB.batch([
         c.env.DB.prepare(`INSERT INTO p_guard SELECT CASE WHEN (${auth.sql}) AND (SELECT revision FROM p_meta WHERE id=1)=? THEN 1 ELSE 0 END`).bind(...auth.params, revision),
         c.env.DB.prepare('UPDATE p_order_send_links SET revoked_at=? WHERE send=? AND revoked_at IS NULL').bind(Date.now(), event.id),

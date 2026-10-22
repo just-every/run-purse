@@ -15,5 +15,5 @@ export const orderDigest = async (bytes: Uint8Array) => [...new Uint8Array(await
 export async function freezeOrderSend(state: State, order: Data) {
     const content = poContent(state, order), font = orderBytes(fontData.split(',')[1]);
     const bytes = await renderPoPdf(content, font);
-    return { content, pdf: { name: order.number + '-revision-' + order.revision + '.pdf', base64: orderBase64(bytes), sha256: await orderDigest(bytes), size: bytes.length } };
+    return { content, contentSha256: await orderDigest(new TextEncoder().encode(JSON.stringify(content))), pdf: { name: order.number + '-revision-' + order.revision + '.pdf', base64: orderBase64(bytes), sha256: await orderDigest(bytes), size: bytes.length } };
 }

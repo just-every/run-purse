@@ -10,7 +10,7 @@ export function validateOrderSends(all, get, check) {
     const audits = all('audit'), seen = new Set();
     for (const event of all('orderSend')) {
         const order = get('order', event.order), revision = get('revision', order.request + ':' + order.revision);
-        check(!seen.has(order.id) && event.id === order.id && !order.imported && !order.adoption && order.issuedAt && (revision.amends || order.cancellation), 'order_send_source'); seen.add(order.id);
+        check(!seen.has(order.id) && event.id === 'order-send:' + order.id && !order.imported && !order.adoption && order.issuedAt && (revision.amends || order.cancellation), 'order_send_source'); seen.add(order.id);
         check(event.request === order.request && event.supplier === order.supplier && event.number === order.number && event.revision === order.revision && /^(?:Change order [1-9]\d*|Approved cancellation)$/.test(event.changeLabel), 'order_send_revision');
         check(nonempty(event.actor) && nonempty(event.email) && nonempty(event.reason) && nonempty(event.recipient) && timestamp(event.at) && Date.parse(event.at) >= Date.parse(order.issuedAt) && timestamp(event.expiresAt) && Date.parse(event.expiresAt) > Date.parse(event.at) && Date.parse(event.expiresAt) - Date.parse(event.at) <= 7 * 86400000, 'order_send_custody');
         check(['uncertain','accepted','rejected','rate_limited','suppressed','unavailable'].includes(event.status), 'order_send_status');
@@ -25,11 +25,12 @@ export function validateOrderSends(all, get, check) {
         else {
             const bytes = Buffer.from(file.base64, 'base64');
             check(bytes.length === file.size && bytes.subarray(0,5).toString() === '%PDF-' && digest(bytes) === file.sha256, 'order_send_pdf_digest');
+            check(digest(JSON.stringify(event.content)) === event.contentSha256, 'order_send_content_digest');
             check(event.content.title === `${order.documentProfile?.legalName || 'Legal entity: Not recorded'} · ${order.number}`, 'order_send_identity');
             check(equal(event.content.attachments, [order.documentProfile?.termsFile,order.documentProfile?.certificate].filter(file => file && !file.erasure)), 'order_send_originals');
             check(event.content.sections.some(section => section.heading === event.changeLabel), 'order_send_number');
         }
-        check(audits.some(audit => audit.action === 'order-change-send-claimed' && audit.record === order.id && audit.send === event.id && audit.actor === event.actor && audit.email === event.email && audit.recipient === event.recipient && audit.revision === event.revision && audit.reason === event.reason && audit.pdfSha256 === file.sha256 && audit.at === event.at), 'order_send_claim_audit');
+        check(audits.some(audit => audit.action === 'order-change-send-claimed' && audit.record === order.id && audit.send === event.id && audit.actor === event.actor && audit.email === event.email && audit.recipient === event.recipient && audit.revision === event.revision && audit.reason === event.reason && audit.pdfSha256 === file.sha256 && audit.contentSha256 === event.contentSha256 && audit.at === event.at), 'order_send_claim_audit');
         if (event.outcomeAt) check(audits.some(audit => audit.action === 'order-change-send-outcome' && audit.record === order.id && audit.send === event.id && audit.status === event.status && audit.pdfSha256 === file.sha256 && audit.at === event.outcomeAt), 'order_send_outcome_audit');
         if (event.revokedAt) check(timestamp(event.revokedAt) && audits.some(audit => audit.action === 'order-change-link-revoked' && audit.record === order.id && audit.send === event.id && audit.at === event.revokedAt), 'order_send_revoke_audit');
         if (event.acknowledgment) check(equal(event.acknowledgment, get('orderAcknowledgment', event.id)), 'order_acknowledgment_link');
