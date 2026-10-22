@@ -1,3 +1,4 @@
+import {harness} from './purse-harness.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {accessFixture} from './access-fixture.mjs';
@@ -73,4 +74,40 @@ test('Scoped procurement roles, native custom receiving, report sources, audit g
  assert.ok((await h.send('/api/purse/audit.csv?subject='+subject.email,undefined,h.owner)).value.includes('buyer-zero-limit'));
  assert.ok(ownerEvents.some(e=>e.action==='member'&&e.after.email==='receiving-lead@example.test'&&e.after.grants.length===0&&e.before.grants.length===1));
  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
+});
+
+test('Native mutation and value snapshots keep private policies and revisions scoped while edited fields reach former approvers',async t=>{
+ const h=await harness();t.after(()=>h.close());const cmd=h.command;
+ await cmd('business',{name:'synthetic-purse-2800',currencies:['USD'],locations:['Austin'],costCentres:['Operations','Research'],projects:['General','Private']});
+ const requester=await h.member('synthetic-purse-2801@example.test',['requester']);
+ const manager=await h.member('synthetic-purse-2802@example.test',['approver']);
+ const finance=await h.member('synthetic-purse-2803@example.test',['approver']);
+ const other=await h.member('synthetic-purse-2804@example.test',['requester']);
+ for(const [email,role,departments,projects]of [['synthetic-purse-2801@example.test','requester',['Operations'],['General']],['synthetic-purse-2802@example.test','approver',['Operations'],['General']],['synthetic-purse-2803@example.test','approver',['Operations','Research'],['General']]])await cmd('member',{email,name:email,active:true,grants:[{role,scope:{departments,projects}}]});
+ const supplier=await cmd('supplier',{name:'synthetic-purse-2805',status:'preferred',reason:'Reviewed'});
+ const policy={name:'synthetic-purse-2806',currency:'USD',category:'*',project:'*',costCentre:'Operations',approver:'synthetic-purse-2802@example.test',limitMinor:1000000,budgetMinor:10000000,approvalSteps:[{email:'synthetic-purse-2803@example.test'}],editRules:{'*':{allowed:['class','costCentre'],material:['costCentre']}}};
+ const ops=await cmd('policy',policy);await cmd('policy',{...policy,name:'synthetic-purse-2807',costCentre:'Research'});
+ const input={title:'synthetic-purse-2808',supplier:supplier.id,currency:'USD',needDate:'2026-11-15',location:'Austin',costCentre:'Operations',terms:'synthetic-purse-2809 private prior terms',valuePromise:{kind:'need-date',needDate:'2026-11-15'},lines:[{description:'synthetic-purse-2810',quantity:'1',unitMinor:400000,category:'goods',project:'General'}]};
+ const hidden=await cmd('request',{...input,title:'synthetic-purse-2811 private purchase',lines:input.lines.map(line=>({...line,project:'Private'}))},other);await cmd('submit',{id:hidden.id,revision:1},other);
+ const create=async()=>{const r=await cmd('request',input,requester);await cmd('submit',{id:r.id,revision:1},requester);await cmd('decision',{id:r.id,revision:1,decision:'approved',reason:'Manager reviewed'},manager);return r;};
+ const r=await create();const edited=await cmd('approver-edit',{id:r.id,revision:1,changes:{class:'Equipment'},reason:'Classification corrected'},finance);
+ assert.equal(edited.approverEdit.policy,null);assert.equal(edited.approverEdit.sourcePolicy,null,'Command response cannot expose a whole-policy snapshot');assert.equal(edited.approverEdit.differences[0].after,'Equipment');
+ const approved=await cmd('decision',{id:r.id,revision:2,decision:'approved',reason:'Finance reviewed'},finance);assert.equal(approved.approverEdit.policy,null,'Decision mutation has the same scope as state');
+ await cmd('value-policy',{version:0,enabled:true,reason:'Explicit value evidence'});
+ const report=await cmd('value-report',{request:r.id,revision:2},finance);
+ assert.ok(report.inputs.sources.filter(source=>source.kind==='decision').every(source=>source.value.policySnapshot===null),'Embedded nonfinancial report decisions cannot leak private policy snapshots');
+ const download=await h.send('/api/purse/download/agentRun/'+report.id,undefined,finance);assert.equal(download.status,200);assert.ok(!JSON.stringify(download.value).includes('synthetic-purse-2811'));
+ const movedSource=await create();const moved=await cmd('approver-edit',{id:movedSource.id,revision:1,changes:{costCentre:'Research'},reason:'Research owns the purchase'},finance);
+ assert.equal(moved.approverEdit.sourcePolicy,null);
+ for(const cookie of [requester,manager]){
+  const data=(await h.state(cookie)).data;assert.ok(!data.request.some(row=>row.id===movedSource.id));
+  const notice=data.approvalEditNotice.find(row=>row.request===movedSource.id);assert.deepEqual(notice.differences.map(({field,before,after})=>({field,before,after})),[{field:'costCentre',before:'Operations',after:'Research'}]);
+  assert.equal(notice.policy,undefined);assert.equal(notice.lines,undefined);assert.equal(notice.terms,undefined);
+ }
+ const next=await cmd('amend',{...input,id:r.id,revision:2,costCentre:'Research',lines:approved.lines,reason:'Research assumes later scope'});
+ await cmd('member',{email:'synthetic-purse-2803@example.test',name:'Finance',active:true,grants:[{role:'approver',scope:{departments:['Research'],projects:['General']}}]});
+ const later=(await h.state(finance)).data.valueRun.find(row=>row.id===report.id);assert.ok(later);assert.equal(later.inputs.promise,null);assert.equal(later.report.status,'restricted');
+ assert.ok(later.inputs.sources.filter(source=>['request','revision','decision'].includes(source.kind)).every(source=>source.restricted&&!source.value));
+ assert.ok(!JSON.stringify(later).includes('synthetic-purse-2809 private prior terms'));
+ assert.equal(next.costCentre,'Research');
 });

@@ -1,4 +1,6 @@
-import { periodBudgetPosition } from './budget-position';
+import { visibleTravel } from './travel';
+import { approvalEditNotices } from './approval-edit-view';
+import { visibleBudgetPositions } from './budget-view';
 import { visibleIntakeForms } from './intake-forms';
 import { projectProtectedContext } from './protected-context';
 import { publicEvidence } from './invoice-status';
@@ -39,6 +41,8 @@ function cashView(s: State, a: Actor, orderIds: Set<string>, invoiceIds: Set<str
 export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) {
     const permissions = resolvedPermissions(s, a); requireThat(permissions.length, 'No active business membership', 403);
     const { data, requestIds, orderIds, invoiceIds } = purchasingProjection(s, a);
+    data.approvalEditNotice = approvalEditNotices(s, a);
+    Object.assign(data, visibleTravel(s, a, requestIds));
     for (const kind of ['business', 'code']) data[kind] = all(s, kind);
     Object.assign(data, visibleAgentValue(s, a, requestIds), visibleEmailIntakes(s, a), visibleRfqs(s, a),
         visibleQuoteReadings(s, requestIds), visibleInvoiceReadings(s, a), visibleInvoiceInbox(s, a), peopleProjection(s, a, data.order));
@@ -47,7 +51,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.supplierProposal = all(s,'supplierProposal').filter(proposal => proposal.requester === a.id || unrestrictedPermission(s,a,'procurement.manage'));
     const globalProcurement = unrestrictedPermission(s, a, 'procurement.manage');
     data.mayManageSupplierRegister = globalProcurement;
-    data.periodBudgets = data.policy.filter((policy:Data)=>policy.budgetPeriod).map((policy:Data)=>{const position=periodBudgetPosition(s,policy);return {...position,sources:position.sources.map(source=>({...source,invoiceIds:source.invoiceIds.filter((id:string)=>invoiceIds.has(id)),depositIds:allowed(s,a,'invoice.read',get(s,'request',source.request))?source.depositIds:[]}))};});
+    data.periodBudgets = visibleBudgetPositions(s, a, data);
     data.supplier = all(s, 'supplier').map(supplier => {
         const eligible = mayReadProtectedSupplier(s, a, supplier), value: Data = supplierPublicValue(supplier, eligible ? protectedViews?.get(supplier.id) : undefined);
         delete value.proposedBy;

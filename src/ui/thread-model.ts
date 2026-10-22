@@ -18,7 +18,7 @@ export function askedTimes(data: D) { const first = new Map<string, string>(); f
 export const orderOf = (data: D, r: D) => data.order.filter((o: D) => o.request === r.id && o.status !== 'superseded').sort((a: D, b: D) => b.revision - a.revision)[0];
 export const decisionOf = (data: D, r: D) => data.decision.filter((d: D) => d.request === r.id && d.revision === r.revision).sort((a: D, b: D) => b.at.localeCompare(a.at))[0];
 /** A request is decided when no one has a next step on it: approved with its PO raised, declined, or imported history. */
-export const isDecided = (data: D, r: D) => Boolean(r.imported || r.status === 'rejected' || (r.status === 'approved' && orderOf(data, r)));
+export const isDecided = (data: D, r: D) => Boolean(r.imported || r.status === 'rejected' || (r.status === 'approved' && (r.purchaseType==='travel'||orderOf(data, r))));
 export const policyOf = (data: D, r: D) => r.policy ? data.policy.find((p: D) => p.id === r.policy) : coveringPolicies(data.policy, r)[0];
 
 export function holdsAuthority(_data: D, actor: D, r: D) {
@@ -35,6 +35,7 @@ export function verbFor(data: D, actor: D, r: D): 'approve' | 'submit' | 'conver
 }
 /** Who owns the next step, named for the card. */
 export function nextStep(data: D, actor: D, r: D) {
+    if(r.purchaseType==='travel'&&r.status==='approved')return r.travel?.closedAt?'Trip expenses reconciled':'Approved for booking · '+r.travel?.approvalReference;
     const you = (email: string) => email === actor.email ? 'You' : personName(data, email);
     if (['draft', 'returned'].includes(r.status)) return `${you(r.requesterEmail)} ${r.requesterEmail === actor.email ? 'submit' : 'submits'}`;
     if (r.status === 'pending') {
@@ -61,7 +62,7 @@ export function checks(data: D, actor: D, r: D) {
     if (r.imported) return out;
     if (isStaff(actor) && ['draft', 'returned', 'pending'].includes(r.status)) {
         const p = policyOf(data, r);
-        if (!p) out.push({ label: r.policy ? 'budget position restricted' : 'no policy covers this', tone: 'warn' });
+        if (!p) { const position=data.periodBudgets?.find((budget:D)=>budget.id===r.policy);out.push(r.budgetOwnerReview?{label:'over-budget owner route',tone:'warn'}:position?{label:position.availableMinor>=0?'in budget ✓':'over budget',tone:position.availableMinor>=0?'ok':'warn'}:{ label: r.policy ? 'budget position restricted' : 'no policy covers this', tone: 'warn' }); }
         else { const need = Math.max(0, approvalAmount(r, billed(data, r)) - balance(data, p.id, r.id));
             if(p.budgetPeriod){const position=data.periodBudgets?.find((position:D)=>position.id===p.id);out.push(r.budgetOwnerReview?{label:'over-budget owner route',tone:'warn'}:!position?{label:'budget position restricted',tone:'warn'}:position.availableMinor>=need?{label:'in budget ✓',tone:'ok'}:{label:'over budget',tone:'warn'});}
             else out.push(balance(data, p.id) + need <= p.budgetMinor ? { label: 'in budget ✓', tone: 'ok' } : { label: 'over budget', tone: 'warn' }); }

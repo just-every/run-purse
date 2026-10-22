@@ -1,3 +1,5 @@
+import { mayReadPolicySnapshot, projectApprovalEdit } from './approval-edit-view';
+import { canReadRecord } from './access-records';
 import { projectProtectedContext, protectedContextPending } from './protected-context';
 import { approvedValueRequest, buildValueSnapshot, canonicalValue, parseSeatOriginal, valueDigest, valueMode, valueDelivery } from './agent-value-evidence';
 import { all, allowed, audit, can, date, get, key, own, put, requirePermission, requireThat, roles, text, uid, type Actor, type Data, type State } from './types';
@@ -98,20 +100,45 @@ export function visibleAgentValue(s: State, a: Actor, visibleRequestIds: Set<str
         valueCheckin: all(s, 'valueCheckin').filter(v => visibleRequestIds.has(v.request)).map(v => projectValueRecord(s,a,v)) };
 }
 
-/** Stored financial provenance follows current performance permission on its exact source request. */
+/** Immutable snapshots retain custody, while each read follows current source grants. */
 export function projectValueRecord(s: State, a: Actor, row: Data): Data {
-    row=projectProtectedContext('agentRun',row);
+    const projected = structuredClone(projectProtectedContext('agentRun', row));
+    if (!projected.inputs?.sources) return projected;
     const request = row.request ? s.get('request:' + row.request)?.value : undefined;
-    if (row.inputs?.promise?.kind !== 'quoted-saving' || request && allowed(s, a, 'performance.read', request)) return row;
-    const projected = structuredClone(row), restricted = new Set(['quote', 'quoteAward', 'agreementAward', 'invoice', 'payable']);
-    const sources = (values: Data[]) => values.map(source => restricted.has(source.kind)
-        ? { kind: source.kind, id: source.id, version: source.version, restricted: true } : source);
-    const assessment = { kind: 'quoted-saving', status: 'restricted', promisedMinor: row.inputs.promise.amountMinor,
-        currency: row.inputs.promise.currency,
-        statement: 'Financial evidence requires procurement performance permission on this request; requester confirms usefulness' };
-    projected.inputs.assessment = assessment;
+    const approved = s.get('revision:' + row.request + ':' + row.revision)?.value;
+    const historicalRestricted = approved && !allowed(s, a, 'request.read', approved);
+    const restrictedFinancial = row.inputs?.promise?.kind === 'quoted-saving'
+        && !(request && allowed(s, a, 'performance.read', request));
+    const financial = new Set(['quote', 'quoteAward', 'agreementAward', 'invoice', 'payable']);
+    const sources = (values: Data[]) => values.map(source => {
+        const value = source.value;
+        let readable = Boolean(value);
+        if (['request', 'revision', 'decision'].includes(source.kind)) {
+            const exact = source.kind === 'decision' && value ? s.get('revision:' + value.request + ':' + value.revision)?.value : value;
+            readable = Boolean(exact && allowed(s, a, 'request.read', exact));
+        }
+        else if (source.kind === 'receipt') readable = Boolean(value && allowed(s, a, 'po.read', s.get('order:' + value.order)?.value ?? {}));
+        else if (source.kind === 'supplierIssue') readable = Boolean(value && ['procurement.manage','performance.read'].some(permission => allowed(s,a,permission,value)));
+        else if (['order', 'invoice', 'attachment'].includes(source.kind)) readable = Boolean(value && canReadRecord(s, a, source.kind, value));
+        if (!readable || restrictedFinancial && financial.has(source.kind))
+            return { kind: source.kind, id: source.id, version: source.version, restricted: true };
+        let safe = projectApprovalEdit(s, a, value);
+        if (safe.policySnapshot && !mayReadPolicySnapshot(s, a, safe.policySnapshot))
+            safe = { ...safe, policySnapshot: null, snapshotBasis: 'Whole-policy snapshot outside your purchase scope' };
+        return { ...source, value: safe };
+    });
     projected.inputs.sources = sources(projected.inputs.sources);
     if (projected.sources) projected.sources = sources(projected.sources);
-    if (projected.report) projected.report = assessment;
+    if (historicalRestricted) {
+        const assessment = { status: 'restricted', statement: 'Prior revision outside your current purchase scope' };
+        projected.inputs.promise = null; projected.inputs.assessment = assessment;
+        if (projected.report) projected.report = assessment;
+    } else if (restrictedFinancial) {
+        const assessment = { kind: 'quoted-saving', status: 'restricted', promisedMinor: row.inputs.promise.amountMinor,
+            currency: row.inputs.promise.currency,
+            statement: 'Financial evidence requires procurement performance permission on this request; requester confirms usefulness' };
+        projected.inputs.assessment = assessment;
+        if (projected.report) projected.report = assessment;
+    }
     return projected;
 }

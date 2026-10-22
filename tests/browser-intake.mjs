@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {build} from 'esbuild';
-import {chromium} from '@playwright/test';
+const {chromium} = await import(process.env.PURSE_PLAYWRIGHT_MODULE ?? '@playwright/test');
 import {createPortability} from '@runeditrun/rer/modules/portability';
 import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';

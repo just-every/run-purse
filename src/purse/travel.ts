@@ -41,7 +41,7 @@ export function travelCommands(s: State, a: Actor, op: string, input: Data): Dat
         const id = previous?.id ?? uid(), revision = (previous?.revision ?? 0) + 1;
         const lines = travelCostCategories.map(category => ({ id: previous?.lines.find((line: Data) => line.travelCategory === category)?.id ?? uid(), description: travelCostLabels[category], quantity: '1', q: 1000, unitMinor: travel.costs[category + 'Minor'], totalMinor: travel.costs[category + 'Minor'], category: 'travel', travelCategory: category, project, allocations: [], requiredAttachments: [], unit: 'trip', partNumber: '', lineTaxMinor: 0 }));
         const request: Data = { id, revision, status: 'draft', purchaseType: 'travel', requester: previous?.requester ?? a.id, requesterEmail: previous?.requesterEmail ?? a.email, requesterOwner: previous?.requesterOwner ?? a.owner,
-            title: text(input.title, 'Travel request title'), travel, currency: input.currency, location, costCentre, project, needDate: travel.departureDate, supplier: null, supplierSnapshot: null, lines, freightMinor: 0, taxMinor: 0, totalMinor: travel.totalMinor, terms: travel.purpose, policy: null, poDetails: {} };
+            title: text(input.title, 'Travel request title'), travel, currency: input.currency, location, costCentre, project, needDate: travel.departureDate, supplier: null, supplierSnapshot: null, lines, freightMinor: 0, taxMinor: 0, totalMinor: travel.totalMinor, terms: travel.purpose, policy: null, poDetails: { depositTerms: '', notes: '', shippingTerms: '', buyerContact: '' } };
         requirePermission(s, a, previous ? 'request.edit' : 'request.create', request);
         if (previous) {
             const balances = new Map<string, Data>();

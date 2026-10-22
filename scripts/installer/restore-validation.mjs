@@ -1,3 +1,5 @@
+import { validateTravel } from './restore-travel.mjs';
+import { validateConversionRevisions, validatePurchaseCharges } from './restore-conversion-variance.mjs';
 import { validateApprovalChains } from './restore-approval-chain.mjs';
 import { validateIntake } from './restore-intake.mjs';
 import { validateAdoptionAmendments } from './restore-adoption-amendments.mjs';
@@ -29,7 +31,7 @@ import { validateSupplierDocuments } from './restore-supplier-documents.mjs';
 import { validateAccess } from './restore-access.mjs';
 import { validateScim } from './restore-scim.mjs';
 
-const kinds = new Set(['intakeForm','intakeDraft','supplierProposal','orderAdoption','deposit','budget','blanketRelease','recurringSeries','recurringEvent','erasureReceipt','scimUser','scimApprovalTransfer','accessRole','buyerRoleLimit','invoiceEvidenceKey','invoiceEvidenceMigration','invoiceInboxConfig','apInvoiceEmail','valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
+const kinds = new Set(['travelExpense','intakeForm','intakeDraft','supplierProposal','orderAdoption','deposit','budget','blanketRelease','recurringSeries','recurringEvent','erasureReceipt','scimUser','scimApprovalTransfer','accessRole','buyerRoleLimit','invoiceEvidenceKey','invoiceEvidenceMigration','invoiceInboxConfig','apInvoiceEmail','valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
 export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
 export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
 export const integer = n => Number.isSafeInteger(n) && n >= 0;
@@ -48,11 +50,12 @@ export function lineAmounts(r, quote = false) {
   check(integer(l.carriedAccepted ?? 0) && integer(l.carriedCancelled ?? 0) && (l.carriedAccepted ?? 0) + (l.carriedCancelled ?? 0) <= l.q, 'line_carry');
  }
  if (quote) { check((r.freightMinor === null || money(r.freightMinor)) && (r.taxMinor === null || money(r.taxMinor)), 'quote_amount'); return; }
- check(money(r.freightMinor) && money(r.taxMinor) && money(r.totalMinor), 'total');
- check(r.totalMinor === r.lines.reduce((n,l) => n + l.totalMinor,0) + r.freightMinor + r.taxMinor, 'total');
+ validatePurchaseCharges(r);
+ check(money(r.freightMinor) && money(r.taxMinor) && money(r.totalMinor) && money(r.otherChargesMinor ?? 0), 'total');
+ check(r.totalMinor === r.lines.reduce((n,l) => n + l.totalMinor,0) + r.freightMinor + r.taxMinor + (r.otherChargesMinor ?? 0), 'total');
 }
-const purchaseFields = ['valuePromise','supplier','supplierSnapshot','currency','needDate','lines','freightMinor','taxMinor','totalMinor','terms','poDetails'];
-export const purchasing = r => Object.fromEntries(purchaseFields.filter(k=>!['poDetails','valuePromise'].includes(k)||Object.hasOwn(r,k)).map(k => [k,r[k]]));
+const purchaseFields = ['charges','otherChargesMinor','purchaseType','travel','valuePromise','supplier','supplierSnapshot','currency','needDate','lines','freightMinor','taxMinor','totalMinor','terms','poDetails'];
+export const purchasing = r => Object.fromEntries(purchaseFields.filter(k=>!['charges','otherChargesMinor','purchaseType','travel','poDetails','valuePromise'].includes(k)||Object.hasOwn(r,k)).map(k => [k,k==='travel'?Object.fromEntries(Object.entries(r[k]).filter(([field])=>!['closedAt','expenseReport'].includes(field))):r[k]]));
 
 // Generic JSON rows have no SQL foreign keys. Validate the complete staged graph
 // read-only before Base writes any destination records or objects.
@@ -72,11 +75,13 @@ export function validatePurchasingArchive(rows) {
  check(all('business').length === 1, 'business'); get('business','main');
  validateAccess(all,get);
  validateApprovalChains(all,get,check,same);
+ validateTravel(all,get,check,same);
+ validateConversionRevisions(all,get);
  validateIntake(all,get,check);
  validateScim(all,get,rows);
  for (const kind of ['request','revision','order']) for (const r of all(kind)) {
-  get('supplier',r.supplier); lineAmounts(r);
-  if (!r.imported) {
+  if (r.purchaseType !== 'travel') get('supplier',r.supplier); lineAmounts(r);
+  if (!r.imported && r.purchaseType !== 'travel') {
    const identity = r.supplierSnapshot;
    check(identity?.id === r.supplier && typeof identity.name === 'string' && identity.name.trim().length && Array.isArray(identity.contacts) && typeof identity.contractRef === 'string', 'supplier_identity');
    check(identity.contacts.every(c => typeof c.name === 'string' && typeof c.email === 'string'),'supplier_contacts');
@@ -114,7 +119,7 @@ export function validatePurchasingArchive(rows) {
   for (const item of bundle.items) { get('catalogue',item.catalogue); quantity(item.quantity); }
  }
  for (const d of all('delegation')) get('policy',d.policy);
- for (const e of all('commitment')) { get('revision',e.request + ':' + e.revision); get('policy',e.policy); check(Number.isSafeInteger(e.amountMinor),'commitment_amount'); }
+ for (const e of all('commitment')) { get('revision',e.request + ':' + e.revision); get('policy',e.policy); check(Number.isSafeInteger(e.amountMinor),'commitment_amount'); if(e.budgetAllocations){check(Array.isArray(e.budgetAllocations)&&e.budgetAllocations.reduce((sum,share)=>sum+share.amountMinor,0)===e.amountMinor,'commitment_allocations');for(const share of e.budgetAllocations){check(Number.isSafeInteger(share.amountMinor),'commitment_allocation');check(get('policy',share.policy).currency===e.currency,'commitment_allocation_currency');}} }
  for (const a of all('attachment')) {
   check(a.privateSupplierDocument === undefined || typeof a.privateSupplierDocument === 'boolean' && (!a.privateSupplierDocument || a.kind === 'supplier'),'supplier_document_private');
   check(['intakeDraft','request','supplier','order','invoice','invoiceSource','agreement'].includes(a.kind),'attachment_kind'); get(a.kind,a.record);

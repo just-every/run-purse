@@ -1,3 +1,5 @@
+import { normalizePurchaseCharges } from './purchase-charges';
+import { eventBudgetPortion, requestBudgetShares } from './budget-allocations';
 import { budgetRoom } from './budget-position';
 import { startChain, chainDecision } from './approval-chain';
 import { operationalOrder } from './adoption-position';
@@ -18,11 +20,11 @@ import { supplier, currency } from './admin';
 import { approvalAmount as approvalOf, coveringPolicies } from './policy-match';
 export function lines(s: State, input: unknown, a: Actor) { requireThat(Array.isArray(input) && input.length > 0 && input.length <= 100, 'Provide 1–100 lines'); return input.map((x: Data) => { const item = x.catalogue ? get(s, 'catalogue', x.catalogue) : undefined; if (item)
     { requireCatalogueAccess(s, a, item); requireThat(item.approved, 'Catalogue item is not approved'); requireThat(currentPrice(item), 'Catalogue price is outside its validity dates', 409); } const unitMinor = moneyInput(x, 'unitAmount', 'unitMinor', 'Unit price', { fallback: item?.unitMinor }), q = quantity(x.quantity); return { id: x.id ?? uid(), description: text(x.description ?? item?.description, 'Line description'), quantity: x.quantity, q, unitMinor, totalMinor: extended(q, unitMinor), category: text(x.category ?? item?.category, 'Category'), project: text(x.project || item?.project, 'Project'), catalogue: item?.id ?? null, partNumber: item?.partNumber ?? x.partNumber ?? '', unit: item?.unit ?? x.unit ?? 'each', shipTo: optionalPoText(x.shipTo, 'Line ship to'), lineTaxMinor: Object.hasOwn(x, 'lineTaxAmount') || Object.hasOwn(x, 'lineTaxMinor') ? moneyInput(x, 'lineTaxAmount', 'lineTaxMinor', 'Line tax', { optional: true }) : null, requiredAttachments: item?.requiredAttachments ?? x.requiredAttachments ?? [], allocations: splitValues(s, x.allocations, extended(q, unitMinor)), ...(x.service != null ? { service: serviceTerms(x.service, extended(q, unitMinor)) } : {}) }; }); }
-export function requestTotal(r: Data) { const total = r.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0) + r.freightMinor + r.taxMinor; return minor(total, 'Request total'); }
+export function requestTotal(r: Data) { const total = r.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0) + r.freightMinor + r.taxMinor + (r.otherChargesMinor ?? 0); return minor(total, 'Request total'); }
 export function policies(s: State, r: Data) { return coveringPolicies(all(s, 'policy'), r); }
-export const reserved = (s: State, policy: string) => all(s, 'commitment').filter(e => e.policy === policy).reduce((n, e) => n + e.amountMinor, 0);
-export function reservationAvailable(s: State, r: Data, amountMinor: number) { const p = policies(s, r).find(p => p.id === r.policy); return Boolean(p && ((p.overBudget==='owner' && r.budgetOwnerReview && r.totalMinor===s.get('request:'+r.id)?.value.totalMinor && all(s,'decision').some(decision=>decision.request===r.id&&decision.revision===r.revision&&decision.decision==='approved'&&decision.email===p.budgetOwner&&decision.policyVersion===s.get('policy:'+p.id)?.revision)) || (budgetRoom(s,r,p,amountMinor) ?? reserved(s,p.id)+amountMinor<=p.budgetMinor))); }
-export function ledger(s: State, a: Actor, r: Data, amountMinor: number, kind: string) { requireThat(amountMinor <= 0 || reservationAvailable(s, r, amountMinor), 'Current policy or budget does not authorize replenishment; renew approval', 409); const balance=all(s,'commitment').filter(e=>e.currency===r.currency).reduce((n,e)=>n+e.amountMinor,0);requireThat(Number.isSafeInteger(balance+amountMinor),'Commitment exceeds supported integer range',409);const id = uid(); put(s, 'commitment', id, { request: r.id, revision: r.revision, policy: r.policy, currency: r.currency, amountMinor, kind, actor: a.id, at: new Date().toISOString() }); }
+export const reserved = (s: State, policy: string) => all(s, 'commitment').reduce((n, e) => n + eventBudgetPortion(e, policy), 0);
+export function reservationAvailable(s: State, r: Data, amountMinor: number) { const p = policies(s, r).find(p => p.id === r.policy); return Boolean(p && ((!p.budgetPeriod && p.overBudget==='owner' && r.budgetOwnerReview && r.totalMinor===s.get('request:'+r.id)?.value.totalMinor && all(s,'decision').some(decision=>decision.request===r.id&&decision.revision===r.revision&&decision.decision==='approved'&&decision.email===p.budgetOwner&&decision.policyVersion===s.get('policy:'+p.id)?.revision)) || (budgetRoom(s,r,p,amountMinor) ?? reserved(s,p.id)+all(s,'travelExpense').filter(expense=>expense.policy===p.id&&expense.currency===p.currency).reduce((sum,expense)=>sum+expense.totalMinor,0)+amountMinor<=p.budgetMinor))); }
+export function ledger(s: State, a: Actor, r: Data, amountMinor: number, kind: string) { requireThat(amountMinor <= 0 || reservationAvailable(s, r, amountMinor), 'Current policy or budget does not authorize replenishment; renew approval', 409); const balance=all(s,'commitment').filter(e=>e.currency===r.currency).reduce((n,e)=>n+e.amountMinor,0);requireThat(Number.isSafeInteger(balance+amountMinor),'Commitment exceeds supported integer range',409);const id = uid(); put(s, 'commitment', id, { request: r.id, revision: r.revision, policy: r.policy, currency: r.currency, amountMinor, budgetAllocations: requestBudgetShares(s, r, Math.abs(amountMinor)).map(share => ({...share, amountMinor: amountMinor < 0 ? -share.amountMinor : share.amountMinor})), kind, actor: a.id, at: new Date().toISOString() }); }
 export function authorizedApproval(s: State, a: Actor, r: Data) {
     requirePermission(s, a, 'request.approve', r);
     requireThat(a.id !== r.requester && a.email !== r.requesterEmail, 'Self approval is prohibited', 403);
@@ -61,6 +63,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         if(old?.quoteTerms) (r as Data).quoteTerms = structuredClone(old.quoteTerms);
         (r as Data).poDetails = { blanket: blanketTerms((b.poDetails ?? old?.poDetails)?.blanket), depositTerms: optionalPoText((b.poDetails ?? old?.poDetails)?.depositTerms, 'Deposit/prepayment terms'), notes: optionalPoText((b.poDetails ?? old?.poDetails)?.notes, 'Notes to supplier'), shippingTerms: optionalPoText((b.poDetails ?? old?.poDetails)?.shippingTerms, 'Shipping terms'), buyerContact: optionalPoText((b.poDetails ?? old?.poDetails)?.buyerContact, 'Buyer contact') };
         applyIntakeFields(s, r, { ...old, ...b });
+        if (b.charges !== undefined || (old as Data | undefined)?.charges) Object.assign(r, normalizePurchaseCharges(b, old ?? {}));
         allocateLineTax(r.lines, r.taxMinor);
         const business = get(s, 'business', 'main');
         requireThat(business.locations.includes(r.location) && business.costCentres.includes(r.costCentre) && r.lines.every(l => business.projects.includes(l.project)), 'Use configured location, cost centre and project');
@@ -123,7 +126,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         const r = get(s, 'request', b.id);
         requirePermission(s,a,op==='decision'?'request.approve':'request.edit',r);
         requireThat(r.revision === b.revision, 'Stale request revision', 409);
-        requestSupplier(s, a, r.supplier, r);
+        if (r.purchaseType !== 'travel') requestSupplier(s, a, r.supplier, r);
         requireThat(!r.imported, 'Imported status cannot grant native authority', 409);
         if (op === 'submit') {
             requirePermission(s, a, 'request.edit', r);

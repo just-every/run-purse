@@ -1,3 +1,4 @@
+import { budgetApportion } from './budget-allocations';
 import { date, requireThat, type Data } from './types';
 
 // Largest-remainder apportionment preserves every cent, including freight/tax,
@@ -25,8 +26,8 @@ export function spendReport(data: Data, filters: Data = {}) {
     const rows: Data[] = [];
     const requestById = new Map<string, Data>(data.request.map((r: Data) => [r.id, r]));
     const orderById = new Map<string, Data>(data.order.map((o: Data) => [o.id, o]));
-    const source = (r: Data, l: Data) => ({ request: r.request ?? r.id, title: r.title || r.name, line: l.id, description: l.description,
-        department: r.costCentre, project: l.project, location: r.location, supplier: r.supplier,
+    const source = (r: Data, l: Data) => ({ request: r.request ?? r.id, revision: r.revision, title: r.title || r.name, line: l.id, description: l.description,
+        department: l.costCentre ?? r.costCentre, project: l.project, location: l.location ?? r.location, supplier: r.supplier,
         supplierName: r.supplierSnapshot?.name || data.supplier.find((s: Data) => s.id === r.supplier)?.name || r.supplier,
         category: l.category, currency: r.currency });
     // Ledger balances are current purchasing authority, not lifetime spend.
@@ -73,6 +74,26 @@ export function spendReport(data: Data, filters: Data = {}) {
         order.lines.forEach((line: Data, index: number) => { if (values[index]) rows.push({ ...source(request, line), kind: 'actual', amountMinor: values[index], date: order.adoptedAt.slice(0, 10),
             currency: order.currency, policy: order.policy, order: order.id, number: order.number, deposit: deposit.id, reference: deposit.reference, sourceBasis: 'Imported prepaid deposit evidence; not a payment executed by Purse' }); });
     }
+    for (const expense of data.travelExpense ?? []) {
+        const request = requestById.get(expense.request); if (!request) continue;
+        const revision = data.revision.find((record: Data) => record.request === request.id && record.revision === expense.revision) ?? request;
+        rows.push({ ...source(revision, revision.lines[0]), kind: 'actual', amountMinor: expense.totalMinor,
+            date: expense.at.slice(0, 10), currency: expense.currency, policy: expense.policy,
+            travelExpense: expense.id, reference: expense.externalNumber, attachment: expense.attachment,
+            sourceBasis: 'Approved Coaster trip expense report; original retained', order: null, number: null });
+    }
+    const allocated = rows.flatMap(row => {
+        const terms = row.order ? orderById.get(row.order) : data.revision.find((revision: Data) => revision.request === row.request && revision.revision === row.revision) ?? requestById.get(row.request);
+        const line = terms?.lines.find((line: Data) => line.id === row.line);
+        if (!line?.allocations?.length) return [row];
+        const amounts = budgetApportion(row.amountMinor, line.allocations.map((allocation: Data) => allocation.amountMinor));
+        return line.allocations.map((allocation: Data, index: number) => {
+            const budget = (data.periodBudgets ?? []).find((budget: Data) => budget.currency === row.currency && budget.department === allocation.costCentre && (!budget.project || budget.project === '*' || budget.project === allocation.project) && terms.needDate >= budget.from && terms.needDate <= budget.through);
+            return { ...row, department: allocation.costCentre, project: allocation.project, location: allocation.location ?? row.location,
+                glAccount: allocation.glAccount, allocation: index, amountMinor: amounts[index], policy: budget?.id ?? row.policy };
+        }).filter((row: Data) => row.amountMinor);
+    });
+    rows.splice(0, rows.length, ...allocated);
     const selected = rows.filter(r => (!from || r.date >= from) && (!through || r.date <= through) && reportDimensions.every(d => !filters[d] || r[d] === filters[d]));
     const groups = new Map<string, Data>();
     for (const r of selected) {
@@ -85,10 +106,10 @@ export function spendReport(data: Data, filters: Data = {}) {
     const budgets = data.policy.filter((p: Data) => policyIds.has(p.id)).map((p: Data) => {
         const selectedRows = selected.filter(r => r.policy === p.id && r.currency === p.currency);
         const outstanding = data.commitment.filter((e: Data) => e.policy === p.id && e.currency === p.currency).reduce((n: number, e: Data) => n + e.amountMinor, 0);
-        return { id: p.id, name: p.name, currency: p.currency, budgetMinor: p.budgetMinor, availableMinor: p.budgetMinor - outstanding,
+        return { id: p.id, name: p.name, currency: p.currency, budgetMinor: p.budgetMinor, availableMinor: p.budgetMinor - outstanding - (data.travelExpense ?? []).filter((expense:Data)=>expense.policy===p.id).reduce((sum:number,expense:Data)=>sum+expense.totalMinor,0),
             ...Object.fromEntries(['reserved', 'committed', 'actual'].map(kind => [kind + 'Minor', selectedRows.filter(r => r.kind === kind).reduce((n, r) => n + r.amountMinor, 0)])), rows: selectedRows, scopeRows: rows.filter(r => r.policy === p.id && r.currency === p.currency) };
     });
-    return { groupBy, groups: [...groups.values()].sort((a, b) => String(a.label).localeCompare(String(b.label)) || a.currency.localeCompare(b.currency)), totals, budgets,
+    return { periodBudgets: data.periodBudgets ?? [], groupBy, groups: [...groups.values()].sort((a, b) => String(a.label).localeCompare(String(b.label)) || a.currency.localeCompare(b.currency)), totals, budgets,
         choices: Object.fromEntries(reportDimensions.map(d => [d, [...new Map(rows.map(r => [r[d], { value: r[d], label: d === 'supplier' ? r.supplierName : r[d] }])).values()].sort((a, b) => String(a.label).localeCompare(String(b.label)))])), rows: selected };
 }
 function outstanding(order: Data) {

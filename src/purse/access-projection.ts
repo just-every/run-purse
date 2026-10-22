@@ -1,5 +1,5 @@
 import { projectApprovalEdit } from './approval-edit-view';
-import { chainHolder, currentStep } from './approval-chain';
+import { chainHolder, chainHolderEmail } from './approval-chain';
 import { adoptionDeposits, orderAdoption } from './adoption-position';
 import { releasePosition } from './blanket-releases';
 import { servicePosition } from './service-orders';
@@ -29,9 +29,9 @@ export function purchasingProjection(s: State, a: Actor) {
     const invoices = all(s, 'invoice').filter(invoice => allowed(s, a, 'invoice.read', invoice));
     const requestIds = new Set(requests.map(request => request.id)), orderIds = new Set(orders.map(order => order.id)), invoiceIds = new Set(invoices.map(invoice => invoice.id));
     const data: Data = {
-        request: requests.map(request => ({ ...projectApprovalEdit(s,a,request), approvalHolder: request.approvalRoute ? currentStep(s,request)?.email : scimApprovalHolder(s, request), approvalTransferred: Boolean(currentScimAssignment(s, request)), approvalNeedsReassignment: currentScimAssignment(s, request)?.held === true, mayEdit: allowed(s, a, 'request.edit', request), mayApprove: mayApprove(s, a, request), approverEditRule: request.approvalRoute ? (s.get('policy:'+request.policy)?.value.editRules?.[request.purchaseType ?? request.lines[0].category.toLowerCase()] ?? s.get('policy:'+request.policy)?.value.editRules?.['*']) : undefined,
+        request: requests.map(request => ({ ...projectApprovalEdit(s,a,request), approvalHolder: request.approvalRoute ? chainHolderEmail(s,request) : scimApprovalHolder(s, request), approvalTransferred: Boolean(currentScimAssignment(s, request)), approvalNeedsReassignment: currentScimAssignment(s, request)?.held === true, mayEdit: allowed(s, a, 'request.edit', request), mayApprove: mayApprove(s, a, request), approverEditRule: request.approvalRoute ? (s.get('policy:'+request.policy)?.value.editRules?.[request.purchaseType ?? request.lines[0].category.toLowerCase()] ?? s.get('policy:'+request.policy)?.value.editRules?.['*']) : undefined,
             mayPrepareValue: ['request.edit', 'request.approve', 'receive', 'procurement.manage'].some(permission => allowed(s, a, permission, request)),
-            mayConvert: allowed(s, a, 'po.convert', request), mayManagePurchasing: allowed(s, a, 'procurement.manage', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
+            mayConvert: request.purchaseType !== 'travel' && allowed(s, a, 'po.convert', request), mayChangeNeedDate: request.purchaseType !== 'travel' && request.status === 'approved' && (request.requester === a.id && allowed(s,a,'request.edit',request) || allowed(s,a,'request.approve',request)), mayManagePurchasing: allowed(s, a, 'procurement.manage', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
             buyerLimit: buyerLimit(s, a, request), buyerLimits: buyerLimits(s, a, request) })),
         order: orders.map(order => ({ ...order, ...(orderAdoption(s, order) ? { adoptionBasis: 'Owner adopted imported obligation; source approval is historical', ...(allowed(s,a,'invoice.read',order) ? { depositPosition: adoptionDeposits(s, order) } : {}) } : {}), ...(order.poDetails?.blanket ? { blanketPosition: blanketPosition(s, order), releasePosition: releasePosition(s, order) } : {}),
             receiverAssignment: receiptAssignment(s, order), mayReceive: mayReceive(s, a, order), receiptVersion: receiptVersion(s, order),
