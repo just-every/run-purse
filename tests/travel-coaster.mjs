@@ -3,12 +3,13 @@
 // Install the source checkout's pinned dependencies first, then run through
 // heavy-slot: node tests/travel-coaster.mjs CHECKOUT REFERENCE OUTPUT.json
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { promisify } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-export async function coasterTravelReport({ checkout, reference, traveler = 'synthetic-purse-6@example.test', date = '2026-10-20' }) {
+async function nativeCoasterTravelReport({ checkout, reference, traveler = 'synthetic-purse-6@example.test', date = '2026-10-20' }) {
     assert.ok(typeof reference === 'string' && reference.trim(), 'A Purse approval reference is required');
     const root = resolve(checkout), previous = process.cwd();
     const sourceHead = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
@@ -55,7 +56,15 @@ export async function coasterTravelReport({ checkout, reference, traveler = 'syn
     }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+/** Each application's bundler and process state belongs to its own checkout. */
+export async function coasterTravelReport(options) {
+    const {stdout} = await promisify(execFile)(process.execPath, [fileURLToPath(import.meta.url), '--native-worker', JSON.stringify(options)], {cwd:resolve(options.checkout),maxBuffer:4000000});
+    return JSON.parse(stdout);
+}
+
+if (process.argv[2] === '--native-worker') {
+    process.stdout.write(JSON.stringify(await nativeCoasterTravelReport(JSON.parse(process.argv[3]))));
+} else if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
     const [checkout, reference, output] = process.argv.slice(2);
     assert.ok(checkout && reference && output, 'Usage: node tests/travel-coaster.mjs CHECKOUT REFERENCE OUTPUT.json');
     const result = await coasterTravelReport({ checkout, reference });
