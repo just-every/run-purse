@@ -578,8 +578,7 @@ remain open in APPROVAL-004 / PO-012 / PO-004.
 
 A policy may set `budgetPeriod:{from,through}` to an inclusive need-date period
 of at most one fiscal year and `costCentre` to its department. Explicit dates
-can represent a month, quarter or US fiscal year. Existing purchases must fit a
-newly assigned period. Cross-policy/period amendment dispositions remain
+can represent a month, quarter or US fiscal year. A used policy cannot acquire, remove or relabel a period, and a used dated budget keeps its department; create a new policy for another period or department. Cross-department allocations are held until their budget mapping is built. Cross-policy/period amendment dispositions remain
 unbuilt and refuse. `overBudget:"block"|"owner"` selects refusal or an additional
 `budgetOwner` email's native approval. The owner route creates no over-budget
 reservation until that owner approves the exact revision, and its authority

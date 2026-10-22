@@ -39,8 +39,8 @@ export function budgetPeriod(input: Data, prior?: Data) {
 }
 export function budgetRoom(s: State, request: Data, policy: Data, delta: number) {
  if(delta<=0)return true;
+ if(request.amends){const prior=get(s,'order',request.amends);if(policy.budgetPeriod||s.get('policy:'+prior.policy)?.value.budgetPeriod)requireThat(prior.policy===policy.id,'Cross-period budget amendments require an explicit remaining-balance disposition',409);}
  if(!policy.budgetPeriod)return undefined;
- if(request.amends)requireThat(get(s,'order',request.amends).policy===policy.id,'Cross-period budget amendments require an explicit remaining-balance disposition',409);
  const position=periodBudgetPosition(s,policy);
  return position.availableMinor>=delta;
 }
