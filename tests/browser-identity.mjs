@@ -29,6 +29,16 @@ try {
             const scope = { departments: ['Operations'], locations: ['Denver'], projects: ['Safety'], entities: ['main'] };
             await h.command('member', { email: 'requester@example.test', name: 'SSO field requester', grants: [{ role: 'requester', scope }] });
             await h.send('/api/purse/invite', { email: 'requester@example.test' }, h.owner);
+            const invitation = [...h.messages].reverse().find(message => message.to.includes('requester@example.test'));
+            const invitationToken = new URL(invitation.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0]).searchParams.get('token');
+            await h.send('/auth/confirm', {token:invitationToken}, '', 303);
+            await h.send('/auth/step-up', {action:'export'}, h.owner, 202);
+            const nativeProof = [...h.messages].reverse().find(message => message.to.includes('owner@example.test'));
+            await h.send('/auth/confirm', {token:new URL(nativeProof.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0]).searchParams.get('token')}, h.owner, 303);
+            const saveScim = async body => {const current=(await h.send('/api/purse/scim',undefined,h.owner)).value;return h.send('/api/purse/scim',{...body,revision:current.revision},h.owner);};
+            await saveScim({action:'configure',issuer:h.idp.origin,enabled:true,mappings:[{department:'Operations',grants:[{role:'requester',scope}]}],consent:true});
+            const existing = await h.db.prepare('SELECT id FROM oa_operators WHERE email=?').bind('requester@example.test').first();
+            await saveScim({action:'link-member',operator:existing.id,externalId:'synthetic-purse-person-1',consent:true});
             async function open(anonymous = false) {
                 const context = await nativeWebContext(browser, h, width, shippedApp);
                 contexts.push(context);
@@ -102,6 +112,11 @@ try {
                 await snap(requester.page, name);
             }
             await signIn();
+            await owner.page.goto(h.origin + '/app?tab=Settings');
+            const links = owner.page.getByRole('region', {name:'Owner-confirmed identity links',exact:true});
+            await links.getByText('Active',{exact:true}).waitFor();
+            await snap(owner.page,'member-link-activated');
+            await owner.page.goto(settingsPath);
             assert.equal((await requester.context.request.post(h.origin + '/auth/signout', { headers: { origin: h.origin }, data: {} })).status(), 204);
             await refusedWorkspace('signed-out');
             await signIn();
