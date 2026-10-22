@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { join } from 'node:path';
+import { createPortability } from '@runeditrun/rer/modules/portability';
+import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import portability from '../scripts/installer/portability.mjs';
+import { harness } from './purse-harness.mjs';
+import { reauthenticateErasure } from './erasure-flow.mjs';
 import { travelFixture, approvedAmendedTrip, syntheticCoasterReport, assertTravelSettlement } from './travel-helpers.mjs';
 
 test('Published GSA meals defaults use exact fiscal-year city or county scope and explicit standard CONUS selection', async t => {
@@ -76,8 +82,43 @@ test('INTAKE-006 native report import rejects wrong authority and sources, trans
     await travel('expense-return', { ...body, original: JSON.stringify(invalid) }, h.owner, 409);
     await travel('expense-return', { ...body, closed: false }, h.owner, 400);
     await travel('expense-return', { ...body, sourceUrl: 'http://example.test/api/coaster/claims/synthetic-purse-20' }, h.owner, 400);
-    await assertTravelSettlement(fixture, request, original, body.sourceUrl);
+    const settled = await assertTravelSettlement(fixture, request, original, body.sourceUrl);
     await travel('amend', { ...fixture.input, id: request.id, revision: request.revision, reason: 'synthetic-purse-31' }, fixture.requester, 409);
+    // Assistant custody is also affected even when the expense employee is a
+    // different, still-active traveler and the opaque JSON omits the assistant.
+    const assistantTrip = await fixture.approve(await travel('request', { ...fixture.input, travel: { ...fixture.input.travel, traveler: 'synthetic-purse-9', travelerEmail: 'synthetic-purse-9@example.test' } }));
+    const assistantSource = JSON.parse(syntheticCoasterReport(assistantTrip)); assistantSource.claim.id = 'synthetic-purse-64';
+    const assistantExpense = await travel('expense-return', { ...body, id: assistantTrip.id, revision: assistantTrip.revision, original: JSON.stringify(assistantSource), sourceUrl: 'http://127.0.0.1:8788/api/coaster/claims/synthetic-purse-64' }, h.owner);
+    await h.command('member', { email: 'synthetic-purse-6@example.test', name: 'synthetic-purse-6@example.test', roles: ['requester'], active: false });
+    await reauthenticateErasure(h);
+    const meta = await h.send('/api/purse/erasure', undefined, h.owner);
+    const preview = await h.send('/api/purse/erasure/preview', { kind: 'member', id: 'synthetic-purse-6@example.test', revision: meta.value.revision }, h.owner);
+    assert.equal(preview.status, 200, JSON.stringify(preview.value));
+    const erased = await h.send('/api/purse/erasure/execute', { ...preview.value.subject, revision: preview.value.revision, review: preview.value.review, fingerprint: preview.value.fingerprint, consent: true }, h.owner);
+    assert.equal(erased.status, 200, JSON.stringify(erased.value));
+    const archive = join(h.dir, 'synthetic-purse-travel-erased.rer');
+    await exportArchive(await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability }), archive, []);
+    const restored = await harness(); t.after(() => restored.close());
+    await importArchive(await createPortability({ db: restored.db, buckets: { ORIGINALS: restored.originals }, policy: portability }), archive, []);
+    for (const instance of [h, restored]) {
+        const data = (await instance.state()).data;
+        const retained = data.travelExpense.filter(report => [settled.id, assistantExpense.id].includes(report.id));
+        assert.equal(retained.length, 2);
+        for (const report of retained) {
+            assert.equal(report.erasure, erased.value.id); assert.equal(report.originalStatus, 'withdrawn'); assert.equal(report.originalSourceVerified, false);
+            assert.equal(report.totalMinor, 215000); assert.equal(report.sha256, report.id === settled.id ? settled.sha256 : assistantExpense.sha256);
+            assert.equal((await instance.send('/api/purse/download/attachment/' + report.attachment, undefined, instance.owner)).status, 410);
+        }
+        assert.equal(data.periodBudgets.find(budget => budget.id === request.policy).actualMinor, 430000);
+        const rows = (await instance.db.prepare('SELECT * FROM p_records').all()).results;
+        assert.equal(JSON.stringify(rows).includes('synthetic-purse-6@example.test'), false);
+        for (const report of retained) {
+            const attachment = JSON.parse(rows.find(row => row.kind === 'attachment' && row.id === report.attachment).value);
+            assert.equal(attachment.base64, ''); assert.equal(attachment.erasure, erased.value.id); assert.equal(attachment.sha256, report.sha256);
+        }
+    }
+    assert.equal((await restored.send('/api/purse/travel/references', undefined, fixture.requester)).status, 401);
+
 });
 
 test('Assistant travel gives only the exact active traveler a booking reference and keeps source custody unchanged', async t => {
