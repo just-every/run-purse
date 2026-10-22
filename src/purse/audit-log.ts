@@ -23,9 +23,12 @@ export function auditLog(s: State, a: Actor, filters: Data = {}, permission='aud
     const subjects = new Set([subject]);
     const order = all(s, 'order').find(o => o.id === subject || o.number === subject);
     if (order) {
-        subjects.add(order.id); subjects.add(order.request);
-        for (const i of all(s, 'invoice').filter(i => i.order === order.id)) subjects.add(i.id);
-        for (const c of all(s, 'orderClosure').filter(c => c.order === order.id)) subjects.add(c.id);
+        const family = all(s, 'order').filter(record => record.request === order.request);
+        const orderIds = new Set(family.map(record => record.id));
+        for (const record of family) subjects.add(record.id);
+        subjects.add(order.request);
+        for (const i of all(s, 'invoice').filter(i => orderIds.has(i.order))) subjects.add(i.id);
+        for (const c of all(s, 'orderClosure').filter(c => orderIds.has(c.order))) subjects.add(c.id);
     }
     return all(s, 'audit').filter(e=>auditEventAllowed(s,a,e,permission)).filter(e => (!subject || subjects.has(e.record)) && (!action || e.action === action) && (!from || (e.at ?? '').slice(0, 10) >= from) && (!through || (e.at ?? '').slice(0, 10) <= through))
         .sort((a, b) => (a.at ?? '').localeCompare(b.at ?? '') || a.id.localeCompare(b.id)).map(e => context(s, e,a,permission));
