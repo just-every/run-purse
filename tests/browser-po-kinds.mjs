@@ -20,7 +20,7 @@ try {
  server=await start(root,port);browser=await launch();owner=await session(browser,root,server.origin,'owner',1440);
  await api(owner.context,server.origin,'business',{name:'Canyon Field Services',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Site maintenance']});
  for(const role of ['requester','approver','buyer','receiver'])await api(owner.context,server.origin,'member',{email:role+'@dev.localhost',name:'Canyon '+role,roles:[role],active:true});
- for(const width of widths)await blanketJourney(browser,root,server.origin,width,evidence);
+ for(const width of widths)await blanketJourney(browser,root,server.origin,width,evidence,{schedule:server.schedule});
  const before=(await current(owner.context,server.origin)).data;
  await owner.context.close();owner=undefined;await browser.close();browser=undefined;await server.close();server=undefined;
  await command(root,['export','--output','exports/po-kinds.rer']);
