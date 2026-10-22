@@ -1,6 +1,6 @@
 /** Approval history is portable evidence. Restoring it creates no native session. */
 export function validateApprovalChains(all,get,check,same) {
- for(const policy of all('policy'))if(policy.budgetPeriod){const {from,through}=policy.budgetPeriod;check([from,through].every(value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&new Date(value).toISOString().slice(0,10)===value)&&from<=through&&Date.parse(through)-Date.parse(from)<367*86400000,'budget_period');}
+ for(const policy of all('policy'))if(policy.budgetPeriod){const {from,through}=policy.budgetPeriod;check([from,through].every(value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value)&&from<=through&&Date.parse(through)-Date.parse(from)<367*86400000,'budget_period');}
  const fields=['glAccount','costCentre','location','class','project','needDate','shipTo','supplier','notes'];
  for(const policy of all('policy'))if(policy.approvalSteps) {
   check(Array.isArray(policy.approvalSteps)&&policy.approvalSteps.length<=20,'approval_steps');
