@@ -16,7 +16,7 @@ export async function coasterTravelReport({ checkout, reference, traveler = 'syn
     process.chdir(root);
     let worker;
     try {
-        worker = await harness();
+        worker = await harness({ bindings: { OWNER_EMAIL: 'synthetic-purse-8@example.test' } });
         const request = async (path, body, cookie = worker.owner) => {
             const response = await fetch(worker.origin + '/api/coaster/' + path, {
                 method: body === undefined ? 'GET' : 'POST',
