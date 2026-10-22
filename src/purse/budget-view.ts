@@ -1,4 +1,3 @@
-import { requestBudgetShares } from './budget-allocations';
 import { periodBudgetPosition } from './budget-position';
 import { unrestrictedPermission } from './access-records';
 import { coveringPolicies } from './policy-match';
@@ -12,7 +11,7 @@ export function visibleBudgetPositions(s: State, a: Actor, data: Data) {
     return all(s, 'policy').filter(policy => policy.budgetPeriod && (unrestrictedPermission(s, a, 'request.read')
         || allowed(s, a, 'access.manage', policy)
         || data.request.some((request: Data) => request.policy === policy.id || coveringPolicies([policy], request).length
-            || request.policy && requestBudgetShares(s,request,request.totalMinor).some(share=>share.policy===policy.id))))
+            || request.budgetReview?.ids.includes(policy.id))))
         .map(policy => {
             const position = periodBudgetPosition(s, policy), visible: Data[] = [];
             const hidden: Data = { hidden: true, title: 'Other purchases you cannot see', reservedMinor: 0, committedMinor: 0, actualMinor: 0, invoiceIds: [], depositIds: [] };

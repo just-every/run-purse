@@ -59,6 +59,7 @@ try {
             await mutation(page, 'travel-submit', () => page.getByRole('button', { name: 'Submit travel for approval', exact: true }).click());
             const approve = async (cookie, revision) => {
                 const tab = await open(cookie, draft.id);
+                const budget=tab.getByRole('region',{name:'Current financial budget position',exact:true});await budget.waitFor();assert.ok((await budget.textContent()).includes('Amount $10,000.00'));assert.ok((await budget.textContent()).includes(revision===1?'reserved $2,400.00':'reserved $2,700.00'));
                 const decision = tab.locator('form').filter({ has: tab.getByRole('button', { name: 'Record travel decision', exact: true }) });
                 await decision.getByLabel('Travel decision', { exact: true }).selectOption('approved');
                 await decision.getByLabel('Travel decision reason', { exact: true }).fill('synthetic-purse-14');

@@ -1,3 +1,4 @@
+import { BudgetReview } from './budget-review';
 import type { RefObject } from 'react';
 import { TravelRequestForm } from './travel-form';
 import { Form, Field, Details, Attachments, Table, money, when, type D } from './shared';
@@ -13,6 +14,7 @@ export function TravelRequestRecord({ data, actor, mutate, current, heading, clo
         <p>Departure {trip.departureDate} · return {trip.returnDate} · {current.costCentre} · {current.location} · {current.project}</p>
         <Table heads={['Cost category', 'Estimate']} figures={['Estimate']} stack={false}>{current.lines.map((line: D) => <tr key={line.id}><td>{line.description}</td><td className="figure">{money(line.totalMinor, current.currency)}</td></tr>)}</Table>
         <p>Total estimate {money(current.totalMinor, current.currency)} · reserved {money(reservedMinor, current.currency)} · recorded actual {money(reports.reduce((sum: number, report: D) => sum + report.totalMinor, 0), current.currency)}</p>
+        <BudgetReview data={data} request={current}/>
         {trip.perDiem?.available && <p>{trip.mealsBasis === 'gsa-default' ? 'Meals defaulted to' : 'GSA reference'} {money(trip.perDiem.dailyMinor, 'USD')} per full day; {money(trip.perDiem.boundaryMinor, 'USD')} on the first and last days. {trip.perDiem.days} calendar days: {money(trip.perDiem.amountMinor, 'USD')}. <a href={trip.perDiem.source} target="_blank" rel="noreferrer">Published GSA destination rate</a>.</p>}
         {trip.approvalReference && <p>Approval reference: <strong>{trip.approvalReference}</strong>. Use this reference in your booking tool and Coaster expense items’ <code>purse_reference</code> field.</p>}
         {current.approvalRoute && <section aria-label="Travel approval route"><h4>Approval route</h4><ol>{current.approvalRoute.map((step: D) => <li key={step.id}>{step.email} · {data.decision.some((decision: D) => decision.request === current.id && decision.revision === current.revision && decision.chainStep === step.id && decision.decision === 'approved') ? 'approved' : 'waiting'}</li>)}</ol></section>}
