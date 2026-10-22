@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import {join} from 'node:path';
-import {expect} from '@playwright/test';
 
 /** Actual App, native sessions and HTTP; caller owns browser/context lifetime. */
 export async function budgetDimensionsJourney({h,context,width,evidence}) {
@@ -16,11 +15,11 @@ export async function budgetDimensionsJourney({h,context,width,evidence}) {
  await page.goto(h.origin+'/app?tab=Settings');
  const policies=page.locator('section.panel').filter({has:page.getByRole('heading',{name:'Approval policies',exact:true})});
  await policies.getByRole('row').filter({hasText:first.name}).getByRole('button',{name:'Edit policy',exact:true}).click();
- await expect(policies.getByLabel('Budget location (blank means all)',{exact:true})).toHaveValue('Austin');
- await expect(policies.getByLabel('Budget GL account (blank means all)',{exact:true})).toHaveValue('synthetic-purse-2409');
- await expect(policies.getByLabel('Budget custom field form',{exact:true})).toHaveValue(form.id);
- await expect(policies.getByLabel('Budget header · Event (blank means all)',{exact:true})).toHaveValue('synthetic-purse-2407');
- await expect(policies.getByLabel('Budget line · Grant (blank means all)',{exact:true})).toHaveValue('synthetic-purse-2410');
+ assert.equal(await policies.getByLabel('Budget location (blank means all)',{exact:true}).inputValue(),'Austin');
+ assert.equal(await policies.getByLabel('Budget GL account (blank means all)',{exact:true}).inputValue(),'synthetic-purse-2409');
+ assert.equal(await policies.getByLabel('Budget custom field form',{exact:true}).inputValue(),form.id);
+ assert.equal(await policies.getByLabel('Budget header · Event (blank means all)',{exact:true}).inputValue(),'synthetic-purse-2407');
+ assert.equal(await policies.getByLabel('Budget line · Grant (blank means all)',{exact:true}).inputValue(),'synthetic-purse-2410');
  await snap('configuration',policies);
  const saved=page.waitForResponse(response=>response.url().endsWith('/command/policy')&&response.request().method()==='POST');await policies.getByRole('button',{name:'Save policy',exact:true}).click();assert.equal((await saved).status(),200);
  const input={title:'Combined quarter source purchase',supplier:supplier.id,currency:'USD',needDate:'2027-11-15',location:'Austin',glAccount:'synthetic-purse-2409',costCentre:'Operations',terms:'Net 30',intakeForm:form.id,customFields:{event:'synthetic-purse-2407'},lines:[{description:'Combined budget item',quantity:'1',unitMinor:100000,category:base.category,project:'Office',customFields:{grant:'synthetic-purse-2410'},allocations:[{costCentre:'Operations',location:'Austin',glAccount:'synthetic-purse-2409',project:'Office',basisPoints:6000},{costCentre:'Research',location:'Denver',glAccount:'synthetic-purse-2411',project:'Office',basisPoints:4000}]}]};
@@ -34,7 +33,7 @@ export async function budgetDimensionsJourney({h,context,width,evidence}) {
  const invoice=await cmd('invoice',{order:order.id,reference:'synthetic-purse-2413',source:'Recorded exact split invoice',allocations:[{line:order.lines[0].id,quantity:'0.5',amountMinor:50000}]},buyer);await show('actual',['$300.00','$200.00']);
  assert.deepEqual([(await position(first.id)).committedMinor,(await position(first.id)).actualMinor,(await position(second.id)).committedMinor,(await position(second.id)).actualMinor],[30000,30000,20000,20000]);
  await page.getByLabel('Group by',{exact:true}).selectOption('glAccount');await page.getByLabel('GL account',{exact:true}).selectOption('synthetic-purse-2411');await page.getByRole('button',{name:'Filter spend',exact:true}).click();
- const actual=page.getByRole('button',{name:'synthetic-purse-2411 actual USD',exact:true});await expect(actual).toHaveText('$200.00');await actual.click();const sources=page.getByRole('region',{name:'Report source records',exact:true});await sources.getByText('Invoice '+invoice.reference+' · Recorded evidence',{exact:true}).waitFor();await sources.getByRole('link',{name:order.number,exact:true}).waitFor();await snap('report-source',sources);
+ const actual=page.getByRole('button',{name:'synthetic-purse-2411 actual USD',exact:true});assert.equal(await actual.textContent(),'$200.00');await actual.click();const sources=page.getByRole('region',{name:'Report source records',exact:true});await sources.getByText('Invoice '+invoice.reference+' · Recorded evidence',{exact:true}).waitFor();await sources.getByRole('link',{name:order.number,exact:true}).waitFor();await snap('report-source',sources);
  const hidden=await cmd('request',{...input,title:'synthetic-purse-2414 private combined source'},other);await cmd('submit',{id:hidden.id,revision:1},other);await cmd('decision',{id:hidden.id,revision:1,decision:'approved',reason:'Private quarter reviewed'},approver);
  const privateContext=await context(requester,width),privatePage=await privateContext.newPage();await privatePage.goto(h.origin+'/app?tab=Reports');const privatePanel=privatePage.getByRole('region',{name:'Dated financial budget positions',exact:true});await privatePanel.getByRole('button',{name:first.name,exact:true}).click();const anonymous=privatePanel.getByRole('row').filter({hasText:'Other purchases you cannot see'});await anonymous.waitFor();assert.equal(await anonymous.getByRole('link').count(),0);assert.ok((await anonymous.textContent()).includes('$600.00'));assert.ok(!(await privatePanel.textContent()).includes(hidden.title));await privatePanel.screenshot({path:join(evidence,`BUDGET-001-dimensions-${width}-anonymous.png`)});assert.ok(await privatePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
  const denied=await h.member('synthetic-purse-2415@example.test',['approver']);await cmd('member',{email:'synthetic-purse-2415@example.test',name:'synthetic-purse-2415',active:true,grants:[{role:'approver',scope:{departments:['Operations','Research'],locations:['Austin']}}]});const deniedContext=await context(denied,width),deniedPage=await deniedContext.newPage();await deniedPage.goto(h.origin+'/app?tab=Reports');await deniedPage.getByRole('heading',{name:'Spend and commitments',exact:true}).waitFor();assert.equal(await deniedPage.getByRole('button',{name:first.name,exact:true}).count(),0);assert.equal(await deniedPage.getByRole('button',{name:second.name,exact:true}).count(),0);await deniedPage.screenshot({path:join(evidence,`BUDGET-001-dimensions-${width}-no-grant.png`),fullPage:true});
