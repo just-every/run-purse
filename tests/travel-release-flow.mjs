@@ -121,7 +121,9 @@ try {
     assert.equal(paused.status, 'paused'); assert.match(paused.pauseReason, /calendar/); assert.equal(await stale.balance(first.id), 240000);
     await h.command('business', { ...business, timezone: 'America/New_York' });
     const renewed = await travel('release-policy', enable(approved, paused.version), h.owner);
+    const originalOwner = await h.send('/auth/session', undefined, h.owner);
     const newOwner = await h.member('synthetic-purse-74@example.test', ['requester'], 'owner');
+    assert.equal((await h.send('/auth/operator/status', { operatorId: originalOwner.value.operator.id, status: 'inactive' }, newOwner)).status, 200);
     assert.equal((await h.send('/api/purse/travel/release-policy', { ...enable(approved, renewed.version), enabled: false }, h.owner)).status, 401);
     await tick(h, due); data = (await h.state(newOwner)).data;
     assert.equal(data.travelReleasePolicy.find(policy => policy.request === first.id).status, 'paused'); assert.equal(data.travelRelease.length, 0);
