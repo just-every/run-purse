@@ -61,8 +61,10 @@ export function checks(data: D, actor: D, r: D) {
     if (r.imported) return out;
     if (isStaff(actor) && ['draft', 'returned', 'pending'].includes(r.status)) {
         const p = policyOf(data, r);
-        if (!p) out.push({ label: 'no policy covers this', tone: 'warn' });
-        else { const need = Math.max(0, approvalAmount(r, billed(data, r)) - balance(data, p.id, r.id)); out.push(balance(data, p.id) + need <= p.budgetMinor ? { label: 'in budget ✓', tone: 'ok' } : { label: 'over budget', tone: 'warn' }); }
+        if (!p) out.push({ label: r.policy ? 'budget position restricted' : 'no policy covers this', tone: 'warn' });
+        else { const need = Math.max(0, approvalAmount(r, billed(data, r)) - balance(data, p.id, r.id));
+            if(p.budgetPeriod){const position=data.periodBudgets?.find((position:D)=>position.id===p.id);out.push(r.budgetOwnerReview?{label:'over-budget owner route',tone:'warn'}:!position?{label:'budget position restricted',tone:'warn'}:position.availableMinor>=need?{label:'in budget ✓',tone:'ok'}:{label:'over budget',tone:'warn'});}
+            else out.push(balance(data, p.id) + need <= p.budgetMinor ? { label: 'in budget ✓', tone: 'ok' } : { label: 'over budget', tone: 'warn' }); }
     }
     const s = data.supplier.find((x: D) => x.id === r.supplier);
     if (s && !r.imported) out.push(s.status === 'preferred' ? { label: 'preferred supplier ✓', tone: 'ok' } : s.status === 'active' && !s.mergedInto ? { label: 'known supplier ✓', tone: 'ok' } : { label: s.mergedInto ? 'supplier merged' : s.status === 'blocked' ? 'supplier blocked' : 'supplier in review', tone: 'warn' });
