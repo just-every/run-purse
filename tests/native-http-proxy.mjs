@@ -23,3 +23,14 @@ export async function nativeHttpProxy() {
  origin='http://127.0.0.1:'+server.address().port;
  return {origin,attach(value){worker=value;},async close(){server.closeAllConnections();if(server.listening)await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));}};
 }
+
+// Wrap only the public test client. Miniflare's private RPC transport stays intact.
+export function nativeWorkerClient(worker) {
+ const dispatchFetch=(input,init={})=>{
+  const headers=new Headers(init.headers??input?.headers);
+  const url=new URL(typeof input==='string'||input instanceof URL?input:input.url);
+  headers.set('x-purse-native-test-host',headers.get('host')??url.host);
+  return worker.dispatchFetch(input,{...init,headers});
+ };
+ return new Proxy(worker,{get(target,key){if(key==='dispatchFetch')return dispatchFetch;const value=Reflect.get(target,key,target);return typeof value==='function'?value.bind(target):value;}});
+}
