@@ -217,6 +217,9 @@ test('APPROVAL-004 exact pending header edits carry or renew chain approvals and
  await cmd('approver-edit',{id:second.id,revision:1,changes:{costCentre:'Research'},reason:'synthetic-purse-15'},finance,409);
  assert.equal(await balance(research.id),400000);
  await decide(moved,manager);assert.equal((await decide(moved,finance)).status,'pending');assert.equal((await decide(moved,owner)).status,'approved');
+ const researchAuditor=await h.member('synthetic-purse-research-auditor@example.test',['auditor']);await cmd('member',{email:'synthetic-purse-research-auditor@example.test',name:'synthetic-purse-18',active:true,grants:[{role:'auditor',scope:{departments:['Research']}}]});
+ const scoped=(await h.state(researchAuditor)).data;assert.deepEqual(scoped.request.find(row=>row.id===second.id).approverEdit.differences,[],'A department move does not expose its prior private revision');assert.ok(!scoped.audit.some(event=>event.action==='approver-edit'&&event.record===second.id));
+ const scopedAudit=await h.send('/api/purse/audit?subject='+second.id,undefined,researchAuditor);assert.equal(scopedAudit.status,200);assert.ok(!scopedAudit.value.events.some(event=>event.action==='approver-edit'));
  const audit=await h.send('/api/purse/audit?subject='+r.id,undefined,h.owner);assert.equal(audit.status,200);assert.ok(audit.value.events.some(e=>e.action==='approver-edit'&&e.revision===2&&e.carried.length===1&&e.differences.some(d=>d.field==='class'&&d.after==='Equipment')));
  const csv=await h.send('/api/purse/audit.csv?subject='+second.id,undefined,h.owner);assert.equal(csv.status,200);assert.ok(csv.value.includes('approver-edit'));assert.ok(csv.value.includes('Research'));
  const self=await h.member('synthetic-purse-self@example.test',['requester','approver']);await cmd('policy',{...workflow,name:'synthetic-purse-16',currency:'USD',category:'self',project:'*',limitMinor:500000,budgetMinor:500000,approver:'synthetic-purse-self@example.test'});

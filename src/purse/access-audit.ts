@@ -25,7 +25,7 @@ export function auditEventAllowed(s:State,a:Actor,event:Data,permission='audit.r
  if(!subject||!allowed(s,a,permission,subject))return false;
  // A before/after revision may have crossed a scope boundary. Its evidence
  // is private unless both historical versions are within this grant.
- if(event.action==='amend'&&event.revision){
+ if(['amend','approver-edit'].includes(event.action)&&event.revision){
   const old=s.get('revision:'+event.record+':'+(event.revision-1))?.value;
   const current=s.get('revision:'+event.record+':'+event.revision)?.value;
   if(old&&!allowed(s,a,permission,old)||current&&!allowed(s,a,permission,current))return false;

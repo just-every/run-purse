@@ -1,12 +1,14 @@
+import { projectApprovalEdit } from './approval-edit-view';
 import { remainingValue } from './orders';
 import { moneyInput } from './money';
 import { all, allowed, audit, date, get, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
-import { ledger, policies, reserved, approvalAmount } from './requests';
+import { ledger, policies, reserved, approvalAmount, reservationAvailable } from './requests';
 
 export const headerFields = ['glAccount', 'costCentre', 'location', 'class', 'project', 'needDate', 'shipTo', 'supplier', 'notes'] as const;
 export const materialDefaults = ['glAccount', 'costCentre', 'project', 'supplier'];
 export function policyWorkflow(input: Data, previous?: Data) {
     const result: Data = {};
+    if(input.overBudget!==undefined||previous?.overBudget){const mode=input.overBudget??previous?.overBudget;requireThat(['block','owner'].includes(mode),'Choose block or budget-owner review');result.overBudget=mode;if(mode==='owner'){const email=text(input.budgetOwner??previous?.budgetOwner,'Budget owner email').toLowerCase();requireThat(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),'Use a budget owner email');result.budgetOwner=email;}}
     if (input.approvalSteps !== undefined || previous?.approvalSteps) {
         const steps = input.approvalSteps ?? previous?.approvalSteps;
         requireThat(Array.isArray(steps) && steps.length <= 20, 'Provide at most 20 additional approval steps');
@@ -36,9 +38,11 @@ export function policyWorkflow(input: Data, previous?: Data) {
     return result;
 }
 export function routeFor(policy: Data, request: Data) {
-    return [{ id: 'primary', email: policy.approver, dependsOn: materialDefaults }, ...(policy.approvalSteps ?? [])
+    const steps=[{ id: 'primary', email: policy.approver, dependsOn: materialDefaults }, ...(policy.approvalSteps ?? [])
         .filter((step: Data) => request.totalMinor >= step.minMinor && (step.costCentre === '*' || step.costCentre === request.costCentre))]
         .map((step: Data) => ({ id: step.id, email: step.email, dependsOn: step.dependsOn }));
+    if(request.budgetOwnerReview&&policy.overBudget==='owner'&&!steps.some(step=>step.email===policy.budgetOwner))steps.push({id:'budget-owner',email:policy.budgetOwner,dependsOn:['costCentre','project']});
+    return steps;
 }
 export function stepDecision(s: State, request: Data, step: Data) {
     return all(s,'decision').find(decision => decision.request === request.id && decision.revision === request.revision && decision.chainStep === step.id && decision.decision === 'approved');
@@ -58,16 +62,19 @@ function currentRoute(s: State, request: Data) {
 function reserve(s: State, a: Actor, request: Data, policy: Data) {
     const balance = all(s,'commitment').filter(event => event.request === request.id && event.policy === policy.id && event.currency === request.currency).reduce((sum,event)=>sum+event.amountMinor,0);
     const delta = approvalAmount(request,s) - balance;
-    requireThat(reserved(s,policy.id) + delta <= policy.budgetMinor, 'Budget exhausted by existing commitments',409);
+    if(request.budgetOwnerReview&&!all(s,'decision').some(decision=>decision.request===request.id&&decision.revision===request.revision&&decision.decision==='approved'&&decision.email===policy.budgetOwner&&decision.policyVersion===request.approvalPolicyVersion))return;
+    requireThat(reservationAvailable(s,request,delta), 'Budget exhausted by existing commitments',409);
     if (delta) ledger(s,a,request,delta,'pending-chain-reservation');
 }
 export function startChain(s: State, a: Actor, request: Data, policy: Data) {
-    if (!policy.approvalSteps) return;
-    const next = {...request,status:'pending',policy:policy.id,approvalRoute:routeFor(policy,request),approvalPolicyVersion:s.get('policy:'+policy.id)!.revision};
+    if (!policy.approvalSteps&&policy.overBudget!=='owner') return;
+    const next:Data = {...request,status:'pending',policy:policy.id,approvalPolicyVersion:s.get('policy:'+policy.id)!.revision};
+    if(!reservationAvailable(s,next,approvalAmount(next,s))&&policy.overBudget==='owner')next.budgetOwnerReview=true;
+    next.approvalRoute=routeFor(policy,next);
     reserve(s,a,next,policy);
     put(s,'request',request.id,next);
     put(s,'revision',request.id+':'+request.revision,{...next,request:request.id});
-    return next;
+    return projectApprovalEdit(s,a,next);
 }
 export function chainDecision(s: State, a: Actor, request: Data, input: Data) {
     if (!request.approvalRoute) return;
@@ -75,13 +82,13 @@ export function chainDecision(s: State, a: Actor, request: Data, input: Data) {
     requireThat(chainHolder(s,a,request),'You do not hold the current non-self approval step',403);
     requireThat(['approved','returned','rejected'].includes(input.decision),'Choose approve, reject or return');
     const reason = text(input.reason,'Decision reason'), id=uid();
-    if (input.decision === 'approved') reserve(s,a,request,policy);
-    else {
+    if (input.decision !== 'approved') {
         const prior=request.amends ? get(s,'order',request.amends) : undefined, balances=new Map<string,number>();
         for(const event of all(s,'commitment').filter(event=>event.request===request.id))balances.set(event.policy,(balances.get(event.policy)??0)+event.amountMinor);
         for(const [id,balance]of balances){const retained=prior?.policy===id ? Math.min(balance,remainingValue(s,prior)) : 0;if(balance!==retained)ledger(s,a,{...request,policy:id},retained-balance,'chain-decision-release');}
     }
     put(s,'decision',id,{request:request.id,revision:request.revision,decision:input.decision,chainStep:step!.id,reason,actor:a.id,email:a.email,owner:a.owner,operatorVersion:a.version,at:new Date().toISOString(),policy:policy.id,policyVersion:request.approvalPolicyVersion,policySnapshot:structuredClone(policy),delegation:null});
+    if(input.decision==='approved')reserve(s,a,request,policy);
     const status = input.decision === 'approved' && currentStep(s,request) ? 'pending' : input.decision;
     put(s,'request',request.id,{...request,status});
     audit(s,a,'decision',request.id,{revision:request.revision,decision:input.decision,reason,decisionId:id,chainStep:step!.id,status});
@@ -123,7 +130,7 @@ export function approverEdits(s: State, a: Actor, op: string, input: Data): Data
     requirePermission(s,a,'request.approve',next);
     const destination=policies(s,next)[0];requireThat(destination?.approvalSteps,'No chain policy covers the edited request',409);
     next.revision++;
-    next.policy=destination.id;next.approvalRoute=routeFor(destination,next);next.approvalPolicyVersion=s.get('policy:'+destination.id)!.revision;
+    next.policy=destination.id;if(destination.overBudget==='owner'&&!reservationAvailable(s,next,approvalAmount(next,s)))next.budgetOwnerReview=true;next.approvalRoute=routeFor(destination,next);next.approvalPolicyVersion=s.get('policy:'+destination.id)!.revision;
     requireThat(next.approvalRoute.some((step:Data)=>step.id===editing.id&&step.email===editing.email),'Edit would remove your current step; return the request instead',409);
     const material=differences.filter(difference=>rule.material.includes(difference.field)).map(difference=>difference.field), carried:string[]=[],renewed:string[]=[];
     const sameRoute=JSON.stringify(request.approvalRoute)===JSON.stringify(next.approvalRoute)&&request.policy===next.policy;
@@ -141,5 +148,5 @@ export function approverEdits(s: State, a: Actor, op: string, input: Data): Data
     next.approverEdit={rule:structuredClone(rule),sourcePolicy:structuredClone(policy),actor:a.id,email:a.email,at:new Date().toISOString(),fromRevision:request.revision,differences,carried,renewed,reason:text(input.reason,'Approver edit reason'),policy:structuredClone(destination)};
     put(s,'request',next.id,next);put(s,'revision',next.id+':'+next.revision,{...next,request:next.id});
     audit(s,a,op,next.id,{revision:next.revision,...next.approverEdit});
-    return next;
+    return projectApprovalEdit(s,a,next);
 }

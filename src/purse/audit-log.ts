@@ -1,19 +1,20 @@
+import { projectApprovalEdit } from './approval-edit-view';
 import { auditEventAllowed } from './access-audit';
 import { allowed, requirePermission } from './access';
 import { all, can, date, get, type Actor, type Data, type State } from './types';
 function context(s: State, event: Data, a:Actor,permission:string) {
     const detail: Data = {};
-    if (['request', 'amend', 'submit', 'decision'].includes(event.action) && event.revision) {
+    if (['request', 'amend', 'submit', 'decision','approver-edit'].includes(event.action) && event.revision) {
         const revision = s.get('revision:' + event.record + ':' + event.revision)?.value;
-        if (revision) detail.revision = revision;
-        if (event.action === 'amend') detail.before = s.get('revision:' + event.record + ':' + (event.revision - 1))?.value ?? null;
+        if (revision) detail.revision = projectApprovalEdit(s,a,revision,permission);
+        if (['amend','approver-edit'].includes(event.action)){const before=s.get('revision:' + event.record + ':' + (event.revision - 1))?.value;detail.before=before?projectApprovalEdit(s,a,before,permission):null;}
     }
     if (event.action === 'decision') {
         const decision = event.decisionId ? s.get('decision:' + event.decisionId)?.value : all(s, 'decision').find(d => d.request === event.record && d.revision === event.revision && d.actor === event.actor && d.decision === event.decision);
         const policyVisible=decision&&['request','revision','decision','commitment'].flatMap(kind=>all(s,kind)).filter(record=>record.policy===decision.policy).every(record=>allowed(s,a,permission,record));
         if (decision) detail.approval = { decision: decision.id, policy: decision.policy, policyVersion: decision.policyVersion, policySnapshot: policyVisible?decision.policySnapshot ?? null:null, snapshotBasis: !policyVisible?'Whole-policy snapshot outside your audit scope':decision.policySnapshot ? 'Policy retained at decision' : 'Historical policy snapshot unavailable', delegation: decision.delegation, reason: decision.reason };
     }
-    return { ...event, evidence: detail };
+    return { ...projectApprovalEdit(s,a,event,permission), evidence: detail };
 }
 export function auditLog(s: State, a: Actor, filters: Data = {}, permission='audit.read') {
     requirePermission(s,a,permission);

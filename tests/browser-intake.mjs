@@ -1,4 +1,4 @@
-import {pendingApprovalJourney,conversionChargeJourney} from './browser-approver-edits.mjs';
+import {pendingApprovalJourney,conversionChargeJourney,periodBudgetJourney} from './browser-approver-edits.mjs';
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
@@ -30,6 +30,7 @@ try {
    await guidedIntakeJourney({h,context,width,evidence,requester,supplier,edge});
    await pendingApprovalJourney({h,context,width,evidence});
    await conversionChargeJourney({h,context,width,evidence});
+   await periodBudgetJourney({h,context,width,evidence});
    const source=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});
    const archive=join(evidence,`INTAKE-001-${width}.rer`);await exportArchive(source,archive,[]);
    restored=await harness();const target=await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability});

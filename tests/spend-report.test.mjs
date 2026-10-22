@@ -35,3 +35,31 @@ test('REPORT-001 scoped HTTP dashboards filter source rows, preserve cents/curre
  const replacement=await cmd('convert',{id:renewal.id,revision:2});await cmd('issue',{id:replacement.id,revision:2,reason:'Amendment issued'});amendmentRows=(await report()).rows.filter(row=>row.request===renewal.id);assert.equal(amendmentRows.length,1);assert.equal(amendmentRows[0].amountMinor,20000);assert.equal(amendmentRows[0].order,replacement.id);assert.equal(amendmentRows[0].kind,'committed');
  assert.equal((await h.send('/api/purse/spend-report',undefined,'')).status,401);assert.equal((await h.send('/api/purse/spend-report?groupBy=bankAccount',undefined,h.owner)).status,400);assert.equal((await h.send('/api/purse/spend-report?from=2026-02-30',undefined,h.owner)).status,400);assert.equal((await h.send('/api/purse/spend-report?from=2026-12-01&through=2026-01-01',undefined,h.owner)).status,400);
 });
+
+test('BUDGET-001 dated department exposure reserves pending, commits buyer changes and retains received unbilled value',async t=>{
+ const h=await harness();t.after(()=>h.close());const cmd=h.command;
+ await cmd('business',{name:'synthetic-purse-2201',currencies:['USD'],locations:['Austin'],costCentres:['Operations'],projects:['General']});
+ const requester=await h.member('synthetic-purse-2202@example.test',['requester']),approver=await h.member('synthetic-purse-2203@example.test',['approver']),buyer=await h.member('synthetic-purse-2204@example.test',['buyer']);
+ const supplier=await cmd('supplier',{name:'synthetic-purse-2205',status:'preferred',reason:'Reviewed budget supplier'});
+ const p=await cmd('policy',{name:'Quarterly Operations',currency:'USD',category:'*',project:'*',costCentre:'Operations',approver:'synthetic-purse-2203@example.test',limitMinor:500000,budgetMinor:200000,approvalSteps:[],budgetPeriod:{from:'2026-10-01',through:'2026-12-31'}});
+ await cmd('buyer-role-limit',{role:'buyer',entity:'main',limits:{percent:10,quantityPercent:0}});
+ const input={title:'synthetic-purse-2206',supplier:supplier.id,currency:'USD',needDate:'2026-11-01',location:'Austin',costCentre:'Operations',terms:'Net 30',lines:[{description:'synthetic-purse-2207',quantity:'1',unitMinor:100000,category:'goods',project:'General'}]};
+ const position=async(cookie=h.owner)=>(await h.state(cookie)).data.periodBudgets.find(budget=>budget.id===p.id);
+ assert.equal((await position()).availableMinor,200000);
+ const r=await cmd('request',input,requester);await cmd('submit',{id:r.id,revision:1},requester);assert.equal((await position()).reservedMinor,100000);assert.equal((await position(requester)).availableMinor,100000);
+ await cmd('decision',{id:r.id,revision:1,decision:'approved',reason:'Reviewed quarterly request'},approver);
+ const order=await cmd('convert',{id:r.id,revision:1,conversionEdits:{lines:[{id:r.lines[0].id,unitMinor:104000}],freightMinor:2500,reason:'Supplier current price and freight'}},buyer);await cmd('issue',{id:order.id,revision:1,reason:'Issue current quarter commitment'},buyer);
+ let budget=await position();assert.equal(budget.reservedMinor,0);assert.equal(budget.committedMinor,106500);assert.equal(budget.actualMinor,0);assert.equal(budget.availableMinor,93500);
+ const invoice={order:order.id,reference:'synthetic-purse-2208',source:'Recorded supplier invoice',allocations:[{line:order.lines[0].id,quantity:'0.5',amountMinor:56500}]};await cmd('invoice',invoice,buyer);await cmd('invoice',invoice,buyer);
+ budget=await position();assert.equal(budget.committedMinor,50000);assert.equal(budget.actualMinor,56500);assert.equal(budget.availableMinor,93500);
+ await cmd('receipt',{order:order.id,line:order.lines[0].id,event:'receive',quantity:'1',reason:'Physical receipt',ownerOverride:true});budget=await position();assert.equal(budget.committedMinor,50000,'Receiving does not free received-but-unbilled budget');assert.equal(budget.availableMinor,93500);
+ await cmd('invoice',{...invoice,reference:'synthetic-purse-2209',allocations:[{...invoice.allocations[0],amountMinor:50000}]},buyer);budget=await position();assert.equal(budget.committedMinor,0);assert.equal(budget.actualMinor,106500);assert.equal(budget.availableMinor,93500);assert.equal(budget.sources.length,1);assert.equal(budget.sources[0].order,order.id);assert.equal(budget.sources[0].invoiceIds.length,2);
+ const poor=await cmd('request',input,requester);await cmd('submit',{id:poor.id,revision:1},requester,409);assert.equal((await position()).availableMinor,93500,'Spent budget is not replenished by receipt or a repeated invoice');
+ const budgetOwner=await h.member('synthetic-purse-2210@example.test',['approver']);await cmd('policy',{...p,overBudget:'owner',budgetOwner:'synthetic-purse-2210@example.test'});
+ const routed=await cmd('submit',{id:poor.id,revision:1},requester);assert.equal(routed.budgetOwnerReview,true);assert.equal(routed.approvalRoute.at(-1).email,'synthetic-purse-2210@example.test');assert.equal((await position()).reservedMinor,0);
+ await cmd('decision',{id:poor.id,revision:1,decision:'approved',reason:'Manager reviewed over-budget need'},approver);assert.equal((await position()).reservedMinor,0);
+ await cmd('decision',{id:poor.id,revision:1,decision:'approved',reason:'Budget owner explicitly approved overage'},budgetOwner);assert.equal((await position()).reservedMinor,100000);assert.equal((await position()).availableMinor,-6500);
+ await cmd('convert',{id:poor.id,revision:1,conversionEdits:{lines:[],freightMinor:1,reason:'Additional charge needs budget review'}},buyer,409);
+ const authorized=await cmd('convert',{id:poor.id,revision:1},buyer);await cmd('issue',{id:authorized.id,revision:1,reason:'Issue budget-owner-approved amount'},buyer);assert.equal((await position()).committedMinor,100000);assert.equal((await position()).reservedMinor,0);
+ const outside=await cmd('request',{...input,needDate:'2027-01-01'},requester);await cmd('submit',{id:outside.id,revision:1},requester,409);
+});

@@ -1,3 +1,4 @@
+import { periodBudgetPosition } from './budget-position';
 import { visibleIntakeForms } from './intake-forms';
 import { projectProtectedContext } from './protected-context';
 import { publicEvidence } from './invoice-status';
@@ -46,6 +47,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.supplierProposal = all(s,'supplierProposal').filter(proposal => proposal.requester === a.id || unrestrictedPermission(s,a,'procurement.manage'));
     const globalProcurement = unrestrictedPermission(s, a, 'procurement.manage');
     data.mayManageSupplierRegister = globalProcurement;
+    data.periodBudgets = data.policy.filter((policy:Data)=>policy.budgetPeriod).map((policy:Data)=>{const position=periodBudgetPosition(s,policy);return {...position,sources:position.sources.map(source=>({...source,invoiceIds:source.invoiceIds.filter((id:string)=>invoiceIds.has(id)),depositIds:allowed(s,a,'invoice.read',get(s,'request',source.request))?source.depositIds:[]}))};});
     data.supplier = all(s, 'supplier').map(supplier => {
         const eligible = mayReadProtectedSupplier(s, a, supplier), value: Data = supplierPublicValue(supplier, eligible ? protectedViews?.get(supplier.id) : undefined);
         delete value.proposedBy;

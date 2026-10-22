@@ -11,6 +11,7 @@ export function SpendReport({ data }: { data: D }) {
     return <section><h1 className="page-title">Spend and commitments</h1>
         <p className="quiet">Current outstanding authority is reserved before PO issuance and committed after issuance. Actual is recorded invoice evidence, including exceptions; it is not a payment or matching confirmation. Currencies stay separate.</p>
         <p className="quiet">Inclusive period: need dates for outstanding authority; UTC entry dates for invoices. Policy budgets fund outstanding authority; actual is shown separately. Budget and available figures cover your visible records for the whole policy, while the three activity columns follow the filters.</p>
+        <PeriodBudgets data={data}/>
         {error && <p role="alert">{error}</p>}
         {report && <><Form label="Filter spend" onSubmit={load}>
             <Field label="From date" name="from" type="date" required={false}/><Field label="Through date" name="through" type="date" required={false}/>
@@ -42,4 +43,13 @@ function ReportSource({ data, row }: { data: D; row: D }) {
     return <>{deposit && <p>Imported prepaid deposit {deposit.reference} · {money(deposit.amountMinor, row.currency)} · {deposit.evidence}. Source payment evidence is unverified.</p>}<p>Request revision {request?.revision} · {request?.status}</p>{order && <p>{order.number} · revision {order.revision} · {order.status}</p>}{invoice && <p>Invoice {invoice.reference} · {invoice.source} · {money(invoice.totalMinor, invoice.currency)}</p>}
         {(invoice ? invoice.allocations.map((a: D) => ({ ...a, description: order.lines.find((l: D) => l.id === a.line)?.description })) : order?.lines || request?.lines || []).map((l: D, i: number) => <p key={i}>{l.description} · {l.quantity} · {money(l.amountMinor ?? l.totalMinor, row.currency)}</p>)}
         {data.attachment.filter((f: D) => [row.request, row.order, row.invoice].includes(f.record)).map((f: D) => <p key={f.id}><a href={`/api/purse/download/attachment/${f.id}`}>{f.name}</a></p>)}</>;
+}
+
+function PeriodBudgets({data}:{data:D}) {
+ const [selectedId,setSelected]=useState<string>();const selected=(data.periodBudgets??[]).find((budget:D)=>budget.id===selectedId);
+ return <section aria-label="Dated financial budget positions"><h2>Dated financial budgets</h2><p>Budget periods follow each purchase’s need date. Received but unbilled value remains committed. Actual is recorded invoice and imported-deposit evidence, including exceptions; it is not a claim of matching, ledger sync or payment.</p><Table heads={['Budget / period','Amount','Reserved','Committed','Recorded actual','Available']}>
+ {(data.periodBudgets??[]).map((budget:D)=><tr key={budget.id}><td><button onClick={()=>setSelected(budget.id)}>{budget.name}</button><p>{budget.from} through {budget.through} · {budget.department}</p></td>{['amount','reserved','committed','actual','available'].map(field=><td key={field}>{money(budget[field+'Minor'],budget.currency)}</td>)}</tr>)}
+ </Table>{selected&&<section aria-label="Financial budget source records"><h3>{selected.name} · sources</h3><Table heads={['Request / PO','Reserved','Committed','Recorded actual']}>
+ {selected.sources.map((source:D)=><tr key={source.request}><td><a href={'/app?tab=Requests&request='+source.request}>{source.title}</a>{source.order&&<p><a href={'/api/purse/download/order/'+source.order}>{source.number}</a></p>}{source.invoiceIds.map((id:string)=>{const invoice=data.invoice.find((invoice:D)=>invoice.id===id);return invoice?<p key={id}>Invoice {invoice.reference} · {money(invoice.totalMinor,selected.currency)}</p>:null;})}</td>{['reserved','committed','actual'].map(field=><td key={field}>{money(source[field+'Minor'],selected.currency)}</td>)}</tr>)}
+ </Table><button onClick={()=>setSelected(undefined)}>Close financial budget sources</button></section>}</section>;
 }

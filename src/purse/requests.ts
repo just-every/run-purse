@@ -1,3 +1,4 @@
+import { budgetRoom } from './budget-position';
 import { startChain, chainDecision } from './approval-chain';
 import { operationalOrder } from './adoption-position';
 import { applyIntakeFields, splitValues, intakeDefaults } from './intake-fields';
@@ -20,7 +21,7 @@ export function lines(s: State, input: unknown, a: Actor) { requireThat(Array.is
 export function requestTotal(r: Data) { const total = r.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0) + r.freightMinor + r.taxMinor; return minor(total, 'Request total'); }
 export function policies(s: State, r: Data) { return coveringPolicies(all(s, 'policy'), r); }
 export const reserved = (s: State, policy: string) => all(s, 'commitment').filter(e => e.policy === policy).reduce((n, e) => n + e.amountMinor, 0);
-export function reservationAvailable(s: State, r: Data, amountMinor: number) { const p = policies(s, r).find(p => p.id === r.policy); return Boolean(p && reserved(s, p.id) + amountMinor <= p.budgetMinor); }
+export function reservationAvailable(s: State, r: Data, amountMinor: number) { const p = policies(s, r).find(p => p.id === r.policy); return Boolean(p && ((p.overBudget==='owner' && r.budgetOwnerReview && r.totalMinor===s.get('request:'+r.id)?.value.totalMinor && all(s,'decision').some(decision=>decision.request===r.id&&decision.revision===r.revision&&decision.decision==='approved'&&decision.email===p.budgetOwner&&decision.policyVersion===s.get('policy:'+p.id)?.revision)) || (budgetRoom(s,r,p,amountMinor) ?? reserved(s,p.id)+amountMinor<=p.budgetMinor))); }
 export function ledger(s: State, a: Actor, r: Data, amountMinor: number, kind: string) { requireThat(amountMinor <= 0 || reservationAvailable(s, r, amountMinor), 'Current policy or budget does not authorize replenishment; renew approval', 409); const balance=all(s,'commitment').filter(e=>e.currency===r.currency).reduce((n,e)=>n+e.amountMinor,0);requireThat(Number.isSafeInteger(balance+amountMinor),'Commitment exceeds supported integer range',409);const id = uid(); put(s, 'commitment', id, { request: r.id, revision: r.revision, policy: r.policy, currency: r.currency, amountMinor, kind, actor: a.id, at: new Date().toISOString() }); }
 export function authorizedApproval(s: State, a: Actor, r: Data) {
     requirePermission(s, a, 'request.approve', r);
@@ -150,7 +151,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             const current = all(s, 'commitment').filter(e => e.request === r.id && e.policy===r.policy && e.currency===r.currency).reduce((n, e) => n + e.amountMinor, 0);
             const desired = approvalAmount(r,s);
             const delta = Math.max(0, desired - current);
-            requireThat(reserved(s, p.id) + delta <= p.budgetMinor, 'Budget exhausted by existing commitments', 409);
+            requireThat(reservationAvailable(s,r,delta), 'Budget exhausted by existing commitments', 409);
             if (delta)
                 ledger(s, a, r, delta, r.amends ? 'amendment-reservation' : 'reservation');
         }

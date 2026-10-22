@@ -1,3 +1,4 @@
+import { projectApprovalEdit } from './approval-edit-view';
 import { chainHolder, currentStep } from './approval-chain';
 import { adoptionDeposits, orderAdoption } from './adoption-position';
 import { releasePosition } from './blanket-releases';
@@ -28,7 +29,7 @@ export function purchasingProjection(s: State, a: Actor) {
     const invoices = all(s, 'invoice').filter(invoice => allowed(s, a, 'invoice.read', invoice));
     const requestIds = new Set(requests.map(request => request.id)), orderIds = new Set(orders.map(order => order.id)), invoiceIds = new Set(invoices.map(invoice => invoice.id));
     const data: Data = {
-        request: requests.map(request => ({ ...request, approvalHolder: request.approvalRoute ? currentStep(s,request)?.email : scimApprovalHolder(s, request), approvalTransferred: Boolean(currentScimAssignment(s, request)), approvalNeedsReassignment: currentScimAssignment(s, request)?.held === true, mayEdit: allowed(s, a, 'request.edit', request), mayApprove: mayApprove(s, a, request), approverEditRule: request.approvalRoute ? (s.get('policy:'+request.policy)?.value.editRules?.[request.purchaseType ?? request.lines[0].category.toLowerCase()] ?? s.get('policy:'+request.policy)?.value.editRules?.['*']) : undefined,
+        request: requests.map(request => ({ ...projectApprovalEdit(s,a,request), approvalHolder: request.approvalRoute ? currentStep(s,request)?.email : scimApprovalHolder(s, request), approvalTransferred: Boolean(currentScimAssignment(s, request)), approvalNeedsReassignment: currentScimAssignment(s, request)?.held === true, mayEdit: allowed(s, a, 'request.edit', request), mayApprove: mayApprove(s, a, request), approverEditRule: request.approvalRoute ? (s.get('policy:'+request.policy)?.value.editRules?.[request.purchaseType ?? request.lines[0].category.toLowerCase()] ?? s.get('policy:'+request.policy)?.value.editRules?.['*']) : undefined,
             mayPrepareValue: ['request.edit', 'request.approve', 'receive', 'procurement.manage'].some(permission => allowed(s, a, permission, request)),
             mayConvert: allowed(s, a, 'po.convert', request), mayManagePurchasing: allowed(s, a, 'procurement.manage', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
             buyerLimit: buyerLimit(s, a, request), buyerLimits: buyerLimits(s, a, request) })),
@@ -50,6 +51,7 @@ export function purchasingProjection(s: State, a: Actor) {
     };
     for (const kind of ['revision', 'decision', 'quote', 'commitment']) data[kind] = all(s, kind).filter(record => requestIds.has(record.request)
         && allowed(s, a, 'request.read', record) && (kind !== 'quote' || !record.rfq || allowed(s, a, 'rfq.read', record)));
+    data.revision=data.revision.map((revision:Data)=>projectApprovalEdit(s,a,revision));
     const revisionKeys = new Set(data.revision.map((revision: Data) => revision.request + ':' + revision.revision)), quoteIds = new Set(data.quote.map((quote: Data) => quote.id));
     data.quoteAward = data.quoteAward.filter((award: Data) => revisionKeys.has(award.request + ':' + award.revision)
         && quoteIds.has(award.firstQuote) && quoteIds.has(award.awardedQuote));
@@ -89,6 +91,7 @@ export function scopeAuditRows(s: State, a: Actor, data: Data) {
     data.decision=data.decision.map((decision:Data)=>decision.policySnapshot&&!policyIds.has(decision.policy)?{...decision,policySnapshot:null,snapshotBasis:'Whole-policy snapshot outside your purchase scope'}:decision);
     return all(s, 'audit').filter(event => {
         const action = typeof event.action === 'string' ? event.action : '';
+        if(['amend','approver-edit'].includes(action)&&event.revision){const prior=s.get('revision:'+event.record+':'+(event.revision-1))?.value;if(prior&&!allowed(s,a,'request.read',prior))return false;}
         if ((action.startsWith('invoice') || event.invoice) && !allowed(s, a, 'invoice.read', event)) return false;
         if (action.startsWith('cash-') && !allowed(s, a, 'cash.read', event)) return false;
         if (auditEventAllowed(s, a, event)) return true;
@@ -101,7 +104,7 @@ export function scopeAuditRows(s: State, a: Actor, data: Data) {
             return canReadRecord(s, a, row.kind, { ...row.value, id: row.id });
         }
         return event.actor === a.id && event.action === 'protected-input-refused';
-    }).map(event => event.links ? { ...event, links: projectPurchaseLinks(data, event.links) } : event);
+    }).map(event=>projectApprovalEdit(s,a,event)).map(event => event.links ? { ...event, links: projectPurchaseLinks(data, event.links) } : event);
 }
 
 export function projectPurchaseLinks(data: Data, links: Data) {

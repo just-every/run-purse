@@ -547,3 +547,63 @@ or treats source text as authority. Portable archives validate the new records,
 revision snapshots, exact split arithmetic, files, consent and email links;
 archived principal IDs never create a session or grant another account access
 to a private unfinished draft.
+
+## Native ordered approvals, corrections and dated budgets (partial clauses)
+
+The existing owner/scope-checked `policy` command accepts optional
+`approvalSteps:[{email,minMinor?,minAmount?,costCentre?,dependsOn?}]` (up to 20
+additional serial steps). `minMinor` is integer cents; `minAmount` is currency
+text, and the ordinary money parser requires agreement if both are supplied.
+The primary approver remains `approver`. Conditional steps apply when the
+request amount is at least their threshold and the department matches.
+`editRules` maps a purchase type or `*` to `{allowed:[field],material:[field]}`.
+The native editable header fields are `glAccount`, `costCentre`, `location`,
+`class`, `project`, `needDate`, `shipTo`, and `notes`; supplier and per-line
+corrections remain unbuilt. Defaults for material fields are GL account,
+department, project and supplier. Serial execution does not implement
+APPROVAL-001 pools, parallel steps, manager routing or channel approvals.
+
+`approver-edit` takes `{id,revision,changes:{field:value},reason}` from the
+current non-self step holder. It makes a new revision and records exact
+before/after values, carried decision links, renewed decisions and policy
+context. Scope applies to both the old and new record. Nonmaterial edits carry
+approvals only when the route stays identical; material dependencies renew
+affected steps. A department-policy change renews prior approvals, inserts its
+steps and moves the reservation atomically. Native current policy, membership,
+session and revision fences still apply. A prior revision or whole-policy
+snapshot outside the viewer's current scope is withheld. Earlier approvers do
+not acquire a new cross-department read grant; that visibility conflict awaits
+ct. Existing issued-order correction and supplier-change-order requirements
+remain open in APPROVAL-004 / PO-012 / PO-004.
+
+A policy may set `budgetPeriod:{from,through}` to an inclusive need-date period
+of at most one fiscal year and `costCentre` to its department. Explicit dates
+can represent a month, quarter or US fiscal year. Existing purchases must fit a
+newly assigned period. Cross-policy/period amendment dispositions remain
+unbuilt and refuse. `overBudget:"block"|"owner"` selects refusal or an additional
+`budgetOwner` email's native approval. The owner route creates no over-budget
+reservation until that owner approves the exact revision, and its authority
+does not authorize a later buyer increase. Ordered policies reserve at submit;
+legacy single-approver policies keep their prior reservation timing.
+
+State exposes `data.periodBudgets` for visible complete policy scopes. Reserved,
+committed, recorded actual and available use exact source requests, current
+issued POs and invoice/deposit evidence. Received but unbilled issued value
+remains committed. Recorded invoice evidence (including exceptions) consumes
+the approved face once; imported deposit evidence plus net deposit credits do
+not duplicate actual. This is financial exposure, separate from the existing
+physical outstanding-authority report. It does not claim matched or synced
+bills, payment or card settlement. Invoice identifiers in source rows retain
+the invoice-read gate. Allocation/custom-field budgets and provider/native
+deposit/card integrations remain BUDGET-001 gaps.
+
+Native `convert.conversionEdits` additionally accepts line `unit` and
+`partNumber`, and header `freightMinor` / `taxMinor`. `lines` may be empty for a
+header-only charge edit. Units and SKUs are recorded labels with no implicit
+quantity multiplier. Header charges participate in the request-total variance
+cap; these are not distinct charge lines. A changed supplied-tax total is
+apportioned by line value with largest-remainder cents. The separate attributed
+PO face, source revision, current caps and issuance proof restore together;
+approved request/decision history stays exact. PO-012 still requires the
+buyer-attributed request revision, supplier switches, automatic material
+amendment/over-budget routing, supplier change orders and Slack/Teams proof.
