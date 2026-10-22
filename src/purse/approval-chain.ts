@@ -1,3 +1,4 @@
+import { remainingValue } from './orders';
 import { moneyInput } from './money';
 import { all, allowed, audit, date, get, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
 import { ledger, policies, reserved, approvalAmount } from './requests';
@@ -76,9 +77,9 @@ export function chainDecision(s: State, a: Actor, request: Data, input: Data) {
     const reason = text(input.reason,'Decision reason'), id=uid();
     if (input.decision === 'approved') reserve(s,a,request,policy);
     else {
-        const balance=all(s,'commitment').filter(event=>event.request===request.id).reduce((sum,event)=>sum+event.amountMinor,0);
-        // Existing issued authority is retained by the ordinary amendment path.
-        if (!request.amends && balance) ledger(s,a,request,-balance,'chain-decision-release');
+        const prior=request.amends ? get(s,'order',request.amends) : undefined, balances=new Map<string,number>();
+        for(const event of all(s,'commitment').filter(event=>event.request===request.id))balances.set(event.policy,(balances.get(event.policy)??0)+event.amountMinor);
+        for(const [id,balance]of balances){const retained=prior?.policy===id ? Math.min(balance,remainingValue(s,prior)) : 0;if(balance!==retained)ledger(s,a,{...request,policy:id},retained-balance,'chain-decision-release');}
     }
     put(s,'decision',id,{request:request.id,revision:request.revision,decision:input.decision,chainStep:step!.id,reason,actor:a.id,email:a.email,owner:a.owner,operatorVersion:a.version,at:new Date().toISOString(),policy:policy.id,policyVersion:request.approvalPolicyVersion,policySnapshot:structuredClone(policy),delegation:null});
     const status = input.decision === 'approved' && currentStep(s,request) ? 'pending' : input.decision;
