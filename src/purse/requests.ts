@@ -49,7 +49,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         if(Object.hasOwn(b,'valuePromise')||Object.hasOwn(old??{},'valuePromise')) (r as Data).valuePromise=normalizeValuePromise(Object.hasOwn(b,'valuePromise')?b.valuePromise:old?.valuePromise,r.currency,r.needDate);
         if (old?.cancellation) requireThat(false, 'A cancellation revision is frozen for independent approval; submit it or create a new proposal', 409);
         if (old?.adoptedDisposition) (r as Data).adoptedDisposition = structuredClone(old.adoptedDisposition);
-        if (old?.adoption) { (r as Data).adoption = old.adoption; (r as Data).importedSourceRequest = old.importedSourceRequest; }
+        if (old?.adoption) { (r as Data).imported = false; (r as Data).adoption = old.adoption; (r as Data).importedSourceRequest = old.importedSourceRequest; }
         if(old?.integration) (r as Data).integration = structuredClone(old.integration);
         if(old?.emailIntake) (r as Data).emailIntake = old.emailIntake;
         if(old?.quoteTerms) (r as Data).quoteTerms = structuredClone(old.quoteTerms);
