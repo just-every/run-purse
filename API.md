@@ -355,3 +355,58 @@ pending actions and records counts without removed values. Unsafe immutable
 reports are explicitly quarantined. Reads withhold unsafe structured fields
 before cleanup; exports and restores refuse unsafe context. Free text remains
 source data and is not claimed to be universally redacted.
+
+## Native releases, service value receiving and recurring series (PO-005)
+
+`blanket-release` takes `{order,revision,reference,amountMinor,needDate,reason}`
+(or currency text `amount`) under current scoped procurement permission. It
+irrevocably records a release against the exact issued blanket revision. Open
+release amounts earmark parent authority; unreleased invoices consume unallocated
+authority, and all uninvoiced balances remain committed. Invoice input optionally
+names `release`; source identity includes that choice. Evidence exceeding the
+release balance, a closed release or the current amended parent cap is held.
+`close-blanket-release` takes `{id,revision,reason}` and releases only unused
+earmarked authority. No supplier message or payment is sent.
+
+A request line may include `service:{mode:"amount"|"percentage"|"milestone"}`.
+Milestone mode supplies `milestones:[{id?,name,valueMinor}]`; positive values must
+sum to the exact line total. The exact terms survive approval, PO documents and
+amendments. `service-receipt` takes `{order,line,receiptVersion,reason}` and either
+incremental `valueMinor`/`valueAmount`, cumulative decimal-string `percentage`
+(0–100, two decimal places), or an approved `milestone` identity. Current receiver
+assignment and native-session fences apply. Returns use `event:"return"` and a
+value for amount/percentage lines. A milestone is accepted once. Amounts are the
+matching authority; free-text reasons never establish completion. Matching
+allocates received value to fitting invoice evidence in retained entry order;
+an oversized exception does not consume value needed by a smaller fitting bill.
+Receipt changes immediately recompute matching without approving payment.
+
+`recurring-series` requires a current native owner and
+`{order,agreement,nextDate,endDate,maxOrders,reason}`. The exact current issued
+ordinary/service template is frozen, the cadence is monthly in the business
+calendar, and 1–120 additional orders are explicitly bounded by the end date.
+`recurring-authorize` takes `{id,version,reason}` from the current designated
+independent approver or permitted delegate. A series stays pending until that
+explicit authorization. Generated decisions retain this standing authorization
+and the exact source version; they never claim a fresh human interaction.
+
+Hourly Cron handles one due order per active series per invocation, atomically
+claiming the domain revision and current native owner/source-approver/series-
+approver identities. Each occurrence has a fresh request, lines, PO number and
+budget commitment, a frozen PO profile/terms/originals, and source-exact history.
+The anchored calendar day clamps to a short month's last day. Before generation,
+current authority/policy, agreement supplier/currency/start/end/notice deadline,
+known remaining agreement value, available budget, supplier blocking/screening
+and required-document lapse are checked. Failure pauses the series with its
+reason and an owner decision request in Orders. Retained order exposure and
+attributed invoice evidence consume agreement value once. A delayed tick checks
+the scheduled occurrence date and does not skip or silently drop a due order.
+
+`recurring-disposition` takes `{id,version,disposition,reason}` from the same
+current native owner: `pause`, `continue`, `amend` or `end`. Continue requests a
+fresh check and bypasses no condition. Amend pauses the series for the ordinary
+request amendment and renewed approval flow; a new exact template requires a new
+series and independent consent. Scheduled generation records issuance only and
+sends no supplier PO. Restored history grants no historical owner or approval
+authority; stale native bindings cause a pause. Scoped native state includes
+`releasePosition`, value receipt positions, `recurringSeries` and `recurringEvent`.

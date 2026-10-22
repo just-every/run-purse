@@ -49,6 +49,17 @@ export function savingsReport(data: Data) {
             const family = data.order.filter((o: Data) => o.request === order.request).sort((a: Data, b: Data) => b.revision - a.revision);
             const current = family.find((o: Data) => o.issuedAt), position = current?.positions.find((p: Data) => p.line === line.id);
             const key = order.request + ':' + line.id, prior = used.get(key) ?? 0;
+            if (line.service) {
+                const billedMinor = Math.max(0, Math.min(allocation.amountMinor, (position?.acceptedMinor ?? 0) - prior));
+                used.set(key, prior + billedMinor);
+                if (!billedMinor || !baseline.awardedMinor) continue;
+                const firstMinor = Number((BigInt(billedMinor) * BigInt(baseline.firstMinor) + BigInt(baseline.awardedMinor) / 2n) / BigInt(baseline.awardedMinor));
+                realizedRows.push({ ...award.source, award: award.id, request: order.request, revision: order.revision, order: order.id,
+                    number: order.number, invoice: invoice.id, reference: invoice.reference, line: line.id, agreementLine: baseline.agreementLine,
+                    description: line.description, currency: invoice.currency, quantity: line.q / 1000 * billedMinor / line.totalMinor,
+                    receivedValueMinor: position?.acceptedMinor, firstMinor, billedMinor, savingsMinor: firstMinor - billedMinor });
+                continue;
+            }
             const q = Math.max(0, Math.min(allocation.q, (position?.accepted ?? 0) - prior));
             used.set(key, prior + q);
             if (!q) continue;

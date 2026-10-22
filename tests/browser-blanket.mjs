@@ -1,3 +1,4 @@
+import {blanketKinds} from './browser-blanket-kinds.mjs';
 import assert from 'node:assert/strict';
 import {join} from 'node:path';
 import {session,api,current} from './browser-journey.mjs';
@@ -28,6 +29,7 @@ export async function blanketJourney(browser,root,origin,width,evidence){
   const recorded=buyer.page.waitForResponse(r=>r.url().endsWith('/command/invoice'));await buyer.page.getByRole('button',{name:'Save invoice evidence',exact:true}).click();assert.equal((await recorded).status(),200);
   await balance.getByText('Over cap by $1,000.00. Review invoice risk and matching exceptions.',{exact:true}).waitFor();await buyer.page.getByRole('heading',{name:'Invoice MAINT-OVER-'+tag,exact:true}).locator('..').getByRole('heading',{name:'Invoice exceeds remaining PO value · Open',exact:true}).waitFor();assert.equal(await buyer.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'PO-005 order fits '+width);await buyer.page.screenshot({path:join(evidence,`PO-005-held-${width}.png`),fullPage:true});
   const state=(await current(buyer.context,origin)).data;assert.equal(state.order.find(p=>p.id===o.id).blanketPosition.remainingMinor,0);assert.equal(state.commitment.filter(e=>e.request===r.id).reduce((n,e)=>n+e.amountMinor,0),0);
-  return {clause:'PO-005',width,order:o.id};
+  const kinds=await blanketKinds({owner,requester,approver,buyer},origin,width,evidence,{supplier,business,category,blanket:o});
+  return {clause:'PO-005',width,order:o.id,...kinds};
  }finally{for(const s of [owner,requester,approver,buyer])await s.context.close();}
 }

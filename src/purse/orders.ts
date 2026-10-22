@@ -1,3 +1,4 @@
+import { servicePosition, serviceInvoiceMatches, serviceReceipt } from './service-orders';
 import { blanketRemaining, requireBlanketValidity } from './blanket-orders';
 import { openInvoiceFlags } from './invoice-status';
 import { poProfileSnapshot } from './po-profiles';
@@ -11,9 +12,9 @@ import { invoice } from './invoices';
 import { receipt } from './receiving';
 import { requirePermission } from './access';
 import { conversionEdits, requireConversionSource } from './conversion-variance';
-export function linePosition(s: State, order: string, line: Data) { const events = all(s, 'receipt').filter(e => e.order === order && e.line === line.id); const accepted = (line.carriedAccepted ?? 0) + events.reduce((n, e) => n + (e.event === 'receive' ? e.q : e.event === 'return' ? -e.q : 0), 0), cancelled = (line.carriedCancelled ?? 0) + events.filter(e => e.event === 'cancel').reduce((n, e) => n + e.q, 0); const closed = all(s, 'orderClosure').filter(c => c.order === order && c.active).flatMap(c => c.lines).filter((c: Data) => c.line === line.id).reduce((n: number, c: Data) => n + c.q, 0); return { accepted, cancelled, closed, outstanding: line.q - accepted - cancelled - closed }; }
+export function linePosition(s: State, order: string, line: Data) { if (line.service) { const p = servicePosition(s, get(s, 'order', order), line); const q = (minor: number) => line.totalMinor ? Number(BigInt(minor) * BigInt(line.q) / BigInt(line.totalMinor)) : 0; return { ...p, accepted: q(p.acceptedMinor), cancelled: q(p.cancelledMinor), closed: q(p.closedMinor), outstanding: q(p.outstandingMinor) }; } const events = all(s, 'receipt').filter(e => e.order === order && e.line === line.id); const accepted = (line.carriedAccepted ?? 0) + events.reduce((n, e) => n + (e.event === 'receive' ? e.q : e.event === 'return' ? -e.q : 0), 0), cancelled = (line.carriedCancelled ?? 0) + events.filter(e => e.event === 'cancel').reduce((n, e) => n + e.q, 0); const closed = all(s, 'orderClosure').filter(c => c.order === order && c.active).flatMap(c => c.lines).filter((c: Data) => c.line === line.id).reduce((n: number, c: Data) => n + c.q, 0); return { accepted, cancelled, closed, outstanding: line.q - accepted - cancelled - closed }; }
 export function commitment(s: State, r: Data) { return all(s, 'commitment').filter(e => e.request === r.id).reduce((n, e) => n + e.amountMinor, 0); }
-export function remainingValue(s: State, o: Data) { if(o.poDetails?.blanket) return blanketRemaining(s,o,l => { const p=linePosition(s,o.id,l);return p.cancelled+p.closed; }); const remaining = o.lines.reduce((n: number, l: Data) => n + extended(linePosition(s, o.id, l).outstanding, l.unitMinor), 0); const base = o.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0); const any = o.lines.some((l: Data) => linePosition(s, o.id, l).outstanding > 0); return base ? Number((BigInt(o.totalMinor) * BigInt(remaining) + BigInt(base) / 2n) / BigInt(base)) : (any ? o.totalMinor : 0); }
+export function remainingValue(s: State, o: Data) { if(o.poDetails?.blanket) return blanketRemaining(s,o,l => { const p=linePosition(s,o.id,l);return p.cancelled+p.closed; }); const remaining = o.lines.reduce((n: number, l: Data) => n + (l.service ? servicePosition(s,o,l).outstandingMinor : extended(linePosition(s, o.id, l).outstanding, l.unitMinor)), 0); const base = o.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0); const any = o.lines.some((l: Data) => linePosition(s, o.id, l).outstanding > 0); return base ? Number((BigInt(o.totalMinor) * BigInt(remaining) + BigInt(base) / 2n) / BigInt(base)) : (any ? o.totalMinor : 0); }
 export function orders(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if (op === 'convert') {
         const r = get(s, 'request', b.id);
@@ -69,6 +70,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         audit(s, a, op, o.id, { revision: o.revision, ...(conversionLimit ? { conversionLimit, conversionSourceRevision: r.revision } : {}) });
         return get(s, 'order', o.id);
     }
+    if (op === 'service-receipt') return serviceReceipt(s, a, b);
     if (op === 'receipt') return receipt(s, a, b);
     if (op === 'invoice') return invoice(s, a, b);
 }
@@ -82,7 +84,8 @@ export function discrepancies(s: State) {
         const current = lineage.reduce((latest, p) => p.revision > latest.revision ? p : latest, o);
         const currentLine = current.lines.find((z: Data) => z.id === l.id);
         const orderIds = new Set(lineage.map(p => p.id));
+        const service = Boolean(currentLine.service), valueMatch = service ? serviceInvoiceMatches(s, current, currentLine).has(i.id) : false;
         const totalInvoiced = invoices.filter(z => orderIds.has(z.order)).flatMap(z => z.allocations).filter((z: Data) => z.line === l.id).reduce((n: number, z: Data) => n + z.q, 0);
-        return { invoiceId: i.id, orderId: o.id, lineId: l.id, invoice: i.reference, exception: i.exception ?? (openInvoiceFlags(i).length ? 'Unresolved invoice risk flags' : null), order: o.number, line: l.description, currency: i.currency, invoiceMinor: x.amountMinor, expectedMinor: x.orderedMinor, priceMismatch: x.amountMinor !== x.orderedMinor, closedBalance: linePosition(s, current.id, currentLine).closed > 0 && totalInvoiced > currentLine.q - linePosition(s, current.id, currentLine).closed, quantityMismatch: totalInvoiced > currentLine.q, receiptShortfall: totalInvoiced > linePosition(s, current.id, currentLine).accepted };
+        return { invoiceId: i.id, orderId: o.id, lineId: l.id, invoice: i.reference, exception: i.exception ?? (openInvoiceFlags(i).length ? 'Unresolved invoice risk flags' : service && !valueMatch ? 'Invoice exceeds received service value' : null), order: o.number, line: l.description, currency: i.currency, invoiceMinor: x.amountMinor, expectedMinor: x.orderedMinor, priceMismatch: service ? false : x.amountMinor !== x.orderedMinor, closedBalance: linePosition(s, current.id, currentLine).closed > 0 && totalInvoiced > currentLine.q - linePosition(s, current.id, currentLine).closed, quantityMismatch: service ? false : totalInvoiced > currentLine.q, receiptShortfall: service ? !valueMatch : totalInvoiced > linePosition(s, current.id, currentLine).accepted };
     }));
 }

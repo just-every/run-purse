@@ -10,6 +10,7 @@ export function receipt(s: State, a: Actor, b: Data) {
     requireThat(o.status === 'issued' && !o.imported, 'Only a natively issued PO can be received', 409);
     const l = o.lines.find((l: Data) => l.id === b.line);
     requireThat(l, 'PO line not found', 404);
+    requireThat(!l.service, 'Record structured service value through service receiving', 409);
     const q = quantity(b.quantity), position = linePosition(s, o.id, l), event = b.event;
     requireThat(['receive', 'return', 'reject', 'cancel'].includes(event), 'Choose a receipt event');
     requireThat(event === 'return' ? q <= position.accepted : q <= position.outstanding, 'Quantity exceeds received or outstanding quantity', 409);

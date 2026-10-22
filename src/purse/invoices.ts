@@ -18,7 +18,7 @@ export function scopedInvoice(s: State, a: Actor, value: Data) {
 // submitted evidence and normalized allocations, independently of line order.
 function evidence(i: Data) {
     return JSON.stringify({ order: i.order, currency: i.currency, source: i.source,
-        evidenceHash: i.evidenceHash ?? null, allocations: i.allocations.map((x: Data) => [x.line, x.q, x.amountMinor])
+        evidenceHash: i.evidenceHash ?? null, release: i.release ?? null, allocations: i.allocations.map((x: Data) => [x.line, x.q, x.amountMinor])
             .sort((a: any[], b: any[]) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0) });
 }
 
@@ -38,7 +38,7 @@ export function invoice(s: State, a: Actor, b: Data) {
         return { line: l.id, quantity: x.quantity, q, amountMinor: moneyInput(x, 'amount', 'amountMinor', 'Invoice amount'),
             orderedMinor: extended(q, l.unitMinor), receivedQ: linePosition(s, o.id, l).accepted };
     });
-    const candidate: Data = { order: o.id, supplier: o.supplier, reference, source, currency: o.currency, allocations, totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total') };
+    const candidate: Data = { ...(b.release ? { release: text(b.release, 'Blanket release') } : {}), order: o.id, supplier: o.supplier, reference, source, currency: o.currency, allocations, totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total') };
     Object.assign(candidate, invoiceEvidence(s, o, candidate, b));
     const existing = all(s, 'invoice').filter(i => canonicalSupplier(s, get(s, 'order', i.order).supplier) === canonicalSupplier(s, o.supplier) && i.reference === reference);
     if (existing.length) {
@@ -53,7 +53,7 @@ export function invoice(s: State, a: Actor, b: Data) {
         return linePosition(s, o.id, l).closed > 0 && billed + x.q > l.q - linePosition(s, o.id, l).closed;
     });
     const id = uid();
-    put(s, 'invoice', id, { ...candidate, id, ...(closedBalance ? { status: 'exception', exception: 'Invoice exceeds the closed PO balance' } : {}), totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total'), actor: a.id, at: new Date().toISOString() });
+    put(s, 'invoice', id, { ...candidate, id, entrySequence: all(s,'invoice').reduce((n,i)=>Math.max(n,i.entrySequence??0),0)+1, ...(closedBalance ? { status: 'exception', exception: 'Invoice exceeds the closed PO balance' } : {}), totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total'), actor: a.id, at: new Date().toISOString() });
     storeInvoiceOriginal(s, a, get(s, 'invoice', id), b);
     if(o.poDetails?.blanket) {
         const r=get(s,'request',o.request), target=remainingValue(s,o), current=commitment(s,r);

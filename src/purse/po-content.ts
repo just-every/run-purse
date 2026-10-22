@@ -2,7 +2,7 @@ import { all, get, requireThat, type Data, type State } from './types';
 import { poLabels } from './po-profiles';
 import type { PoPdfContent } from './po-pdf';
 const unknown = 'Not recorded';
-const value = (v: unknown) => v === null || v === undefined || v === '' ? unknown : String(v);
+const value = (v: unknown) => v === null || v === undefined || v === '' ? unknown : typeof v === 'object' ? JSON.stringify(v) : String(v);
 const money = (n: number, c: string) => `${c} ${(n / 100).toFixed(2)}`;
 export function poContent(s: State, order: Data): PoPdfContent {
     const p = order.documentProfile, supplier = order.supplierSnapshot;
@@ -20,6 +20,8 @@ export function poContent(s: State, order: Data): PoPdfContent {
         { heading: 'Purchase terms and conditions', lines: [value(p?.standardTerms)] },
     ];
     if(order.poDetails?.blanket) sections.unshift({heading:'Blanket purchase order',lines:['Approved cap: '+money(order.totalMinor,order.currency),'Valid from: '+order.poDetails.blanket.validFrom,'Valid through (inclusive): '+order.poDetails.blanket.validThrough,'Draw-down basis: recorded invoice evidence; not a supplier send or payment']});
+    for (const line of order.lines.filter((l: Data) => l.service)) sections.push({ heading: 'Service receiving: ' + line.description, lines: ['Basis: ' + line.service.mode, ...(line.service.milestones ?? []).map((m: Data) => m.name + ': ' + money(m.valueMinor, order.currency))] });
+    if (order.recurring) sections.unshift({heading:'Scheduled recurring purchase',lines:['Scheduled for: '+order.recurring.scheduledFor,'Source PO: '+get(s,'order',order.recurring.sourceOrder).number,'Series: '+order.recurring.series,'Explicit recurring authorization version: '+order.recurring.authorizationVersion]});
     const revision = s.get('revision:' + order.request + ':' + order.revision)?.value;
     if (revision?.amends) {
         const prior = get(s, 'order', revision.amends);
@@ -32,7 +34,7 @@ export function poContent(s: State, order: Data): PoPdfContent {
         }
         const changes = order.lines.flatMap((l: Data) => {
             const old = prior.lines.find((v: Data) => v.id === l.id);
-            return !old ? ['Added: ' + l.description] : ['description', 'quantity', 'unitMinor', 'partNumber', 'unit', 'shipTo', 'lineTaxMinor'].filter(k => old[k] !== l[k]).map(k => `${l.description} · ${k}: ${value(old[k])} to ${value(l[k])}`);
+            return !old ? ['Added: ' + l.description] : ['description', 'quantity', 'unitMinor', 'partNumber', 'unit', 'shipTo', 'lineTaxMinor', 'service'].filter(k => JSON.stringify(old[k]) !== JSON.stringify(l[k])).map(k => `${l.description} · ${k}: ${value(old[k])} to ${value(l[k])}`);
         });
         for (const k of ['supplier', 'currency', 'terms', 'needDate', 'freightMinor', 'taxMinor']) if (prior[k] !== order[k]) changes.push(`${k}: ${value(prior[k])} to ${value(order[k])}`);
         if(JSON.stringify(prior.poDetails?.blanket)!==JSON.stringify(order.poDetails?.blanket)) changes.push('Blanket validity: '+JSON.stringify(prior.poDetails?.blanket)+' to '+JSON.stringify(order.poDetails?.blanket));

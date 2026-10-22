@@ -25,9 +25,9 @@ export function validateOrderLinks({get,all}) {
   if (o.amendedBy) { const next=get('order',o.amendedBy); check(next.request === o.request && next.revision > o.revision && get('revision',next.request + ':' + next.revision).amends === o.id,'order_amendment'); }
   if (revision.amends) {
    const prior = get('order',revision.amends); check(prior.request === o.request && prior.revision < o.revision,'order_amendment');
-   for (const old of prior.lines) { const line=o.lines.find(l => l.id === old.id), carried=position(prior,old); check(line && line.carriedAccepted === carried.accepted && line.carriedCancelled === carried.cancelled,'order_carry'); }
+   for (const old of prior.lines) { if(old.service)continue; const line=o.lines.find(l => l.id === old.id), carried=position(prior,old); check(line && line.carriedAccepted === carried.accepted && line.carriedCancelled === carried.cancelled,'order_carry'); }
   }
-  for (const l of o.lines) { const p=position(o,l), closed=closures.filter(c=>c.order===o.id&&c.active).flatMap(c=>c.lines).filter(c=>c.line===l.id).reduce((n,c)=>n+c.q,0); check(integer(p.accepted) && integer(p.cancelled) && p.accepted+p.cancelled+closed<=l.q,'receipt_position'); }
+  for (const l of o.lines) { if(l.service)continue; const p=position(o,l), closed=closures.filter(c=>c.order===o.id&&c.active).flatMap(c=>c.lines).filter(c=>c.line===l.id).reduce((n,c)=>n+c.q,0); check(integer(p.accepted) && integer(p.cancelled) && p.accepted+p.cancelled+closed<=l.q,'receipt_position'); }
   if (o.replenishmentStatus) {
    check(['held','reviewed','cancelled'].includes(o.replenishmentStatus),'replenishment_status');
    check(money(o.replenishmentMinor) && (o.replenishmentStatus === 'held' ? o.replenishmentMinor > 0 && ['issued','amendment-pending'].includes(o.status) : o.replenishmentMinor === 0),'replenishment_amount');

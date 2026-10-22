@@ -68,6 +68,8 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
         || data.order.some((order: Data) => (order.mayManageReceipt || order.mayReassignReceipt) && (rule.location === '*' || rule.location === order.location)
             && (rule.purchaseType === '*' || order.lines.every((line: Data) => line.category === rule.purchaseType))));
     data.receiptPromptEvent = all(s, 'receiptPromptEvent').filter(event => orderIds.has(event.order));
+    data.recurringSeries = all(s, 'recurringSeries').filter(series => orderIds.has(series.order)).map(series => ({...series, mayAuthorize: allowed(s,a,'request.approve',get(s,'request',series.request)) && get(s,'request',series.request).requester !== a.id, mayDecide: a.owner && series.owner === a.id}));
+    data.recurringEvent = all(s, 'recurringEvent').filter(event => data.recurringSeries.some((series: Data) => series.id === event.series));
     data.poProfile = a.owner ? all(s, 'poProfile') : [];
     data.payable = all(s, 'payable').filter(payable => invoiceIds.has(payable.invoice) && ['cash.read', 'payable.terms', 'payable.approve']
         .some(permission => allowed(s, a, permission, get(s, 'invoice', payable.invoice))));

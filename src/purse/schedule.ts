@@ -1,3 +1,4 @@
+import { runRecurringOrders } from './recurring-schedule';
 import { runValueCheckins } from './agent-value-checkins';
 import { runAgreementReminders } from './agreement-reminders';
 import { sendEmailIntakeLinks } from './email-intake';
@@ -9,11 +10,12 @@ import { runReceiptPrompts } from './receipt-prompts';
 
 export async function runPurchasingSchedule(env: Bindings, now: number) {
     await sendEmailIntakeLinks(env);
+    const recurring = await runRecurringOrders(env, now);
     const documents = await runSupplierReminders(env, now);
     const orders = await runOrderChases(env, now);
     const rfqs = await runRfqReminders(env,now);
     const receipts = await runReceiptPrompts(env, now);
     const values = await runValueCheckins(env,now);
     const agreements = await runAgreementReminders(env, now);
-    return { documents, orders, receipts, rfqs, agreements, values };
+    return { recurring, documents, orders, receipts, rfqs, agreements, values };
 }

@@ -42,6 +42,7 @@ export function conversionEdits(s: State, a: Actor, request: Data, input: unknow
     const before = conversionFace(request), after = conversionFace(request);
     after.lines = after.lines.map((line: Data) => {
         const edit = byId.get(line.id); if (!edit) return line;
+        requireThat(!line.service, 'Service value and milestone edits require amendment and renewed approval', 409);
         const unitMinor = Object.hasOwn(edit, 'unitMinor') ? minor(edit.unitMinor, 'Conversion unit price') : line.unitMinor;
         const q = Object.hasOwn(edit, 'quantity') ? quantity(edit.quantity) : line.q;
         requireThat(q >= (line.carriedAccepted ?? 0) + (line.carriedCancelled ?? 0), 'Conversion cannot remove received or cancelled quantities', 409);

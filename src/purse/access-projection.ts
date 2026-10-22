@@ -1,3 +1,5 @@
+import { releasePosition } from './blanket-releases';
+import { servicePosition } from './service-orders';
 import { currentScimAssignment, scimAssignmentAllows, scimApprovalHolder } from './scim-approvals';
 import { accessGrants, allowed, buyerLimit, buyerLimits } from './access';
 import { canReadRecord, unrestrictedPermission } from './access-records';
@@ -27,14 +29,14 @@ export function purchasingProjection(s: State, a: Actor) {
             mayPrepareValue: ['request.edit', 'request.approve', 'receive', 'procurement.manage'].some(permission => allowed(s, a, permission, request)),
             mayConvert: allowed(s, a, 'po.convert', request), mayManagePurchasing: allowed(s, a, 'procurement.manage', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
             buyerLimit: buyerLimit(s, a, request), buyerLimits: buyerLimits(s, a, request) })),
-        order: orders.map(order => ({ ...order, ...(order.poDetails?.blanket ? { blanketPosition: blanketPosition(s, order) } : {}),
+        order: orders.map(order => ({ ...order, ...(order.poDetails?.blanket ? { blanketPosition: blanketPosition(s, order), releasePosition: releasePosition(s, order) } : {}),
             receiverAssignment: receiptAssignment(s, order), mayReceive: mayReceive(s, a, order), receiptVersion: receiptVersion(s, order),
             ...(mayReceive(s, a, order) ? { receiptMatchingStatus: receiptMatchingStatus(s, order) } : {}),
             mayCaptureInvoice: allowed(s, a, 'invoice.capture', order), maySetCashExpectation: allowed(s, a, 'payable.terms', order),
             mayManageReceipt: allowed(s, a, 'procurement.manage', order), mayReassignReceipt: order.status === 'issued' && mayReceive(s, a, order) && allowed(s, a, 'receive', order),
             mayManagePurchasing: allowed(s, a, 'procurement.manage', order),
-            mayIssue: allowed(s, a, 'po.issue', order), positions: order.lines.map((line: Data) => ({ line: line.id, ...linePosition(s, order.id, line) })) })),
-        invoice: invoices.map(invoice => ({ ...publicEvidence(invoice), receiptMatch: receiptMatch(s, invoice),
+            mayIssue: allowed(s, a, 'po.issue', order), positions: order.lines.map((line: Data) => ({ line: line.id, ...linePosition(s, order.id, line), ...(line.service ? servicePosition(s, order, line) : {}) })) })),
+        invoice: invoices.map(invoice => ({ ...publicEvidence(invoice), receiptMatch: receiptMatch(s, invoice), matchingException: discrepancies(s).find(d => d.invoiceId === invoice.id && d.exception === 'Invoice exceeds received service value')?.exception,
             maySetTerms: allowed(s, a, 'payable.terms', invoice), mayApprove: allowed(s, a, 'payable.approve', invoice),
             mayReview: allowed(s, a, 'invoice.review', invoice), mayCapture: allowed(s, a, 'invoice.capture', invoice),
             flags: invoice.flags?.map((flag: Data) => !flag.relatedInvoice || invoiceIds.has(flag.relatedInvoice) ? flag : { ...flag, relatedInvoice: undefined }) })),

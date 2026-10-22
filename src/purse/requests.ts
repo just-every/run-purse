@@ -1,3 +1,4 @@
+import { serviceTerms, servicePosition } from './service-orders';
 import { currentScimAssignment, scimAssignmentAllows } from './scim-approvals';
 import { blanketTerms, blanketBilled } from './blanket-orders';
 import { normalizeValuePromise } from './value-promise';
@@ -11,7 +12,7 @@ import { all, audit, can, get, put, requireThat, requirePermission, text, minor,
 import { supplier, currency } from './admin';
 import { approvalAmount as approvalOf, coveringPolicies } from './policy-match';
 export function lines(s: State, input: unknown, a: Actor) { requireThat(Array.isArray(input) && input.length > 0 && input.length <= 100, 'Provide 1–100 lines'); return input.map((x: Data) => { const item = x.catalogue ? get(s, 'catalogue', x.catalogue) : undefined; if (item)
-    { requireCatalogueAccess(s, a, item); requireThat(item.approved, 'Catalogue item is not approved'); requireThat(currentPrice(item), 'Catalogue price is outside its validity dates', 409); } const unitMinor = moneyInput(x, 'unitAmount', 'unitMinor', 'Unit price', { fallback: item?.unitMinor }), q = quantity(x.quantity); return { id: x.id ?? uid(), description: text(x.description ?? item?.description, 'Line description'), quantity: x.quantity, q, unitMinor, totalMinor: extended(q, unitMinor), category: text(x.category ?? item?.category, 'Category'), project: text(x.project || item?.project, 'Project'), catalogue: item?.id ?? null, partNumber: item?.partNumber ?? x.partNumber ?? '', unit: item?.unit ?? x.unit ?? 'each', shipTo: optionalPoText(x.shipTo, 'Line ship to'), lineTaxMinor: Object.hasOwn(x, 'lineTaxAmount') || Object.hasOwn(x, 'lineTaxMinor') ? moneyInput(x, 'lineTaxAmount', 'lineTaxMinor', 'Line tax', { optional: true }) : null, requiredAttachments: item?.requiredAttachments ?? x.requiredAttachments ?? [] }; }); }
+    { requireCatalogueAccess(s, a, item); requireThat(item.approved, 'Catalogue item is not approved'); requireThat(currentPrice(item), 'Catalogue price is outside its validity dates', 409); } const unitMinor = moneyInput(x, 'unitAmount', 'unitMinor', 'Unit price', { fallback: item?.unitMinor }), q = quantity(x.quantity); return { id: x.id ?? uid(), description: text(x.description ?? item?.description, 'Line description'), quantity: x.quantity, q, unitMinor, totalMinor: extended(q, unitMinor), category: text(x.category ?? item?.category, 'Category'), project: text(x.project || item?.project, 'Project'), catalogue: item?.id ?? null, partNumber: item?.partNumber ?? x.partNumber ?? '', unit: item?.unit ?? x.unit ?? 'each', shipTo: optionalPoText(x.shipTo, 'Line ship to'), lineTaxMinor: Object.hasOwn(x, 'lineTaxAmount') || Object.hasOwn(x, 'lineTaxMinor') ? moneyInput(x, 'lineTaxAmount', 'lineTaxMinor', 'Line tax', { optional: true }) : null, requiredAttachments: item?.requiredAttachments ?? x.requiredAttachments ?? [], ...(x.service != null ? { service: serviceTerms(x.service, extended(q, unitMinor)) } : {}) }; }); }
 export function requestTotal(r: Data) { const total = r.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0) + r.freightMinor + r.taxMinor; return minor(total, 'Request total'); }
 export function policies(s: State, r: Data) { return coveringPolicies(all(s, 'policy'), r); }
 export const reserved = (s: State, policy: string) => all(s, 'commitment').filter(e => e.policy === policy).reduce((n, e) => n + e.amountMinor, 0);
@@ -71,6 +72,15 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             (r as Data).amends = issued.id;
             for (const l of r.lines) {
                 const prior = issued.lines.find((p: Data) => p.id === l.id);
+                requireThat(!prior || Boolean(prior.service) === Boolean(l.service), 'Issued lines retain their quantity or service receiving basis', 409);
+                if (prior?.service) {
+                    requireThat(prior.service.mode === l.service?.mode, 'An issued service line retains its receiving basis',409);
+                    const value = servicePosition(s, issued, prior);
+                    requireThat(l.totalMinor >= value.acceptedMinor + value.cancelledMinor, 'Amendment cannot erase received service value', 409);
+                    const completed = [...(prior.carriedMilestones ?? []), ...all(s, 'receipt').filter(e => e.order === issued.id && e.line === prior.id && e.milestone).map(e => e.milestone)];
+                    if (prior.service.mode === 'milestone') requireThat(completed.every(mid => { const before = prior.service.milestones.find((m: Data) => m.id === mid), after = l.service?.milestones.find((m: Data) => m.id === mid); return before && after && before.valueMinor === after.valueMinor && before.name === after.name; }), 'Accepted named milestones retain their approved identity and value',409);
+                    Object.assign(l, { carriedAcceptedMinor: value.acceptedMinor, carriedCancelledMinor: value.cancelledMinor, carriedMilestones: [...(prior.carriedMilestones ?? []), ...all(s, 'receipt').filter(e => e.order === issued.id && e.line === prior.id && e.milestone).map(e => e.milestone)] });
+                }
                 const events = all(s, 'receipt').filter(e => e.order === issued.id && e.line === l.id);
                 const accepted = (prior?.carriedAccepted ?? 0) + events.reduce((n, e) => n + (e.event === 'receive' ? e.q : e.event === 'return' ? -e.q : 0), 0);
                 const cancelled = (prior?.carriedCancelled ?? 0) + events.filter(e => e.event === 'cancel').reduce((n, e) => n + e.q, 0);
