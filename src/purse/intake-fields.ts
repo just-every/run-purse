@@ -29,7 +29,7 @@ export function fieldValues(fields: Data[], input: Data = {}, required = false) 
     }
     return values;
 }
-/** Shares are integer basis points. Remainder cents go to the largest fractional share. */
+/** Shares are integer basis points. The first allocation receives remainder cents. */
 export function splitValues(s: State, input: unknown, totalMinor?: number) {
     if (input == null || Array.isArray(input) && !input.length) return [];
     requireThat(Array.isArray(input) && input.length <= 20, 'Use up to 20 split allocations');
@@ -42,9 +42,7 @@ export function splitValues(s: State, input: unknown, totalMinor?: number) {
     requireThat(values.reduce((sum, x) => sum + x.basisPoints, 0) === 10000, 'Split shares must total 100%');
     if (totalMinor !== undefined) {
         values.forEach(x => { x.amountMinor = Number(BigInt(totalMinor) * BigInt(x.basisPoints) / 10000n); });
-        const ranked = values.map((x, index) => ({ index, remainder: BigInt(totalMinor) * BigInt(x.basisPoints) % 10000n })).sort((a, b) => Number(b.remainder - a.remainder) || a.index - b.index);
-        const cents = totalMinor - values.reduce((sum, x) => sum + x.amountMinor, 0);
-        ranked.slice(0, cents).forEach(x => values[x.index].amountMinor++);
+        values[0].amountMinor += totalMinor - values.reduce((sum, x) => sum + x.amountMinor, 0);
     }
     return values;
 }

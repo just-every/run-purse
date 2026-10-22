@@ -1,45 +1,82 @@
 import { check, same, lineAmounts, purchasing } from './restore-validation.mjs';
-import { accessObject, accessShape, accessText, validateBuyerLimit } from './restore-access.mjs';
+import { accessObject, accessText, validateBuyerLimit } from './restore-access.mjs';
 
-const face = record => ({ lines: record.lines.map(({ sourceLine, ...line }) => line), freightMinor: record.freightMinor, taxMinor: record.taxMinor, totalMinor: record.totalMinor });
-const immutableLine = ({ quantity, q, unitMinor, totalMinor, unit, partNumber, lineTaxMinor, allocations, ...line }) => ({...line,...(allocations ? {allocations:allocations.map(({amountMinor,...share})=>share)} : {})});
-function percentage(before, after, limit = 0) {
-    if (after <= before) return true;
-    const [coefficient, exponent = '0'] = String(limit).split('e'), [whole, fraction = ''] = coefficient.split('.'), power = Number(exponent) - fraction.length;
-    const numerator = BigInt(whole + fraction) * (power > 0 ? 10n ** BigInt(power) : 1n), denominator = power < 0 ? 10n ** BigInt(-power) : 1n;
-    return BigInt(after - before) * 100n * denominator <= BigInt(before) * numerator;
+const face = record => ({ supplier:record.supplier,supplierSnapshot:record.supplierSnapshot,lines:record.lines.map(({sourceLine,...line})=>line),charges:record.charges??[],freightMinor:record.freightMinor,taxMinor:record.taxMinor,otherChargesMinor:record.otherChargesMinor??0,totalMinor:record.totalMinor });
+const legacyFace = record => ({lines:record.lines.map(({sourceLine,...line})=>line),freightMinor:record.freightMinor,taxMinor:record.taxMinor,totalMinor:record.totalMinor});
+const immutableLine = ({quantity,q,unitMinor,totalMinor,unit,partNumber,lineTaxMinor,allocations,...line}) => ({...line,...(allocations?{allocations:allocations.map(({amountMinor,...share})=>share)}:{})});
+function percentage(before,after,limit=0) {
+    if(after<=before)return true;
+    const [coefficient,exponent='0']=String(limit).split('e'),[whole,fraction='']=coefficient.split('.'),power=Number(exponent)-fraction.length;
+    const numerator=BigInt(whole+fraction)*(power>0?10n**BigInt(power):1n),denominator=power<0?10n**BigInt(-power):1n;
+    return BigInt(after-before)*100n*denominator<=BigInt(before)*numerator;
 }
-function limitProof(limit, before, after) {
-    if (accessShape(limit, ['unlimited']) && limit.unlimited === true) return;
-    validateBuyerLimit(limit);
-    const price = (before, after) => after <= before || (limit.absoluteMinor !== undefined || limit.percent !== undefined)
-        && (limit.absoluteMinor === undefined || after - before <= limit.absoluteMinor)
-        && (limit.percent === undefined || percentage(before, after, limit.percent));
-    check(price(before.totalMinor, after.totalMinor) && before.lines.every((line, index) => price(line.unitMinor, after.lines[index].unitMinor) && price(line.totalMinor, after.lines[index].totalMinor) && percentage(line.q, after.lines[index].q, limit.quantityPercent)), 'conversion_limit');
+function validateLimit(limit) { if(limit?.unlimited===true){check(Object.keys(limit).length===1,'conversion_limit');return;}validateBuyerLimit(limit); }
+function limitProof(limit,before,after) {
+    validateLimit(limit);if(limit.unlimited)return;
+    const price=(before,after)=>after<=before||(limit.absoluteMinor!==undefined||limit.percent!==undefined)&&(limit.absoluteMinor===undefined||after-before<=limit.absoluteMinor)&&(limit.percent===undefined||percentage(before,after,limit.percent));
+    check(price(before.totalMinor,after.totalMinor)&&before.lines.every((line,index)=>price(line.unitMinor,after.lines[index].unitMinor)&&price(line.totalMinor,after.lines[index].totalMinor)&&percentage(line.q,after.lines[index].q,limit.quantityPercent)),'conversion_limit');
 }
-/** A recorded limit is historical purchasing evidence, never restored authority.
- * Only quantity/price changes may differ from the exact approved revision.
- */
-export function validateConversionVariance(order, revision, all) {
-    const variance = order.conversionVariance;
-    check(accessShape(variance, ['before','after','limit','actor','email','at','reason','sourceRevision','sourceRequest']), 'conversion_variance');
-    check(variance.sourceRequest === order.request && variance.sourceRevision === order.revision && variance.sourceRevision === revision.revision && !revision.imported, 'conversion_source');
-    check(accessText(variance.actor) && accessText(variance.email) && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(variance.email) && accessText(variance.reason) && Number.isFinite(Date.parse(variance.at)), 'conversion_actor');
-    check([variance.before, variance.after].every(value => accessShape(value, ['lines','freightMinor','taxMinor','totalMinor'])), 'conversion_face');
-    check(same(variance.before, face(revision)) && same(variance.after, face(order)) && !same(variance.before, variance.after), 'conversion_snapshot');
-    lineAmounts(variance.before); lineAmounts(variance.after);
-    check(variance.after.lines.every((line,index)=>(same(line.unit,variance.before.lines[index]?.unit)||accessText(line.unit)&&line.unit.length<=200)&&(same(line.partNumber,variance.before.lines[index]?.partNumber)||accessText(line.partNumber)&&line.partNumber.length<=200)),'conversion_unit_sku');
-    check(variance.before.lines.length === variance.after.lines.length && variance.before.lines.every((line, index) => same(immutableLine(line), immutableLine(variance.after.lines[index]))), 'conversion_line_identity');
-    check(same(purchasing({ ...order, lines: variance.before.lines, freightMinor:variance.before.freightMinor,taxMinor:variance.before.taxMinor,totalMinor: variance.before.totalMinor }), purchasing(revision)), 'conversion_purchase_identity');
-    check(order.location === revision.location && order.costCentre === revision.costCentre && (order.entity ?? 'main') === (revision.entity ?? 'main'), 'conversion_scope_identity');
-    limitProof(variance.limit, variance.before, variance.after);
-    const audit = all('audit');
-    check(audit.some(event => event.action === 'buyer-conversion-edit' && event.record === order.id && event.request === order.request && Object.keys(variance).every(field => Object.hasOwn(event,field) && same(event[field], variance[field]))), 'conversion_edit_audit');
-    check(audit.some(event => event.action === 'convert' && event.record === order.id && event.request === order.request && event.revision === order.revision && event.actor === variance.actor && event.email === variance.email && Number.isFinite(Date.parse(event.at))), 'conversion_create_audit');
-    if (order.issuedAt) {
-        check(Number.isFinite(Date.parse(order.issuedAt)) && accessText(order.issuedBy) && accessText(order.issueReason), 'conversion_issue');
-        const issue = audit.find(event => event.action === 'issue' && event.record === order.id && event.revision === order.revision && event.actor === order.issuedBy && event.conversionSourceRevision === variance.sourceRevision && Number.isFinite(Date.parse(event.at)));
-        check(issue && accessObject(issue.conversionLimit), 'conversion_issue_audit');
-        limitProof(issue.conversionLimit, variance.before, variance.after);
+function evidence(edit,source,current) {
+    check(accessObject(edit)&&edit.sourceRequest===current.request&&edit.sourceRevision===source.revision&&!source.imported,'conversion_source');
+    check(accessText(edit.actor)&&accessText(edit.email)&&/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(edit.email)&&accessText(edit.reason)&&Number.isFinite(Date.parse(edit.at)),'conversion_actor');
+    const legacy=!Object.hasOwn(edit.before,'supplier'),snapshot=legacy?legacyFace:face;
+    check(same(edit.before,snapshot(source))&&same(edit.after,snapshot(current))&&!same(edit.before,edit.after),'conversion_snapshot');
+    lineAmounts(edit.before);lineAmounts(edit.after);
+    check(edit.before.lines.length===edit.after.lines.length&&edit.before.lines.every((line,index)=>same(immutableLine(line),immutableLine(edit.after.lines[index]))),'conversion_line_identity');
+    check(edit.after.lines.every((line,index)=>(same(line.unit,edit.before.lines[index]?.unit)||accessText(line.unit)&&line.unit.length<=200)&&(same(line.partNumber,edit.before.lines[index]?.partNumber)||accessText(line.partNumber)&&line.partNumber.length<=200)),'conversion_unit_sku');
+    validateLimit(edit.limit);
+    if(edit.withinLimit!==false)limitProof(edit.limit,edit.before,edit.after);
+}
+export function validatePurchaseCharges(record) {
+    if(!Object.hasOwn(record,'charges')){check(!record.otherChargesMinor,'charge_lines');return;}
+    check(Array.isArray(record.charges)&&record.charges.length<=30&&new Set(record.charges.map(charge=>charge.id)).size===record.charges.length,'charge_lines');
+    for(const charge of record.charges)check(accessObject(charge)&&Object.keys(charge).every(key=>['id','kind','description','amountMinor'].includes(key))&&accessText(charge.id)&&['freight','tax','other'].includes(charge.kind)&&accessText(charge.description)&&charge.description.length<=200&&Number.isSafeInteger(charge.amountMinor)&&charge.amountMinor>=0&&charge.amountMinor<=1e12,'charge_line');
+    const sum=kind=>record.charges.filter(charge=>charge.kind===kind).reduce((total,charge)=>total+charge.amountMinor,0);
+    check(sum('freight')===record.freightMinor&&sum('tax')===record.taxMinor&&sum('other')===(record.otherChargesMinor??0),'charge_total');
+}
+export function validateConversionVariance(order,revision,all) {
+    const edit=order.conversionVariance,source=all('revision').find(record=>record.request===order.request&&record.revision===edit.sourceRevision);
+    check(source,'conversion_source');
+    const legacy=!Object.hasOwn(edit,'withinLimit');
+    if(legacy){evidence(edit,source,{...order,request:order.request});check(edit.sourceRevision===order.revision,'conversion_source');}
+    else {
+        check(edit.sourceRevision<order.revision&&same(revision.buyerConversion,Object.fromEntries(Object.entries(edit).filter(([key])=>key!=='approvalRenewed'))),'conversion_request_revision');
+        evidence(edit,source,{...order,request:order.request});
+        check(same(purchasing({...order,lines:order.lines.map(({sourceLine,...line})=>line)}),purchasing(revision)),'conversion_purchase_identity');
+        check(edit.approvalRenewed===(edit.routing!=='carried'),'conversion_renewal');
+    }
+    check(order.location===revision.location&&order.costCentre===revision.costCentre&&(order.entity??'main')===(revision.entity??'main'),'conversion_scope_identity');
+    const audit=all('audit');
+    check(audit.some(event=>event.action==='buyer-conversion-edit'&&event.record===order.id&&event.request===order.request&&Object.keys(edit).every(field=>Object.hasOwn(event,field)&&same(event[field],edit[field]))),'conversion_edit_audit');
+    check(audit.some(event=>event.action==='convert'&&event.record===order.id&&event.request===order.request&&event.revision===order.revision&&Number.isFinite(Date.parse(event.at))),'conversion_create_audit');
+    if(order.issuedAt){
+        check(Number.isFinite(Date.parse(order.issuedAt))&&accessText(order.issuedBy)&&accessText(order.issueReason),'conversion_issue');
+        const issue=audit.find(event=>event.action==='issue'&&event.record===order.id&&event.revision===order.revision&&event.actor===order.issuedBy&&event.conversionSourceRevision===edit.sourceRevision&&Number.isFinite(Date.parse(event.at)));
+        check(issue,'conversion_issue_audit');
+        if(!edit.approvalRenewed){check(accessObject(issue.conversionLimit),'conversion_issue_audit');limitProof(issue.conversionLimit,edit.before,edit.after);}
+    }
+}
+export function validateConversionRevisions(all,get) {
+    for(const revision of all('revision')) {
+        const edit=revision.buyerConversion;
+        if(edit&&edit.sourceRevision===revision.revision-1){
+            const source=get('revision',revision.request+':'+edit.sourceRevision);
+            evidence(edit,source,revision);
+            check(['carried','renewal','budget-owner'].includes(edit.routing)&&Array.isArray(edit.carried)&&Array.isArray(edit.renewed),'conversion_route');
+            if(edit.routing==='carried'){
+                check(edit.withinLimit&&edit.carried.length>0&&!edit.renewed.length,'conversion_carry');
+                for(const id of edit.carried){const decision=get('decision',id),before=get('decision',decision.carriedFrom);check(decision.request===revision.request&&decision.revision===revision.revision&&before.revision===source.revision&&before.decision==='approved'&&decision.actor===before.actor&&decision.email===before.email&&decision.carriedBy===edit.actor,'conversion_carry');}
+            }else check(!edit.carried.length&&edit.renewed.length>0,'conversion_renewal');
+            check(all('audit').some(event=>event.action==='buyer-conversion-revision'&&event.record===revision.request&&event.revision===revision.revision&&event.actor===edit.actor&&same(event.before,edit.before)&&same(event.after,edit.after)&&same(event.limit,edit.limit)),'conversion_revision_audit');
+        }
+        const date=revision.needDateEdit;
+        if(date&&date.fromRevision===revision.revision-1){
+            const source=get('revision',revision.request+':'+date.fromRevision);
+            check(accessText(date.actor)&&accessText(date.email)&&accessText(date.reason)&&Number.isFinite(Date.parse(date.at))&&Array.isArray(date.carried)&&date.carried.length>0&&Array.isArray(date.differences)&&date.differences.length>0,'date_correction');
+            const strip=record=>{const value=purchasing(record);delete value.needDate;value.lines=value.lines.map(({needDate,carriedAccepted,carriedCancelled,...line})=>line);return value;};
+            check(same(strip(source),strip(revision)),'date_nonmaterial');
+            for(const difference of date.differences){const before=source.lines.find(line=>line.id===difference.line),after=revision.lines.find(line=>line.id===difference.line);check(before&&after&&difference.field==='needDate'&&difference.before===(before.needDate??source.needDate)&&difference.after===after.needDate,'date_difference');}
+            check(all('audit').some(event=>event.action==='need-date-edit'&&event.record===revision.request&&event.revision===revision.revision&&event.actor===date.actor&&same(event.differences,date.differences)),'date_correction_audit');
+        }
     }
 }
