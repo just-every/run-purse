@@ -1,3 +1,4 @@
+import { budgetCoding, budgetScopeMatches, selectBudgetPolicy } from './budget-dimensions';
 import { budgetApportion } from './budget-allocations';
 import { date, requireThat, type Data } from './types';
 
@@ -17,17 +18,21 @@ function distribute(amount: number, lines: Data[]) {
     }
     return parts.map(p => p.value);
 }
-export const reportDimensions = ['department', 'project', 'location', 'supplier', 'category'] as const;
+export const reportDimensions = ['department', 'project', 'location', 'supplier', 'category', 'glAccount'] as const;
 export function spendReport(data: Data, filters: Data = {}) {
     const from = filters.from ? date(filters.from) : '', through = filters.through ? date(filters.through) : '';
     requireThat(!from || !through || from <= through, 'From must precede through');
     const groupBy = filters.groupBy || 'supplier';
-    requireThat(reportDimensions.includes(groupBy), 'Choose a supported reporting dimension');
+    const customDimensions = [...new Map(data.request.flatMap((request: Data) => ['header', 'line'].flatMap(scope =>
+        (request.intakeFormSnapshot?.[scope + 'Fields'] ?? []).map((field: Data) => ({value:scope + ':' + request.intakeForm + ':' + field.id, label:scope + ' · ' + field.label})))).map((field: Data) => [field.value,field])).values()] as Data[];
+    const dimensions: string[] = [...reportDimensions,...customDimensions.map(field=>field.value)];
+    requireThat(dimensions.includes(groupBy), 'Choose a supported reporting dimension');
     const rows: Data[] = [];
     const requestById = new Map<string, Data>(data.request.map((r: Data) => [r.id, r]));
     const orderById = new Map<string, Data>(data.order.map((o: Data) => [o.id, o]));
     const source = (r: Data, l: Data) => ({ request: r.request ?? r.id, revision: r.revision, title: r.title || r.name, line: l.id, description: l.description,
-        department: l.costCentre ?? r.costCentre, project: l.project, location: l.location ?? r.location, supplier: r.supplier,
+        department: l.costCentre ?? r.costCentre, project: l.project, location: l.location ?? r.location, glAccount: l.glAccount ?? r.glAccount, supplier: r.supplier,
+        ...Object.fromEntries(customDimensions.map(field=>{const [scope,form,key]=field.value.split(':');return [field.value,r.intakeForm===form?(scope==='header'?r.customFields?.[key]:l.customFields?.[key]):undefined];})),
         supplierName: r.supplierSnapshot?.name || data.supplier.find((s: Data) => s.id === r.supplier)?.name || r.supplier,
         category: l.category, currency: r.currency });
     // Ledger balances are current purchasing authority, not lifetime spend.
@@ -85,21 +90,22 @@ export function spendReport(data: Data, filters: Data = {}) {
     const allocated = rows.flatMap(row => {
         const terms = row.order ? orderById.get(row.order) : data.revision.find((revision: Data) => revision.request === row.request && revision.revision === row.revision) ?? requestById.get(row.request);
         const line = terms?.lines.find((line: Data) => line.id === row.line);
-        if (!line?.allocations?.length) return [row];
-        const amounts = budgetApportion(row.amountMinor, line.allocations.map((allocation: Data) => allocation.amountMinor));
-        return line.allocations.map((allocation: Data, index: number) => {
-            const dated = (data.periodBudgets ?? []).some((budget: Data) => budget.id === row.policy);
-            const budget = dated ? data.periodBudgets.find((budget: Data) => budget.currency === row.currency && budget.department === allocation.costCentre
-                && (!budget.project || budget.project === '*' || budget.project === allocation.project)
-                && (!budget.category || budget.category === '*' || budget.category === row.category)
-                && terms.needDate >= budget.from && terms.needDate <= budget.through
-                && budget.sources.some((source: Data) => !source.hidden && source.request === row.request)) : undefined;
-            return { ...row, department: allocation.costCentre, project: allocation.project, location: allocation.location ?? row.location,
-                glAccount: allocation.glAccount, allocation: index, amountMinor: amounts[index], policy: budget?.id ?? row.policy };
+        const codes = line?.allocations?.length ? line.allocations : [budgetCoding(terms,line ?? {})];
+        const amounts = budgetApportion(row.amountMinor, codes.map((allocation: Data) => allocation.amountMinor ?? line?.totalMinor ?? 1));
+        return codes.map((allocation: Data, index: number) => {
+            const code=budgetCoding(terms,line ?? {},allocation);
+            const dated=(data.periodBudgets ?? []).some((budget: Data)=>budget.id===row.policy);
+            const candidates=dated ? data.periodBudgets.filter((budget:Data)=>budgetScopeMatches({...budget,budgetPeriod:{from:budget.from,through:budget.through}},terms,code)
+                && budget.sources.some((source:Data)=>!source.hidden&&source.request===row.request)) : [];
+            const recorded=new Set(data.commitment.filter((event:Data)=>event.request===row.request&&event.revision===row.revision&&event.amountMinor>0).flatMap((event:Data)=>(event.budgetAllocations??[]).map((share:Data)=>share.policy)));
+            const eligible=recorded.size?candidates.filter((budget:Data)=>recorded.has(budget.id)):candidates;
+            const budget=selectBudgetPolicy(eligible.map((budget:Data)=>({...budget,limitMinor:budget.authorityLimitMinor})),terms.policy);
+            return { ...row, department: code.costCentre, project: code.project, location: code.location,
+                glAccount: code.glAccount, ...(line?.allocations?.length?{allocation:index}:{}), amountMinor: amounts[index], policy: budget?.id ?? row.policy };
         }).filter((row: Data) => row.amountMinor);
     });
     rows.splice(0, rows.length, ...allocated);
-    const selected = rows.filter(r => (!from || r.date >= from) && (!through || r.date <= through) && reportDimensions.every(d => !filters[d] || r[d] === filters[d]));
+    const selected = rows.filter(r => (!from || r.date >= from) && (!through || r.date <= through) && dimensions.every(d => !filters[d] || r[d] === filters[d]));
     const groups = new Map<string, Data>();
     for (const r of selected) {
         const key = JSON.stringify([r[groupBy], r.currency]);
@@ -114,8 +120,8 @@ export function spendReport(data: Data, filters: Data = {}) {
         return { id: p.id, name: p.name, currency: p.currency, budgetMinor: p.budgetMinor, availableMinor: p.budgetMinor - outstanding - (data.travelExpense ?? []).filter((expense:Data)=>expense.policy===p.id).reduce((sum:number,expense:Data)=>sum+expense.totalMinor,0),
             ...Object.fromEntries(['reserved', 'committed', 'actual'].map(kind => [kind + 'Minor', selectedRows.filter(r => r.kind === kind).reduce((n, r) => n + r.amountMinor, 0)])), rows: selectedRows, scopeRows: rows.filter(r => r.policy === p.id && r.currency === p.currency) };
     });
-    return { periodBudgets: data.periodBudgets ?? [], groupBy, groups: [...groups.values()].sort((a, b) => String(a.label).localeCompare(String(b.label)) || a.currency.localeCompare(b.currency)), totals, budgets,
-        choices: Object.fromEntries(reportDimensions.map(d => [d, [...new Map(rows.map(r => [r[d], { value: r[d], label: d === 'supplier' ? r.supplierName : r[d] }])).values()].sort((a, b) => String(a.label).localeCompare(String(b.label)))])), rows: selected };
+    return { customDimensions, periodBudgets: data.periodBudgets ?? [], groupBy, groups: [...groups.values()].sort((a, b) => String(a.label).localeCompare(String(b.label)) || a.currency.localeCompare(b.currency)), totals, budgets,
+        choices: Object.fromEntries(dimensions.map(d => [d, [...new Map(rows.filter(r=>r[d]!==undefined&&r[d]!=='').map(r => [r[d], { value: r[d], label: d === 'supplier' ? r.supplierName : r[d] }])).values()].sort((a, b) => String(a.label).localeCompare(String(b.label)))])), rows: selected };
 }
 function outstanding(order: Data) {
     if(order.blanketPosition) return Math.min(order.totalMinor, order.blanketPosition.remainingMinor);

@@ -37,7 +37,9 @@ export function splitValues(s: State, input: unknown, totalMinor?: number) {
     const values = input.map((x: Data) => {
         requireThat(business.costCentres.includes(x.costCentre) && business.projects.includes(x.project), 'Split coding is inactive or unknown');
         requireThat(Number.isInteger(x.basisPoints) && x.basisPoints > 0 && x.basisPoints <= 10000, 'Split share must be positive basis points');
-        return { costCentre: x.costCentre, project: x.project, basisPoints: x.basisPoints, amountMinor: 0 };
+        if(x.location!==undefined)requireThat(business.locations.includes(x.location), 'Split location is inactive or unknown');
+        return { costCentre: x.costCentre, project: x.project, basisPoints: x.basisPoints, amountMinor: 0,
+            ...(x.location!==undefined?{location:x.location}:{}), ...(x.glAccount!==undefined?{glAccount:text(x.glAccount,'Split GL account',200)}:{}) };
     });
     requireThat(values.reduce((sum, x) => sum + x.basisPoints, 0) === 10000, 'Split shares must total 100%');
     if (totalMinor !== undefined) {

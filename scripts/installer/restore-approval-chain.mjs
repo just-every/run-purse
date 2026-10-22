@@ -2,6 +2,14 @@
 export function validateApprovalChains(all,get,check,same) {
  for(const policy of all('policy'))if(policy.budgetPeriod){const {from,through}=policy.budgetPeriod;check([from,through].every(value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value)&&from<=through&&Date.parse(through)-Date.parse(from)<367*86400000,'budget_period');}
  for(const policy of [...all('policy'),...all('decision').map(decision=>decision.policySnapshot).filter(Boolean)])if(policy.internationalTravelReviewer!==undefined)check(typeof policy.internationalTravelReviewer==='string'&&policy.internationalTravelReviewer.length<=254&&policy.internationalTravelReviewer===policy.internationalTravelReviewer.trim().toLowerCase()&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(policy.internationalTravelReviewer),'international_travel_reviewer');
+ for(const policy of [...all('policy'),...all('decision').map(decision=>decision.policySnapshot).filter(Boolean)]) {
+  for(const field of ['location','glAccount'])if(policy[field]!==undefined)check(typeof policy[field]==='string'&&policy[field].trim()===policy[field]&&policy[field].length>0&&policy[field].length<=200,'budget_dimension');
+  if(policy.budgetFields){
+   const fields=policy.budgetFields;get('intakeForm',fields.form);
+   check(fields&&typeof fields==='object'&&!Array.isArray(fields)&&['header','line'].every(scope=>fields[scope]&&typeof fields[scope]==='object'&&!Array.isArray(fields[scope])&&Object.keys(fields[scope]).length<=30&&Object.entries(fields[scope]).every(([key,value])=>/^[a-z][a-z0-9_]*$/.test(key)&&typeof value==='string'&&value.trim()===value&&value.length>0&&value.length<=2000))&&Object.keys(fields.header).length+Object.keys(fields.line).length>0,'budget_custom_fields');
+  }
+ }
+ for(const kind of ['request','revision','order','intakeForm'])for(const record of all(kind))for(const code of kind==='intakeForm'?record.defaults?.allocations??[]:(record.lines??[]).flatMap(line=>line.allocations??[]))for(const field of ['location','glAccount'])if(code[field]!==undefined)check(typeof code[field]==='string'&&code[field].trim()===code[field]&&code[field].length>0&&code[field].length<=200,'budget_allocation_dimension');
  const fields=['glAccount','costCentre','location','class','project','needDate','shipTo','supplier','notes'];
  for(const policy of all('policy'))if(policy.editRules)for(const rule of Object.values(policy.editRules))check(rule&&['allowed','material'].every(key=>Array.isArray(rule[key])&&rule[key].every(field=>fields.includes(field))),'approver_edit_rule');
  for(const policy of all('policy'))if(policy.approvalSteps) {

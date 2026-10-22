@@ -1,3 +1,4 @@
+import { budgetPositionDimensions } from './budget-dimensions';
 import { budgetPortion, eventBudgetPortion, requestBudgetShares } from './budget-allocations';
 import { all, date, get, requireThat, type Data, type State } from './types';
 
@@ -30,7 +31,7 @@ export function periodBudgetPosition(s: State, policy: Data) {
  }
  const total=(field:string)=>sources.reduce((sum,source)=>sum+source[field],0);
  const reservedMinor=total('reservedMinor'),committedMinor=total('committedMinor'),actualMinor=total('actualMinor');
- return {id:policy.id,name:policy.name,currency:policy.currency,from:policy.budgetPeriod?.from,through:policy.budgetPeriod?.through,department:policy.costCentre??'*',project:policy.project,category:policy.category,amountMinor:policy.budgetMinor,reservedMinor,committedMinor,actualMinor,availableMinor:policy.budgetMinor-reservedMinor-committedMinor-actualMinor,sources,basis:'Recorded invoice, imported deposit and approved trip expense evidence; not a matched, synced or paid claim'};
+ return {id:policy.id,name:policy.name,currency:policy.currency,from:policy.budgetPeriod?.from,through:policy.budgetPeriod?.through,...budgetPositionDimensions(policy),amountMinor:policy.budgetMinor,reservedMinor,committedMinor,actualMinor,availableMinor:policy.budgetMinor-reservedMinor-committedMinor-actualMinor,sources,basis:'Recorded invoice, imported deposit and approved trip expense evidence; not a matched, synced or paid claim'};
 }
 export function budgetPeriod(input: Data, prior?: Data) {
  const value=input.budgetPeriod===undefined?prior?.budgetPeriod:input.budgetPeriod;
@@ -60,6 +61,6 @@ export function budgetOwnerSteps(s: State, request: Data, amount: number) {
   const current=events.reduce((sum,event)=>sum+eventBudgetPortion(event,policy.id),0);
   if(share.amountMinor-current<=periodBudgetPosition(s,policy).availableMinor)return [];
   requireThat(policy.overBudget==='owner','An allocation budget is exhausted',409);
-  return [{id:policy.id===request.policy?'budget-owner':'budget-owner:'+policy.id,email:policy.budgetOwner,dependsOn:['costCentre','project'],budgetPolicy:policy.id}];
+  return [{id:policy.id===request.policy?'budget-owner':'budget-owner:'+policy.id,email:policy.budgetOwner,dependsOn:['costCentre','project','location','glAccount'],budgetPolicy:policy.id}];
  });
 }

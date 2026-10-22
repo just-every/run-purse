@@ -1,5 +1,6 @@
+import { budgetCoding, budgetScopeMatches, selectBudgetPolicy } from './budget-dimensions';
 import { coveringPolicies } from './policy-match';
-import { all, requireThat, type Data, type State } from './types';
+import { all, Fault, requireThat, type Data, type State } from './types';
 
 /** Half-up shares; the first allocation receives the remainder cent. */
 export function budgetApportion(amount: number, weights: number[]) {
@@ -13,12 +14,16 @@ export function budgetApportion(amount: number, weights: number[]) {
 }
 
 function allocationPolicy(request: Data, line: Data, code: Data, primary: Data, policies: Data[]) {
-    const scoped = { ...request, costCentre: code.costCentre, location: code.location ?? line.location ?? request.location,
-        totalMinor: 0, lines: [{ ...line, project: code.project, allocations: [] }] };
-    const candidates = coveringPolicies(policies.map(policy=>({...policy,active:true,limitMinor:Number.MAX_SAFE_INTEGER})), scoped).filter(policy=>policy.budgetPeriod);
-    return candidates.find(policy=>policy.id===primary.id) ?? candidates[0];
+    const coding = budgetCoding(request,line,code);
+    const candidates = policies.filter(policy=>policy.budgetPeriod && budgetScopeMatches(policy,request,coding));
+    // Amount limits select approval authority; each allocation still selects its own budget.
+    return selectBudgetPolicy(candidates,primary.id);
 }
 export function requestBudgetReview(request: Data, policies: Data[]) {
+    try { return budgetReview(request,policies); }
+    catch(error) { if(error instanceof Fault && error.status===409 && error.message.includes('unambiguous policy'))return {dated:true,complete:false,ids:[],reason:error.message}; throw error; }
+}
+function budgetReview(request: Data, policies: Data[]) {
     if(request.imported)return {dated:false,complete:true,ids:[]};
     const primary=policies.find(policy=>policy.id===request.policy) ?? coveringPolicies(policies,request)[0];
     if(!primary?.budgetPeriod)return {dated:false,complete:Boolean(primary),ids:primary?[primary.id]:[]};
@@ -30,8 +35,8 @@ export function requestBudgetReview(request: Data, policies: Data[]) {
 }
 
 /** Authority remains one request; each dated allocation consumes its own budget. */
-export function requestBudgetShares(s: State, request: Data, amount: number): Data[] {
-    const policies=all(s,'policy'),primary = s.get('policy:' + request.policy)?.value;
+export function requestBudgetShares(s: State, request: Data, amount: number, historicalIds?: Set<string>): Data[] {
+    const policies=all(s,'policy').filter(policy=>!historicalIds?.size||historicalIds.has(policy.id)),primary = s.get('policy:' + request.policy)?.value;
     if (!primary?.budgetPeriod) return [{ policy: request.policy, amountMinor: amount }];
     const lineAmounts = budgetApportion(amount, request.lines.map((line: Data) => line.totalMinor));
     const result = new Map<string, number>();
@@ -47,7 +52,8 @@ export function requestBudgetShares(s: State, request: Data, amount: number): Da
     return [...result].map(([policy, amountMinor]) => ({ policy, amountMinor }));
 }
 export function budgetPortion(s: State, request: Data, amount: number, policy: string) {
-    return requestBudgetShares(s, request, amount).find(share => share.policy === policy)?.amountMinor ?? 0;
+    const ids=new Set<string>(all(s,'commitment').filter(event=>event.request===(request.request??request.id)&&event.revision===request.revision&&event.amountMinor>0).flatMap(event=>(event.budgetAllocations??[]).map((share:Data)=>share.policy)));
+    return requestBudgetShares(s, request, amount, ids).find(share => share.policy === policy)?.amountMinor ?? 0;
 }
 export function eventBudgetPortion(event: Data, policy: string) {
     return event.budgetAllocations ? event.budgetAllocations.find((share: Data) => share.policy === policy)?.amountMinor ?? 0
