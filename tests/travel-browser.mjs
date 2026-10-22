@@ -58,8 +58,8 @@ try {
                 await form.getByLabel('Destination 1 state or province', { exact: true }).fill(destination.state);
                 await form.getByLabel('Destination 1 county (optional)', { exact: true }).fill(destination.county);
                 await form.getByLabel('Destination 1 uses published standard CONUS rate', { exact: true }).setChecked(Boolean(destination.standardConus));
-                const response=await page.context().request.post(h.origin+'/api/purse/travel/per-diem',{data:{destination:{...destination,country:'US'},departureDate:'2026-10-19',returnDate:'2026-10-21'}});
-                assert.equal(response.status(),200);const rate=await response.json();assert.equal(rate.available,true);
+                const response=await page.evaluate(async input=>{const result=await fetch('/api/purse/travel/per-diem',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(input)});return {status:result.status,rate:await result.json()};},{destination:{...destination,country:'US'},departureDate:'2026-10-19',returnDate:'2026-10-21'});
+                assert.equal(response.status,200,JSON.stringify(response.rate));const rate=response.rate;assert.equal(rate.available,true);
                 const amount=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(rate.amountMinor/100);
                 await form.getByText('GSA default: '+amount,{exact:false}).waitFor();
                 await capture(page,name);
