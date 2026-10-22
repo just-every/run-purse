@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { travelReferenceAndReleaseJourney } from './travel-browser-release.mjs';
+import { internationalTravelPolicyJourney } from './travel-browser-policy.mjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { build } from 'esbuild';
@@ -31,9 +33,9 @@ try {
             const response = tab.waitForResponse(response => response.url().endsWith('/command/' + operation));
             await click(); const received = await response; assert.equal(received.status(), 200, await received.text()); return received.json();
         };
-        const capture = async (tab, name) => {
+        const capture = async (tab, name, target = tab) => {
             assert.equal(await tab.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${name} fits ${width}`);
-            await tab.screenshot({ path: join(evidence, `INTAKE-006-${name}-${width}.png`), fullPage: true });
+            await target.screenshot({ path: join(evidence, `INTAKE-006-${name}-${width}.png`), fullPage: true });
         };
         try {
             page = await open(requester);
@@ -102,8 +104,10 @@ try {
             const denied=await page.context().request.get(h.origin + '/api/purse/download/attachment/' + expense.attachment);assert.equal(denied.status(),403);
             const linked = await ownerTab.context().request.get(h.origin + '/api/purse/download/attachment/' + expense.attachment);
             assert.equal(await linked.text(), source.bytes);
+            const timedRelease = await travelReferenceAndReleaseJourney({ fixture, open, mutation, capture });
+            const internationalPolicy = await internationalTravelPolicyJourney({ fixture, open, mutation, capture });
             assert.deepEqual(errors, []);
-            results.push({ width, request: draft.id, actualMinor: expense.totalMinor, releasedMinor: expense.releasedMinor, sha256: expense.sha256, coaster: source.source });
+            results.push({ width, timedRelease, internationalPolicy, request: draft.id, actualMinor: expense.totalMinor, releasedMinor: expense.releasedMinor, sha256: expense.sha256, coaster: source.source });
         } catch (error) {
             await page?.screenshot({ path: join(evidence, `INTAKE-006-failure-${width}.png`), fullPage: true }).catch(() => {}); throw error;
         } finally { for (const active of contexts) await active.close(); await h.close(); }

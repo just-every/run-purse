@@ -1,3 +1,4 @@
+import { activeTraveler, travelerReferences } from './travel-reference';
 import { currentDecision } from './approval';
 import { allowed } from './access';
 import { currency } from './admin';
@@ -74,5 +75,8 @@ export function travelCommands(s: State, a: Actor, op: string, input: Data): Dat
 }
 export function visibleTravel(s: State, a: Actor, requestIds?: Set<string>) {
     const visible = (request: string) => (!requestIds || requestIds.has(request)) && allowed(s, a, 'request.read', get(s, 'request', request));
-    return { travelExpense: all(s, 'travelExpense').filter(expense => visible(expense.request)).map(expense=>a.owner?expense:Object.fromEntries(['id','request','revision','approvalReference','currency','totalMinor','releasedMinor','externalId','externalRevision','externalNumber','title','items','at','sourceBasis'].map(field=>[field,expense[field]]))) };
+    return { travelReference: activeTraveler(s, a) ? travelerReferences(s, a) : [],
+        travelReleasePolicy: all(s, 'travelReleasePolicy').filter(policy => visible(policy.request)).map(policy => a.owner ? policy : Object.fromEntries(['id', 'request', 'revision', 'version', 'status', 'days', 'dueDate', 'timezone', 'pauseReason', 'releasedAt'].map(field => [field, policy[field]]))),
+        travelRelease: all(s, 'travelRelease').filter(event => visible(event.request)).map(event => Object.fromEntries(['id', 'request', 'revision', 'amountMinor', 'currency', 'at', 'dueDate', 'timezone'].map(field => [field, event[field]]))),
+        travelExpense: all(s, 'travelExpense').filter(expense => visible(expense.request)).map(expense=>a.owner?expense:Object.fromEntries(['id','request','revision','approvalReference','currency','totalMinor','releasedMinor','externalId','externalRevision','externalNumber','title','items','at','sourceBasis','earlierRelease','remainingEstimateMinor'].map(field=>[field,expense[field]]))) };
 }

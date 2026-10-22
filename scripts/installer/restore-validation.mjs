@@ -1,3 +1,4 @@
+import { validateOrderSends } from './restore-order-sends.mjs';
 import { validateTravel } from './restore-travel.mjs';
 import { validateConversionRevisions, validatePurchaseCharges } from './restore-conversion-variance.mjs';
 import { validateApprovalChains } from './restore-approval-chain.mjs';
@@ -31,7 +32,7 @@ import { validateSupplierDocuments } from './restore-supplier-documents.mjs';
 import { validateAccess } from './restore-access.mjs';
 import { validateScim } from './restore-scim.mjs';
 
-const kinds = new Set(['travelExpense','intakeForm','intakeDraft','supplierProposal','orderAdoption','deposit','budget','blanketRelease','recurringSeries','recurringEvent','erasureReceipt','scimUser','scimApprovalTransfer','accessRole','buyerRoleLimit','invoiceEvidenceKey','invoiceEvidenceMigration','invoiceInboxConfig','apInvoiceEmail','valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
+const kinds = new Set(['orderSend','orderAcknowledgment','travelReleasePolicy','travelRelease','travelExpense','intakeForm','intakeDraft','supplierProposal','orderAdoption','deposit','budget','blanketRelease','recurringSeries','recurringEvent','erasureReceipt','scimUser','scimApprovalTransfer','accessRole','buyerRoleLimit','invoiceEvidenceKey','invoiceEvidenceMigration','invoiceInboxConfig','apInvoiceEmail','valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
 export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
 export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
 export const integer = n => Number.isSafeInteger(n) && n >= 0;
@@ -76,6 +77,7 @@ export function validatePurchasingArchive(rows) {
  validateAccess(all,get);
  validateApprovalChains(all,get,check,same);
  validateTravel(all,get,check,same);
+ validateOrderSends(all,get,check);
  validateConversionRevisions(all,get);
  validateIntake(all,get,check);
  validateScim(all,get,rows);

@@ -1,4 +1,5 @@
-import { currentDecision } from './approval';
+import { retainedTravelApproval } from './travel-approval-evidence';
+import { travelReservation } from './travel-release';
 import { coasterSource, coasterTravelReport } from './travel-coaster';
 import { ledger } from './requests';
 import { travelRequest } from './travel';
@@ -23,23 +24,26 @@ export async function travelExpenses(s: State, a: Actor, op: string, input: Data
         return existing;
     }
     requireThat(request.status === 'approved' && !request.travel.closedAt && !request.imported, 'An open native approved trip is required', 409);
-    currentDecision(s, request);
+    retainedTravelApproval(s, request);
     requireThat(!all(s, 'travelExpense').some(expense => expense.request === request.id), 'This trip already has a final expense report', 409);
     requireThat(report.totalMinor <= request.totalMinor, 'The expense report exceeds the approved estimate; renew travel approval first', 409);
-    const balance = all(s, 'commitment').filter(event => event.request === request.id && event.currency === request.currency && event.policy === request.policy).reduce((sum, event) => sum + event.amountMinor, 0);
-    requireThat(balance === request.totalMinor, 'Exact approved travel reservation is required', 409);
+    const balance = travelReservation(s, request), earlierRelease = s.get('travelRelease:' + request.id + ':' + request.revision)?.value;
+    requireThat(earlierRelease ? balance === 0 && earlierRelease.amountMinor === request.totalMinor && earlierRelease.approvalReference === approvalReference : balance === request.totalMinor, 'Exact approved reservation or retained timed release is required', 409);
     const id = uid(), attachment = uid(), at = new Date().toISOString(), bytes = new TextEncoder().encode(input.original);
     let raw = ''; for (const byte of bytes) raw += String.fromCharCode(byte);
     put(s, 'attachment', attachment, { kind: 'travelExpense', record: id, name: `coaster-report-${report.id}.json`, mediaType: 'application/json', base64: btoa(raw), size: bytes.length, actor: a.id, at });
     audit(s,a,'attachment',id,{attachment,kind:'travelExpense',name:`coaster-report-${report.id}.json`,size:bytes.length,revision:request.revision});
-    const expense = { id, request: request.id, revision: request.revision, approvalReference, policy: request.policy, currency: request.currency, totalMinor: report.totalMinor, releasedMinor: balance - report.totalMinor,
+    const expense = { id, request: request.id, revision: request.revision, approvalReference, policy: request.policy, currency: request.currency, totalMinor: report.totalMinor, releasedMinor: earlierRelease ? 0 : balance - report.totalMinor,
+        ...(earlierRelease ? { earlierRelease: { id: earlierRelease.id, at: earlierRelease.at, amountMinor: earlierRelease.amountMinor }, remainingEstimateMinor: request.totalMinor - report.totalMinor } : {}),
         externalId: report.id, externalRevision: report.revision, externalNumber: report.number, title: report.title, employeeEmail: report.employeeEmail, sourceStatus: report.status, ...source, sha256, attachment, items: report.items,
         sourceBasis: 'Manually imported native Coaster report; original retained for review', actor: a.id, at, reason: text(input.reason, 'Expense return reason') };
-    ledger(s, a, request, -report.totalMinor, 'travel-actual-movement');
+    ledger(s, a, request, earlierRelease ? 0 : -report.totalMinor, earlierRelease ? 'travel-actual-recorded-after-release' : 'travel-actual-movement');
     if (expense.releasedMinor) ledger(s, a, request, -expense.releasedMinor, 'travel-unspent-release');
     put(s, 'travelExpense', id, expense);
+    const releasePolicy = s.get('travelReleasePolicy:' + request.id)?.value;
+    if (releasePolicy && releasePolicy.revision === request.revision && releasePolicy.status === 'armed') put(s, 'travelReleasePolicy', request.id, { ...releasePolicy, status: 'closed', version: releasePolicy.version + 1, closedAt: at });
     put(s, 'request', request.id, { ...request, travel: { ...request.travel, closedAt: at, expenseReport: id } });
-    audit(s, a, 'travel-expense-return', request.id, { revision: request.revision, report: id, externalId: report.id, attachment, sha256, actualMinor: report.totalMinor, releasedMinor: expense.releasedMinor, reason: expense.reason });
+    audit(s, a, 'travel-expense-return', request.id, { revision: request.revision, report: id, externalId: report.id, attachment, sha256, actualMinor: report.totalMinor, releasedMinor: expense.releasedMinor, ...(earlierRelease ? { earlierRelease: expense.earlierRelease, remainingEstimateMinor: expense.remainingEstimateMinor } : {}), reason: expense.reason });
     return expense;
 }
 export function travelActualMinor(s: State, policy: string, currency?: string) {
