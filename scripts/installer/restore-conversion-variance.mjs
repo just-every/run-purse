@@ -3,7 +3,7 @@ import { accessObject, accessText, validateBuyerLimit } from './restore-access.m
 
 const face = record => ({ supplier:record.supplier,supplierSnapshot:record.supplierSnapshot,lines:record.lines.map(({sourceLine,...line})=>line),charges:record.charges??[],freightMinor:record.freightMinor,taxMinor:record.taxMinor,otherChargesMinor:record.otherChargesMinor??0,totalMinor:record.totalMinor });
 const legacyFace = record => ({lines:record.lines.map(({sourceLine,...line})=>line),freightMinor:record.freightMinor,taxMinor:record.taxMinor,totalMinor:record.totalMinor});
-const immutableLine = ({quantity,q,unitMinor,totalMinor,unit,partNumber,lineTaxMinor,allocations,...line}) => ({...line,...(allocations?{allocations:allocations.map(({amountMinor,...share})=>share)}:{})});
+const immutableLine = ({quantity,q,unitMinor,totalMinor,unit,partNumber,lineTaxMinor,allocations,supplier,supplierSnapshot,...line}) => ({...line,...(allocations?{allocations:allocations.map(({amountMinor,...share})=>share)}:{})});
 function percentage(before,after,limit=0) {
     if(after<=before)return true;
     const [coefficient,exponent='0']=String(limit).split('e'),[whole,fraction='']=coefficient.split('.'),power=Number(exponent)-fraction.length;

@@ -47,7 +47,7 @@ export function conversionEdits(s: State, a: Actor, request: Data, input: unknow
         byId.set(edit.id, edit);
     }
     const before = conversionFace(request), after = conversionFace(request);
-    const destinations = new Set(request.lines.map((line: Data) => byId.get(line.id)?.supplier ?? edits.supplier ?? request.supplier));
+    const destinations = new Set(request.lines.map((line: Data) => byId.get(line.id)?.supplier ?? edits.supplier ?? line.supplier ?? request.supplier));
     requireThat(destinations.size === 1, 'A conversion document must have one supplier; convert supplier groups separately', 409);
     const destination = [...destinations][0] as string;
     if (destination !== request.supplier) {
@@ -64,6 +64,7 @@ export function conversionEdits(s: State, a: Actor, request: Data, input: unknow
         requireThat(q >= (line.carriedAccepted ?? 0) + (line.carriedCancelled ?? 0), 'Conversion cannot remove received or cancelled quantities', 409);
         return { ...line, ...(Object.hasOwn(edit,'unit')?{unit:text(edit.unit,'Conversion unit of measure',200)}:{}), ...(Object.hasOwn(edit,'partNumber')?{partNumber:text(edit.partNumber,'Conversion SKU',200)}:{}), quantity: q === line.q ? line.quantity : edit.quantity, q, unitMinor, totalMinor: extended(q, unitMinor), ...(line.allocations ? {allocations: splitValues(s,line.allocations,extended(q,unitMinor))} : {}) };
     });
+    after.lines=after.lines.map((line:Data)=>line.supplier?{...line,supplier:destination,supplierSnapshot:structuredClone(after.supplierSnapshot)}:line);
     if (['charges','freightMinor','taxMinor'].some(field => Object.hasOwn(edits,field))) Object.assign(after, normalizePurchaseCharges(edits,request));
     if(after.taxMinor!==before.taxMinor){for(const line of after.lines)line.lineTaxMinor=null;allocateLineTax(after.lines,after.taxMinor);}
     after.totalMinor = minor(after.lines.reduce((total: number, line: Data) => total + line.totalMinor, 0) + after.freightMinor + after.taxMinor + after.otherChargesMinor, 'Conversion total');
@@ -78,7 +79,12 @@ export function conversionEdits(s: State, a: Actor, request: Data, input: unknow
 export function requireConversionSource(s: State, a: Actor, request: Data, order: Data) {
     const variance = order.conversionVariance;
     const source = get(s,'revision',request.id+':'+variance.sourceRevision);
-    requireThat(variance.sourceRequest === request.id && variance.sourceRevision <= request.revision && JSON.stringify(variance.before) === JSON.stringify(conversionFace(source)) && JSON.stringify(variance.after) === JSON.stringify(conversionFace(order)) && JSON.stringify(variance.after) === JSON.stringify(conversionFace(request)), 'Conversion source changed; amend and renew approval', 409);
+    const face=(record:Data)=>{
+        const snapshot=conversionFace(record);
+        return Object.hasOwn(variance.before,'supplier')?snapshot:{lines:snapshot.lines,freightMinor:snapshot.freightMinor,taxMinor:snapshot.taxMinor,totalMinor:snapshot.totalMinor};
+    };
+    const withoutDates=(value:Data)=>({...value,lines:value.lines.map(({needDate,...line}:Data)=>line)});
+    requireThat(variance.sourceRequest === request.id && variance.sourceRevision <= request.revision && JSON.stringify(variance.before) === JSON.stringify(face(source)) && JSON.stringify(variance.after) === JSON.stringify(face(order)) && JSON.stringify(withoutDates(variance.after)) === JSON.stringify(withoutDates(face(request))), 'Conversion source changed; amend and renew approval', 409);
     if (variance.approvalRenewed) return undefined;
     return currentConversionLimit(s, a, source, conversionFace(order));
 }

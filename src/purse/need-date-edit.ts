@@ -37,7 +37,7 @@ export function changeNeedDate(s: State, a: Actor, input: Data) {
         if(issued){next.amends=prior.id;next.lines=next.lines.map((line:Data)=>{const old=prior.lines.find((item:Data)=>item.id===line.id),position=linePosition(s,prior.id,old);return {...line,carriedAccepted:position.accepted,carriedCancelled:position.cancelled};});}
         const id=uid(), order:Data={...structuredClone(prior),id,revision:next.revision,lines:next.lines.map((line:Data)=>({...line,sourceLine:line.id})),needDate:next.needDate,generatedAt:new Date().toISOString(),needDateChange:{...next.needDateEdit,priorOrder:prior.id,supplierDelivery:issued?'not-sent':'not-issued',...(issued?{blockedBy:'PO-004 supplier change-order sending is not implemented'}:{})}};
         delete order.conversionVariance;delete order.amendedBy;
-        const approval=currentDecisionForCopied(s,next);
+        const approval=currentDecision(s,next);
         order.approvalActor=approval.actor;order.approvalVersion=approval.operatorVersion;
         if(approval.chainProofs)order.approvalProofs=approval.chainProofs;
         if(issued){order.issuedAt=new Date().toISOString();order.issuedBy=a.id;order.issueReason=reason;next.needDateEdit.supplierDelivery='not-sent';next.needDateEdit.blockedBy=order.needDateChange.blockedBy;}
@@ -50,4 +50,3 @@ export function changeNeedDate(s: State, a: Actor, input: Data) {
     audit(s,a,'need-date-edit',next.id,{revision:next.revision,...next.needDateEdit});
     return next;
 }
-function currentDecisionForCopied(s:State,next:Data){return currentDecision(s,next);}

@@ -29,6 +29,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         documentHold(s, r.supplier);
         requireThat(r.supplierSnapshot?.id === r.supplier, 'Supplier identity missing; amend the request and renew approval', 409);
         currentDecision(s, r);
+        for(const line of r.lines)if(line.supplier){supplier(s,line.supplier);documentHold(s,line.supplier);}
         checkAdoptedDisposition(s, r);
         requireThat(!all(s, 'order').some(o => o.request === r.id && o.revision === r.revision), 'Approved lines already allocated to a PO', 409);
         requireThat(all(s, 'decision').some(d => d.request === r.id && d.revision === r.revision && d.decision === 'approved'), 'Approval decision missing', 409);
@@ -37,6 +38,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
             r=reviseForConversion(s,a,r,edit);
             if(r.status!=='approved')return {...r,conversionRouted:true};
         }
+        requireThat(r.lines.every((line:Data)=>!line.supplier||line.supplier===r.supplier),'Supplier groups require separate purchase orders; align the conversion supplier before issuing',409);
         const face=r, approval=currentDecision(s,r);
         const conversionVariance = r.buyerConversion ? {...r.buyerConversion, approvalRenewed:r.buyerConversion.routing!=='carried'} : undefined;
         const id = uid();
@@ -64,7 +66,9 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         requireThat(policies(s, r).some(p => p.id === r.policy), 'Approval policy changed', 409);
         currentDecision(s, r);
         checkAdoptedDisposition(s, r);
-        const conversionLimit = o.conversionVariance ? requireConversionSource(s, a, r, o) : undefined;
+        let conversionSource=o;const ancestry=new Set<string>();
+        while(!conversionSource.conversionVariance&&conversionSource.needDateChange){requireThat(!ancestry.has(conversionSource.id),'Invalid date-correction ancestry',409);ancestry.add(conversionSource.id);conversionSource=get(s,'order',conversionSource.needDateChange.priorOrder);}
+        const conversionLimit = conversionSource.conversionVariance ? requireConversionSource(s, a, r, conversionSource) : undefined;
         const issuedFace = o.conversionVariance ? { ...r, lines: o.lines, freightMinor:o.freightMinor,taxMinor:o.taxMinor,totalMinor: o.totalMinor } : r;
         if (o.conversionVariance) requireThat(policies(s, issuedFace).some(p => p.id === r.policy), 'Edited PO exceeds current approval policy; amend and renew approval', 409);
         requireBlanketValidity(s, o);
