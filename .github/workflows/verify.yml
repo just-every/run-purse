@@ -24,10 +24,11 @@ jobs:
         with:
           node-version: 22.20.0
       - run: corepack enable
-      - run: npx -y @runeditrun/rer@0.2.30 cli install
-      - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - run: rer install
-      - run: rer verify
+      # Push checks use the locked project runtime. Global CLI qualification
+      # runs in installer.yml on release tags and nightly.
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec rer install
+      - run: pnpm exec rer verify
   browser:
     strategy:
       fail-fast: false
@@ -53,9 +54,10 @@ jobs:
         with:
           node-version: 22.20.0
       - run: corepack enable
-      - run: npx -y @runeditrun/rer@0.2.30 cli install
-      - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - run: rer install
+      # Push checks use the locked project runtime. Global CLI qualification
+      # runs in installer.yml on release tags and nightly.
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec rer install
       - run: pnpm exec playwright install --with-deps chromium
       - run: node tests/browser.mjs --width=${{ matrix.width }}
         env:
@@ -90,9 +92,10 @@ jobs:
         with:
           node-version: 22.20.0
       - run: corepack enable
-      - run: npx -y @runeditrun/rer@0.2.30 cli install
-      - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - run: rer install
+      # Push checks use the locked project runtime. Global CLI qualification
+      # runs in installer.yml on release tags and nightly.
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec rer install
       - run: pnpm exec playwright install --with-deps chromium
       - run: node tests/browser-request-again.mjs --width=${{ matrix.width }}
         env:
@@ -138,9 +141,10 @@ jobs:
         with:
           node-version: 22.20.0
       - run: corepack enable
-      - run: npx -y @runeditrun/rer@0.2.30 cli install
-      - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - run: rer install
+      # Push checks use the locked project runtime. Global CLI qualification
+      # runs in installer.yml on release tags and nightly.
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec rer install
       - run: pnpm exec playwright install --with-deps chromium
       - run: node tests/browser-search-scale.mjs
         env:

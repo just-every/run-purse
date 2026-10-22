@@ -1,0 +1,24 @@
+name: Installer
+on:
+  push:
+    tags: ['v*']
+  schedule:
+    - cron: '17 18 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  installer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - run: corepack enable
+      - run: npx -y @runeditrun/rer@0.2.30 cli install
+      - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: rer install
+      - run: rer check --profile first-party
+      - run: rer describe
