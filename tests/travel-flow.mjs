@@ -18,7 +18,7 @@ try {
     const sourceUrl = source.source.origin + source.source.route;
     const expense = await assertTravelSettlement(fixture, request, source.bytes, sourceUrl);
     const evidence=resolve(process.env.PURSE_EVIDENCE??'.cache/travel');await mkdir(evidence,{recursive:true});
-    const archive=join(evidence,'INTAKE-006.rer');await exportArchive(await createPortability({db:fixture.h.db,buckets:{ORIGINALS:fixture.h.originals},policy:portability}),archive,[]);
+    const archive=join(evidence,'INTAKE-006-'+request.id+'.rer');await exportArchive(await createPortability({db:fixture.h.db,buckets:{ORIGINALS:fixture.h.originals},policy:portability}),archive,[]);
     const restored=await harness();try {
         await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
         const state=(await restored.state()).data;assert.equal(state.travelExpense[0].sha256,expense.sha256);assert.equal(state.periodBudgets.find(budget=>budget.id===expense.policy).actualMinor,215000);

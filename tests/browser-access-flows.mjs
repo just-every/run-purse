@@ -14,7 +14,7 @@ export async function zeroBuyerRole(page,f,snap){
 }
 export async function conversionEdit(page,f,request,price,allowed,snap,name){
  await page.goto(f.h.origin+'/app?tab=Requests&request='+request.id);const article=page.locator('#request-'+request.id);await article.getByText('Adjust price or quantity at conversion',{exact:true}).click();await article.getByLabel('Conversion unit price for line 1',{exact:true}).fill(price);await article.getByLabel('Conversion edit reason',{exact:true}).fill('Supplier confirmed the current unit price');await article.getByRole('button',{name:'Generate purchase order with conversion edits',exact:true}).click();
- if(allowed){await page.getByText('Saved.',{exact:true}).waitFor();const order=(await f.h.state(f.cookies.buyer)).data.order.find(order=>order.request===request.id);assert.ok(order);assert.equal(order.totalMinor,Math.round(Number(price)*100)*10);await page.goto(f.h.origin+'/app?tab=Orders&receipt='+order.id);await page.getByRole('heading',{name:order.number+' · prepared',exact:true}).waitFor();await snap(page,name??'conversion-allowed');}
+ if(allowed){await page.getByText('Saved.',{exact:true}).waitFor();const order=(await f.h.state(f.cookies.buyer)).data.order.find(order=>order.request===request.id);assert.ok(order);assert.equal(order.totalMinor,Math.round(Number(price)*100)*10);await page.goto(f.h.origin+'/app?tab=Orders&receipt='+order.id);await page.getByRole('heading',{name:order.number+' · issued',exact:true}).waitFor();await snap(page,name??'conversion-allowed');}
  else{await article.getByRole('alert').waitFor();assert.ok(!(await f.h.state()).data.order.some(order=>order.request===request.id));await snap(page,'conversion-refused');}
 }
 export async function scopedReports(page,f,role,snap){
