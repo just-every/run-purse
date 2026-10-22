@@ -8,6 +8,18 @@ import { session, current, api } from './browser-journey.mjs';
 export const records = async path => (await readFile(path,'utf8')).trim().split('\n').map(line => JSON.parse(line));
 export const rows = archive => archive.filter(r => r.kind === 'part').flatMap(r => r.items);
 
+// Compliance is a current-calendar projection, not retained archive data.
+// Compare every retained field; an archive must not freeze yesterday's status.
+export function assertArchiveRecords(before,after,kinds) {
+ for(const kind of kinds) {
+  const retained=records=>records.map(record=>{
+   if(kind!=='supplierDocument')return record;
+   const {compliance,...source}=record;return source;
+  }).sort((a,b)=>a.id.localeCompare(b.id));
+  assert.deepEqual(retained(after[kind]),retained(before[kind]),`${kind.startsWith('supplierDocument')?'SUPPLIER-004 ':kind.startsWith('orderChase')?'PO-003 ':''}${kind} preserved across archive restore`);
+ }
+}
+
 export async function rejectSemanticArchives(root, archive) {
  await command(root,['export','--output','exports/empty-before.rer']);
  const empty=rows(await records(join(root,'exports/empty-before.rer')));
