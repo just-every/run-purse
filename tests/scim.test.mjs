@@ -99,6 +99,20 @@ test('SCIM deactivation always ends sessions and transfers approvals through own
  assert.ok(transferredAudit.some(a=>a.action==='scim-approval-transfer'&&a.record===pending.id&&a.from===manager.userName&&a.to===delegate.email))
  assert.ok(transferredAudit.some(a=>a.action==='scim-user-deactivate'&&a.record===manager.id))
  assert.equal((await scim(h,token,'DELETE','/Users/'+departed.id)).status,204)
+ // A current manager outranks an independently eligible named delegate.
+ const nextManager=(await scim(h,token,'POST','/Users',user(17))).value;
+ const nextDeparted=(await scim(h,token,'POST','/Users',user(18,'Operations',{[enterprise]:{department:'Operations',manager:{value:nextManager.id}}}))).value;
+ const currentManagerSession=await login(h,nextManager.userName),departedSession=await login(h,nextDeparted.userName);
+ await h.command('policy',{name:'Manager precedence',currency:'USD',category:'Safety',project:'Office',approver:nextDeparted.userName,limitMinor:100000,budgetMinor:1000000});
+ const managerDraft=draft(supplier.id);managerDraft.lines[0].category='Safety';
+ const managerRequest=await h.command('request',managerDraft,requester);await h.command('submit',{id:managerRequest.id,revision:1},requester);
+ assert.equal((await h.send('/auth/magic-link',{email:nextDeparted.userName})).status,202,'An outstanding identity token exists before deactivation');
+ assert.equal((await scim(h,token,'PATCH','/Users/'+nextDeparted.id,deactivate)).status,200);
+ assert.equal((await h.send('/api/purse/state',undefined,departedSession)).status,401);
+ assert.equal((await h.db.prepare('SELECT COUNT(*) n FROM oa_tokens WHERE (operator_id=? OR issuer_id=?) AND revoked_at IS NULL').bind(nextDeparted.id,nextDeparted.id).first()).n,0);
+ assert.equal((await h.state()).data.request.find(r=>r.id===managerRequest.id).approvalHolder,nextManager.userName);
+ await h.command('decision',{id:managerRequest.id,revision:1,decision:'approved',reason:'Delegate cannot override eligible manager'},delegateSession,403);
+ await h.command('decision',{id:managerRequest.id,revision:1,decision:'approved',reason:'Current manager precedence reviewed'},currentManagerSession);
  const domain=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(domain),true)
  const archive=join(h.dir,'synthetic-purse-15.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[])
  const exported=await records(archive),archived=rows(exported),credential=(await h.db.prepare("SELECT value FROM p_scim_authority WHERE kind='scimCredential'").first())
