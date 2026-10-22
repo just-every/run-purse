@@ -26,7 +26,7 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
         const previous=s.get('policy:'+id)?.value, used=['request','revision','order','decision','commitment'].some(kind=>all(s,kind).some(record=>record.policy===id||(record.budgetAllocations??[]).some((share:Data)=>share.policy===id)));
         requireThat(!used || JSON.stringify(previous?.budgetPeriod??null)===JSON.stringify(next.budgetPeriod??null),'A used budget period is fixed; create another dated policy',409);
         requireThat(!used || !previous?.budgetPeriod || previous.costCentre===next.costCentre,'A used dated budget retains its department; create another policy',409);
-        requireThat(!used || !previous?.budgetPeriod || ['currency','category','project'].every(field=>previous[field]===next[field]),'A used dated budget retains its coding and currency; create another policy',409);
+        requireThat(!used || !previous?.budgetPeriod || (['currency','category','project'] as const).every(field=>previous[field]===next[field]),'A used dated budget retains its coding and currency; create another policy',409);
         if(next.budgetPeriod)requireThat(all(s,'request').filter(request=>request.policy===id).every(request=>request.needDate>=next.budgetPeriod!.from&&request.needDate<=next.budgetPeriod!.through),'Existing purchases fall outside that budget period',409);
         requireAdministrativeEdit(s, a, s.get('policy:' + id)?.value, next);
         put(s, 'policy', id, next);
