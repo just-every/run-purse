@@ -15,17 +15,15 @@ export function editRecipient(s: State, a: Actor, value: Data) {
     const { edit, request, prior } = editSource(s, value);
     return Boolean(edit && prior && (prior.requester === a.id || prior.requesterEmail === a.email
         || all(s, 'decision').some(decision => decision.request === request && decision.revision <= edit.fromRevision
-            && decision.decision === 'approved' && (decision.actor === a.id || decision.email === a.email))));
+            && (decision.actor === a.id || decision.email === a.email))));
 }
 export function projectApprovalEdit(s: State, a: Actor, value: Data, permission = 'request.read'): Data {
     const { edit, prior } = editSource(s, value);
     if (!edit) return value;
     const outside = prior && !allowed(s, a, permission, prior);
     const participant = permission === 'request.read' && editRecipient(s, a, value);
-    const projected = { ...edit,
-        differences: outside && !participant ? [] : edit.differences,
-        carried: outside && !participant ? [] : edit.carried,
-        renewed: outside && !participant ? [] : edit.renewed,
+    const base = outside ? {actor:edit.actor,at:edit.at,fromRevision:edit.fromRevision,toRevision:edit.toRevision,differences:participant?edit.differences:[],carried:[],renewed:[],detailsRestricted:true} : edit;
+    const projected = { ...base,
         policy: mayReadPolicySnapshot(s, a, edit.policy, permission) ? edit.policy : null,
         sourcePolicy: mayReadPolicySnapshot(s, a, edit.sourcePolicy, permission) ? edit.sourcePolicy : null };
     if (!projected.policy || !projected.sourcePolicy) projected.snapshotBasis = 'Whole-policy snapshot outside your purchase scope';
