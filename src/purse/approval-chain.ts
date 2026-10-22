@@ -12,6 +12,15 @@ export const headerFields = correctionFields;
 export const materialDefaults = defaultMaterialFields;
 export function policyWorkflow(input: Data, previous?: Data) {
     const result: Data = {};
+    const reviewer = input.internationalTravelReviewer === undefined ? previous?.internationalTravelReviewer : input.internationalTravelReviewer;
+    if (reviewer !== undefined) {
+        requireThat(typeof reviewer === 'string', 'Use an international travel reviewer email');
+        if (reviewer.trim()) {
+            const email = text(reviewer, 'International travel reviewer email', 254).toLowerCase();
+            requireThat(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), 'Use an international travel reviewer email');
+            result.internationalTravelReviewer = email;
+        }
+    }
     if(input.overBudget!==undefined||previous?.overBudget){const mode=input.overBudget??previous?.overBudget;requireThat(['block','owner'].includes(mode),'Choose block or budget-owner review');result.overBudget=mode;if(mode==='owner'){const email=text(input.budgetOwner??previous?.budgetOwner,'Budget owner email').toLowerCase();requireThat(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),'Use a budget owner email');result.budgetOwner=email;}}
     if (input.approvalSteps !== undefined || previous?.approvalSteps) {
         const steps = input.approvalSteps ?? previous?.approvalSteps;
@@ -41,12 +50,16 @@ export function policyWorkflow(input: Data, previous?: Data) {
     }
     return result;
 }
+function internationalTravelReview(policy: Data, request: Data) {
+    return policy.internationalTravelReviewer && request.purchaseType === 'travel' && request.travel?.destinations?.some((destination: Data) => destination.country !== 'US');
+}
 export function routeFor(policy: Data, request: Data) {
     const steps=[{ id: 'primary', email: policy.approver, dependsOn: headerFields }, ...(policy.approvalSteps ?? [])
         .filter((step: Data) => request.totalMinor >= step.minMinor && (step.costCentre === '*' || step.costCentre === request.costCentre))]
         .map((step: Data) => ({ id: step.id, email: step.email, dependsOn: step.dependsOn }));
     for(const owner of request.budgetOwnerSteps??[])if(!steps.some(step=>step.id===owner.id))steps.push(owner);
     if(request.budgetOwnerReview&&policy.overBudget==='owner'&&!steps.some(step=>step.id==='budget-owner'))steps.push({id:'budget-owner',email:policy.budgetOwner,dependsOn:['costCentre','project']});
+    if (internationalTravelReview(policy, request)) steps.push({ id: 'international-travel-risk', email: policy.internationalTravelReviewer, dependsOn: headerFields });
     return steps;
 }
 export function stepDecision(s: State, request: Data, step: Data) {
@@ -73,9 +86,9 @@ function reserve(s: State, a: Actor, request: Data, policy: Data) {
     requireThat(reservationAvailable(s,request,delta), 'Budget exhausted by existing commitments',409);
     if (delta) ledger(s,a,request,delta,'pending-chain-reservation');
 }
-function orderedPolicy(policy:Data) { return Boolean(policy.approvalSteps||policy.overBudget==='owner'||Object.values(policy.editRules??{}).some((rule:any)=>rule.allowed?.length)); }
+function orderedPolicy(policy:Data, request:Data) { return Boolean(internationalTravelReview(policy,request)||policy.approvalSteps||policy.overBudget==='owner'||Object.values(policy.editRules??{}).some((rule:any)=>rule.allowed?.length)); }
 export function startChain(s: State, a: Actor, request: Data, policy: Data) {
-    if (!orderedPolicy(policy)) return;
+    if (!orderedPolicy(policy,request)) return;
     const next:Data = {...request,status:'pending',policy:policy.id,approvalPolicyVersion:s.get('policy:'+policy.id)!.revision};
     next.budgetOwnerSteps=budgetOwnerSteps(s,next,approvalAmount(next,s));
     next.budgetOwnerReview=next.budgetOwnerSteps.length>0||!reservationAvailable(s,next,approvalAmount(next,s))&&policy.overBudget==='owner';
@@ -123,7 +136,7 @@ export function approverEdits(s: State, a: Actor, op: string, input: Data): Data
     const kind=request.purchaseType ?? request.lines[0].category.toLowerCase(), rule=policy.editRules?.[kind] ?? policy.editRules?.['*'];
     requireThat(rule,'Approver edits are disabled for this purchase type',403);
     const {next,differences}=correctApprovalFields(s,a,request,input.changes,rule);
-    const destination=policies(s,next)[0];requireThat(destination&&orderedPolicy(destination),'No chain policy covers the edited request',409);
+    const destination=policies(s,next)[0];requireThat(destination&&orderedPolicy(destination,next),'No chain policy covers the edited request',409);
     next.revision++;
     next.policy=destination.id;next.budgetOwnerSteps=budgetOwnerSteps(s,next,approvalAmount(next,s));next.budgetOwnerReview=next.budgetOwnerSteps.length>0||destination.overBudget==='owner'&&!reservationAvailable(s,next,approvalAmount(next,s));next.approvalRoute=routeFor(destination,next);next.approvalPolicyVersion=s.get('policy:'+destination.id)!.revision;
     requireThat(next.approvalRoute.some((step:Data)=>step.id===editing.id&&step.email===editing.email),'Edit would remove your current step; return the request instead',409);

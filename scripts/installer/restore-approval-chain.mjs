@@ -1,6 +1,7 @@
 /** Approval history is portable evidence. Restoring it creates no native session. */
 export function validateApprovalChains(all,get,check,same) {
  for(const policy of all('policy'))if(policy.budgetPeriod){const {from,through}=policy.budgetPeriod;check([from,through].every(value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value)&&from<=through&&Date.parse(through)-Date.parse(from)<367*86400000,'budget_period');}
+ for(const policy of [...all('policy'),...all('decision').map(decision=>decision.policySnapshot).filter(Boolean)])if(policy.internationalTravelReviewer!==undefined)check(typeof policy.internationalTravelReviewer==='string'&&policy.internationalTravelReviewer.length<=254&&policy.internationalTravelReviewer===policy.internationalTravelReviewer.trim().toLowerCase()&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(policy.internationalTravelReviewer),'international_travel_reviewer');
  const fields=['glAccount','costCentre','location','class','project','needDate','shipTo','supplier','notes'];
  for(const policy of all('policy'))if(policy.editRules)for(const rule of Object.values(policy.editRules))check(rule&&['allowed','material'].every(key=>Array.isArray(rule[key])&&rule[key].every(field=>fields.includes(field))),'approver_edit_rule');
  for(const policy of all('policy'))if(policy.approvalSteps) {
@@ -8,8 +9,10 @@ export function validateApprovalChains(all,get,check,same) {
   for(const step of policy.approvalSteps)check(typeof step.id==='string'&&typeof step.email==='string'&&step.email.includes('@')&&Number.isSafeInteger(step.minMinor)&&step.minMinor>=0&&Array.isArray(step.dependsOn)&&step.dependsOn.every(field=>fields.includes(field)),'approval_step_shape');
  }
  for(const request of [...all('request'),...all('revision')])if(request.approvalRoute) {
-  check(Array.isArray(request.approvalRoute)&&request.approvalRoute.length>0&&request.approvalRoute.length<=121&&new Set(request.approvalRoute.map(step=>step.id)).size===request.approvalRoute.length&&typeof request.approvalPolicyVersion==='string','approval_route');
+  check(Array.isArray(request.approvalRoute)&&request.approvalRoute.length>0&&request.approvalRoute.length<=122&&new Set(request.approvalRoute.map(step=>step.id)).size===request.approvalRoute.length&&typeof request.approvalPolicyVersion==='string','approval_route');
   for(const step of request.approvalRoute)check(typeof step.email==='string'&&step.email.includes('@')&&Array.isArray(step.dependsOn)&&step.dependsOn.every(field=>fields.includes(field)),'approval_route_step');
+  const risk=request.approvalRoute.find(step=>step.id==='international-travel-risk');
+  if(risk)check(request.purchaseType==='travel'&&request.travel?.destinations?.some(destination=>destination.country!=='US')&&request.approvalRoute.at(-1)===risk,'international_travel_route');
   if(!request.request){const revision=get('revision',request.id+':'+request.revision);check(same(request.approvalRoute,revision.approvalRoute)&&request.approvalPolicyVersion===revision.approvalPolicyVersion,'approval_route_revision');}
   if(request.approverEdit && (request.approverEdit.toRevision??request.approverEdit.fromRevision+1)===request.revision) {
    const edit=request.approverEdit,previous=get('revision',(request.request??request.id)+':'+edit.fromRevision);
@@ -22,6 +25,10 @@ export function validateApprovalChains(all,get,check,same) {
  for(const decision of all('decision'))if(decision.chainStep) {
   const request=get('revision',decision.request+':'+decision.revision),step=request.approvalRoute?.find(step=>step.id===decision.chainStep);
   check(step&&(step.email===decision.email||decision.delegation||decision.scimTransfer)&&decision.actor!==request.requester&&decision.email!==request.requesterEmail&&decision.policyVersion===request.approvalPolicyVersion,'chain_decision');
+  if(decision.policySnapshot?.internationalTravelReviewer!==undefined){
+   const risk=request.approvalRoute?.find(step=>step.id==='international-travel-risk'),international=request.purchaseType==='travel'&&request.travel?.destinations?.some(destination=>destination.country!=='US');
+   check(international?risk?.email===decision.policySnapshot.internationalTravelReviewer:!risk,'international_travel_policy_snapshot');
+  }
   if(decision.delegation){const delegation=get('delegation',decision.delegation);check(delegation.policy===decision.policy&&delegation.from===step.email&&delegation.delegate===decision.email&&Date.parse(decision.carriedAt??decision.at)<Date.parse(delegation.expires),'chain_delegation');}
   if(decision.carriedFrom){const original=get('decision',decision.carriedFrom);check(original.request===decision.request&&original.revision<decision.revision&&original.decision==='approved'&&decision.decision==='approved'&&['actor','email','at','chainStep','reason'].every(field=>same(original[field],decision[field]))&&[request.approverEdit,request.needDateEdit,request.buyerConversion].some(edit=>edit?.carried?.includes(decision.id)),'carried_decision');}
  }
