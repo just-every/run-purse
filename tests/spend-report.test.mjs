@@ -106,6 +106,10 @@ test('BUDGET-001 dated department exposure reserves pending, commits buyer chang
  const privateCombined=await position(combined.id,requester);assert.equal(Object.hasOwn(privateCombined,'authorityLimitMinor'),false,'A budget grant does not reveal private purchase approval caps');assert.deepEqual([privateCombined.reservedMinor,privateCombined.committedMinor,privateCombined.actualMinor,privateCombined.availableMinor],[60000,30000,30000,80000]);assert.equal(privateCombined.sources.find(source=>source.hidden).reservedMinor,60000);assert.ok(!JSON.stringify(privateCombined).includes(hiddenCombined.id));assert.ok(!JSON.stringify(privateCombined).includes('synthetic-purse-2235'));
  const privateReport=await h.send('/api/purse/spend-report?groupBy=glAccount',undefined,requester);assert.equal(privateReport.status,200);assert.ok(!JSON.stringify(privateReport.value).includes(combinedInvoice.id));assert.ok(!JSON.stringify(privateReport.value).includes(hiddenCombined.id));
  // Explicit overlap cannot choose financial custody by UUID, and does not hide the existing chronology.
+ await cmd('policy',{...separate,active:false});
+ const disabledAllocation=await cmd('request',{...dimensionInput,title:'synthetic-purse-2236'},requester);await cmd('submit',{id:disabledAllocation.id,revision:1},requester,409);
+ assert.equal((await position(separate.id)).actualMinor,20000,'A disabled allocation budget blocks new funding while retaining recorded actual');
+ await cmd('policy',{...separate,active:true});
  await cmd('policy',{...combined,id:undefined,name:'synthetic-purse-2233'});
  const ambiguous=await cmd('request',dimensionInput,requester);await cmd('submit',{id:ambiguous.id,revision:1},requester,409);
  assert.equal((await h.state()).data.request.find(request=>request.id===ambiguous.id).budgetReview.complete,false);

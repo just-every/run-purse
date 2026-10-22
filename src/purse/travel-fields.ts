@@ -26,7 +26,7 @@ export function travelFields(input: Data) {
     for (const category of travelCostCategories) {
         const hasEstimate = Object.hasOwn(supplied, category + 'Amount') || Object.hasOwn(supplied, category + 'Minor');
         if (category === 'mealsIncidentals' && !hasEstimate) {
-            requireThat(perDiem.available && destinations.length === 1, 'Enter a meals and incidentals estimate when a single destination GSA default is unavailable');
+            requireThat(input.currency === 'USD' && perDiem.available && destinations.length === 1, 'Enter a meals and incidentals estimate when a single destination GSA default is unavailable');
             costs[category + 'Minor'] = perDiem.amountMinor;
         } else costs[category + 'Minor'] = moneyInput(supplied, category + 'Amount', category + 'Minor', travelCostLabels[category], { fallback: 0 });
     }

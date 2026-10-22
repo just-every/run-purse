@@ -36,7 +36,7 @@ function budgetReview(request: Data, policies: Data[]) {
 
 /** Authority remains one request; each dated allocation consumes its own budget. */
 export function requestBudgetShares(s: State, request: Data, amount: number, historicalIds?: Set<string>): Data[] {
-    const policies=all(s,'policy').filter(policy=>!historicalIds?.size||historicalIds.has(policy.id)),primary = s.get('policy:' + request.policy)?.value;
+    const policies=all(s,'policy').filter(policy=>historicalIds ? !historicalIds.size || historicalIds.has(policy.id) : policy.active===true),primary = s.get('policy:' + request.policy)?.value;
     if (!primary?.budgetPeriod) return [{ policy: request.policy, amountMinor: amount }];
     const lineAmounts = budgetApportion(amount, request.lines.map((line: Data) => line.totalMinor));
     const result = new Map<string, number>();

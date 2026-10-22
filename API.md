@@ -708,4 +708,8 @@ traveler reference access share this conservative default pending ct. No automat
 report fetch, settlement or
 outbound booking/payment is performed. INTAKE-002/003, API-001 and IMPORT-001
 inherit these rules when adding travel doors; ERASURE-001 inherits the new
-traveler and original-report personal fields.
+traveler and original-report personal fields. Its current reviewed erasure door
+withdraws affected originals, scrubs traveler/assistant identity, and preserves
+anonymous financial facts, original hashes and an explicit unverified withdrawal
+state across archives. Withdrawn originals and their source links are not offered
+in the travel record.
