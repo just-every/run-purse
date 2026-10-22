@@ -23,7 +23,7 @@ export function purchasingProjection(s: State, a: Actor) {
     const invoices = all(s, 'invoice').filter(invoice => allowed(s, a, 'invoice.read', invoice));
     const requestIds = new Set(requests.map(request => request.id)), orderIds = new Set(orders.map(order => order.id)), invoiceIds = new Set(invoices.map(invoice => invoice.id));
     const data: Data = {
-        request: requests.map(request => ({ ...request, approvalHolder: scimApprovalHolder(s, request), approvalTransferred: Boolean(currentScimAssignment(s, request)), mayEdit: allowed(s, a, 'request.edit', request), mayApprove: mayApprove(s, a, request),
+        request: requests.map(request => ({ ...request, approvalHolder: scimApprovalHolder(s, request), approvalTransferred: Boolean(currentScimAssignment(s, request)), approvalNeedsReassignment: currentScimAssignment(s, request)?.held === true, mayEdit: allowed(s, a, 'request.edit', request), mayApprove: mayApprove(s, a, request),
             mayPrepareValue: ['request.edit', 'request.approve', 'receive', 'procurement.manage'].some(permission => allowed(s, a, permission, request)),
             mayConvert: allowed(s, a, 'po.convert', request), mayManagePurchasing: allowed(s, a, 'procurement.manage', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
             buyerLimit: buyerLimit(s, a, request), buyerLimits: buyerLimits(s, a, request) })),

@@ -57,7 +57,7 @@ test('SCIM owner consent, stable identities, department scope and credential lif
  assert.equal((await scim(h,token,'GET','/Users')).status,200);await settings(h,{action:'revoke'});assert.equal((await scim(h,token,'GET','/Users')).status,401)
 })
 
-test('SCIM deactivation atomically ends every session and transfers pending approvals, refusing an unqualified recipient before writes',async t=>{
+test('SCIM deactivation always ends sessions and transfers approvals through owner custody and audited non-self reassignment',async t=>{
  const h=await harness();t.after(()=>h.close())
  await h.command('business',{name:'Synthetic Purse',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Office']});await proof(h)
  const config={action:'configure',issuer:'https://synthetic-purse-2.example.test',enabled:true,mappings:[{department:'Operations',grants:[{role:'approver',scope:{departments:['Operations']}}]}],consent:true}
@@ -66,14 +66,18 @@ test('SCIM deactivation atomically ends every session and transfers pending appr
  const first=await login(h,departed.userName),second=await login(h,departed.userName),managerSession=await login(h,manager.userName)
  const supplier=await h.command('supplier',{name:'Synthetic Purse supplier',status:'active',reason:'Synthetic purchasing source'})
  await h.command('policy',{name:'Synthetic approval',currency:'USD',category:'Office',project:'Office',approver:departed.userName,limitMinor:100000,budgetMinor:1000000})
+ const requester=await h.member('synthetic-purse-16@example.test',['requester']);
+ const ownerFallback=await h.command('request',draft(supplier.id),requester);await h.command('submit',{id:ownerFallback.id,revision:1},requester);
  const request=await h.command('request',draft(supplier.id));await h.command('submit',{id:request.id,revision:request.revision})
  const pending=await h.command('request',draft(supplier.id));await h.command('submit',{id:pending.id,revision:pending.revision})
  const deactivate={schemas:[patchSchema],Operations:[{op:'replace',path:'active',value:false}]}
- const before=(await h.state()).data.request.filter(r=>[request.id,pending.id].includes(r.id))
- assert.equal((await scim(h,token,'PATCH','/Users/'+departed.id,deactivate)).status,409)
- assert.equal((await h.send('/api/purse/state',undefined,first)).status,200);assert.deepEqual((await h.state()).data.request.filter(r=>[request.id,pending.id].includes(r.id)),before)
- const stillActive=await h.db.prepare('SELECT status FROM oa_operators WHERE id=?').bind(departed.id).first();assert.equal(stillActive.status,'active')
- const transfer=await scim(h,token,'PATCH','/Users/'+departed.id,{schemas:[patchSchema],Operations:[{op:'replace',path:enterprise+':manager',value:{value:manager.id}},{op:'replace',path:'active',value:false}]});assert.equal(transfer.status,200)
+ assert.equal((await scim(h,token,'PATCH','/Users/'+departed.id,deactivate)).status,200,'No manager or delegate never prevents deactivation')
+ await h.command('decision',{id:ownerFallback.id,revision:1,decision:'approved',reason:'Native owner non-self fallback reviewed'},h.owner);
+ const held=(await h.state()).data.request.filter(r=>[request.id,pending.id].includes(r.id));assert.ok(held.every(r=>r.approvalNeedsReassignment && !r.mayApprove),'Owner-requester approvals remain held without decision authority')
+ await h.command('decision',{id:request.id,revision:request.revision,decision:'approved',reason:'Self interested owner cannot decide'},h.owner,403)
+ const queue=(await h.send('/api/purse/scim',undefined,h.owner)).value.reassignments;assert.deepEqual(new Set(queue.map(r=>r.id)),new Set([request.id,pending.id]))
+ await settings(h,{action:'reassign-approval',request:request.id,operator:manager.id})
+ await settings(h,{action:'reassign-approval',request:pending.id,operator:manager.id})
  assert.equal((await h.send('/api/purse/state',undefined,first)).status,401);assert.equal((await h.send('/api/purse/state',undefined,second)).status,401)
  const sessions=await h.db.prepare('SELECT COUNT(*) AS n FROM oa_sessions WHERE operator_id=? AND revoked_at IS NULL').bind(departed.id).first();assert.equal(sessions.n,0)
  await h.command('decision',{id:request.id,revision:request.revision,decision:'approved',reason:'Departed authority refused'},first,401)
@@ -91,7 +95,7 @@ test('SCIM deactivation atomically ends every session and transfers pending appr
  await h.command('decision',{id:pending.id,revision:pending.revision,decision:'approved',reason:'Former manager cannot decide'},managerSession,401)
  await h.command('decision',{id:pending.id,revision:pending.revision,decision:'approved',reason:'Owner-named delegate reviewed'},delegateSession)
  const transferredAudit=(await h.state()).data.audit
- assert.ok(transferredAudit.some(a=>a.action==='scim-approval-transfer'&&a.record===pending.id&&a.from===departed.userName&&a.to===manager.userName))
+ assert.ok(transferredAudit.some(a=>a.action==='scim-approval-transfer'&&a.record===pending.id&&a.to===manager.userName&&a.reassignedBy))
  assert.ok(transferredAudit.some(a=>a.action==='scim-approval-transfer'&&a.record===pending.id&&a.from===manager.userName&&a.to===delegate.email))
  assert.ok(transferredAudit.some(a=>a.action==='scim-user-deactivate'&&a.record===manager.id))
  assert.equal((await scim(h,token,'DELETE','/Users/'+departed.id)).status,204)

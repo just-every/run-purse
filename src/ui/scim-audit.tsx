@@ -7,7 +7,7 @@ const grants = (rows: D[]) => rows.length ? rows.map((grant, index) => <p key={i
 export function ScimAudit({ event }: { event: D }) {
     if (event.action === 'scim-approval-transfer') return <section aria-label="SCIM approval handoff">
         <h4>Approval handoff</h4><p>From: {event.from}</p><p>To: {event.to}</p>
-        <p>Request revision: {event.requestRevision} · Transfer sequence: {event.sequence}</p>
+        {event.held && <p>Needs reassignment · held without decision authority</p>}<p>Request revision: {event.requestRevision} · Transfer sequence: {event.sequence}</p>
         <p>SCIM provisioning changed the previous holder's approval authority. Recipient eligibility was checked against this exact request revision and current purchasing permissions at the handoff.</p>
     </section>;
     if (!['scim-user-create', 'scim-user-update', 'scim-user-deactivate'].includes(event.action)) return null;

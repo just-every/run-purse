@@ -44,6 +44,7 @@ export function Requests({ data, actor, mutate }: {
             </div>
         </div>
         <div className="thread-waiting">{waiting.length ? <button type="button" className="waiting-chip" onClick={() => { const el = document.getElementById('request-' + waiting[0].id); el?.scrollIntoView({ block: 'center' }); el?.querySelector<HTMLButtonElement>('.card-verbs button, .verbs button')?.focus({ preventScroll: true }); }}>Waiting on you · {waiting.length}</button> : shown.length > 0 && <p className="waiting-none">Nothing waiting on you.</p>}</div>
+        {actor.roles.includes('owner') && shown.some((r: D) => r.approvalNeedsReassignment) && <section aria-label="Needs reassignment"><h2>Needs reassignment</h2><p>Self-interested approvals are held. <a href="/app?tab=Settings">Choose another approver in SCIM settings</a>.</p>{shown.filter((r: D) => r.approvalNeedsReassignment).map((r: D) => <p key={r.id}>{r.title} · revision {r.revision}</p>)}</section>}
         <div className="thread">
             {folded.length > 0 && <details className="thread-fold"><summary>Earlier · {folded.length}</summary>{folded.map(item)}</details>}
             {live.map((r: D) => <Fragment key={r.id}>{item(r)}{exceptionList.filter(e => e.requests[e.requests.length - 1].id === r.id).map(e => <ThreadException key={e.policy.id} e={e} data={data} actor={actor} mutate={mutate}/>)}</Fragment>)}

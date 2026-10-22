@@ -63,6 +63,24 @@ test('SCIM provisions a scoped member who signs in through a real local IdP; sig
  assert.ok(nativeAudit.some(event=>event.value==='true'));assert.ok(nativeAudit.some(event=>event.value==='false'));
  const bindings=(await h.db.prepare('SELECT issuer,subject,operator_id FROM oa_external_identities').all()).results;
  assert.deepEqual(bindings,[{issuer:h.idp.origin,subject:'synthetic-purse-person-1',operator_id:identity.operator.id}]);
+ // Owner-confirmed existing members activate only by exact issuer+external ID.
+ const email='synthetic-purse-21@example.test';
+ await cmd('member',{email,name:'Existing native member',roles:['requester']});
+ await h.send('/api/purse/invite',{email},h.owner);
+ const invitation=[...h.messages].reverse().find(m=>m.to.includes(email));
+ const invitationToken=new URL(invitation.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0]).searchParams.get('token');
+ const invited=await h.send('/auth/confirm',{token:invitationToken},'',303);
+ const nativeMember=await h.db.prepare('SELECT id FROM oa_operators WHERE email=?').bind(email).first();
+ await scimSettings({action:'link-member',operator:nativeMember.id,externalId:'synthetic-purse-21',consent:true});
+ await h.send('/api/purse/state',undefined,invited.cookie,401);
+ let linked=(await h.send('/api/purse/scim',undefined,h.owner)).value.links.find(l=>l.operator_id===nativeMember.id);assert.equal(linked.activated,0);
+ h.idp.setPrincipal({sub:'synthetic-purse-22',email});await h.complete(await h.begin(),403);
+ h.idp.setPrincipal({sub:'synthetic-purse-21',email});const linkedSession=await h.signIn();
+ linked=(await h.send('/api/purse/scim',undefined,h.owner)).value.links.find(l=>l.operator_id===nativeMember.id);assert.equal(linked.activated,1);
+ const linkedUser=await scim('POST','/Users',{schemas:[userSchema,enterprise],externalId:'synthetic-purse-21',userName:email,displayName:'Existing native member',active:true,[enterprise]:{department:'Operations'}},201);assert.equal(linkedUser.id,nativeMember.id);
+ await scimSettings({action:'unlink-member',operator:nativeMember.id});
+ await h.send('/api/purse/state',undefined,linkedSession.cookie,401);await h.complete(await h.begin(),403);
+ assert.equal(await h.db.prepare('SELECT 1 FROM oa_external_identities WHERE operator_id=?').bind(nativeMember.id).first(),null);
  const records=(await h.db.prepare('SELECT * FROM p_records').all()).results,stored=JSON.stringify(records);
  for(const action of ['scim-user-create','scim-user-deactivate'])assert.ok(records.some(record=>record.kind==='audit'&&JSON.parse(record.value).action===action&&JSON.parse(record.value).record===provisioned.id),'Native audit records the SCIM identity lifecycle');
  for(const secret of [h.idp.privateKey.d,h.transactionSecret,h.sessionSecret,credential.token])assert.ok(!stored.includes(secret),'Purchasing records never retain identity credentials');

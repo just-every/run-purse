@@ -1,3 +1,5 @@
+import { manageScimLink, reassignScimApproval } from './scim-link-management';
+import { currentScimAssignment } from './scim-approvals';
 import { Hono } from 'hono';
 import type { Bindings } from '../auth.server';
 import { protectedProof } from './protected-controls';
@@ -22,8 +24,10 @@ scimSettingsApi.get('/api/purse/scim', async c => {
     const { state, revision } = await loadScim(c.env.DB), operators = await nativeOperators(c.env.DB);
     await readFence(c.env.DB, a, revision);
     const business = state.get('business:main')?.value;
+    const links = (await c.env.DB.prepare('SELECT l.*, EXISTS(SELECT 1 FROM oa_external_identities i WHERE i.operator_id=l.operator_id AND i.issuer=l.issuer AND i.subject=l.external_id) AS activated FROM p_scim_links l').all<Data>()).results;
+    const reassignments = all(state, 'request').filter(r => r.status === 'pending' && currentScimAssignment(state, r)?.held).map(r => ({id:r.id,title:r.title,revision:r.revision}));
     return c.json({ revision, endpoint: c.env.AUTH_ORIGIN + '/scim/v2', config: state.get('scimConfig:main')?.value ?? null, credential: metadata(state.get('scimCredential:main')?.value),
-        choices: { departments: business?.costCentres ?? [], locations: business?.locations ?? [], projects: business?.projects ?? [], entities: [{ id: 'main', name: business?.name ?? 'Main business' }, ...all(state, 'entity').map(e => ({ id: e.id, name: e.name }))], roles: [...builtinRoles.filter(role => role !== 'owner').map(id => ({ id, name: id.replace(/-/g, ' ') })), ...all(state, 'accessRole').filter(r => r.active).map(r => ({ id: r.id, name: r.name }))] },
+        links, reassignments, choices: { departments: business?.costCentres ?? [], locations: business?.locations ?? [], projects: business?.projects ?? [], entities: [{ id: 'main', name: business?.name ?? 'Main business' }, ...all(state, 'entity').map(e => ({ id: e.id, name: e.name }))], roles: [...builtinRoles.filter(role => role !== 'owner').map(id => ({ id, name: id.replace(/-/g, ' ') })), ...all(state, 'accessRole').filter(r => r.active).map(r => ({ id: r.id, name: r.name }))] },
         delegates: operators.filter(o => o.status === 'active').map(o => ({ id: o.id, email: o.email, name: o.display_name })), users: all(state, 'scimUser').map(u => ({ id: u.id, email: u.userName, department: u.department, manager: u.manager, active: u.active })) });
 });
 scimSettingsApi.post('/api/purse/scim', async c => {
@@ -33,6 +37,7 @@ scimSettingsApi.post('/api/purse/scim', async c => {
     requireThat(b.revision === revision, 'SCIM settings changed; reload', 409);
     const after = structuredClone(state), at = new Date().toISOString(), operators = await nativeOperators(c.env.DB), fences: Data[] = [];
     let token: string | undefined;
+    const nativeWrites: D1PreparedStatement[] = [];
     if (b.action === 'configure') {
         requireThat(b.consent === true, 'Explicit owner consent is required for identity provisioning, mapped grants and approval transfer');
         const issuer = text(b.issuer, 'IdP issuer', 1000); let issuerUrl: URL;
@@ -56,8 +61,12 @@ scimSettingsApi.post('/api/purse/scim', async c => {
         if (b.action === 'revoke') put(after, 'scimCredential', 'main', { ...previous, revokedAt: at });
         else { token = scimSecret(); put(after, 'scimCredential', 'main', { hash: await scimHash(token), generation: (previous?.generation ?? 0) + 1, creator: a.id, creatorVersion: a.version, createdAt: previous?.createdAt ?? at, rotatedAt: previous ? at : null, revokedAt: null }); }
         audit(after, a, 'scim-credential-' + b.action, 'main', { generation: after.get('scimCredential:main')!.value.generation });
+    } else if (['link-member', 'unlink-member'].includes(b.action)) {
+        nativeWrites.push(...await manageScimLink(c.env.DB, state, after, a, b, operators));
+    } else if (b.action === 'reassign-approval') {
+        fences.push(reassignScimApproval(after, a, b, operators));
     } else throw new Fault(404, 'Unknown SCIM settings action');
-    try { await c.env.DB.batch([scimOwnerFence(c.env.DB, a, revision, since), ...fences.map(o => nativeFence(c.env.DB, o)), ...stateWrites(c.env.DB, state, after), c.env.DB.prepare('DELETE FROM p_guard')]); }
+    try { await c.env.DB.batch([scimOwnerFence(c.env.DB, a, revision, since), ...fences.map(o => nativeFence(c.env.DB, o)), ...nativeWrites, ...stateWrites(c.env.DB, state, after), c.env.DB.prepare('DELETE FROM p_guard')]); }
     catch (error) { if (/CHECK constraint/.test(String(error))) throw new Fault(409, 'SCIM settings or native authority changed; reload'); throw error; }
     c.header('Cache-Control', 'no-store');
     return c.json({ ...(token ? { token } : {}), credential: metadata(after.get('scimCredential:main')?.value), configured: true });
