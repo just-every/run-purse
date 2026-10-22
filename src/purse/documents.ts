@@ -110,6 +110,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
 export function recordScope(s: State, a: Actor, kind: string, record: Data) { requireRecordRead(s, a, kind, record); }
 export function download(s: State, a: Actor, kind: string, id: string) {
     const record = get(s, kind, id); recordScope(s, a, kind, record);
+    if (kind === 'attachment') requireThat(!record.erasure, 'Original removed by personal-data erasure; financial lineage retained', 410);
     if (kind === 'attachment') return new Response(Uint8Array.from(atob(record.base64), char => char.charCodeAt(0)), { headers: {
         'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="${record.name.replace(/[^a-zA-Z0-9._-]/g, '_')}"` } });
     if (kind === 'agentRun') {

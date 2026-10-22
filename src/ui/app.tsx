@@ -42,7 +42,7 @@ function PurchasingApp() {
             {current === 'Suppliers' && <Suppliers data={data} actor={actor} mutate={mutate} reload={reload}/>}
             {current === 'Agreements' && <Agreements data={data} actor={actor} mutate={mutate}/>}
             {current === 'Catalogue' && <><Catalogue data={data} mutate={mutate}/><Stockroom data={data} mutate={mutate}/></>}
-            {current === 'Settings' && <><Settings data={data} actor={actor} mutate={mutate}/>{actor.roles.includes('owner') && <section className="panel"><h3>Invite saved member</h3><Form label="Send invitation" onSubmit={async b => { await call('invite', b); setNotice('Invitation sent.'); }}><Field label="Member email" name="email" type="email"/></Form><p className="quiet">Invite an active saved member to sign in.{actor.dev && <> Dev personas also require saved purchasing roles.</>}</p></section>}</>}
+            {current === 'Settings' && <><Settings data={data} actor={actor} mutate={mutate} reload={reload}/>{actor.roles.includes('owner') && <section className="panel"><h3>Invite saved member</h3><Form label="Send invitation" onSubmit={async b => { await call('invite', b); setNotice('Invitation sent.'); }}><Field label="Member email" name="email" type="email"/></Form><p className="quiet">Invite an active saved member to sign in.{actor.dev && <> Dev personas also require saved purchasing roles.</>}</p></section>}</>}
             {current === 'Authority' && <Authority data={data} actor={actor} mutate={mutate}/>}
             {current === 'Preparation' && <Preparation data={data} mutate={mutate}/>}
             {current === 'Imports' && <Imports reload={reload} jobs={data.importJobs ?? []}/>}

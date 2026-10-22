@@ -1,3 +1,4 @@
+import { originalDigest } from '../../src/purse/erasure-journal.mjs';
 import {createHash} from 'node:crypto';
 
 /** Restore source custody and review history, never owner authority. */
@@ -27,7 +28,7 @@ export function validateAgreementReadings(all,get,check,same=(a,b)=>JSON.stringi
  for(const r of all('agreementReading')){
   const agreement=get('agreement',r.agreement), attachment=get('attachment',r.attachment), source=r.sourceDescriptor;
   check(attachment.kind==='agreement'&&attachment.record===agreement.id&&integer(r.agreementVersion,1,agreement.version)&&str(r.attachmentRevision),'agreement_reading_link');
-  check(source&&source.attachment===attachment.id&&source.attachmentRevision===r.attachmentRevision&&source.sha256===createHash('sha256').update(Buffer.from(attachment.base64,'base64')).digest('hex')&&source.size===attachment.size&&source.name===attachment.name&&source.mediaType===attachment.mediaType&&source.url==='/api/purse/download/attachment/'+attachment.id,'agreement_reading_digest');
+  check(source&&source.attachment===attachment.id&&source.attachmentRevision===r.attachmentRevision&&source.sha256===originalDigest(all,attachment)&&source.size===attachment.size&&source.name===attachment.name&&source.mediaType===attachment.mediaType&&source.url==='/api/purse/download/attachment/'+attachment.id,'agreement_reading_digest');
   function snapshot(v){
    check(v&&v.id===r.id&&v.agreement===r.agreement&&v.agreementVersion===r.agreementVersion&&v.attachment===r.attachment&&v.attachmentRevision===r.attachmentRevision&&same(v.sourceDescriptor,source),'agreement_reading_snapshot_source');
    check(integer(v.version,1,1000000)&&['review','unsupported','confirmed'].includes(v.status)&&str(v.actor)&&timestamp(v.at)&&str(v.parser)&&Array.isArray(v.warnings)&&v.warnings.every(str),'agreement_reading');

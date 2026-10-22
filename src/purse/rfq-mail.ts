@@ -7,7 +7,7 @@ import { all, get, uid, type Data } from './types';
 export async function sendRfqMail(env: Bindings, rfq: Data, target: Data, event: Data, url?: string) {
     const sender = operatorMail(env);
     let outcome: Data = { ...event, status: 'unavailable', reason:'mail-not-configured' };
-    if (sender && env.MAIL_FROM && target.email) {
+    if (sender && env.MAIL_FROM && target.email && !target.contactErased) {
         try {
             const result = await sender.send({ deliveryId: `rfq:${event.id}`, from: env.MAIL_FROM, to: [target.email], headers: {}, html: '',
                 subject: `${event.type === 'reminder' ? 'RFQ reminder' : 'Request for quotation'}: response due ${rfq.deadline}`,
@@ -24,6 +24,7 @@ export async function sendRfqMail(env: Bindings, rfq: Data, target: Data, event:
 export async function runRfqReminders(env: Bindings, now = Date.now()) {
     const { state } = await load(env.DB), events: Data[] = [];
     for (const rfq of all(state, 'rfq')) for (const target of rfq.suppliers) {
+        if(target.contactErased)continue;
         const deadline = Date.parse(rfq.deadline);
         if (all(state, 'rfqResponse').some(r => r.rfq === rfq.id && r.supplier === target.id)) continue;
         const type = now >= deadline ? 'nonresponse' : now >= Date.parse(rfq.reminderAt) ? 'reminder' : null;

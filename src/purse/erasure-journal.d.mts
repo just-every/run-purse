@@ -1,0 +1,11 @@
+export const erasedText: string;
+export function canonical(value:any):string;
+export function erasureDigest(value:any):string;
+export function erasureSeal(secret:string,value:any):string;
+export function receiptPayload(receipt:any):any;
+export function pathValue(value:any,path:(string|number)[]):any;
+export function erasedField(all:(kind:string)=>any[],kind:string,id:string,path:(string|number)[],value:any):boolean;
+export function erasedOriginal(all:(kind:string)=>any[],attachment:any):boolean;
+export function originalDigest(all:(kind:string)=>any[],attachment:any):string;
+export function erasedInvoiceEvidence(all:(kind:string)=>any[],invoice:any):boolean;
+export function erasedSourceFact(all:(kind:string)=>any[],kind:string,id:string,value:any):boolean;

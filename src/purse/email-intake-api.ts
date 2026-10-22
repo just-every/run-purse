@@ -111,6 +111,7 @@ emailIntakeApi.get('/api/purse/email-intake/:id/files/:file', async c => {
     const intake = get(state, 'emailIntake', c.req.param('id')); intakeScope(state, a, intake);
     const file = [intake.original, ...intake.files].find((f: Data) => f.id === c.req.param('file'));
     requireThat(file, 'Email source file not found', 404);
+    requireThat(!file.erasure, 'Original removed by personal-data erasure; financial lineage retained', 410);
     requireThat(file.key === `intake/${intake.id}/${file.id}`, 'Invalid email source custody', 409);
     const original = await c.env.ORIGINALS.get(file.key); requireThat(original, 'Email source unavailable', 409);
     const bytes = new Uint8Array(await original.arrayBuffer());

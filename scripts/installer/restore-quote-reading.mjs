@@ -1,3 +1,4 @@
+import { originalDigest } from '../../src/purse/erasure-journal.mjs';
 import {createHash} from 'node:crypto';
 /** Quote reviews are evidence; restore cannot turn them into purchasing authority. */
 export function validateQuoteReadings(all, get, check) {
@@ -5,7 +6,7 @@ export function validateQuoteReadings(all, get, check) {
  const field=(f,attachment)=>{check(f&& (f.value===null||typeof f.value==='string'&&f.value.length<=2000)&&Number.isFinite(f.confidence)&&f.confidence>=0&&f.confidence<=1,'quote_reading_field');check(f.value===null?f.confidence===0:!!f.source,'quote_reading_source');if(f.source){check(f.source.attachment===attachment&&typeof f.source.method==='string','quote_reading_source');if(f.source.method==='externally prepared source quotation (unverified)')check(Number.isSafeInteger(f.source.page)&&f.source.page>0&&typeof f.source.excerpt==='string'&&f.source.excerpt.trim().length&&f.source.excerpt.length<=2000,'quote_reading_external_source');}};
  for(const r of all('quoteReading')) {
   const request=get('request',r.request), revision=get('revision',r.request+':'+r.revision), attachment=get('attachment',r.attachment);
-  if(r.sourceDescriptor){const source=r.sourceDescriptor;check(source.attachment===attachment.id&&source.attachmentRevision===r.attachmentRevision&&source.sha256===createHash('sha256').update(Buffer.from(attachment.base64,'base64')).digest('hex')&&source.size===attachment.size&&source.name===attachment.name&&source.mediaType===attachment.mediaType&&source.url==='/api/purse/download/attachment/'+attachment.id,'quote_reading_digest');}
+  if(r.sourceDescriptor){const source=r.sourceDescriptor;check(source.attachment===attachment.id&&source.attachmentRevision===r.attachmentRevision&&source.sha256===originalDigest(all,attachment)&&source.size===attachment.size&&source.name===attachment.name&&source.mediaType===attachment.mediaType&&source.url==='/api/purse/download/attachment/'+attachment.id,'quote_reading_digest');}
   if(r.reader)check(r.sourceDescriptor&&r.reader.verified===false&&['model','provider','runReference'].every(key=>typeof r.reader[key]==='string'&&r.reader[key].trim()),'quote_reading_reader');
   check(!request.imported&&!revision.imported&&attachment.kind==='request'&&attachment.record===r.request&&typeof r.attachmentRevision==='string'&&r.attachmentRevision.length,'quote_reading_link');
   check(Number.isSafeInteger(r.version)&&r.version>0&&['review','unsupported','confirmed'].includes(r.status)&&Array.isArray(r.lines)&&r.lines.length<=100,'quote_reading');

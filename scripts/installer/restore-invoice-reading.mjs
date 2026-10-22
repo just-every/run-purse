@@ -1,3 +1,4 @@
+import { originalDigest } from '../../src/purse/erasure-journal.mjs';
 import {createHash} from 'node:crypto';
 const headers=['supplier','reference','invoiceDate','dueDate','terms','poNumber','currency','senderEmail','remitTo','subtotalAmount','freightAmount','taxAmount','totalAmount'];
 const items=['description','quantity','unitAmount','amount'];
@@ -6,7 +7,7 @@ export function validateInvoiceReadings(all,get,check) {
  for(const source of all('invoiceSource')){const o=get('order',source.order),a=get('attachment',source.attachment);check(o.issuedAt&&!o.imported&&o.revision===source.orderRevision&&a.kind==='invoiceSource'&&a.record===source.id&&typeof source.actor==='string'&&Number.isFinite(Date.parse(source.at)),'invoice_source');}
  for(const r of all('invoiceReading')){
   const source=get('invoiceSource',r.source),a=get('attachment',source.attachment),descriptor=r.sourceDescriptor;
-  check(r.order===source.order&&descriptor.id===source.id&&descriptor.attachment===a.id&&descriptor.sha256===createHash('sha256').update(Buffer.from(a.base64,'base64')).digest('hex')&&descriptor.name===a.name&&descriptor.mediaType===a.mediaType&&descriptor.size===a.size&&descriptor.url==='/api/purse/download/attachment/'+a.id&&typeof descriptor.attachmentRevision==='string','invoice_reading_digest');
+  check(r.order===source.order&&descriptor.id===source.id&&descriptor.attachment===a.id&&descriptor.sha256===originalDigest(all,a)&&descriptor.name===a.name&&descriptor.mediaType===a.mediaType&&descriptor.size===a.size&&descriptor.url==='/api/purse/download/attachment/'+a.id&&typeof descriptor.attachmentRevision==='string','invoice_reading_digest');
   check(Number.isSafeInteger(r.version)&&r.version>0&&['review','unsupported','confirmed'].includes(r.status)&&Array.isArray(r.lines)&&r.lines.length<=100&&typeof r.actor==='string'&&Number.isFinite(Date.parse(r.at)),'invoice_reading');
   if(r.reader)check(r.reader.verified===false&&['provider','model','runReference'].every(key=>typeof r.reader[key]==='string'&&r.reader[key].trim()),'invoice_reading_reader');
   if(r.status==='unsupported')check(typeof r.reason==='string'&&r.reason.length,'invoice_reading_unsupported');

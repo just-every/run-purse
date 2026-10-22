@@ -5,7 +5,7 @@ function profile(p){
  for(const a of [p.billTo,p.shipTo])check(a&&nonempty(a.label)&&nonempty(a.name)&&nonempty(a.address)&&typeof a.attention==='string','po_profile_address');
  check(nonempty(p.buyerContact)&&typeof p.shippingTerms==='string'&&nonempty(p.standardTerms)&&p.fieldLabels&&Object.values(p.fieldLabels).every(nonempty),'po_profile_terms');
  if(p.logo)check(['image/png','image/jpeg'].includes(p.logo.mediaType)&&typeof p.logo.base64==='string'&&p.logo.base64.length<=1333336,'po_profile_logo');
- for(const f of [p.termsFile,p.certificate].filter(Boolean))check(nonempty(f.name)&&typeof f.base64==='string'&&f.base64.length<=1333336&&f.base64.length>0,'po_profile_file');
+ for(const f of [p.termsFile,p.certificate].filter(Boolean))check(nonempty(f.name)&&typeof f.base64==='string'&&f.base64.length<=1333336&&(f.base64.length>0 || f.erasure && f.base64===''),'po_profile_file');
  if(p.certificate)check(Array.isArray(p.certificate.supplierStates)&&p.certificate.supplierStates.length>0&&p.certificate.supplierStates.every(s=>typeof s==='string'&&/^[A-Z]{2}$/.test(s)),'po_profile_certificate');
 }
 export function validatePoDocuments(all,get){

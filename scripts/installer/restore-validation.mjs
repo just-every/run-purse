@@ -1,3 +1,5 @@
+import { validateErasure } from './restore-erasure.mjs';
+import { erasedOriginal } from '../../src/purse/erasure-journal.mjs';
 import { validatePoKinds } from './restore-po-kinds.mjs';
 import { hasUnsafeProtectedContext } from '../../src/purse/protected-context-fields.mjs';
 import { validateAgentValue } from './restore-agent-value.mjs';
@@ -23,7 +25,7 @@ import { validateSupplierDocuments } from './restore-supplier-documents.mjs';
 import { validateAccess } from './restore-access.mjs';
 import { validateScim } from './restore-scim.mjs';
 
-const kinds = new Set(['blanketRelease','recurringSeries','recurringEvent','scimUser','scimApprovalTransfer','accessRole','buyerRoleLimit','invoiceEvidenceKey','invoiceEvidenceMigration','invoiceInboxConfig','apInvoiceEmail','valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
+const kinds = new Set(['erasureReceipt','blanketRelease','recurringSeries','recurringEvent','scimUser','scimApprovalTransfer','accessRole','buyerRoleLimit','invoiceEvidenceKey','invoiceEvidenceMigration','invoiceInboxConfig','apInvoiceEmail','valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
 export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
 export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
 export const integer = n => Number.isSafeInteger(n) && n >= 0;
@@ -51,6 +53,7 @@ export const purchasing = r => Object.fromEntries(purchaseFields.filter(k=>!['po
 // Generic JSON rows have no SQL foreign keys. Validate the complete staged graph
 // read-only before Base writes any destination records or objects.
 export function validatePurchasingArchive(rows) {
+ validateErasure(rows,check);
  const records = new Map();
  for (const row of rows) {
   let value; try { value = JSON.parse(row.value); } catch { check(false,'record_json'); }
@@ -112,7 +115,7 @@ export function validatePurchasingArchive(rows) {
   check(all('audit').some(e => e.action === 'attachment' && e.attachment === a.id && e.record === a.record),'attachment_link');
   check(typeof a.base64 === 'string','attachment_bytes');
   let bytes; try { bytes = atob(a.base64); } catch { check(false,'attachment_bytes'); }
-  check(bytes.length === a.size && a.size <= 1000000,'attachment_size');
+  check((bytes.length === a.size || erasedOriginal(all,a)) && a.size <= 1000000,'attachment_size');
  }
  for (const r of all('agentRun')) for (const ref of r.references) get(ref.kind,ref.id);
  for (const p of all('proposedAction')) { get('agentRun',p.run); for (const ref of p.references) get(ref.kind,ref.id); }

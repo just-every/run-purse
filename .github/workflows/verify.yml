@@ -142,6 +142,9 @@ jobs:
       - run: node tests/browser-scim.mjs --width=${{ matrix.width }}
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
+      - run: node tests/browser-erasure.mjs --width=${{ matrix.width }}
+        env:
+          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
       - run: node tests/browser-evidence-history.mjs --width=${{ matrix.width }}
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof

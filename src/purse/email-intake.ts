@@ -127,7 +127,7 @@ export async function sendEmailIntakeLinks(env: Bindings) {
         }
         const at = new Date().toISOString(), auditId = uid();
         await env.DB.batch([
-            env.DB.prepare("UPDATE p_records SET revision=?,value=? WHERE business='main' AND kind='emailIntakeMailEvent' AND id=?").bind(uid(), JSON.stringify({ ...outcome, outcomeAt: at }), event.id),
+            env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.status',?,'$.outcomeAt',?,'$.delivery',json(?)) WHERE business='main' AND kind='emailIntakeMailEvent' AND id=?").bind(uid(), outcome.status, at, JSON.stringify(outcome.delivery??null), event.id),
             env.DB.prepare("INSERT INTO p_records(business,kind,id,revision,value) VALUES('main','audit',?,?,?)").bind(auditId, uid(), JSON.stringify({ id: auditId, actor: 'email-intake', action: 'email-intake-mail-outcome', record: event.intake, mailEvent: event.id, status: outcome.status, at })),
         ]);
     }

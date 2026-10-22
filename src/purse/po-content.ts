@@ -41,7 +41,7 @@ export function poContent(s: State, order: Data): PoPdfContent {
         sections.unshift({ heading: 'Change order ' + sequence, lines: ['Change order revision: ' + sequence, 'Prior PO: ' + prior.number, 'Approved request/PO revision: ' + order.revision, ...changes] });
     }
     return { title: `${p?.legalName || 'Legal entity: Not recorded'} · ${order.number}`, subtitle: `${order.status.toUpperCase()} · Revision ${order.revision} · Issued ${order.issuedAt || 'Not issued'}${p ? '' : ' · Legacy document fields not recorded'}\nSource request ${order.request} · Generated ${order.generatedAt || 'Not recorded'}`,
-        ...(p?.logo ? { logo: p.logo } : {}), sections, attachments: [p?.termsFile, p?.certificate].filter(Boolean) };
+        ...(p?.logo ? { logo: p.logo } : {}), sections, attachments: [p?.termsFile, p?.certificate].filter(file=>file&&!file.erasure) };
 }
 export function poHtml(content: PoPdfContent) {
     const escape = (v: string) => v.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));

@@ -19,6 +19,7 @@ rfqApi.get('/api/purse/rfq-original/:response/:file', async c => {
     requirePermission(state, a, 'rfq.read', get(state, 'request', rfq.request));
     const file = response.files.find((f: any) => f.id === c.req.param('file'));
     requireThat(file, 'Original file not found', 404);
+    requireThat(!file.erasure, 'Original removed by personal-data erasure; financial lineage retained', 410);
     const bytes = await rfqOriginalBytes(runtimeBindings(c.env), file); await readFence(c.env.DB, a, revision);
     return new Response(bytes, { headers: { 'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}"`, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } });
 });

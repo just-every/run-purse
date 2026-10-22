@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import {mkdir} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
+import {build} from 'esbuild';
+import {harness} from './purse-harness.mjs';
+import {nativeWebContext} from './native-web-fixture.mjs';
+const {chromium}=await import(process.env.PURSE_PLAYWRIGHT_MODULE||'@playwright/test');
+const selected=process.argv.find(arg=>arg.startsWith('--width=')),widths=selected?[Number(selected.split('=')[1])]:[1440,390];
+const evidence=resolve(process.env.PURSE_EVIDENCE||'.cache/erasure');await mkdir(evidence,{recursive:true});
+const bundle=await build({stdin:{contents:"import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);",resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'esm',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
+const browser=await chromium.launch({headless:true,...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--use-mock-keychain','--password-store=basic']});
+try{for(const width of widths){const h=await harness(),contexts=[];try{
+ const errors=[],open=async cookie=>{const context=await nativeWebContext(browser,h,width,bundle.outputFiles[0].text,cookie);contexts.push(context);const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));return page;};
+ const cmd=h.command,member='synthetic-purse-620@example.test',contact='synthetic-purse-621@example.test';
+ await cmd('business',{name:'synthetic-purse-622',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Equipment']});
+ const requester=await h.member(member,['requester']),approver=await h.member('synthetic-purse-623@example.test',['approver']),buyer=await h.member('synthetic-purse-624@example.test',['buyer']);
+ const supplier=await cmd('supplier',{name:'synthetic-purse-625',status:'active',reason:'Reviewed',contacts:[{name:'synthetic-purse-626',email:contact}]},buyer);
+ await cmd('policy',{name:'Equipment',currency:'USD',category:'*',project:'*',approver:'synthetic-purse-623@example.test',limitMinor:100000,budgetMinor:1000000});
+ const request=await cmd('request',{title:'Equipment for '+member,supplier:supplier.id,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre:'Operations',terms:'Net 30',lines:[{description:'Equipment',quantity:'1',unitMinor:1000,category:'Equipment',project:'Equipment'}]},requester);
+ await cmd('submit',{id:request.id,revision:1},requester);await cmd('decision',{id:request.id,revision:1,decision:'approved',reason:'For '+member},approver);const order=await cmd('convert',{id:request.id,revision:1},buyer);await cmd('issue',{id:order.id,revision:1,reason:'Reviewed issue'},buyer);
+ await cmd('invoice',{order:order.id,reference:'synthetic-purse-627',source:'From '+contact,senderEmail:contact,allocations:[{line:order.lines[0].id,quantity:'1',amountMinor:1000}]},buyer);
+ await cmd('member',{email:member,name:member,roles:['requester'],active:false});
+ const owner=await open(h.owner);await owner.goto(h.origin+'/app?tab=Settings');const panel=owner.getByRole('region',{name:'Personal data erasure',exact:true});
+ const snap=async name=>{assert.equal(await owner.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,name+' overflow');await panel.screenshot({path:join(evidence,`ERASURE-001-${name}-${width}.png`)});};
+ const subject=panel.getByLabel('Departed member or supplier contact',{exact:true});await subject.selectOption({label:member+' · '+member});await panel.getByRole('button',{name:'Review erasure',exact:true}).click();await panel.getByRole('heading',{name:'Review removal',exact:true}).waitFor();await panel.getByText('Fields to remove',{exact:true}).click();await snap('review-member');
+ assert.equal(await panel.getByRole('button',{name:'Erase reviewed personal data',exact:true}).isDisabled(),true);
+ await panel.getByRole('button',{name:'Request native reauthentication',exact:true}).click();await panel.getByRole('status').filter({hasText:'Confirm the native sign-in email'}).waitFor();
+ const mail=[...h.messages].reverse().find(m=>m.to.includes('owner@example.test'));const token=new URL(mail.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0]).searchParams.get('token');assert.equal((await h.send('/auth/confirm',{token},h.owner)).status,303);
+ await panel.getByRole('checkbox').check();await panel.getByRole('button',{name:'Erase reviewed personal data',exact:true}).click();await panel.getByRole('heading',{name:'Erasure receipt',exact:true}).waitFor();await panel.getByText(/Erasure complete\./).waitFor();await snap('member-receipt');
+ await subject.selectOption({label:'synthetic-purse-625 · synthetic-purse-626 · '+contact});await panel.getByRole('button',{name:'Review erasure',exact:true}).click();await panel.getByRole('heading',{name:'Review removal',exact:true}).waitFor();await panel.getByRole('checkbox').check();await panel.getByRole('button',{name:'Erase reviewed personal data',exact:true}).click();await panel.getByRole('heading',{name:'Erasure receipt',exact:true}).waitFor();await panel.getByText(/Erasure complete\./).waitFor();await snap('contact-receipt');
+ await owner.getByRole('navigation').getByRole('button',{name:'Audit',exact:true}).click();await owner.getByRole('heading',{name:/Audit/}).first().waitFor();const content=await owner.locator('body').innerText();for(const personal of [member,contact])assert.ok(!content.includes(personal));await owner.screenshot({path:join(evidence,`ERASURE-001-anonymous-audit-${width}.png`),fullPage:true});
+ const state=(await h.state()).data;assert.equal(state.order.find(o=>o.id===order.id).totalMinor,1000);assert.equal(state.invoice[0].totalMinor,1000);assert.match(state.invoice[0].evidenceStatus.label,/source values since erased/);
+ const buyerPage=await open(buyer);await buyerPage.goto(h.origin+'/app?tab=Settings');assert.equal(await buyerPage.getByRole('region',{name:'Personal data erasure',exact:true}).count(),0);assert.deepEqual(errors,[]);console.log('Native erasure web passed at '+width);
+ }finally{for(const context of contexts)await context.close();await h.close();}}}finally{await browser.close();}

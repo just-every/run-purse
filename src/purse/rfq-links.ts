@@ -12,6 +12,7 @@ export async function issueRfqLink(env: Bindings, a: Actor, rfqId: string, suppl
     const rfq = get(state, 'rfq', rfqId), target = rfq.suppliers.find((s: Data) => s.id === supplierId);
     requirePermission(state, a, 'rfq.manage', get(state, 'request', rfq.request));
     requireThat(target, 'Supplier is outside this RFQ', 404);
+    requireThat(!target.contactErased,'Nominated contact was erased; create a new RFQ with a current contact',409);
     const deadline = Date.parse(rfq.deadline); requireThat(!rfq.closedAt && now < deadline && deadline <= now + 30 * 86400000, 'RFQ deadline has passed', 410);
     const previous = await env.DB.prepare('SELECT MAX(generation) AS generation FROM p_rfq_links WHERE rfq=? AND supplier=?').bind(rfq.id, supplierId).first<{generation: number | null}>();
     requireThat(reissue || !all(state, 'rfqMailEvent').some(e => e.rfq === rfq.id && e.supplier === supplierId && ['invitation', 'reissue'].includes(e.type)), 'Invitation already attempted; explicitly reissue a new link', 409);

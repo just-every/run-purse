@@ -48,3 +48,23 @@ Supplier rows in the current CSV kit accept `dba`, `email`, `contactName`, `addr
 TIN and bank columns are accepted for matching only. Common TIN/tax-ID/EIN/SSN and bank routing/account header spellings are recognized; `mapping.columns.tin`, `bankRouting` and `bankAccount` name nonstandard headers. A routing/account pair is required together. Values become keyed HMAC-SHA-256 fingerprints using the installation's private portable matching key. The full structured values are never stored. An older workspace without a matching key can initialize it explicitly from Imports or with `supplier-matching-setup`; preview itself remains no-write.
 
 This is the one named exception to PUR-013 exact-source custody: sensitive cell spans in the stored original are replaced with `[REDACTED]`, preserving all other bytes, including quotes, CRLF and multiline fields. File digests remain in owner-bound import custody, outside ordinary supplier state. A retained `.custody.json` artifact records original SHA-256, retained SHA-256 and redacted column names. The original digest binds a review even when two differently formatted sensitive inputs redact to the same bytes. Source payloads, journal and effects retain no full TIN/account values. These inputs do not verify a bank account, validate a TIN or certify a supplier. Full sensitive storage belongs to SECURITY-001 and future SUPPLIER-001/002 and IMPORT-001/002 doors.
+
+## Erasure and later backups
+
+Owner-reviewed personal-data erasure withdraws opaque source originals on the
+affected lineage and scrubs personal fields in retained purchasing, audit,
+RFQ, email and import copies. The receipt names removed fields and retained
+financial history. Import replay receipts survive without authorizing another
+capture. Original links report that the source was erased; they never serve
+replacement bytes as an original. An unfinished file deletion blocks export.
+
+Keep the newest completed `.rer` archive as the erasure journal. When restoring
+an older backup into a fresh installation, supply that archive with
+`rer import --input older.rer --journal newest.rer --yes`: Base refuses an older
+redaction epoch before applying business records. A fresh offline installation
+cannot discover a later erasure without its journal. Existing exports and
+external provider copies are outside the installation's deletion scope and
+remain under the owner's custody. Post-erasure archives retain anonymized
+financial chronology and the sealed field journal; they reject restored erased
+values or source objects. A protected include must match the same erasure
+checkpoint, preventing older encrypted metadata from restoring identity.

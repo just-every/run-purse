@@ -410,3 +410,19 @@ series and independent consent. Scheduled generation records issuance only and
 sends no supplier PO. Restored history grants no historical owner or approval
 authority; stale native bindings cause a pause. Scoped native state includes
 `releasePosition`, value receipt positions, `recurringSeries` and `recurringEvent`.
+
+Personal-data erasure uses a separate current-native-owner door. `GET
+/api/purse/erasure` lists inactive members, current or historically nominated
+supplier contacts, and value-free field receipts. `POST /api/purse/erasure/preview`
+takes `{revision,kind:"member"|"contact",id,email?}` and returns an exact inventory,
+`review` ID and `fingerprint`. `execute` requires the same subject, revision,
+review and fingerprint, `consent:true`, and native reauthentication within ten
+minutes. An authority, source or revision change refuses the operation. The
+transaction anonymizes purchasing, revision/policy/audit and source copies,
+retires matching import custody, ends the departed identity's credentials and
+records Base's redaction checkpoint. Original downloads return 410. `resume`
+with `{revision,id}` finishes an interrupted blob deletion; archives remain
+blocked until the receipt is complete. No financial retention expiry runs
+automatically. TIN/bank values remain encrypted with existing owner-only reveal;
+private reason/evidence metadata is scrubbed. Invoice evidence hashes, state and
+attestations remain, with “source values since erased” and exact journal proof.

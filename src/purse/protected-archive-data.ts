@@ -6,7 +6,7 @@ import type { Bindings } from '../auth.server';
 
 type SupplierSnapshot = { id: string; identity: string; matching: Data };
 type ArchiveValue = { supplier: string; field: ProtectedField; payload: ProtectedPayload };
-export type ProtectedSection = { business: string; matchingKey: string; suppliers: SupplierSnapshot[]; values: ArchiveValue[] };
+export type ProtectedSection = { business: string; matchingKey: string; suppliers: SupplierSnapshot[]; values: ArchiveValue[]; erasure?:string };
 const canonical = (value: any): string => Array.isArray(value) ? '[' + value.map(canonical).join(',') + ']' : value && typeof value === 'object' ? '{' + Object.keys(value).sort().map(k => JSON.stringify(k) + ':' + canonical(value[k])).join(',') + '}' : JSON.stringify(value);
 const digest = (value: unknown) => createHash('sha256').update(canonical(value)).digest('hex');
 function identity(supplier: Data) { const { matching, matchingNotRestored, ...ordinary } = supplier; return digest(ordinary); }
@@ -16,14 +16,16 @@ export async function collectProtectedSection(env: Bindings, state: State): Prom
     requireThat(typeof matchingKey === 'string' && /^[a-f0-9]{64}$/.test(matchingKey), 'Matching key unavailable; restore the owner include archive or re-enter matching data', 503);
     const suppliers = all(state, 'supplier').map(supplier => ({ id: supplier.id, identity: identity(supplier), matching: supplier.matching ?? {} }));
     const values = (await protectedRows(env)).map(row => ({ supplier: row.supplier, field: row.field, payload: decryptProtected(env, row) }));
-    return { business: digest(get(state, 'business', 'main')), matchingKey, suppliers, values };
+    return { business: digest(get(state, 'business', 'main')), matchingKey, suppliers, values, erasure:digest(all(state,'erasureReceipt').map(r=>r.id).sort()) };
 }
 /** Validate the entire authenticated section against the separately restored ordinary archive.
  * This never accepts auth rows, credential digests, Worker keys or grants.
  */
 export function restoreProtectedSection(state: State, input: unknown): ArchiveValue[] {
-    requireThat(exact(input, ['business', 'matchingKey', 'suppliers', 'values']), 'Protected archive contents invalid');
+    requireThat(exact(input, ['business', 'matchingKey', 'suppliers', 'values']) || exact(input, ['business', 'matchingKey', 'suppliers', 'values','erasure']), 'Protected archive contents invalid');
     const section = input as ProtectedSection;
+    const erasures=all(state,'erasureReceipt').map(r=>r.id).sort();
+    requireThat(section.erasure===digest(erasures)||(!erasures.length&&section.erasure===undefined),'Protected archive predates personal-data erasure; use its matching post-erasure include',409);
     requireThat(section.business === digest(get(state, 'business', 'main')), 'Restore the matching ordinary archive first', 409);
     requireThat(typeof section.matchingKey === 'string' && /^[a-f0-9]{64}$/.test(section.matchingKey), 'Protected archive contents invalid');
     requireThat(Array.isArray(section.suppliers) && Array.isArray(section.values), 'Protected archive contents invalid');

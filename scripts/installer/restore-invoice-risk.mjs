@@ -1,3 +1,4 @@
+import { originalDigest } from '../../src/purse/erasure-journal.mjs';
 import { validateInvoiceEvidence } from './restore-invoice-evidence.mjs';
 import { createHash } from 'node:crypto';
 export function validateInvoiceRisk(all,get,check) {
@@ -15,7 +16,7 @@ export function validateInvoiceRisk(all,get,check) {
   for(const flag of invoice.flags){check(typeof flag.id==='string'&&codes.has(flag.code)&&typeof flag.reason==='string'&&flag.reason.trim(),'invoice_flag');if(flag.relatedInvoice)get('invoice',flag.relatedInvoice);if(flag.documentHash)check(/^[a-f0-9]{64}$/.test(flag.documentHash),'invoice_document_digest');}
   check(new Set(invoice.riskReviews.map(r=>r.flag)).size===invoice.riskReviews.length,'invoice_review_unique');
   for(const review of invoice.riskReviews){check(flags.get(review.flag)?.code===review.code&&typeof review.reason==='string'&&review.reason.trim()&&typeof review.actor==='string'&&Number.isFinite(Date.parse(review.at)),'invoice_review');check(all('audit').some(e=>e.action==='invoice-risk-review'&&e.record===invoice.id&&e.flag===review.flag&&e.actor===review.actor&&e.reason===review.reason&&e.at===review.at),'invoice_review_audit');}
-  if(invoice.document){const doc=invoice.document;check(/^[a-f0-9]{64}$/.test(doc.sha256)&&all('attachment').some(a=>a.kind==='invoice'&&a.record===invoice.id&&a.name===doc.name&&a.size===doc.size&&createHash('sha256').update(Buffer.from(a.base64,'base64')).digest('hex')===doc.sha256),'invoice_original');}
-  for(const hash of invoice.documentHashes??[])check(/^[a-f0-9]{64}$/.test(hash)&&all('attachment').some(a=>a.kind==='invoice'&&a.record===invoice.id&&createHash('sha256').update(Buffer.from(a.base64,'base64')).digest('hex')===hash),'invoice_later_original');
+  if(invoice.document){const doc=invoice.document;check(/^[a-f0-9]{64}$/.test(doc.sha256)&&all('attachment').some(a=>a.kind==='invoice'&&a.record===invoice.id&&a.name===doc.name&&a.size===doc.size&&originalDigest(all,a)===doc.sha256),'invoice_original');}
+  for(const hash of invoice.documentHashes??[])check(/^[a-f0-9]{64}$/.test(hash)&&all('attachment').some(a=>a.kind==='invoice'&&a.record===invoice.id&&originalDigest(all,a)===hash),'invoice_later_original');
  }
 }

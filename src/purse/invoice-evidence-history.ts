@@ -28,6 +28,7 @@ export function migrateInvoiceEvidence(s: State, a: Actor) {
 export function reenterInvoiceEvidence(s: State, a: Actor, invoiceId: string, body: Data) {
     const invoice=get(s,'invoice',invoiceId), e=invoice.evidence;
     requireThat(e?.representation==='legacy-root-v1','Legacy invoice evidence required',409);
+    requireThat(!invoice.sourceValuesErased,'Source values since erased; original evidence state is retained',409);
     const old=s.get(key('supplierMatchingKey','main'))?.value.secret;
     requireThat(old&&!s.get(key('supplierMatchingKey','main'))?.value.legacyUnavailable,'Legacy key not present – restore the owner include archive',503);
     const bank=matchingInputs(s,body.remit).bank;

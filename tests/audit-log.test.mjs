@@ -28,3 +28,6 @@ test('AUDIT-001 owner filters a PO history and exports exact decision policy, re
  }
  assert.equal((await send('/api/purse/audit?from=2026-02-30',undefined,h.owner)).status,400);assert.deepEqual((await h.state()).data,before);
 });
+
+import {erasureFlow} from './erasure-flow.mjs';
+test('ERASURE-001 native reviewed owner erasure anonymizes financial audit, RFQ and email originals, retains encrypted tax/evidence and fences archive resurrection',erasureFlow);

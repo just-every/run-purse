@@ -9,5 +9,5 @@ export function publicInvoice(invoice: Data): Data { return publicEvidence(invoi
 
 export function publicEvidence(invoice: Data) {
     const {evidenceHash,evidence,...value}=invoice;
-    return {...value,...(evidenceHash?{evidenceStatus:{representation:evidence?.representation??'legacy-root-v1',state:evidence?.state??'unmigrated',label:evidenceLabel(evidence)}}:{})};
+    return {...value,...(evidenceHash?{evidenceStatus:{representation:evidence?.representation??'legacy-root-v1',state:evidence?.state??'unmigrated',label:evidenceLabel(evidence)+(invoice.sourceValuesErased?' (source values since erased)':'')}}:{})};
 }

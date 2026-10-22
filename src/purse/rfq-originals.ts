@@ -36,6 +36,7 @@ export async function retainRfqOriginals(env: Bindings, response: string, input:
 }
 
 export async function rfqOriginalBytes(env: Bindings, file: Data) {
+    requireThat(!file.erasure,'Original removed by personal-data erasure',410);
     // Pre-R2 response history retains its original inline custody representation.
     if (!file.key) return Uint8Array.from(atob(file.base64), c => c.charCodeAt(0));
     const object = await env.ORIGINALS.get(file.key);

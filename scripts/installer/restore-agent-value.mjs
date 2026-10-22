@@ -1,3 +1,4 @@
+import { erasedOriginal, erasedSourceFact, originalDigest } from '../../src/purse/erasure-journal.mjs';
 import { createHash } from 'node:crypto';
 import { validateSendResult } from '../../src/modules/mail/src/core/validation.mjs';
 
@@ -94,10 +95,12 @@ export function validateAgentValue(all, get, check, rows) {
   fail(ancestry.delivery&&ancestry.receipts.some(r=>r.id===delivered.id)&&!delivered.imported&&delivered.event==='receive'&&delivered.q>0&&order.issuedAt&&!order.imported&&order.request===usage.request&&order.revision<=usage.revision&&usage.deliveryAt===delivered.at&&Date.parse(usage.at)>=Date.parse(delivered.at)&&usage.periodEnd>=ancestry.delivery.date,'usage_delivery');
   fail(attachment.kind === 'request' && attachment.record === usage.request && usage.attachmentVersion === revisions.get('attachment:'+attachment.id), 'usage_scope');
   const bytes = Buffer.from(attachment.base64,'base64'); let original;
-  try { original = JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)); } catch { fail(false,'usage_json'); }
-  fail(original && Array.isArray(original.seats) && original.seats.length <= 100000 && original.seats.every(s => nonempty(s.id) && s.id.length <= 200 && typeof s.active === 'boolean') && new Set(original.seats.map(s=>s.id)).size === original.seats.length, 'usage_seats');
-  fail(usage.sha256 === digest(bytes) && usage.originalLocation === '/api/purse/download/attachment/'+attachment.id && usage.activeRule === 'active-true' && usage.provenance === 'provider-reported, unverified', 'usage_original');
-  fail(usage.activeSeats === original.seats.filter(s=>s.active === true).length && usage.seatCount === original.seats.length && nonempty(usage.provider) && calendar(usage.periodStart) && calendar(usage.periodEnd) && usage.periodStart <= usage.periodEnd, 'usage_count');
+  const erased=erasedOriginal(all,attachment);
+  if(erased)fail(erasedSourceFact(all,'valueSeatImport',usage.id,usage),'usage_erasure_fact');
+  try { if(!erased)original = JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)); } catch { fail(false,'usage_json'); }
+  fail(erased || original && Array.isArray(original.seats) && original.seats.length <= 100000 && original.seats.every(s => nonempty(s.id) && s.id.length <= 200 && typeof s.active === 'boolean') && new Set(original.seats.map(s=>s.id)).size === original.seats.length, 'usage_seats');
+  fail(usage.sha256 === originalDigest(all,attachment) && usage.originalLocation === '/api/purse/download/attachment/'+attachment.id && usage.activeRule === 'active-true' && usage.provenance === 'provider-reported, unverified', 'usage_original');
+  fail((erased || usage.activeSeats === original.seats.filter(s=>s.active === true).length && usage.seatCount === original.seats.length) && nonempty(usage.provider) && calendar(usage.periodStart) && calendar(usage.periodEnd) && usage.periodStart <= usage.periodEnd, 'usage_count');
   fail(nonempty(usage.actor) && Number.isSafeInteger(usage.operatorVersion) && usage.operatorVersion > 0 && timestamp(usage.at) && audit('value-seat-import',a => a.record === usage.request && a.usage === usage.id && a.actor === usage.actor && a.attachment === attachment.id && a.sha256 === usage.sha256 && a.revision === usage.revision), 'usage_audit');
  }
  const snapshot = (input, references) => {
@@ -130,7 +133,7 @@ export function validateAgentValue(all, get, check, rows) {
    if (ref.kind === 'valuePolicy') fail(current.history.some(h=>h.version === ref.value.version && h.enabled === ref.value.enabled), 'source_policy_history');
   }
   const fingerprintInput = Object.fromEntries(['request','revision','requester','promise','sources','assessment','mode','model','provider'].map(k=>[k,input[k]]));
-  fail(input.fingerprint === digest(canonical(fingerprintInput)), 'fingerprint');
+  fail((input.fingerprint === digest(canonical(fingerprintInput)) || erasedSourceFact(all,'valueSnapshot',input.fingerprint,fingerprintInput)), 'fingerprint');
   const assessment = input.assessment;
   fail(assessment && assessment.kind === input.promise.kind && ['evidence','no-evidence'].includes(assessment.status) && (assessment.status !== 'no-evidence' || assessment.statement === 'no evidence yet'), 'assessment');
   validateAssessment(input,fail);

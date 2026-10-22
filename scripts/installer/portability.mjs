@@ -1,3 +1,4 @@
+import { validateErasureObjects } from './restore-erasure.mjs';
 import { migrateInvoiceArchive } from './migrate-invoice-archive.mjs';
 import { hasUnsafeProtectedContext } from '../../src/purse/protected-context-fields.mjs';
 import { validateSearchProjection } from './restore-search.mjs';
@@ -9,6 +10,7 @@ export default {
  exportRow(table,row) {
   if(table!=='p_records')return row;
   const value=JSON.parse(row.value);
+  if(row.kind==='erasureReceipt'&&value.phase!=='complete')throw new Error('Finish private original erasure before export');
   if(hasUnsafeProtectedContext(row.kind,value))throw new Error('Clean historical protected context before export');
   if(row.kind==='supplierMatchingKey')row.value=JSON.stringify({id:row.id,secret:null,notRestored:true});
   if(row.kind==='supplier'&&value.matching&&Object.keys(value.matching).length){value.matchingNotRestored=true;delete value.matching;row.value=JSON.stringify(value);}
@@ -20,14 +22,16 @@ export default {
  validateStaged: async ({ db, tables, read, manifest }) => {
   const rows = await migrateInvoiceArchive({rows:await read('p_records'),db,tables,manifest,check});
   validatePurchasingArchive(rows);
+  validateErasureObjects(rows,manifest,check);
   validateSearchProjection(rows, await read('p_search'), check);
-  for (const row of rows.filter(row => row.kind === 'rfqResponse')) for (const file of JSON.parse(row.value).files) if (file.key) {
+  for (const row of rows.filter(row => row.kind === 'rfqResponse')) for (const file of JSON.parse(row.value).files) if (file.key && !file.erasure) {
    const object = manifest.objects.find(object => object.bucket === 'ORIGINALS' && object.key === file.key);
    check(object && object.size === file.size && object.sha256 === file.sha256, 'rfq_original_inventory');
   }
   for (const row of rows.filter(row => ['emailIntake', 'apInvoiceEmail'].includes(row.kind))) {
    const intake = JSON.parse(row.value);
    for (const file of [intake.original, ...intake.files, ...(intake.embedded ?? [])]) {
+    if(file.erasure)continue;
     const object = manifest.objects.find(object => object.bucket === 'ORIGINALS' && object.key === file.key);
     check(object && object.size === file.size && object.sha256 === file.sha256, 'email_intake_original_inventory');
    }
