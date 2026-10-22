@@ -10,7 +10,8 @@ export async function nativeHttpProxy() {
   try {
    const headers=new Headers();
    for(let i=0;i<request.rawHeaders.length;i+=2)headers.append(request.rawHeaders[i],request.rawHeaders[i+1]);
-   const result=await worker.dispatchFetch(origin+request.url,{method:request.method,headers,redirect:'manual',
+   const url=new URL(request.url,'http://'+request.headers.host);
+   const result=await worker.dispatchFetch(url.href,{method:request.method,headers,redirect:'manual',
     ...(['GET','HEAD'].includes(request.method)?{}:{body:Readable.toWeb(request),duplex:'half'})});
    response.statusCode=result.status;
    for(const [key,value] of result.headers)if(key!=='set-cookie')response.setHeader(key,value);
