@@ -550,59 +550,114 @@ to a private unfinished draft.
 
 ## Native ordered approvals, corrections and dated budgets (partial clauses)
 
-The existing owner/scope-checked `policy` command accepts optional
+The owner or an administrator with the existing policy-management grant configures
 `approvalSteps:[{email,minMinor?,minAmount?,costCentre?,dependsOn?}]` (up to 20
-additional serial steps). `minMinor` is integer cents; `minAmount` is currency
-text, and the ordinary money parser requires agreement if both are supplied.
-The primary approver remains `approver`. Conditional steps apply when the
-request amount is at least their threshold and the department matches.
-`editRules` maps a purchase type or `*` to `{allowed:[field],material:[field]}`.
-The native editable header fields are `glAccount`, `costCentre`, `location`,
-`class`, `project`, `needDate`, `shipTo`, and `notes`; supplier and per-line
-corrections remain unbuilt. Defaults for material fields are GL account,
-department, project and supplier. Serial execution does not implement
-APPROVAL-001 pools, parallel steps, manager routing or channel approvals.
+additional serial steps). The primary remains `approver`. Conditions select steps
+by current total and department. `editRules` maps a purchase type or `*` to
+`{allowed:[field],material:[field]}`. Allowed fields are `glAccount`, `costCentre`,
+`location`, `class`, `project`, `needDate`, `shipTo`, `supplier` and `notes`.
+The default material fields are GL account, department, project and supplier.
+APPROVAL-001 retains pools, parallel steps, manager hierarchy and channels.
 
-`approver-edit` takes `{id,revision,changes:{field:value},reason}` from the
-current non-self step holder. It makes a new revision and records exact
-before/after values, carried decision links, renewed decisions and policy
-context. Scope applies to both the old and new record. Nonmaterial edits carry
-approvals only when the route stays identical; material dependencies renew
-affected steps. A department-policy change renews prior approvals, inserts its
-steps and moves the reservation atomically. Native current policy, membership,
-session and revision fences still apply. A prior revision or whole-policy
-snapshot outside the viewer's current scope is withheld. Earlier approvers do
-not acquire a new cross-department read grant; that visibility conflict awaits
-ct. Existing issued-order correction and supplier-change-order requirements
-remain open in APPROVAL-004 / PO-012 / PO-004.
+`approver-edit` takes `{id,revision,changes:{field:value,lines?:[{id,field:value}]},reason}`
+from the current non-self step holder. It creates an attributed exact revision,
+records differences and policy context, and carries or renews affected decisions.
+Quantity, price and line additions are refused. Current delegation and per-step
+SCIM custody still apply. Consistent active supplier changes are supported;
+differing line suppliers require the unbuilt supplier-group conversion path.
+Material coding moves release the old allocations and reserve the new ones in
+one transaction. Existing session, membership, scope and version fences apply.
 
-A policy may set `budgetPeriod:{from,through}` to an inclusive need-date period
-of at most one fiscal year and `costCentre` to its department. Explicit dates
-can represent a month, quarter or US fiscal year. A used policy cannot acquire, remove or relabel a period, and a used dated budget keeps its department; create a new policy for another period or department. Cross-department allocations are held until their budget mapping is built. Cross-policy/period amendment dispositions remain
-unbuilt and refuse. `overBudget:"block"|"owner"` selects refusal or an additional
-`budgetOwner` email's native approval. The owner route creates no over-budget
-reservation until that owner approves the exact revision, and its authority
-does not authorize a later buyer increase. Ordered policies reserve at submit;
-legacy single-approver policies keep their prior reservation timing.
+Per ct’s 22 October ruling, only edited-field before/after values reach the
+requester and every earlier approver across a lost read grant. They appear in
+`data.approvalEditNotice` without private record detail. This grants no new
+purchase read or decision authority. Private prior revisions and whole-policy
+snapshots remain withheld, including command responses, embedded value reports,
+and audit reads/exports. Material changes still renew the affected approvals.
 
-State exposes `data.periodBudgets` for visible complete policy scopes. If another purchase under that policy is outside the current read grant, the position is withheld, including its aggregate amounts; wider requester/approver aggregate visibility awaits ct. Reserved,
-committed, recorded actual and available use exact source requests, current
-issued POs and invoice/deposit evidence. Received but unbilled issued value
-remains committed. Recorded invoice evidence (including exceptions) consumes
-the approved face once; imported deposit evidence plus net deposit credits do
-not duplicate actual. This is financial exposure, separate from the existing
-physical outstanding-authority report. It does not claim matched or synced
-bills, payment or card settlement. Invoice identifiers in source rows retain
-the invoice-read gate. Allocation/custom-field budgets and provider/native
-deposit/card integrations remain BUDGET-001 gaps.
+A policy’s `budgetPeriod:{from,through}` selects inclusive request need dates
+for a month, quarter or fiscal year of at most 366 days. Its department/project
+allocations consume their corresponding dated policy budgets. A used period,
+department, project, category and currency cannot be relabelled; create another
+policy. Cross-period amendment dispositions remain unbuilt and refuse.
+`overBudget:"block"|"owner"` and `budgetOwner` select refusal or an independent
+budget-owner step for each allocation’s overage. Reservation waits for every
+required owner’s exact decision. A later increase requires new budget authority.
+Ordered policies reserve at submit; legacy single-approver timing is unchanged.
 
-Native `convert.conversionEdits` additionally accepts line `unit` and
-`partNumber`, and header `freightMinor` / `taxMinor`. `lines` may be empty for a
-header-only charge edit. Units and SKUs are recorded labels with no implicit
-quantity multiplier. Header charges participate in the request-total variance
-cap; these are not distinct charge lines. A changed supplied-tax total is
-apportioned by line value with largest-remainder cents. The separate attributed
-PO face, source revision, current caps and issuance proof restore together;
-approved request/decision history stays exact. PO-012 still requires the
-buyer-attributed request revision, supplier switches, automatic material
-amendment/over-budget routing, supplier change orders and Slack/Teams proof.
+`data.periodBudgets` and `/api/purse/spend-report` expose complete permitted
+amount, reserved, committed, recorded actual and available. Under ct’s ruling,
+hidden purchases are summed in an anonymous source row (`hidden:true`) labelled
+“Other purchases you cannot see,” with no identifiers or drill-through. No grant
+on a budget means no figures. Received-but-unbilled value remains committed;
+recorded invoices, imported deposit/net-credit evidence and approved travel
+reports consume exposure once. Invoice identifiers keep their invoice-read gate.
+This is not a claim of matched/synced bills, payment or card settlement.
+Location/GL/custom-field/combined budgets and native deposit/card integrations
+remain BUDGET-001 gaps.
+
+## Buyer conversion revisions
+
+`convert` accepts `{id,revision,issue?,conversionEdits?:{lines,charges?,supplier?,reason}}`.
+Each edited existing line may supply `unitMinor`, `quantity`, `unit`, `partNumber`
+and a consistent supplier. An active purchasable supplier is required; a pending
+supplier is refused. Units/SKUs are labels, never implicit multipliers. Charges
+are distinct `{kind:"freight"|"tax"|"other",description,amountMinor}` entries;
+existing header freight/tax inputs remain supported. Every configured buyer cap
+applies above each approved line and the total. Zero-limit increases refuse.
+Split amounts rescale with the remainder on the first allocation; supplied tax
+uses line-value largest-remainder allocation.
+
+A within-limit/current-route/in-budget edit writes a new exact buyer-attributed
+request revision and explicit carried decision links. Source revisions and
+original decisions never change. `issue:true` issues in the same transaction;
+the web edited-conversion form uses it. Omitting `issue` prepares the document
+for a separate `issue` call. Use the returned revision, not the source revision.
+An over-limit edit, changed threshold route or budget overage returns a pending
+request with `conversionRouted:true` and creates no PO. The exact current chain
+and every required budget owner must approve before conversion/issue resumes.
+The current issued face and earlier invoices govern remaining balances and risk.
+
+`need-date-edit` accepts `{id,revision,line?,needDate,reason}` from the approved
+requester or a scoped approver. It creates an exact nonmaterial revision and
+carries approvals. Issued documents retain their number and immutable earlier
+faces, with receiving custody carried. The result honestly records supplier
+change-order delivery as `not-sent` pending PO-004. Supplier groups, notification
+execution and Slack/Teams transports/qualification remain PO-012 gaps.
+
+## Travel pre-approvals and returned Coaster reports
+
+The private native travel routes also have `command/travel-*` equivalents:
+
+- `POST /api/purse/travel/per-diem`: `{destination:{city,state,country},departureDate,returnDate}`.
+- `POST /api/purse/travel/request`: ordinary `title,currency,location,costCentre,project`
+  plus `travel:{traveler,travelerEmail,purpose,origin,destinations,departureDate,returnDate,costs}`.
+  `costs` accepts currency-text `airfareAmount`, `lodgingAmount`,
+  `groundTransportAmount`, `mealsIncidentalsAmount`, `registrationAmount` and
+  `otherAmount` (or their integer `Minor` counterparts). Omitted meals use the
+  retained GSA Austin rate for supported dates; unknown destinations/years need
+  an explicit estimate. No supplier or purchase order is fabricated.
+- `POST /api/purse/travel/submit` and `/decision` use exact native request revisions
+  and existing ordered approval decisions. Final approval returns
+  `travel.approvalReference` for the booking tool and Coaster item custom field
+  `purse_reference`. Booking happens outside Purse.
+- `POST /api/purse/travel/amend`: the current `{id,revision,reason}` and full new
+  travel request fields. Date/estimate changes release old reservation authority
+  and need fresh approval; generic purchase/date-edit doors refuse travel.
+- `POST /api/purse/travel/expense-return`: `{id,revision,original,sourceUrl,confirmed:true,closed:true,reason}`.
+  `original` is the exact JSON from an authenticated local Coaster
+  `GET /api/coaster/claims/:id`, with its current frozen revision/items/decisions.
+  Every item must reference this approval; traveler, currency, totals and an
+  independent current approval must agree. The amount cannot exceed the approved
+  trip. `sourceUrl` is provenance, never automatically fetched. Purse parses the
+  supplied report and retains its bytes; it does not independently attest Coaster.
+
+Default ADOPTED pending ct: only the current native owner may review and confirm
+that source and explicitly close the final report. It moves reported spend to
+recorded actual, releases the remainder and links the request-scoped original.
+An exact replay cannot repeat either movement; conflicting or wrong-reference
+reports refuse. Archives preserve the financial/source links and custody audit,
+without restoring another principal’s authority. No automatic settlement or
+outbound booking/payment is performed. INTAKE-002/003, API-001 and IMPORT-001
+inherit these rules when adding travel doors; ERASURE-001 inherits the new
+traveler and original-report personal fields.
