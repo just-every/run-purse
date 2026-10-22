@@ -586,7 +586,7 @@ reservation until that owner approves the exact revision, and its authority
 does not authorize a later buyer increase. Ordered policies reserve at submit;
 legacy single-approver policies keep their prior reservation timing.
 
-State exposes `data.periodBudgets` for visible complete policy scopes. Reserved,
+State exposes `data.periodBudgets` for visible complete policy scopes. If another purchase under that policy is outside the current read grant, the position is withheld, including its aggregate amounts; wider requester/approver aggregate visibility awaits ct. Reserved,
 committed, recorded actual and available use exact source requests, current
 issued POs and invoice/deposit evidence. Received but unbilled issued value
 remains committed. Recorded invoice evidence (including exceptions) consumes

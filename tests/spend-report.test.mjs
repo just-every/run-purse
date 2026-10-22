@@ -61,5 +61,6 @@ test('BUDGET-001 dated department exposure reserves pending, commits buyer chang
  await cmd('decision',{id:poor.id,revision:1,decision:'approved',reason:'Budget owner explicitly approved overage'},budgetOwner);assert.equal((await position()).reservedMinor,100000);assert.equal((await position()).availableMinor,-6500);
  await cmd('convert',{id:poor.id,revision:1,conversionEdits:{lines:[],freightMinor:1,reason:'Additional charge needs budget review'}},buyer,409);
  const authorized=await cmd('convert',{id:poor.id,revision:1},buyer);await cmd('issue',{id:authorized.id,revision:1,reason:'Issue budget-owner-approved amount'},buyer);assert.equal((await position()).committedMinor,100000);assert.equal((await position()).reservedMinor,0);
+ const otherRequester=await h.member('synthetic-purse-2211@example.test',['requester']);const hidden=await cmd('request',{...input,title:'synthetic-purse-2212'},otherRequester);await cmd('submit',{id:hidden.id,revision:1},otherRequester);assert.ok(!(await h.state(requester)).data.periodBudgets.some(budget=>budget.id===p.id),'A policy with hidden purchases does not reveal aggregate financial positions under existing scope fences');
  const outside=await cmd('request',{...input,needDate:'2027-01-01'},requester);await cmd('submit',{id:outside.id,revision:1},requester,409);
 });
