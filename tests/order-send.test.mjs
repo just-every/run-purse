@@ -28,6 +28,8 @@ test('Explicit native buyer change send freezes exact numbered PDF and originals
     const cross=await fetch(link,{method:'POST',headers:{origin:'https://synthetic-purse-2822.test','content-type':'application/json'},body:'{}'});assert.equal(cross.status,403);
     const acknowledgments=await Promise.all([ack(h,link,2),ack(h,link,2)]);assert.deepEqual(acknowledgments.map(result=>result.status).sort(),[200,409]);
     const status=await h.send('/api/purse/order-send/'+f.order.id,undefined,f.requester);assert.equal(status.status,200);assert.equal(status.value.event.acknowledgment.revision,2);assert.equal(status.value.event.acknowledgment.identityVerified,false);
+    await h.command('order-chase-policy',{order:f.order.id,version:0,enabled:true,cadenceDays:1,maxChases:2,escalateTo:'synthetic-purse-2804@example.test'},f.buyer);
+    const acknowledgedTick=await h.mf.dispatchFetch(h.origin+'/cdn-cgi/local/scheduled?time='+(Date.parse(f.order.issuedAt)+2*86400000));assert.equal(acknowledgedTick.status,200);assert.equal((await h.state()).data.orderChaseEvent.filter(row=>row.order===f.order.id).length,0,'Current exact supplier acknowledgment stops acknowledgment-only chasing');
     assert.equal((await h.send('/api/purse/order-send/'+f.order.id,undefined,f.outsider)).status,403);assert.equal((await h.send('/api/purse/order-send/'+f.order.id,undefined,'')).status,401);
     assert.equal((await f.send()).status,409);assert.equal(h.messages.filter(mail=>mail.subject.startsWith('Change order ')).length,1);
     await h.command('supplier',{...f.supplier,name:'synthetic-purse-2823',address:'synthetic-purse-2824'});
