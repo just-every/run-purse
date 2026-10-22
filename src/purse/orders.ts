@@ -39,7 +39,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         let sequence = all(s, 'order').reduce((n, o) => Math.max(n, o.sequence || 0), 0) + 1;
         const occupied = new Set(all(s, 'order').map(order => order.number));
         while (occupied.has(`PO-${String(sequence).padStart(6, '0')}`)) sequence++;
-        const o = { id, sequence, documentProfile: poProfileSnapshot(s, r, a), ...(r.poDetails ? { poDetails: structuredClone(r.poDetails) } : {}), ...(r.entity ? { entity: r.entity } : {}), location: r.location, costCentre: r.costCentre, approvalActor:approval.actor,approvalVersion:approval.operatorVersion,...(approval.chainProofs ? {approvalProofs:approval.chainProofs} : {}), number: `PO-${String(sequence).padStart(6, '0')}`, request: r.id, policy:r.policy, revision: r.revision, supplier: r.supplier, supplierSnapshot: structuredClone(r.supplierSnapshot), currency: r.currency, lines: face.lines.map((l: Data) => ({ ...l, sourceLine: l.id })), freightMinor: r.freightMinor, taxMinor: r.taxMinor, totalMinor: face.totalMinor, terms: r.terms, needDate: r.needDate, status: 'prepared', generatedAt: new Date().toISOString(), issuedAt: null, ...(edit ? { conversionVariance: edit.variance } : {}) };
+        const o = { id, sequence, documentProfile: poProfileSnapshot(s, r, a), ...(r.poDetails ? { poDetails: structuredClone(r.poDetails) } : {}), ...(r.entity ? { entity: r.entity } : {}), location: r.location, costCentre: r.costCentre, approvalActor:approval.actor,approvalVersion:approval.operatorVersion,...(approval.chainProofs ? {approvalProofs:approval.chainProofs} : {}), number: `PO-${String(sequence).padStart(6, '0')}`, request: r.id, policy:r.policy, revision: r.revision, supplier: r.supplier, supplierSnapshot: structuredClone(r.supplierSnapshot), currency: r.currency, lines: face.lines.map((l: Data) => ({ ...l, sourceLine: l.id })), freightMinor: face.freightMinor, taxMinor: face.taxMinor, totalMinor: face.totalMinor, terms: r.terms, needDate: r.needDate, status: 'prepared', generatedAt: new Date().toISOString(), issuedAt: null, ...(edit ? { conversionVariance: edit.variance } : {}) };
         for (const field of ['intakeForm','intakeFormVersion','intakeFormSnapshot','answers','customFields']) if (r[field] !== undefined) (o as Data)[field] = structuredClone(r[field]);
         if (r.cancellation) (o as Data).cancellation = structuredClone(r.cancellation);
         if (r.adoptedDisposition) (o as Data).adoptedDisposition = structuredClone(r.adoptedDisposition);
@@ -60,7 +60,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         currentDecision(s, r);
         checkAdoptedDisposition(s, r);
         const conversionLimit = o.conversionVariance ? requireConversionSource(s, a, r, o) : undefined;
-        const issuedFace = o.conversionVariance ? { ...r, lines: o.lines, totalMinor: o.totalMinor } : r;
+        const issuedFace = o.conversionVariance ? { ...r, lines: o.lines, freightMinor:o.freightMinor,taxMinor:o.taxMinor,totalMinor: o.totalMinor } : r;
         if (o.conversionVariance) requireThat(policies(s, issuedFace).some(p => p.id === r.policy), 'Edited PO exceeds current approval policy; amend and renew approval', 409);
         requireBlanketValidity(s, o);
         if (r.amends) {

@@ -2,7 +2,7 @@ import { check, same, lineAmounts, purchasing } from './restore-validation.mjs';
 import { accessObject, accessShape, accessText, validateBuyerLimit } from './restore-access.mjs';
 
 const face = record => ({ lines: record.lines.map(({ sourceLine, ...line }) => line), freightMinor: record.freightMinor, taxMinor: record.taxMinor, totalMinor: record.totalMinor });
-const immutableLine = ({ quantity, q, unitMinor, totalMinor, allocations, ...line }) => ({...line,...(allocations ? {allocations:allocations.map(({amountMinor,...share})=>share)} : {})});
+const immutableLine = ({ quantity, q, unitMinor, totalMinor, unit, partNumber, lineTaxMinor, allocations, ...line }) => ({...line,...(allocations ? {allocations:allocations.map(({amountMinor,...share})=>share)} : {})});
 function percentage(before, after, limit = 0) {
     if (after <= before) return true;
     const [coefficient, exponent = '0'] = String(limit).split('e'), [whole, fraction = ''] = coefficient.split('.'), power = Number(exponent) - fraction.length;
@@ -28,8 +28,9 @@ export function validateConversionVariance(order, revision, all) {
     check([variance.before, variance.after].every(value => accessShape(value, ['lines','freightMinor','taxMinor','totalMinor'])), 'conversion_face');
     check(same(variance.before, face(revision)) && same(variance.after, face(order)) && !same(variance.before, variance.after), 'conversion_snapshot');
     lineAmounts(variance.before); lineAmounts(variance.after);
+    check(variance.after.lines.every(line=>accessText(line.unit)&&typeof line.partNumber==='string'&&line.partNumber.length<=200),'conversion_unit_sku');
     check(variance.before.lines.length === variance.after.lines.length && variance.before.lines.every((line, index) => same(immutableLine(line), immutableLine(variance.after.lines[index]))), 'conversion_line_identity');
-    check(same(purchasing({ ...order, lines: variance.before.lines, totalMinor: variance.before.totalMinor }), purchasing(revision)), 'conversion_purchase_identity');
+    check(same(purchasing({ ...order, lines: variance.before.lines, freightMinor:variance.before.freightMinor,taxMinor:variance.before.taxMinor,totalMinor: variance.before.totalMinor }), purchasing(revision)), 'conversion_purchase_identity');
     check(order.location === revision.location && order.costCentre === revision.costCentre && (order.entity ?? 'main') === (revision.entity ?? 'main'), 'conversion_scope_identity');
     limitProof(variance.limit, variance.before, variance.after);
     const audit = all('audit');

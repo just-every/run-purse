@@ -18,18 +18,31 @@ export function ConversionVariance({ request, limit, mutate }: { request: D; lim
             <Form label="Generate purchase order with conversion edits" onSubmit={async input => {
                 const lines = request.lines.flatMap((line: D) => {
                     const price = String(input['price:' + line.id] ?? '').trim(), quantity = String(input['quantity:' + line.id] ?? '').trim();
-                    return price || quantity ? [{ id: line.id, ...(price ? { unitMinor: unitMinor(price) } : {}), ...(quantity ? { quantity } : {}) }] : [];
+                    const unit=String(input['unit:'+line.id]??'').trim(),partNumber=String(input['part:'+line.id]??'').trim();
+                    return price || quantity || unit || partNumber ? [{ id: line.id,...(unit?{unit}:{}),...(partNumber?{partNumber}:{}), ...(price ? { unitMinor: unitMinor(price) } : {}), ...(quantity ? { quantity } : {}) }] : [];
                 });
-                return mutate('convert', { id: request.id, revision: request.revision, ...(lines.length ? { conversionEdits: { lines, reason: input.reason } } : {}) });
+                const costs=Object.fromEntries(['freightMinor','taxMinor'].filter(field=>String(input[field]??'').trim()).map(field=>[field,unitMinor(String(input[field]).trim())]));
+                return mutate('convert', { id: request.id, revision: request.revision, ...(lines.length || Object.keys(costs).length ? { conversionEdits: { lines, ...costs, reason: input.reason } } : {}) });
             }}>
                 {request.lines.map((line: D, index: number) => <fieldset className="wide" key={line.id} style={{ minWidth: 0 }}>
                     <legend>Line {index + 1}: {line.description}</legend>
                     <p>Approved quantity {line.quantity} {line.unit}; unit price {money(line.unitMinor, request.currency)}; line total {money(line.totalMinor, request.currency)}.</p>
                     <label className="field">Conversion unit price for line {index + 1}<input name={'price:' + line.id} inputMode="decimal" placeholder={amountText(line.unitMinor)} autoComplete="off"/></label>
                     <label className="field">Conversion quantity for line {index + 1}<input name={'quantity:' + line.id} inputMode="decimal" placeholder={line.quantity} autoComplete="off"/></label>
+                    <label className="field">Conversion unit of measure for line {index+1}<input name={'unit:'+line.id} placeholder={line.unit} maxLength={200}/></label>
+                    <label className="field">Conversion SKU for line {index+1}<input name={'part:'+line.id} placeholder={line.partNumber} maxLength={200}/></label>
                 </fieldset>)}
+                <label className="field">Conversion freight<input name="freightMinor" inputMode="decimal" placeholder={amountText(request.freightMinor)}/></label>
+                <label className="field">Conversion supplied tax<input name="taxMinor" inputMode="decimal" placeholder={amountText(request.taxMinor)}/></label>
                 <label className="field">Conversion edit reason<input name="reason" maxLength={2000} required/></label>
             </Form>
         </div>
     </details>;
+}
+
+export function ConversionHistory({request,orders}:{request:D;orders:D[]}) {
+ return <>{orders.filter(order=>order.request===request.id&&order.conversionVariance).map(order=>{
+  const edit=order.conversionVariance;
+  return <section key={order.id} aria-label={'Buyer conversion changes '+order.number}><h3>Buyer conversion changes · {order.number}</h3><p>{edit.email} · approved source revision {edit.sourceRevision} · {edit.reason}</p><p>Approved total {money(edit.before.totalMinor,order.currency)} → PO total {money(edit.after.totalMinor,order.currency)}. Price limit {edit.limit.unlimited?'Native owner authority':edit.limit.percent!==undefined?edit.limit.percent+'%':money(edit.limit.absoluteMinor??0,order.currency)}.</p>{edit.before.lines.map((before:D,index:number)=>{const after=edit.after.lines[index];return <p key={before.id}>{before.description}: quantity {before.quantity} → {after.quantity}; unit {before.unit} → {after.unit}; SKU {before.partNumber||'Not set'} → {after.partNumber||'Not set'}; unit price {money(before.unitMinor,order.currency)} → {money(after.unitMinor,order.currency)}.</p>;})}<p>Freight {money(edit.before.freightMinor,order.currency)} → {money(edit.after.freightMinor,order.currency)}; supplied tax {money(edit.before.taxMinor,order.currency)} → {money(edit.after.taxMinor,order.currency)}.</p></section>;
+ })}</>;
 }

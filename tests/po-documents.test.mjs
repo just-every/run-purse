@@ -86,3 +86,29 @@ test('PO-009 real HTTP PDF/HTML carry location profiles, frozen identity, line s
  assert.ok(conversionAudit.some(event=>event.action==='issue'&&event.conversionLimit.percent===10));
  const conversionCsv=await h.send('/api/purse/audit.csv?subject='+percentOrder.id,undefined,h.owner);assert.equal(conversionCsv.status,200);assert.ok(conversionCsv.value.includes('buyer-conversion-edit'));assert.ok(conversionCsv.value.includes('104000'));
 });
+
+test('PO-012 native freight, tax, unit and SKU conversion keeps current limits, exact documents and one commitment',async t=>{
+ const h=await harness();t.after(()=>h.close());const cmd=h.command;
+ await cmd('business',{name:'synthetic-purse-2001',currencies:['USD'],locations:['Austin'],costCentres:['Operations'],projects:['General']});
+ const requester=await h.member('synthetic-purse-2002@example.test',['requester']),approver=await h.member('synthetic-purse-2003@example.test',['approver']),buyer=await h.member('synthetic-purse-2004@example.test',['buyer']);
+ const supplier=await cmd('supplier',{name:'synthetic-purse-2005',status:'preferred',reason:'Reviewed source'});
+ await cmd('policy',{name:'synthetic-purse-2006',currency:'USD',category:'*',project:'*',approver:'synthetic-purse-2003@example.test',limitMinor:1000000,budgetMinor:10000000});
+ await cmd('buyer-role-limit',{role:'buyer',entity:'main',limits:{percent:10,quantityPercent:0}});
+ const create=async()=>{const r=await cmd('request',{title:'synthetic-purse-2007',supplier:supplier.id,currency:'USD',needDate:'2026-11-01',location:'Austin',costCentre:'Operations',terms:'Net 30',lines:[{description:'synthetic-purse-2008',quantity:'1',unitMinor:100000,category:'goods',project:'General'}]},requester);await cmd('submit',{id:r.id,revision:1},requester);await cmd('decision',{id:r.id,revision:1,decision:'approved',reason:'Reviewed source'},approver);return r;};
+ const r=await create(),before=(await h.state()).data;
+ const o=await cmd('convert',{id:r.id,revision:1,conversionEdits:{lines:[{id:r.lines[0].id,unitMinor:104000,unit:'box',partNumber:'synthetic-purse-2009'}],freightMinor:2500,reason:'Supplier confirmed unit, SKU and freight'}},buyer);
+ assert.equal(o.totalMinor,106500);assert.equal(o.freightMinor,2500);assert.equal(o.lines[0].unit,'box');assert.equal(o.lines[0].partNumber,'synthetic-purse-2009');
+ const state=(await h.state()).data;for(const kind of ['request','revision','decision'])assert.deepEqual(state[kind],before[kind],'Approved '+kind+' history stays exact');
+ const balance=async()=>(await h.state()).data.commitment.filter(e=>e.request===r.id).reduce((n,e)=>n+e.amountMinor,0);
+ assert.equal(await balance(),100000);await cmd('issue',{id:o.id,revision:1,reason:'Issue edited face'},buyer);assert.equal(await balance(),106500);await cmd('issue',{id:o.id,revision:1,reason:'Repeat'},buyer,409);assert.equal(await balance(),106500);
+ const html=await h.send('/api/purse/download/order/'+o.id,undefined,requester);assert.equal(html.status,200);assert.ok(html.value.includes('synthetic-purse-2009'));assert.ok(html.value.includes('1065.00'));
+ const pdf=await h.mf.dispatchFetch(h.origin+'/api/purse/order-pdf/'+o.id,{headers:{cookie:buyer}});assert.equal(pdf.status,200);assert.ok((await pdfContent(new Uint8Array(await pdf.arrayBuffer()))).text.includes('USD 1065.00'));
+ const firstBill=await cmd('invoice',{order:o.id,reference:'synthetic-purse-2012',source:'Reviewed evidence',allocations:[{line:o.lines[0].id,quantity:'0.4',amountMinor:50000}]},buyer);assert.equal(firstBill.balance.faceMinor,106500);
+ const remainingBill=await cmd('invoice',{order:o.id,reference:'synthetic-purse-2013',source:'Reviewed evidence',allocations:[{line:o.lines[0].id,quantity:'0.6',amountMinor:56500}]},buyer);assert.equal(remainingBill.balance.remainingMinor,56500);assert.ok(!remainingBill.flags.some(flag=>flag.code==='po-balance'));
+ const excess=await cmd('invoice',{order:o.id,reference:'synthetic-purse-2014',source:'Reviewed evidence',allocations:[{line:o.lines[0].id,quantity:'0.001',amountMinor:1}]},buyer);assert.ok(excess.flags.some(flag=>flag.code==='po-balance'));
+ const tax=await create(),taxOrder=await cmd('convert',{id:tax.id,revision:1,conversionEdits:{lines:[],taxMinor:6000,reason:'Supplier supplied tax'}},buyer);assert.equal(taxOrder.totalMinor,106000);assert.equal(taxOrder.lines[0].lineTaxMinor,6000);
+ const zero=await create();await cmd('member',{email:'synthetic-purse-2004@example.test',name:'synthetic-purse-2010',active:true,grants:[{role:'buyer',scope:{},limits:{absoluteMinor:0,percent:0,quantityPercent:0}}]});const unchanged=(await h.state()).data;
+ await cmd('convert',{id:zero.id,revision:1,conversionEdits:{lines:[],freightMinor:1,reason:'Charge increase denied'}},buyer,409);assert.deepEqual((await h.state()).data,unchanged);
+ const decreased=await cmd('convert',{id:zero.id,revision:1,conversionEdits:{lines:[{id:zero.lines[0].id,unitMinor:99000,partNumber:'synthetic-purse-2011'}],reason:'Supplier reduction'}},buyer);assert.equal(decreased.totalMinor,99000);
+ const audit=await h.send('/api/purse/audit.csv?subject='+o.id,undefined,h.owner);assert.equal(audit.status,200);for(const value of ['buyer-conversion-edit','106500','freightMinor','synthetic-purse-2009'])assert.ok(audit.value.includes(value),value);
+});

@@ -1,3 +1,4 @@
+import { allocateLineTax } from './po-line-tax';
 import { splitValues } from './intake-fields';
 import { buyerLimits, type BuyerLimit } from './access';
 import { extended, minor, quantity, requireThat, text, type Actor, type Data, type State } from './types';
@@ -32,12 +33,12 @@ export function conversionEdits(s: State, a: Actor, request: Data, input: unknow
     if (input === undefined) return;
     requireThat(input && typeof input === 'object' && !Array.isArray(input), 'Conversion edits must be an object');
     const edits = input as Data;
-    requireThat(Object.keys(edits).every(field => ['lines', 'reason'].includes(field)) && Array.isArray(edits.lines) && edits.lines.length > 0 && edits.lines.length <= request.lines.length, 'Provide edits for existing approved lines only');
+    requireThat(Object.keys(edits).every(field => ['lines', 'freightMinor', 'taxMinor', 'reason'].includes(field)) && Array.isArray(edits.lines) && edits.lines.length <= request.lines.length, 'Provide edits for existing approved lines only');
     const byId = new Map<string, Data>();
     for (const edit of edits.lines) {
-        requireThat(edit && typeof edit === 'object' && !Array.isArray(edit) && Object.keys(edit).every(field => ['id', 'unitMinor', 'quantity'].includes(field)), 'Only approved line prices and quantities can change at conversion');
+        requireThat(edit && typeof edit === 'object' && !Array.isArray(edit) && Object.keys(edit).every(field => ['id', 'unitMinor', 'quantity', 'unit', 'partNumber'].includes(field)), 'Only approved line prices and quantities can change at conversion');
         requireThat(typeof edit.id === 'string' && !byId.has(edit.id) && request.lines.some((line: Data) => line.id === edit.id), 'Conversion line is duplicate or outside the approved request');
-        requireThat(Object.hasOwn(edit, 'unitMinor') || Object.hasOwn(edit, 'quantity'), 'Provide a conversion price or quantity');
+        requireThat(['unitMinor','quantity','unit','partNumber'].some(field=>Object.hasOwn(edit,field)), 'Provide a conversion price, quantity, unit or SKU');
         byId.set(edit.id, edit);
     }
     const before = conversionFace(request), after = conversionFace(request);
@@ -47,8 +48,10 @@ export function conversionEdits(s: State, a: Actor, request: Data, input: unknow
         const unitMinor = Object.hasOwn(edit, 'unitMinor') ? minor(edit.unitMinor, 'Conversion unit price') : line.unitMinor;
         const q = Object.hasOwn(edit, 'quantity') ? quantity(edit.quantity) : line.q;
         requireThat(q >= (line.carriedAccepted ?? 0) + (line.carriedCancelled ?? 0), 'Conversion cannot remove received or cancelled quantities', 409);
-        return { ...line, quantity: q === line.q ? line.quantity : edit.quantity, q, unitMinor, totalMinor: extended(q, unitMinor), ...(line.allocations ? {allocations: splitValues(s,line.allocations,extended(q,unitMinor))} : {}) };
+        return { ...line, ...(Object.hasOwn(edit,'unit')?{unit:text(edit.unit,'Conversion unit of measure',200)}:{}), ...(Object.hasOwn(edit,'partNumber')?{partNumber:text(edit.partNumber,'Conversion SKU',200)}:{}), quantity: q === line.q ? line.quantity : edit.quantity, q, unitMinor, totalMinor: extended(q, unitMinor), ...(line.allocations ? {allocations: splitValues(s,line.allocations,extended(q,unitMinor))} : {}) };
     });
+    for(const field of ['freightMinor','taxMinor'] as const)if(Object.hasOwn(edits,field))after[field]=minor(edits[field],field);
+    if(after.taxMinor!==before.taxMinor){for(const line of after.lines)line.lineTaxMinor=null;allocateLineTax(after.lines,after.taxMinor);}
     after.totalMinor = minor(after.lines.reduce((total: number, line: Data) => total + line.totalMinor, 0) + after.freightMinor + after.taxMinor, 'Conversion total');
     if (JSON.stringify(before) === JSON.stringify(after)) return;
     const limit = currentConversionLimit(s, a, request, after);
