@@ -1,3 +1,4 @@
+import type { TargetEffect } from '../modules/import-kit/src/types';
 import { importedInvoice, importedDeposit } from './import-invoice';
 import { matchingInputs } from './supplier-identity';
 import { sensitiveSupplierColumns, redactSupplierCsv } from './supplier-csv-custody';
@@ -96,7 +97,7 @@ export function mappedSource(s: State, b: Data) {
         if (kind === 'deposit') value = importedDeposit(r, col, money, ref, value);
         values.set(`${kind}:${sourceId}`, value);
     }
-    const extras = new Map<string, Data[]>();
+    const extras = new Map<string, TargetEffect[]>();
     for (const value of values.values()) {
         if (value.lines) {
             const counterparty = [...values.values()].find(v => v.id === value.supplier) ?? s.get('supplier:' + value.supplier)?.value;

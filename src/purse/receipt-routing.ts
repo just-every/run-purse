@@ -39,7 +39,7 @@ export function receiptRouting(s: State, a: Actor, op: string, b: Data): Data | 
     requireThat(b.version === (previous?.version ?? 0), 'Receiver assignment changed; reload', 409);
     const order = b.order ? get(s, 'order', b.order) : undefined;
     if (op === 'reassign-receipt') {
-        requireThat(['issued','adopted'].includes(order?.status) && mayReceive(s,a,order), 'Only the current receiver may reassign this PO', 403);
+        requireThat(order && ['issued','adopted'].includes(order.status) && mayReceive(s,a,order), 'Only the current receiver may reassign this PO', 403);
         requirePermission(s,a,'receive',order);
     } else if (order) requirePermission(s,a,'procurement.manage',order);
     else requireThat(unrestrictedProcurement(s,a), 'Unrestricted procurement permission required for receiver rules',403);
