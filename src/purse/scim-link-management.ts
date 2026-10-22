@@ -34,7 +34,7 @@ export function reassignScimApproval(state: State, a: Actor, b: Data, operators:
     requireThat(request.status === 'pending' && prior?.held, 'This request is not awaiting reassignment', 409);
     const recipient = operators.find(o => o.id === b.operator);
     requireThat(recipient && recipient.status === 'active' && recipient.id !== request.requester && recipient.email !== request.requesterEmail && allowed(state, nativeActor(recipient), 'request.approve', request), 'Choose a current scoped non-self approver', 409);
-    const id = uid(), transfer = { request: request.id, requestRevision: request.revision, policy: request.policy, policyVersion: prior.policyVersion, from: prior.to, to: recipient.email, operator: recipient.id, operatorVersion: recipient.version, sequence: prior.sequence + 1, source: prior.source, at: new Date().toISOString(), reassignedBy: a.id };
+    const id = uid(), transfer = { ...(prior.chainStep?{chainStep:prior.chainStep}:{}), request: request.id, requestRevision: request.revision, policy: request.policy, policyVersion: prior.policyVersion, from: prior.to, to: recipient.email, operator: recipient.id, operatorVersion: recipient.version, sequence: prior.sequence + 1, source: prior.source, at: new Date().toISOString(), reassignedBy: a.id };
     put(state, 'scimApprovalTransfer', id, transfer);
     audit(state, a, 'scim-approval-transfer', request.id, { transfer: id, ...transfer });
     return recipient;

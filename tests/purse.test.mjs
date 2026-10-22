@@ -194,9 +194,9 @@ test('APPROVAL-004 exact pending header edits carry or renew chain approvals and
  const finance=await h.member('synthetic-purse-finance@example.test',['approver']);
  const owner=await h.member('synthetic-purse-budget@example.test',['approver']);
  const supplier=await cmd('supplier',{name:'synthetic-purse-2',status:'preferred',reason:'synthetic-purse-3'});
- const workflow={approvalSteps:[{email:'synthetic-purse-finance@example.test',minMinor:200000}],editRules:{'*':{allowed:['class','needDate','costCentre'],material:['costCentre']}}};
- const policy=await cmd('policy',{...workflow,name:'synthetic-purse-4',currency:'USD',category:'*',project:'*',costCentre:'Operations',limitMinor:1000000,budgetMinor:1000000,approver:'synthetic-purse-manager@example.test'});
- const research=await cmd('policy',{...workflow,name:'synthetic-purse-5',currency:'USD',category:'*',project:'*',costCentre:'Research',limitMinor:1000000,budgetMinor:1000000,approver:'synthetic-purse-manager@example.test',approvalSteps:[{email:'synthetic-purse-finance@example.test'},{email:'synthetic-purse-budget@example.test'}]});
+ const workflow={approvalSteps:[{email:'synthetic-purse-finance@example.test',minMinor:200000}],editRules:{'*':{allowed:['class','needDate','costCentre','supplier','glAccount','location','project','shipTo','notes'],material:['costCentre','supplier','glAccount']}}};
+ const policy=await cmd('policy',{...workflow,name:'synthetic-purse-4',currency:'USD',category:'*',project:'*',costCentre:'Operations',limitMinor:1000000,budgetMinor:10000000,approver:'synthetic-purse-manager@example.test'});
+ const research=await cmd('policy',{...workflow,name:'synthetic-purse-5',currency:'USD',category:'*',project:'*',costCentre:'Research',limitMinor:1000000,budgetMinor:10000000,approver:'synthetic-purse-manager@example.test',approvalSteps:[{email:'synthetic-purse-finance@example.test'},{email:'synthetic-purse-budget@example.test'}]});
  const input={title:'synthetic-purse-6',supplier:supplier.id,currency:'USD',needDate:'2026-11-01',location:'Austin',costCentre:'Operations',terms:'synthetic-purse-7',lines:[{description:'synthetic-purse-8',quantity:'1',unitMinor:400000,category:'goods',project:'General'}]};
  const create=async()=>{const r=await cmd('request',input,requester);await cmd('submit',{id:r.id,revision:r.revision},requester);return r};
  const decide=(r,cookie)=>cmd('decision',{id:r.id,revision:r.revision,decision:'approved',reason:'synthetic-purse-9'},cookie);
@@ -222,7 +222,61 @@ test('APPROVAL-004 exact pending header edits carry or renew chain approvals and
  const scopedAudit=await h.send('/api/purse/audit?subject='+second.id,undefined,researchAuditor);assert.equal(scopedAudit.status,200);assert.ok(!scopedAudit.value.events.some(event=>event.action==='approver-edit'));
  const audit=await h.send('/api/purse/audit?subject='+r.id,undefined,h.owner);assert.equal(audit.status,200);assert.ok(audit.value.events.some(e=>e.action==='approver-edit'&&e.revision===2&&e.carried.length===1&&e.differences.some(d=>d.field==='class'&&d.after==='Equipment')));
  const csv=await h.send('/api/purse/audit.csv?subject='+second.id,undefined,h.owner);assert.equal(csv.status,200);assert.ok(csv.value.includes('approver-edit'));assert.ok(csv.value.includes('Research'));
+ // Supplier eligibility, exact line coding and material dependencies use the same public command.
+ const alternate=await cmd('supplier',{name:'synthetic-purse-20',status:'active',reason:'synthetic-purse-21'});
+ const blocked=await cmd('supplier',{name:'synthetic-purse-22',status:'blocked',reason:'synthetic-purse-23'});
+ const coding=await create();await decide(coding,manager);
+ const line=coding.lines[0], baseline=(await h.state()).data;
+ await cmd('approver-edit',{id:coding.id,revision:1,changes:{supplier:blocked.id},reason:'synthetic-purse-24'},finance,409);
+ await cmd('approver-edit',{id:coding.id,revision:1,changes:{lines:[{id:line.id,supplier:alternate.id}]},reason:'synthetic-purse-48'},finance,409);
+ for(const change of [{lines:[{id:line.id,quantity:'2'}]},{lines:[{id:line.id,unitMinor:2}]},{lines:[{id:'synthetic-purse-25',class:'Other'}]},{lines:[{id:line.id,class:'Other'},{id:line.id,class:'Again'}]}])await cmd('approver-edit',{id:coding.id,revision:1,changes:change,reason:'synthetic-purse-26'},finance,change.lines.length===2?400:403);
+ assert.deepEqual((await h.state()).data,baseline,'Refused supplier and supply edits make no writes');
+ const corrected=await cmd('approver-edit',{id:coding.id,revision:1,changes:{supplier:alternate.id,lines:[{id:line.id,supplier:alternate.id,costCentre:'Operations',class:'synthetic-purse-27',glAccount:'synthetic-purse-28',location:'Austin',project:'General',needDate:'2026-11-06',shipTo:'synthetic-purse-29',notes:'synthetic-purse-30'}]},reason:'synthetic-purse-31'},finance);
+ assert.equal(corrected.supplierSnapshot.id,alternate.id);assert.equal(corrected.lines[0].glAccount,'synthetic-purse-28');assert.equal(corrected.totalMinor,400000);assert.equal(corrected.lines[0].quantity,'1');assert.equal(corrected.approverEdit.renewed.length,1);assert.equal(corrected.approverEdit.carried.length,0);
+ const codingAudit=await h.send('/api/purse/audit?subject='+coding.id,undefined,h.owner);assert.ok(codingAudit.value.events.some(e=>e.action==='approver-edit'&&e.differences.some(d=>d.line===line.id&&d.codingField==='glAccount'&&d.before===null&&d.after==='synthetic-purse-28')&&e.policy.id===policy.id));
+ const codingCsv=await h.send('/api/purse/audit.csv?subject='+coding.id,undefined,h.owner);assert.ok(codingCsv.value.includes('synthetic-purse-28'));
+ await decide(corrected,manager);await decide(corrected,finance);
+ const codedOrder=await cmd('convert',{id:coding.id,revision:2});assert.equal(codedOrder.supplier,alternate.id);assert.equal(codedOrder.lines[0].glAccount,'synthetic-purse-28');
+ // A configured non-material GL correction carries the earlier approval.
+ await cmd('policy',{...policy,editRules:{'*':{...workflow.editRules['*'],material:['costCentre','supplier']}}});
+ const configured=await create();await decide(configured,manager);
+ const carriedCoding=await cmd('approver-edit',{id:configured.id,revision:1,changes:{lines:[{id:configured.lines[0].id,glAccount:'synthetic-purse-32'}]},reason:'synthetic-purse-33'},finance);assert.equal(carriedCoding.approverEdit.carried.length,1);await decide(carriedCoding,finance);
+ // Ordered primary steps use the existing delegated authority and revoke it at issuance.
+ const delegate=await h.member('synthetic-purse-34@example.test',['approver']);
+ const delegation=await cmd('delegation',{policy:policy.id,delegate:'synthetic-purse-34@example.test',expires:new Date(Date.now()+86400000).toISOString(),reason:'synthetic-purse-35'},manager);
+ const delegated=await create();await decide(delegated,delegate);
+ const carriedDelegation=await cmd('approver-edit',{id:delegated.id,revision:1,changes:{class:'synthetic-purse-36'},reason:'synthetic-purse-37'},finance);assert.equal(carriedDelegation.approverEdit.carried.length,1);await decide(carriedDelegation,finance);
+ const delegatedOrder=await cmd('convert',{id:delegated.id,revision:2});await cmd('revoke-delegation',{id:delegation.id},manager);await cmd('issue',{id:delegatedOrder.id,revision:2,reason:'synthetic-purse-38'},h.owner,409);
+ // Enabling corrections on an otherwise single-step policy opens the same exact-revision editor.
+ await cmd('policy',{...workflow,approvalSteps:undefined,name:'synthetic-purse-49',currency:'USD',category:'single',project:'*',limitMinor:500000,budgetMinor:1000000,approver:'synthetic-purse-manager@example.test'});
+ const single=await cmd('request',{...input,lines:input.lines.map(l=>({...l,category:'single'}))},requester);await cmd('submit',{id:single.id,revision:1},requester);
+ const singleEdit=await cmd('approver-edit',{id:single.id,revision:1,changes:{notes:'synthetic-purse-50',shipTo:'synthetic-purse-51'},reason:'synthetic-purse-52'},manager);assert.equal(singleEdit.approvalRoute.length,1);await decide(singleEdit,manager);
+ const singleOrder=await cmd('convert',{id:single.id,revision:2});assert.equal(singleOrder.poDetails.notes,'synthetic-purse-50');assert.equal(singleOrder.lines[0].shipTo,'synthetic-purse-51');
+ const singleDocument=await h.send('/api/purse/download/order/'+singleOrder.id,undefined,h.owner);assert.equal(singleDocument.status,200);assert.ok(singleDocument.value.includes('synthetic-purse-50'));assert.ok(singleDocument.value.includes('synthetic-purse-51'));
+ // Real provisioning transfers the exact current ordered step, and a correction keeps its recipient.
+ assert.equal((await h.send('/auth/step-up',{action:'export'},h.owner)).status,202);
+ const proofMail=[...h.messages].reverse().find(m=>m.to.includes('owner@example.test')),proofToken=new URL(proofMail.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0]).searchParams.get('token');assert.equal((await h.send('/auth/confirm',{token:proofToken},h.owner)).status,303);
+ const settings=async body=>{const current=await h.send('/api/purse/scim',undefined,h.owner),response=await h.send('/api/purse/scim',{...body,revision:current.value.revision},h.owner);assert.equal(response.status,200,JSON.stringify(response.value));return response.value;};
+ await settings({action:'configure',issuer:'https://synthetic-purse-40.example.test',enabled:true,mappings:[{department:'Operations',grants:[{role:'approver',scope:{departments:['Operations']}}]}],consent:true});
+ const credential=await settings({action:'create-token'}),scim=async(method,path,body)=>{const response=await h.mf.dispatchFetch(h.origin+'/scim/v2'+path,{method,headers:{authorization:'Bearer '+credential.token,'content-type':'application/scim+json'},body:JSON.stringify(body)});const value=await response.json();assert.equal(response.status,method==='POST'?201:200,JSON.stringify(value));return value;};
+ const enterprise='urn:ietf:params:scim:schemas:extension:enterprise:2.0:User';
+ const departed=await scim('POST','/Users',{schemas:['urn:ietf:params:scim:schemas:core:2.0:User',enterprise],externalId:'synthetic-purse-41',userName:'synthetic-purse-41@example.test',displayName:'synthetic-purse-41',active:true,[enterprise]:{department:'Operations'}});
+ await cmd('policy',{...workflow,name:'synthetic-purse-42',currency:'USD',category:'scim',project:'*',limitMinor:500000,budgetMinor:10000000,approver:'synthetic-purse-manager@example.test',approvalSteps:[{email:departed.userName},{email:'synthetic-purse-finance@example.test'}]});
+ const transferred=await cmd('request',{...input,lines:input.lines.map(l=>({...l,category:'scim'}))},requester);await cmd('submit',{id:transferred.id,revision:1},requester);await decide(transferred,manager);
+ const queuedTransfer=await cmd('request',{...input,lines:input.lines.map(l=>({...l,category:'scim'}))},requester);await cmd('submit',{id:queuedTransfer.id,revision:1},requester);
+ await scim('PATCH','/Users/'+departed.id,{schemas:['urn:ietf:params:scim:api:messages:2.0:PatchOp'],Operations:[{op:'replace',path:'active',value:false}]});
+ assert.equal((await h.state()).data.request.find(r=>r.id===queuedTransfer.id).approvalHolder,'synthetic-purse-manager@example.test');await decide(queuedTransfer,manager);assert.equal((await h.state()).data.request.find(r=>r.id===queuedTransfer.id).approvalHolder,'owner@example.test','A future ordered step transfers before the chain reaches it');
+ const transferView=(await h.state()).data.request.find(r=>r.id===transferred.id);assert.equal(transferView.approvalHolder,'owner@example.test');assert.equal(transferView.mayApprove,true);
+ const transferredEdit=await cmd('approver-edit',{id:transferred.id,revision:1,changes:{class:'synthetic-purse-43'},reason:'synthetic-purse-44'});assert.equal(transferredEdit.approverEdit.carried.length,1);await decide(transferredEdit,h.owner);
+ const afterTransfer=await cmd('approver-edit',{id:transferred.id,revision:2,changes:{needDate:'2026-11-07'},reason:'synthetic-purse-47'},finance);assert.equal(afterTransfer.approverEdit.carried.length,2);await decide(afterTransfer,finance);
+ const transferredOrder=await cmd('convert',{id:transferred.id,revision:3});await cmd('issue',{id:transferredOrder.id,revision:3,reason:'synthetic-purse-45'});
+ const transferAudit=await h.send('/api/purse/audit?subject='+transferred.id,undefined,h.owner);assert.ok(transferAudit.value.events.some(e=>e.action==='scim-approval-transfer'&&e.chainStep==='step-0'&&e.requestRevision===2&&e.carriedFrom));
  const self=await h.member('synthetic-purse-self@example.test',['requester','approver']);await cmd('policy',{...workflow,name:'synthetic-purse-16',currency:'USD',category:'self',project:'*',limitMinor:500000,budgetMinor:500000,approver:'synthetic-purse-self@example.test'});
  const selfRequest=await cmd('request',{...input,lines:input.lines.map(l=>({...l,category:'self'}))},self);await cmd('submit',{id:selfRequest.id,revision:1},self);
  await cmd('approver-edit',{id:selfRequest.id,revision:1,changes:{class:'Forbidden'},reason:'synthetic-purse-17'},self,403);
+ const {createPortability}=await import('@runeditrun/rer/modules/portability'),{exportArchive,importArchive}=await import('@runeditrun/rer/internal/modules/portability/files.mjs'),{default:portability}=await import('../scripts/installer/portability.mjs');
+ const archive=h.dir+'/synthetic-purse-46.rer';await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
+ const restored=await harness();t.after(()=>restored.close());await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
+ for(const kind of ['request','revision','decision','scimApprovalTransfer']){const records=async db=>(await db.prepare('SELECT * FROM p_records WHERE kind=? ORDER BY id').bind(kind).all()).results;assert.deepEqual(await records(restored.db),await records(h.db),kind+' exact edited history survives a real archive');}
+
 });

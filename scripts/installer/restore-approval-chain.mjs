@@ -2,26 +2,28 @@
 export function validateApprovalChains(all,get,check,same) {
  for(const policy of all('policy'))if(policy.budgetPeriod){const {from,through}=policy.budgetPeriod;check([from,through].every(value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value)&&from<=through&&Date.parse(through)-Date.parse(from)<367*86400000,'budget_period');}
  const fields=['glAccount','costCentre','location','class','project','needDate','shipTo','supplier','notes'];
+ for(const policy of all('policy'))if(policy.editRules)for(const rule of Object.values(policy.editRules))check(rule&&['allowed','material'].every(key=>Array.isArray(rule[key])&&rule[key].every(field=>fields.includes(field))),'approver_edit_rule');
  for(const policy of all('policy'))if(policy.approvalSteps) {
   check(Array.isArray(policy.approvalSteps)&&policy.approvalSteps.length<=20,'approval_steps');
   for(const step of policy.approvalSteps)check(typeof step.id==='string'&&typeof step.email==='string'&&step.email.includes('@')&&Number.isSafeInteger(step.minMinor)&&step.minMinor>=0&&Array.isArray(step.dependsOn)&&step.dependsOn.every(field=>fields.includes(field)),'approval_step_shape');
  }
  for(const request of [...all('request'),...all('revision')])if(request.approvalRoute) {
-  check(Array.isArray(request.approvalRoute)&&request.approvalRoute.length>0&&request.approvalRoute.length<=21&&new Set(request.approvalRoute.map(step=>step.id)).size===request.approvalRoute.length&&typeof request.approvalPolicyVersion==='string','approval_route');
+  check(Array.isArray(request.approvalRoute)&&request.approvalRoute.length>0&&request.approvalRoute.length<=121&&new Set(request.approvalRoute.map(step=>step.id)).size===request.approvalRoute.length&&typeof request.approvalPolicyVersion==='string','approval_route');
   for(const step of request.approvalRoute)check(typeof step.email==='string'&&step.email.includes('@')&&Array.isArray(step.dependsOn)&&step.dependsOn.every(field=>fields.includes(field)),'approval_route_step');
   if(!request.request){const revision=get('revision',request.id+':'+request.revision);check(same(request.approvalRoute,revision.approvalRoute)&&request.approvalPolicyVersion===revision.approvalPolicyVersion,'approval_route_revision');}
-  if(request.approverEdit) {
+  if(request.approverEdit && (request.approverEdit.toRevision??request.approverEdit.fromRevision+1)===request.revision) {
    const edit=request.approverEdit,previous=get('revision',(request.request??request.id)+':'+edit.fromRevision);
    check(Number.isSafeInteger(edit.fromRevision)&&edit.fromRevision<request.revision&&edit.actor!==request.requester&&edit.email!==request.requesterEmail&&typeof edit.reason==='string'&&edit.reason.trim()&&Number.isFinite(Date.parse(edit.at)),'approver_edit_actor');
-   check(Array.isArray(edit.differences)&&edit.differences.length&&new Set(edit.differences.map(d=>d.field)).size===edit.differences.length&&edit.differences.every(d=>fields.includes(d.field)&&edit.rule.allowed.includes(d.field)&&same(d.before,previous[d.field]??null)&&same(d.after,request[d.field])),'approver_edit_difference');
+   check(Array.isArray(edit.differences)&&edit.differences.length&&new Set(edit.differences.map(d=>d.field)).size===edit.differences.length&&edit.differences.every(d=>{const field=d.codingField??d.field,before=d.line?previous.lines.find(line=>line.id===d.line):previous,after=d.line?request.lines.find(line=>line.id===d.line):request;return fields.includes(field)&&edit.rule.allowed.includes(field)&&before&&after&&(!d.line||d.field==='lines.'+d.line+'.'+field&&d.lineDescription===before.description)&&same(d.before,before[field]??null)&&same(d.after,after[field]);}),'approver_edit_difference');
    check(Array.isArray(edit.carried)&&Array.isArray(edit.renewed)&&edit.carried.every(id=>get('decision',id).carriedBy===edit.actor)&&edit.renewed.every(id=>get('decision',id).request===(request.request??request.id)),'approver_edit_decisions');
    check(all('audit').some(event=>event.action==='approver-edit'&&event.record===(request.request??request.id)&&event.revision===request.revision&&event.actor===edit.actor&&same(event.differences,edit.differences)&&same(event.carried,edit.carried)&&same(event.renewed,edit.renewed)),'approver_edit_audit');
   }
  }
  for(const decision of all('decision'))if(decision.chainStep) {
   const request=get('revision',decision.request+':'+decision.revision),step=request.approvalRoute?.find(step=>step.id===decision.chainStep);
-  check(step&&step.email===decision.email&&decision.actor!==request.requester&&decision.email!==request.requesterEmail&&decision.policyVersion===request.approvalPolicyVersion,'chain_decision');
-  if(decision.carriedFrom){const original=get('decision',decision.carriedFrom);check(original.request===decision.request&&original.revision<decision.revision&&original.decision==='approved'&&decision.decision==='approved'&&['actor','email','at','chainStep','reason'].every(field=>same(original[field],decision[field]))&&request.approverEdit?.carried.includes(decision.id),'carried_decision');}
+  check(step&&(step.email===decision.email||decision.delegation||decision.scimTransfer)&&decision.actor!==request.requester&&decision.email!==request.requesterEmail&&decision.policyVersion===request.approvalPolicyVersion,'chain_decision');
+  if(decision.delegation){const delegation=get('delegation',decision.delegation);check(delegation.policy===decision.policy&&delegation.from===step.email&&delegation.delegate===decision.email&&Date.parse(decision.carriedAt??decision.at)<Date.parse(delegation.expires),'chain_delegation');}
+  if(decision.carriedFrom){const original=get('decision',decision.carriedFrom);check(original.request===decision.request&&original.revision<decision.revision&&original.decision==='approved'&&decision.decision==='approved'&&['actor','email','at','chainStep','reason'].every(field=>same(original[field],decision[field]))&&[request.approverEdit,request.needDateEdit,request.buyerConversion].some(edit=>edit?.carried?.includes(decision.id)),'carried_decision');}
  }
  for(const order of all('order'))if(order.approvalProofs) {
   const request=get('revision',order.request+':'+order.revision);
