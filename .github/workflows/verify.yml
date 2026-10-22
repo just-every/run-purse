@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
-      - run: corepack enable
+      - uses: pnpm/action-setup@v4
       # Push checks use the locked project runtime. Global CLI qualification
       # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
-      - run: corepack enable
+      - uses: pnpm/action-setup@v4
       # Push checks use the locked project runtime. Global CLI qualification
       # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
@@ -87,7 +87,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
-      - run: corepack enable
+      - uses: pnpm/action-setup@v4
       # Push checks use the locked project runtime. Global CLI qualification
       # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
@@ -125,7 +125,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
-      - run: corepack enable
+      - uses: pnpm/action-setup@v4
       # Push checks use the locked project runtime. Global CLI qualification
       # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
@@ -177,7 +177,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
-      - run: corepack enable
+      - uses: pnpm/action-setup@v4
       # Push checks use the locked project runtime. Global CLI qualification
       # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
