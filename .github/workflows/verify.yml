@@ -65,6 +65,39 @@ jobs:
         with:
           name: purse-browser-and-archive-proof-${{ matrix.width }}
           path: ${{ runner.temp }}/purse-proof
+  purchase-kinds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reclaim unused hosted-runner SDKs
+        if: runner.os == 'Linux' && runner.environment == 'github-hosted'
+        shell: bash
+        run: |
+          echo 'Disk before SDK cleanup (checkout, runner temp, runtime temp):'
+          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
+          # Purse uses Node and Chromium, not the image's Android, .NET or Haskell SDKs.
+          # Exact SDK roots come from actions/runner-images' Ubuntu installation scripts.
+          # Keep Node/Corepack, checkout, system libraries and browser dependencies intact.
+          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /usr/local/.ghcup
+          echo 'Disk after SDK cleanup (checkout, runner temp, runtime temp):'
+          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - run: corepack enable
+      - run: npx -y @runeditrun/rer@0.2.30 cli install
+      - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: rer install
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: node tests/browser-po-kinds.mjs
+        env:
+          PURSE_EVIDENCE: ${{ runner.temp }}/purse-po-kinds
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: purse-po-kinds-and-archive-proof
+          path: ${{ runner.temp }}/purse-po-kinds
   native-browser:
     strategy:
       fail-fast: false
