@@ -1,3 +1,4 @@
+import { operationalOrder } from './adoption-position';
 import { serviceTerms, servicePosition } from './service-orders';
 import { currentScimAssignment, scimAssignmentAllows } from './scim-approvals';
 import { blanketTerms, blanketBilled } from './blanket-orders';
@@ -104,7 +105,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             const current = all(s, 'commitment').filter(e => e.request === id).reduce((n, e) => n + e.amountMinor, 0);
             ledger(s, a, old, -current, 'amendment-release');
         }
-        for (const o of all(s, 'order').filter(o => o.request === id && !o.issuedAt))
+        for (const o of all(s, 'order').filter(o => o.request === id && !operationalOrder(s, o)))
             put(s, 'order', o.id, { ...o, status: 'superseded' });
         put(s, 'request', id, r);
         put(s, 'revision', `${id}:${r.revision}`, { ...r, request: id });
