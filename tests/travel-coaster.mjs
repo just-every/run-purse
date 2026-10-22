@@ -48,7 +48,7 @@ export async function coasterTravelReport({ checkout, reference, traveler = 'syn
         assert.equal(revision.snapshot.items[0].fields.purse_reference, reference);
         assert.equal(revision.snapshot.items.reduce((total, item) => total + item.amount_minor, 0), 215000);
         assert.ok(report.value.decisions.some(decision => decision.revision === claim.revision && decision.decision === 'approved'));
-        return { bytes: report.bytes, report: report.value, source: { repository: 'just-every/run-coaster', head: sourceHead, route: '/api/coaster/claims/' + claim.id } };
+        return { bytes: report.bytes, report: report.value, source: { repository: 'just-every/run-coaster', head: sourceHead, origin: worker.origin, route: '/api/coaster/claims/' + claim.id } };
     } finally {
         if (worker) await worker.close();
         process.chdir(previous);
