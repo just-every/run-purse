@@ -163,12 +163,12 @@ test('Initial send and supplier response refuse stale authority and nonnative, p
     const imported = await h.send('/api/purse/import/commit', { ...input, fingerprint: importPreview.value.plan.fingerprint }, h.owner); assert.equal(imported.status, 200, JSON.stringify(imported.value));
     assert.equal((await f.send({ order: importedFixture.ids.order }, h.owner)).status, 409, 'Imported evidence cannot authorize a supplier send');
     await h.command('screen-supplier', { id: importedFixture.ids.supplier });
-    const policy = (await h.state()).data.policy.find(policy => policy.name === 'synthetic-purse-2809');
+    const policy = await h.command('policy',{name:'synthetic-purse-2855 imported obligations',currency:'USD',category:'goods',project:'General',approver:'synthetic-purse-2803@example.test',limitMinor:1000000,budgetMinor:10000000});
     const selection = { id: importedFixture.ids.order, policy: policy.id, budget: importedFixture.ids.budget, location: 'Denver', costCentre: 'Operations', receiver: 'synthetic-purse-2804@example.test' };
     const adoptionReview = await h.command('adopt-order-preview', selection);
     await h.command('adopt-order', { ...selection, fingerprint: adoptionReview.fingerprint, reviewed: true, reason: 'synthetic-purse-2854' });
     assert.equal((await f.send({ order: importedFixture.ids.order }, h.owner)).status, 409, 'Adopted authority is never initial-send authority');
-    const sent = await f.send(); assert.equal(sent.status, 200); const link = initialLink(h);
+    const sent = await f.send(); assert.equal(sent.status, 200, JSON.stringify(sent.value)); const link = initialLink(h);
     assert.equal((await f.send()).status, 409); assert.equal(h.messages.filter(message => message.subject.startsWith('Purchase order:')).length, 1);
     assert.equal((await respond(h, link, { revision: 2 })).status, 409); assert.equal((await respond(h, link, { lines: [{ line: prepared.lines[0].id, quantity: '3', unitMinor: 1 }], decision: 'change' })).status, 409);
     assert.equal((await fetch(link, { method: 'POST', headers: { origin: 'https://synthetic-purse-2844.test', 'content-type': 'application/json' }, body: '{}' })).status, 403);
