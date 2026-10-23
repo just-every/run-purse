@@ -24,9 +24,35 @@ function evidence(i: Data) {
 }
 
 export function invoice(s: State, a: Actor, b: Data, confirmation?: { reading: string }) {
-    requirePermission(s, a, 'invoice.capture');
+    return captureInvoice(s, { kind: 'native', actor: a }, b, confirmation);
+}
+
+/** The supplier capability is checked and atomically fenced by its HTTP door.
+ * It records evidence without impersonating an authenticated native operator. */
+export type InvoiceCaptureAuthority = { kind: 'native'; actor: Actor } | { kind: 'supplier-link'; event: Data };
+export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: Data, confirmation?: { reading: string }) {
+    const a = authority.kind === 'native' ? authority.actor : null;
+    if (a) requirePermission(s, a, 'invoice.capture');
     const o = get(s, 'order', b.order);
-    requirePermission(s, a, 'invoice.capture', o);
+    if (a) requirePermission(s, a, 'invoice.capture', o);
+    else {
+        const event = authority.kind === 'supplier-link' ? authority.event : null;
+        const request = get(s, 'request', o.request);
+        requireThat(event && event.order === o.id && event.supplier === o.supplier && event.revision === o.revision && event.acknowledgment?.revision === o.revision && !event.erasure && !event.revokedAt && Date.parse(event.expiresAt) > Date.now() && o.status === 'issued' && o.issuedAt && !o.imported && !o.adoption && request.status === 'approved' && request.revision === o.revision && !o.poDetails?.blanket && !confirmation, 'Current acknowledged exact native order link required', 409);
+    }
+    const actorId = a?.id ?? 'supplier-link';
+    const result = (value: Data) => a ? scopedInvoice(s, a, value) : value;
+    const recordAudit = (action: string, record: string, detail: Data = {}) => {
+        if (a) audit(s, a, action, record, detail);
+        else put(s, 'audit', uid(), { actor: actorId, action, record, ...detail, send: authority.kind === 'supplier-link' ? authority.event.id : undefined, identityVerified: false, at: new Date().toISOString() });
+    };
+    const storeOriginal = (value: Data) => {
+        if (a) return storeInvoiceOriginal(s, a, value, b);
+        if (!b.document) return;
+        const id = uid();
+        put(s, 'attachment', id, { kind: 'invoice', record: value.id, ...value.document, base64: b.document.base64, actor: actorId, at: new Date().toISOString() });
+        recordAudit('attachment', value.id, { attachment: id });
+    };
     requireThat(operationalOrder(s, o), 'Issued or explicitly adopted PO required', 409);
     const reference = text(b.reference, 'Invoice reference'), source = text(b.source, 'Invoice evidence source');
     requireThat(Array.isArray(b.allocations) && b.allocations.length > 0, 'Allocate invoice lines');
@@ -48,24 +74,32 @@ export function invoice(s: State, a: Actor, b: Data, confirmation?: { reading: s
         requireThat(deposits.sources.length && depositAppliedMinor <= deposits.unappliedMinor + (identityPrior?.depositAppliedMinor ?? 0) && depositAppliedMinor <= grossMinor, 'Deposit credit exceeds the imported unapplied balance or invoice amount', 409);
         Object.assign(candidate, { grossMinor, depositAppliedMinor, totalMinor: grossMinor - depositAppliedMinor });
     }
-    const priorSource = confirmation ? all(s, 'invoice').find(i => i.imported && i.order === o.id && i.reference === reference) : undefined;
-    if (priorSource) { candidate.id = priorSource.id; candidate.imported = true; }
+    const priorSource = confirmation ? all(s, 'invoice').find(i => (i.imported || i.supplierSubmission && i.sourceConfirmation === 'pending') && i.order === o.id && i.reference === reference) : undefined;
+    if (priorSource) { candidate.id = priorSource.id; if (priorSource.imported) candidate.imported = true; }
     Object.assign(candidate, invoiceEvidence(s, o, candidate, b));
     const existing = all(s, 'invoice').filter(i => canonicalSupplier(s, get(s, 'order', i.order).supplier) === canonicalSupplier(s, o.supplier) && i.reference === reference);
     if (existing.length) {
         if (priorSource && existing.length === 1) {
             const reading = get(s, 'invoiceReading', confirmation!.reading);
             requireThat(reading.status === 'review' && reading.order === o.id && reading.sourceDescriptor.sha256 === candidate.document?.sha256, 'Historical evidence requires the current source-bound reading', 409);
+            if (priorSource.supplierSubmission) {
+                requireThat(reading.source === priorSource.supplierSource && priorSource.invoiceDate === candidate.invoiceDate && priorSource.document?.sha256 === candidate.document?.sha256, 'Confirm the exact supplier submission original and date; reconcile conflicting evidence separately', 409);
+                candidate.source = priorSource.source;
+                const retained = priorSource.flags ?? [];
+                candidate.flags = [...retained, ...candidate.flags.filter((flag: Data) => !retained.some((old: Data) => old.code === flag.code && old.relatedInvoice === flag.relatedInvoice && old.documentHash === flag.documentHash))];
+                candidate.riskReviews = priorSource.riskReviews ?? [];
+                candidate.riskVersion = (priorSource.riskVersion ?? 1) + 1;
+            }
             requireThat(priorSource.totalMinor === candidate.totalMinor && JSON.stringify(priorSource.allocations.map((x: Data) => [x.line,x.q,x.amountMinor])) === JSON.stringify(candidate.allocations.map((x: Data) => [x.line,x.q,x.amountMinor])) && (!priorSource.document || priorSource.document.sha256 === candidate.document?.sha256), 'Confirmed source conflicts with the imported invoice balances or original; reconcile instead of overwriting', 409);
             const at = new Date().toISOString();
-            put(s, 'invoice', priorSource.id, { ...priorSource, ...candidate, sourceConfirmation: 'confirmed', confirmedReading: reading.id, confirmedAt: at, confirmedBy: a.id, sourceOriginalDate: priorSource.invoiceDate, at: priorSource.at });
-            if (!priorSource.document) storeInvoiceOriginal(s, a, get(s, 'invoice', priorSource.id), b);
-            audit(s, a, 'confirm-imported-invoice', priorSource.id, { reading: reading.id, source: reading.source, historicalApproval: 'Imported evidence only' });
-            return scopedInvoice(s, a, get(s, 'invoice', priorSource.id));
+            put(s, 'invoice', priorSource.id, { ...priorSource, ...candidate, sourceConfirmation: 'confirmed', confirmedReading: reading.id, confirmedAt: at, confirmedBy: actorId, sourceOriginalDate: priorSource.invoiceDate, at: priorSource.at });
+            if (!priorSource.document) storeOriginal(get(s, 'invoice', priorSource.id));
+            recordAudit(priorSource.supplierSubmission ? 'confirm-supplier-invoice' : 'confirm-imported-invoice', priorSource.id, { reading: reading.id, source: reading.source, ...(priorSource.imported ? { historicalApproval: 'Imported evidence only' } : {}) });
+            return result(get(s, 'invoice', priorSource.id));
         }
         requireThat(existing.length === 1 && evidence(existing[0]) === evidence(candidate),
             'Invoice reference already exists for this supplier with different evidence or allocations; review the existing invoice before correction', 409);
-        return scopedInvoice(s, a, existing[0]);
+        return result(existing[0]);
     }
     requireThat(['issued', 'adopted', 'closed', 'cancelled'].includes(o.status), 'Issued PO required for new invoice evidence', 409);
     const closedBalance = allocations.some((x: Data) => {
@@ -74,12 +108,12 @@ export function invoice(s: State, a: Actor, b: Data, confirmation?: { reading: s
         return linePosition(s, o.id, l).closed > 0 && billed + x.q > l.q - linePosition(s, o.id, l).closed;
     });
     const id = uid();
-    put(s, 'invoice', id, { ...candidate, id, entrySequence: all(s,'invoice').reduce((n,i)=>Math.max(n,i.entrySequence??0),0)+1, ...(closedBalance ? { status: 'exception', exception: 'Invoice exceeds the closed PO balance' } : {}), totalMinor: candidate.totalMinor, actor: a.id, at: new Date().toISOString() });
-    storeInvoiceOriginal(s, a, get(s, 'invoice', id), b);
+    put(s, 'invoice', id, { ...candidate, id, entrySequence: all(s,'invoice').reduce((n,i)=>Math.max(n,i.entrySequence??0),0)+1, ...(closedBalance ? { status: 'exception', exception: 'Invoice exceeds the closed PO balance' } : {}), totalMinor: candidate.totalMinor, actor: actorId, at: new Date().toISOString() });
+    storeOriginal(get(s, 'invoice', id));
     if(o.poDetails?.blanket) {
         const r=get(s,'request',o.request), target=remainingValue(s,o), current=commitment(s,r);
-        if(target<current) ledger(s,a,r,target-current,'blanket-invoice-drawdown');
+        if(target<current && a) ledger(s,a,r,target-current,'blanket-invoice-drawdown');
     }
-    audit(s, a, 'invoice', id, { flags: candidate.flags.map((f: Data) => f.code) });
-    return scopedInvoice(s, a, get(s, 'invoice', id));
+    recordAudit('invoice', id, { flags: candidate.flags.map((f: Data) => f.code) });
+    return result(get(s, 'invoice', id));
 }
