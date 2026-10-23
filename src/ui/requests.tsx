@@ -1,3 +1,4 @@
+import { TooltipButton } from './tooltip-button';
 import { TravelNewRequest } from './travel-form';
 import { TravelReferences } from './travel-reference';
 import { ApprovalEditNotices } from './approval-edit-notices';
@@ -62,7 +63,7 @@ export function Requests({ data, actor, mutate }: {
             <CatalogueRequest data={data} mutate={mutate}/>
             <form className="composer" onSubmit={e => { e.preventDefault(); const input = e.currentTarget.elements.namedItem('ask') as HTMLInputElement; setDraft(input.value.trim()); input.value = ''; }}>
                 <input id={composerId} name="ask" aria-label="Ask Purse for something to buy" placeholder="Ask Purse for something to buy…" autoComplete="off"/>
-                <button type="submit" className="composer-send" aria-label="New purchase request"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.4 20.6 3.6 15.4 20.4l-3.9-6.1L3 11.4Z"/><path d="m11.5 14.3 9.1-10.7"/></svg></button>
+                <TooltipButton type="submit" className="composer-send" label="New request" aria-label="New purchase request"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.4 20.6 3.6 15.4 20.4l-3.9-6.1L3 11.4Z"/><path d="m11.5 14.3 9.1-10.7"/></svg></TooltipButton>
             </form>
         </>}
         {(data.emailIntakeMayConfigure || data.emailIntakeMayReadReceipts || (data.emailIntake ?? []).length > 0) && <EmailIntake data={data} actor={actor} mutate={mutate}/>}
