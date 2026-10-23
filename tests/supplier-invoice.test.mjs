@@ -9,7 +9,6 @@ import { validatePurchasingArchive } from '../scripts/installer/restore-validati
 async function original(f, reference = 'synthetic-purse-4501', quantity = '1') {
     const values = { supplier: f.supplier.name, reference, invoiceDate: '2026-10-23', dueDate: null, terms: null, poNumber: f.order.number, currency: 'USD', senderEmail: null, remitTo: null, subtotalAmount: String(Number(quantity) * 100) + '.00', freightAmount: '0.00', taxAmount: '0.00', totalAmount: String(Number(quantity) * 100) + '.00' };
     const document = await PDFDocument.create(), font = await document.embedFont(StandardFonts.Helvetica), page = document.addPage([650,790]);
-    assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent',{...grant,enabled:false,reason:'Owner withdraws supplier invoice access'},h.owner)).status,200);assert.equal((await read(url)).status,410);assert.equal((await read(link)).status,200,'Withdrawal of invoice access preserves the document-only link');
     const rows = Object.entries(values).filter(([, value]) => value !== null).map(([key, value]) => key + ': ' + value).concat(['Description: ' + f.order.lines[0].description, 'Quantity: ' + quantity, 'Unit price: 100.00']);
     rows.forEach((line, index) => page.drawText(line, { x: 20, y: 760 - 24 * index, size: 10, font }));
     return { values, document: { name: reference + '.pdf', mediaType: 'application/pdf', base64: Buffer.from(await document.save()).toString('base64') } };

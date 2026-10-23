@@ -29,7 +29,7 @@ test('PO generation rules create one native PO, wait above the limit and for sup
     await cmd('po-generation-policy',{...rule,purchaseType:'goods'});
     const n=h.messages.length;await Promise.all([tick(),tick()]);await tick();
     let state=(await h.state()).data,order=state.order.find(o=>o.request===ready.id);
-    assert.ok(order);assert.equal(order.status,'issued');assert.equal(state.order.filter(o=>o.request===ready.id).length,1);assert.equal(h.messages.length,n,'Generation creates no supplier send or fake mail attempt');assert.equal(state.orderSend.filter(e=>e.order===order.id).length,0);
+    assert.ok(order);assert.equal(order.status,'issued');assert.equal(state.order.filter(o=>o.request===ready.id).length,1);assert.equal(h.messages.length,n,'Generation creates no supplier send or fake mail attempt');assert.equal((await h.send('/api/purse/order-send/'+order.id,undefined,buyer)).value.event,null);
     assert.equal(order.lines[0].sourceLine,ready.lines[0].id);assert.equal(order.lines[0].category,ready.lines[0].category);assert.deepEqual(order.lines[0].allocations,ready.lines[0].allocations);
     assert.equal(state.poGenerationQueue.find(q=>q.request===manual.id).status,'manual-review');assert.equal(state.poGenerationQueue.find(q=>q.request===pending.id).status,'waiting-supplier');assert.ok(!state.order.some(o=>o.request===pending.id));
     await cmd('convert',{id:ready.id,revision:1},buyer,409);

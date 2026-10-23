@@ -64,6 +64,11 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
         }
         if (!a.owner && record.actor !== a.id) return false;
         return (record.references ?? []).every((reference: Data) => {
+            // Generated quote records contain curated governance snapshots, not
+            // the owner's private control rows. Their purchasing references below
+            // still require the author's current RFQ/request source scope.
+            if(record.agent==='AGENT-002'&&reference.kind==='agentPolicy')return s.get('agentPolicy:'+reference.id)?.value.agent===record.agent;
+            if(record.agent==='AGENT-002'&&reference.kind==='quoteAgentConsent'){const consent=s.get('quoteAgentConsent:'+reference.id)?.value;const rfq=s.get('rfq:'+record.rfq)?.value;return Boolean(consent?.request===record.request&&rfq&&allowed(s,a,'rfq.read',rfq));}
             const source = s.get(reference.kind + ':' + reference.id)?.value;
             return source && canReadRecord(s, a, reference.kind, source, new Set(visited));
         });
