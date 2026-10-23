@@ -2,7 +2,7 @@ import { canonicalValue, valueDigest } from './agent-value-evidence';
 import { orderAdoption } from './adoption-position';
 import { rejectProtectedInput } from './protected-input';
 import { canonicalSupplier } from './supplier-identity';
-import { all, audit, date, get, requireThat, type Actor, type Data, type State } from './types';
+import { all, audit, date, get, put, requireThat, uid, type Actor, type Data, type State } from './types';
 
 const pick = (row: Data, fields: string) => Object.fromEntries(fields.split(',').filter(k => row[k] !== undefined).map(k => [k, structuredClone(row[k])]));
 const category = (value: unknown) => typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -145,9 +145,17 @@ export async function recurringOpportunities(s: State, a: Actor, op: string, b: 
     }
     const proposals: Data[] = await Promise.all(candidates.map(async candidate => ({ id: await valueDigest(canonicalValue({ from, to, ...candidate })), ...candidate })));
     for (const proposal of proposals) rejectProtectedInput(proposal);
-    audit(s, a, op, 'recurring-opportunities', { from, to, mode: 'deterministic v1', model: 'none', provider: 'none',
+    const references = [...new Map<string, Data>(proposals.flatMap(proposal => proposal.sources.map((r: Data) =>
+        [r.kind + ':' + r.id, { kind: r.kind, id: r.id, version: r.revision }] as [string, Data]))).values()]
+        .sort((x,y) => x.kind.localeCompare(y.kind) || x.id.localeCompare(y.id));
+    const id = uid(), run = { workflow: 'recurring-discovery', actor: a.id, from, to, inputs: { from, to, limit },
+        missing: [], draft: `${proposals.length} conditional recurring-spend proposals for ${from} through ${to}; owner review and a separately approved scenario are required.`,
+        version: 1, at: new Date().toISOString(), actions: [], mode: 'deterministic v1', model: 'none', provider: 'none', proposals, references };
+    rejectProtectedInput(run);
+    put(s, 'agentRun', id, run);
+    audit(s, a, op, 'recurring-opportunities', { run: id, from, to, mode: 'deterministic v1', model: 'none', provider: 'none',
         proposals: proposals.map(proposal => ({ id: proposal.id, kind: proposal.kind, agreements: proposal.agreementIds,
             sources: proposal.sources.map((r: Data) => ({ kind: r.kind, id: r.id, revision: r.revision })) })) });
-    return { from, to, mode: 'deterministic v1', model: 'none', provider: 'none', proposals,
+    return { id, ...run,
         basis: 'Conditional owner-review proposals from recorded native facts; no purchasing, cash, agreement, message or cancellation changes' };
 }
