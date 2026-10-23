@@ -1,6 +1,9 @@
 import { cashRequirements } from './cash-requirements';
 import { canonicalValue, valueDigest } from './agent-value-evidence';
 import { canonicalSupplier } from './supplier-identity';
+import { rejectProtectedInput } from './protected-input';
+import { unrestrictedPermission } from './access-records';
+import { performanceAgreementSources } from './access-agreement-sources';
 import { accessGrants, allowed, all, audit, date, get, minor, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
 const ops = ['recurring-scenario-prepare', 'recurring-scenario-approve', 'recurring-scenario-draft'];
@@ -62,6 +65,11 @@ function snapshot(s: State, a: Actor, input: Data) {
     requireThat(currencies.size === 1, 'Scenario agreements must use one currency');
     const currency = agreements[0].currency, sources: Data[] = [];
     for (const agreement of agreements) {
+        if (!a.owner && !unrestrictedPermission(s, a, 'procurement.manage')) {
+            const permitted = performanceAgreementSources(s, a).versions.get(agreement.id);
+            requireThat(permitted?.has(agreement.version) && (agreement.history ?? []).every((r: Data) => permitted.has(r.version)),
+                'Every cited agreement price revision must be inside current performance scope', 403);
+        }
         sources.push(source(s, 'agreement', agreement.id, { ...pick(agreement, 'version,name,reference,supplier,currency,valueMinor,firstOfferMinor,startDate,endDate,autoRenew,noticeDays,noticeDeadline,owner'),
             priceHistory: (agreement.history ?? []).map((h: Data) => ({ ...pick(h, 'version,valueMinor,firstOfferMinor,startDate,endDate,noticeDays,noticeDeadline,at'),
                 priceLines: (h.priceLines ?? []).map((l: Data) => pick(l, 'description,quantity,q,unit,partNumber,firstUnitMinor,awardedUnitMinor')) })) }));
@@ -159,6 +167,7 @@ function proofs(consents: Data[]) { return consents.map(c => ({ actor: c.actor, 
 
 export async function recurringScenarios(s: State, a: Actor, op: string, b: Data): Promise<Data | undefined> {
     if (!ops.includes(op)) return;
+    rejectProtectedInput(b);
     if (op === 'recurring-scenario-prepare') {
         requireThat(a.owner, 'Current native owner required to prepare scenarios', 403);
         const input = choices(b), captured = snapshot(s, a, input);
@@ -201,9 +210,28 @@ export async function recurringScenarios(s: State, a: Actor, op: string, b: Data
     return { id: scenario.id, ...row };
 }
 
+/** Finance reads the exact immutable scenario only while every cited source is
+ * still current and readable. Consent reasons and private owner drafts stay out.
+ */
+export function projectRecurringScenario(s: State, a: Actor, scenario: Data): Data {
+    requireThat(s.has('recurringScenario:' + scenario.id), 'Scenario not found', 404);
+    const stored = get(s, 'recurringScenario', scenario.id);
+    rejectProtectedInput(stored);
+    if (!a.owner) {
+        consentAuthority(s, a, stored, 'finance');
+        requirePermission(s, a, 'performance.read'); requirePermission(s, a, 'request.read');
+        const fresh = snapshot(s, a, stored.choices);
+        requireThat(canonicalValue(fresh) === canonicalValue(stored.snapshot), 'Scenario sources changed; prepare a new scenario', 409);
+    }
+    return pick(stored, 'id,choices,snapshot,hash,mode,model,provider,label,preparedBy,at,status');
+}
+
 export function visibleRecurringScenarios(s: State, a: Actor): Data {
-    if (!a.owner) return { recurringScenario: [], recurringScenarioConsent: [], recurringScenarioDraft: [] };
-    return { recurringScenario: all(s, 'recurringScenario'),
+    const recurringScenario = all(s, 'recurringScenario').flatMap(row => {
+        try { return [projectRecurringScenario(s, a, row)]; } catch { return []; }
+    });
+    if (!a.owner) return { recurringScenario, recurringScenarioConsent: [], recurringScenarioDraft: [] };
+    return { recurringScenario,
         recurringScenarioConsent: all(s, 'recurringScenarioConsent').map(r => pick(r, 'id,scenario,hash,role,agreement,actor,operatorVersion,at')),
         recurringScenarioDraft: all(s, 'recurringScenarioDraft') };
 }
