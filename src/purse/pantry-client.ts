@@ -93,7 +93,7 @@ async function boundedJson(response: Response): Promise<Data> {
 export async function pantryCall(env: Bindings, row: PantryCredential, path: string,
     options: { method?: string; body?: Data; key?: string } = {}): Promise<Data> {
     const live = await loadPantry(env);
-    if (row.revoked_at || live.generation !== row.generation || live.origin !== row.origin) throw new Fault(409, 'Pantry connection changed; reload');
+    if (row.revoked_at || live.generation !== row.generation || live.origin !== row.origin || live.nonce !== row.nonce || live.tag !== row.tag || live.ciphertext !== row.ciphertext) throw new Fault(409, 'Pantry connection changed; reload');
     const origin = validatePantryOrigin(row.origin, env), base = origin + '/api/pantry/integration/v1';
     if (!path.startsWith('/') || path.startsWith('//')) throw new Fault(400, 'Invalid Pantry resource path');
     const url = new URL(base + path);
