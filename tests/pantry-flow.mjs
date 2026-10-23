@@ -26,7 +26,7 @@ try {
  const current=await h.state();assert.equal(current.data.cashRequirements.bills.find(b=>b.invoice===invoice.id).amountMinor,25000);assert.equal(current.data.cashRequirements.commitments.length,0,'Posted bill is not another commitment');
  const paid=await f.command('pay',{vendorId:first.externalVendorId,billId:first.externalId,amount:'100.00'});
  const partial=(await call('/refresh',{invoice:invoice.id})).sync;assert.equal(partial.returned.paymentStatus,'partially-paid');assert.equal(partial.returned.paidMinor,10000);assert.equal(partial.returned.openMinor,15000);assert.equal(partial.returned.payments[0].id,paid.id);
- assert.equal((await h.state()).data.cashRequirements.bills.find(b=>b.invoice===invoice.id).amountMinor,15000);
+ const outstanding=(await h.state()).data.cashRequirements.bills.find(b=>b.invoice===invoice.id);assert.equal(outstanding.amountMinor,15000);assert.equal(outstanding.discountMinor,300);assert.equal(outstanding.dueDate,'2026-11-22');assert.equal(outstanding.discountDate,'2026-11-02');
  await f.command('pay',{vendorId:first.externalVendorId,billId:first.externalId,amount:'150.00'});
  const settled=(await call('/refresh',{invoice:invoice.id})).sync;assert.equal(settled.returned.paymentStatus,'paid');assert.equal(settled.returned.reconciliationStatus,'unknown');
  assert.equal((await h.state()).data.cashRequirements.bills.length,0);await call('/refresh',{invoice:invoice.id});assert.equal((await h.state()).data.cashRequirements.weeks.length,0,'Repeated payment return never creates another liability or payment');
