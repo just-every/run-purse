@@ -13,6 +13,7 @@ for (const [k, r] of after) {
     if (before.get(k)?.revision === r.revision)
         continue;
     if(r.kind==='emailIntake'&&r.value.status!=='held')q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(r.value.requester,r.value.requesterVersion));
+    if(r.kind==='recurringScenarioDraft')for(const proof of r.value.authorityProofs??[])q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active' AND (?=0 OR role='owner')) THEN 1 ELSE 0 END").bind(proof.actor,proof.operatorVersion,proof.owner?1:0));
     // Fresh grants cover preparation and issuance; issued receiving metadata is physical history.
     if(r.kind==='order'&&(r.value.status==='prepared'||r.value.issuedAt&&!before.get(k)?.value.issuedAt||(r.value.status==='issued'&&(before.get(k)?.value.status!=='issued'||r.value.reopenedAt!==before.get(k)?.value.reopenedAt))))q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(r.value.approvalActor,r.value.approvalVersion));
     if(r.kind==='order'&&['prepared','issued'].includes(r.value.status))for(const proof of r.value.approvalProofs??[])q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(proof.actor,proof.version));

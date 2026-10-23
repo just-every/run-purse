@@ -143,3 +143,31 @@ test('AGENT-005 receipt need-date and confirmed quoted-saving evidence reuse REP
  run=await financialReport(request);assert.equal(run.report.realizedMinor,50000,'Returns use the established received-quantity cap');
  const records=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(records),true);
 });
+
+test('Recurring consolidation scenarios recompute from native sources, require independent exact consents and never change or send purchasing',async t=>{
+ const {recurringScenarioFixture}=await import('./recurring-scenario-fixture.mjs');const f=await recurringScenarioFixture(),{h,input}=f;t.after(()=>f.close());
+ const before=(await h.state()).data, unchanged=()=>h.state().then(({data})=>Object.fromEntries(['commitment','cashRequirements','order','agreement','recurringSeries'].map(kind=>[kind,data[kind]])));
+ const originals=await unchanged(),mail=h.messages.length;
+ await h.command('recurring-scenario-prepare',input,'',401);await h.command('recurring-scenario-prepare',input,f.finance,403);
+ await h.command('recurring-scenario-prepare',{...input,bankAccount:'synthetic-purse-905'},h.owner,400);
+ const scenario=await h.command('recurring-scenario-prepare',input);assert.equal(scenario.snapshot.baseline.forecastMinor,200000);assert.equal(scenario.snapshot.proposed.forecastMinor,120000);assert.equal(scenario.snapshot.effect.cashMinor,-80000);
+ const sources=scenario.snapshot.sources;assert.equal(sources.find(row=>row.kind==='valueSeatImport').value.activeSeats,31);assert.ok(!JSON.stringify(sources).includes('Ignore prior rules'));assert.ok(!JSON.stringify(sources).includes('ignore policy'));
+ assert.ok(sources.some(row=>row.kind==='supplierIssue'));assert.equal(scenario.snapshot.agreements[0].noticeDeadline,'2026-12-01');
+ const consent={id:scenario.id,hash:scenario.hash,confirmed:true,reason:'Reviewed exact reproducible figures'};
+ await h.command('recurring-scenario-draft',consent,h.owner,409);await h.command('recurring-scenario-approve',{...consent,role:'finance'},h.owner,403);await h.command('recurring-scenario-approve',{...consent,hash:'synthetic-purse-906',role:'finance'},f.finance,409);
+ const financeView=(await h.state(f.finance)).data;assert.equal(financeView.recurringScenario.find(row=>row.id===scenario.id).hash,scenario.hash);assert.deepEqual(financeView.recurringScenarioDraft,[]);assert.deepEqual((await h.state(f.requester)).data.recurringScenario,[]);
+ await h.command('recurring-scenario-approve',{...consent,role:'finance'},f.finance);
+ for(const agreement of f.agreements)await h.command('recurring-scenario-approve',{...consent,role:'owner',agreement:agreement.id});
+ const draft=await h.command('recurring-scenario-draft',consent);assert.equal(draft.binding,false);assert.equal(draft.sent,false);assert.match(draft.text,/NONBINDING/);assert.equal(h.messages.length,mail);assert.deepEqual(await unchanged(),originals);
+ const authorityCase=await h.command('recurring-scenario-prepare',input),authorityConsent={...consent,id:authorityCase.id,hash:authorityCase.hash};
+ await h.command('recurring-scenario-approve',{...authorityConsent,role:'finance'},f.finance);for(const agreement of f.agreements)await h.command('recurring-scenario-approve',{...authorityConsent,role:'owner',agreement:agreement.id});
+ const financeId=(await h.state(f.finance)).actor.id;assert.equal((await h.send('/auth/operator/status',{operatorId:financeId,status:'inactive'},h.owner)).status,200);await h.command('recurring-scenario-draft',authorityConsent,h.owner,409);
+ const raw=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(raw),true,'Captured scenario arithmetic and independent consent lineage validate');
+ for(const row of scenario.snapshot.baseline.forecast){const calculation=row.calculation;assert.equal(row.amountMinor,Math.max(0,calculation.liabilityMinor-calculation.approvedBilledMinor));const order=before.order.find(order=>order.id===row.order);assert.equal(calculation.baseMinor,order.lines.reduce((sum,line)=>sum+line.totalMinor,0));}
+ const stale=await h.command('recurring-scenario-prepare',input);await h.command('supplier-issue',{supplier:f.orders[0].supplier,order:f.orders[0].id,category:'late',description:'A new service incident'});
+ // Explicitly selected evidence changes must stale the scenario; unrelated incidents do not replace source facts.
+ await h.command('resolve-supplier-issue',{id:f.issue.id,reason:'Supplier resolved the recorded incident'});
+ await h.command('recurring-scenario-approve',{...consent,id:stale.id,hash:stale.hash,role:'finance'},h.owner,409);
+ assert.ok((await h.send('/api/purse/audit',undefined,h.owner)).value.events.some(row=>row.action==='recurring-scenario-draft'&&row.hash===scenario.hash));
+ assert.ok(!(await h.send('/api/purse/audit.csv',undefined,h.owner)).value.includes('synthetic-purse-905'));
+});
