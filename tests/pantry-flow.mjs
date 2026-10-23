@@ -12,10 +12,16 @@ const f=await pantryFixture();let restored;
 try {
  const {h,ready,call,input,invoice,payable}=f;
  const connection={origin:ready.origin,currency:'USD',token:ready.token,generation:0,confirmed:true};
+ for(const [path,body] of [['',undefined],['/options',undefined],['/preview',input],['/sync',input],['/refresh',{invoice:invoice.id}],['/connection/revoke',{}],['/connection/delete',{}]])for(const cookie of ['',f.requester,f.approver])await call(path,body,cookie,cookie?403:401);
  await call('/connection',connection,'',401);await call('/connection',connection,f.requester,403);
  await call('/connection',{...connection,confirmed:false},h.owner,400);await call('/connection',{...connection,currency:'AUD'},h.owner,400);
  await call('/connection',connection);
  const stored=await h.db.prepare("SELECT * FROM p_pantry_credentials WHERE id='main'").first();assert.ok(!JSON.stringify(stored).includes(ready.token),'Pantry secret is encrypted');
+ await h.configureMail({PROTECTED_DATA_KEY:'b'.repeat(64),PROTECTED_DATA_PREVIOUS_KEY:'a'.repeat(64)});
+ let keys=await h.send('/api/purse/protected-keys',undefined,h.owner);assert.equal(keys.status,200);assert.equal(keys.value.awaitingRotation,1);assert.equal(keys.value.previousKeyMayBeRemoved,false);
+ const step=await h.send('/auth/step-up',{action:'export'},h.owner);assert.equal(step.status,202);const message=[...h.messages].reverse().find(m=>m.to.includes('owner@example.test')),proof=new URL(message.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0]).searchParams.get('token');assert.equal((await h.send('/auth/confirm',{token:proof},h.owner)).status,303);
+ keys=await h.send('/api/purse/protected-keys',undefined,h.owner);const keyRotation=await h.send('/api/purse/protected-keys/rotate',{revision:keys.value.revision,reason:'Owner rotated the installation encryption key'},h.owner);assert.equal(keyRotation.status,200,JSON.stringify(keyRotation.value));assert.equal(keyRotation.value.checked,1);keys=await h.send('/api/purse/protected-keys',undefined,h.owner);assert.equal(keys.value.previousKeyMayBeRemoved,true);
+
  for(const path of ['', '/options'])assert.ok(!JSON.stringify(await call(path)).includes(ready.token),'No readback');
  const preview=(await call('/preview',input)).plan;
  await call('/sync',{...input,fingerprint:preview.fingerprint,confirmed:false,reason:'Reviewed'},h.owner,400);

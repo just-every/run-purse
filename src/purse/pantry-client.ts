@@ -28,7 +28,7 @@ export function encryptPantry(env: Bindings, token: string, id = 'main'): Pantry
     return { key_id: key.id, nonce: Buffer.from(nonce).toString('base64'), ciphertext: ciphertext.toString('base64'), tag: Buffer.from(cipher.getAuthTag()).toString('base64') };
 }
 
-function decryptPantry(env: Bindings, row: PantryCredential): string {
+export function decryptPantry(env: Bindings, row: PantryCredential): string {
     try {
         const active = keyMaterial(env.PROTECTED_DATA_KEY);
         const key = active.id === row.key_id ? active : keyMaterial(env.PROTECTED_DATA_PREVIOUS_KEY);
