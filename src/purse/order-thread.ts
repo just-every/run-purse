@@ -80,7 +80,7 @@ export async function sendOrderThreadMessage(env: Bindings, actor: Actor, body: 
     } catch { outcome = { status: 'uncertain', outcomeReason: 'provider-outcome-unknown-or-authority-changed' }; }
     const at = new Date().toISOString();
     await env.DB.batch([
-        env.DB.prepare("UPDATE p_records SET revision=?,value=json_patch(value,?) WHERE business='main' AND kind='orderThreadMessage' AND id=? AND json_extract(value,'$.erasure') IS NULL").bind(uid(), JSON.stringify({ ...outcome, outcomeAt: at }), id),
+        env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.status',?,'$.delivery',json(?),'$.outcomeAt',?,'$.outcomeReason',?) WHERE business='main' AND kind='orderThreadMessage' AND id=? AND json_extract(value,'$.erasure') IS NULL").bind(uid(),outcome.status,JSON.stringify(outcome.delivery??null),at,outcome.outcomeReason??null,id),
         env.DB.prepare("INSERT INTO p_records(business,kind,id,revision,value) SELECT 'main','audit',?,?,json_object('id',?,'action','order-thread-send-outcome','record',json_extract(value,'$.order'),'message',id,'actor',json_extract(value,'$.actor'),'email',json_extract(value,'$.email'),'revision',json_extract(value,'$.revision'),'status',?,'at',?) FROM p_records WHERE business='main' AND kind='orderThreadMessage' AND id=?").bind('outcome:' + id, uid(), 'outcome:' + id, outcome.status, at, id),
     ]);
     // Return current data: an in-flight erasure must not leak the earlier body/contact.

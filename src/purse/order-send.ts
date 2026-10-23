@@ -52,7 +52,7 @@ export async function sendOrderChange(env: Bindings, actor: Actor, body: Data) {
     const settled: Data = { ...event, ...outcome, outcomeAt: new Date().toISOString() };
     // Do not overwrite an erasure or any concurrent acknowledgment with our old snapshot.
     await env.DB.batch([
-        env.DB.prepare("UPDATE p_records SET revision=?,value=json_patch(value,?) WHERE business='main' AND kind='orderSend' AND id=? AND json_extract(value,'$.erasure') IS NULL").bind(uid(), JSON.stringify({ ...outcome, outcomeAt: settled.outcomeAt }), id),
+        env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.status',?,'$.delivery',json(?),'$.outcomeAt',?,'$.reasonCode',?) WHERE business='main' AND kind='orderSend' AND id=? AND json_extract(value,'$.erasure') IS NULL").bind(uid(),outcome.status,JSON.stringify(outcome.delivery??null),settled.outcomeAt,'reason' in outcome?outcome.reason:null,id),
         insertOrderSendRecord(env.DB, 'audit', { id: uid(), action: mode === 'initial' ? 'order-send-outcome' : 'order-change-send-outcome', record: order.id, send: id, actor: actor.id, email: actor.email, revision: order.revision, status: settled.status, pdfSha256: event.pdf.sha256, at: settled.outcomeAt }),
     ]);
     return orderSendSummary(settled);
