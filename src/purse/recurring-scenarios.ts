@@ -4,6 +4,8 @@ import { canonicalSupplier } from './supplier-identity';
 import { rejectProtectedInput } from './protected-input';
 import { unrestrictedPermission } from './access-records';
 import { performanceAgreementSources } from './access-agreement-sources';
+import { linePosition } from './orders';
+import { orderAdoption } from './adoption-position';
 import { accessGrants, allowed, all, audit, date, get, minor, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
 const ops = ['recurring-scenario-prepare', 'recurring-scenario-approve', 'recurring-scenario-draft'];
@@ -91,10 +93,18 @@ function snapshot(s: State, a: Actor, input: Data) {
         for (const row of series) sources.push(source(s, 'recurringSeries', row.id, pick(row, 'order,request,agreement,status,version,nextDate,endDate,maxOrders,generatedCount')));
     }
     for (const order of lineage) {
+        requireThat(!orderAdoption(s, order), 'Adopted purchase lineages are outside this native scenario', 409);
         requirePermission(s, a, 'cash.read', order); requirePermission(s, a, 'performance.read', order);
-        sources.push(source(s, 'order', order.id, { ...pick(order, 'request,revision,status,currency,totalMinor,issuedAt,needDate'),
-            lines: order.lines.map((l: Data) => pick(l, 'id,q,unitMinor,totalMinor')) }));
+        sources.push(source(s, 'order', order.id, { ...pick(order, 'request,revision,status,currency,totalMinor,issuedAt,needDate,supplier,amendedBy'),
+            lines: order.lines.map((l: Data) => ({ ...pick(l, 'id,q,unitMinor,totalMinor,carriedAccepted,carriedCancelled,carriedAcceptedMinor,carriedCancelledMinor'),
+                ...(l.service ? { service: pick(l.service, 'mode') } : {}), position: linePosition(s, order.id, l) })) }));
     }
+    for (const row of all(s, 'receipt').filter(r => lineageIds.has(r.order)))
+        sources.push(source(s, 'receipt', row.id, pick(row, evidenceFields.receipt)));
+    for (const row of all(s, 'orderClosure').filter(r => lineageIds.has(r.order)))
+        sources.push(source(s, 'orderClosure', row.id, { ...pick(row, 'order,active'), lines: row.lines.map((l: Data) => pick(l, 'line,q')) }));
+    for (const row of all(s, 'cashExpectation').filter(r => lineageIds.has(r.order)))
+        sources.push(source(s, 'cashExpectation', row.id, pick(row, 'order,version,expectedDate')));
     for (const requestId of requests) {
         const request = get(s, 'request', requestId);
         requirePermission(s, a, 'request.read', request);
@@ -104,9 +114,12 @@ function snapshot(s: State, a: Actor, input: Data) {
         sources.push(source(s, 'commitment', row.id, pick(row, 'request,revision,currency,amountMinor,event,at')));
     for (const invoice of all(s, 'invoice').filter(r => lineageIds.has(r.order))) {
         requirePermission(s, a, 'invoice.read', invoice); requirePermission(s, a, 'cash.read', invoice);
-        sources.push(source(s, 'invoice', invoice.id, pick(invoice, 'order,currency,totalMinor')));
+        sources.push(source(s, 'invoice', invoice.id, { ...pick(invoice, 'order,currency,totalMinor'), hasSourcePayment: Boolean(invoice.sourcePayment),
+            flags: (invoice.flags ?? []).map((r: Data) => pick(r, 'id,code')), riskReviews: (invoice.riskReviews ?? []).map((r: Data) => pick(r, 'flag')),
+            allocations: (invoice.allocations ?? []).map((r: Data) => pick(r, 'line,q,amountMinor')),
+            ...(invoice.pantry ? { pantry: pick(invoice.pantry, 'status,openMinor,dueDate,discountDate') } : {}) }));
         for (const payable of all(s, 'payable').filter(r => r.invoice === invoice.id))
-            sources.push(source(s, 'payable', payable.id, pick(payable, 'invoice,version,approvedAt,approvedMinor,dueDate')));
+            sources.push(source(s, 'payable', payable.id, pick(payable, 'invoice,version,approvedAt,approvedMinor,invoiceDate,term,dueDate,discountDate,discountPercent')));
     }
     for (const ref of input.evidence) {
         const row = get(s, ref.kind, ref.id), order = row.order ? get(s, 'order', row.order) : null;
@@ -121,7 +134,17 @@ function snapshot(s: State, a: Actor, input: Data) {
     const forecast = input.assumptions.filter((r: Data) => r.order).map((assumption: Data) => {
         const row = cash.commitments.find((r: Data) => r.order === assumption.order && r.currency === currency);
         requireThat(row && row.expectedDate >= input.from && row.expectedDate <= input.to, 'Selected PO must have an outstanding forecast inside the scenario period', 409);
-        return { agreement: assumption.agreement, ...pick(row, 'order,amountMinor,expectedDate,week,basis') };
+        const order = get(s, 'order', row.order), baseMinor = total(order.lines.map((l: Data) => l.totalMinor));
+        const activeLineMinor = total(order.lines.map((l: Data) => { const p = linePosition(s, order.id, l);
+            return Number((BigInt(Math.max(0, l.q - p.cancelled - p.closed)) * BigInt(l.unitMinor) + 500n) / 1000n); }));
+        const liabilityMinor = baseMinor ? Number((BigInt(order.totalMinor) * BigInt(activeLineMinor) + BigInt(baseMinor) / 2n) / BigInt(baseMinor)) : 0;
+        const approvedBilledMinor = total(all(s, 'payable').filter(p => p.approvedAt).filter(p => {
+            const invoice = get(s, 'invoice', p.invoice), invoiceOrder = get(s, 'order', invoice.order);
+            return invoiceOrder.request === order.request && invoiceOrder.issuedAt && invoice.currency === currency && !(invoice.flags ?? []).some((flag: Data) => !(invoice.riskReviews ?? []).some((review: Data) => review.flag === flag.id));
+        }).map(p => p.approvedMinor));
+        requireThat(row.amountMinor === Math.max(0, liabilityMinor - approvedBilledMinor), 'Native forecast arithmetic changed; prepare with supported source inputs', 409);
+        return { agreement: assumption.agreement, ...pick(row, 'order,amountMinor,expectedDate,week,basis'),
+            calculation: { baseMinor, activeLineMinor, liabilityMinor, approvedBilledMinor, depositMinor: 0 } };
     });
     const commitmentRows = [...requests].map(request => ({ request, amountMinor: total(all(s, 'commitment').filter(r => r.request === request && r.currency === currency).map(r => r.amountMinor)) }));
     requireThat(commitmentRows.every(row => row.amountMinor >= 0), 'Commitment ledger is not supported by this scenario', 409);
