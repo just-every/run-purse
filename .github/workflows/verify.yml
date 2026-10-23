@@ -34,6 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         width: [1440, 390]
+        journey: [archive, supplier-performance, catalogue, order-chasing, supplier-documents, supplier-duplicates, payables, audit-log, spend-report, po-documents, performance-report, invoice-risk, receipt-routing, quote-reading, rfq, invoice-reading, invoice-inbox, email-intake, search, agreements, integration-tokens, agent-value, order-adoption, protected-storage, protected-preparation]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -59,13 +60,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
       - run: pnpm exec playwright install --with-deps --only-shell chromium
-      - run: node tests/browser.mjs --width=${{ matrix.width }}
+      - run: node tests/browser.mjs --width=${{ matrix.width }} --journey=${{ matrix.journey }}
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: purse-browser-and-archive-proof-${{ matrix.width }}
+          name: purse-browser-and-archive-proof-${{ matrix.journey }}-${{ matrix.width }}
           path: ${{ runner.temp }}/purse-proof
   purchase-kinds:
     runs-on: ubuntu-latest
@@ -106,6 +107,7 @@ jobs:
       fail-fast: false
       matrix:
         width: [1440, 390]
+        journey: [request-again, protected-web, access, identity, scim, erasure, intake, order-send, evidence-history, integration-tokens]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -131,40 +133,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
       - run: pnpm exec playwright install --with-deps --only-shell chromium
-      - run: node tests/browser-request-again.mjs --width=${{ matrix.width }}
-        env:
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
-      - run: node tests/browser-protected-web.mjs --width=${{ matrix.width }}
-        env:
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
-      - run: node tests/browser-access.mjs --width=${{ matrix.width }}
-        env:
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
-      - run: node tests/browser-identity.mjs --width=${{ matrix.width }}
-        env:
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
-      - run: node tests/browser-scim.mjs --width=${{ matrix.width }}
-        env:
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
-      - run: node tests/browser-erasure.mjs --width=${{ matrix.width }}
-        env:
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
-      - run: node tests/browser-intake.mjs --width=${{ matrix.width }}
-        env:
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
-      - run: node tests/browser-order-send.mjs --width=${{ matrix.width }}
-        env:
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
-      - run: node tests/browser-evidence-history.mjs --width=${{ matrix.width }}
-        env:
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
-      - run: node tests/browser-integration-tokens.mjs --width=${{ matrix.width }}
+      - run: node tests/browser-${{ matrix.journey }}.mjs --width=${{ matrix.width }}
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: purse-native-browser-proof-${{ matrix.width }}
+          name: purse-native-browser-proof-${{ matrix.journey }}-${{ matrix.width }}
           path: ${{ runner.temp }}/purse-proof
   search-scale:
     runs-on: ubuntu-latest
