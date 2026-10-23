@@ -30,7 +30,7 @@ export function cleanupProtectedContext(s: State, a: Actor, input: Data): Data {
         const staleRun = kind === 'proposedAction' && cleanedRuns.has(record.run);
         if (!affected && !staleRun) continue;
         const cleaned = stripProtectedInput(record);
-        const immutableReport = kind === 'agentRun' && ['value-realization','recurring-discovery'].includes(record.workflow);
+        const immutableReport = kind === 'agentRun' && record.mode !== 'human-preparation';
         const marker = { status: immutableReport ? 'quarantined' : 'cleaned', at, actor: a.id, removedFields: cleaned.removedFields,
             ...(immutableReport ? { authorityInvalidated: true, evidenceVerification: 'unavailable-after-protected-context-removal' } : {}),
             notice: 'Structured protected fields removed; free text retained as source data without redaction.' };

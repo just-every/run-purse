@@ -10,7 +10,8 @@ export function OrderChasing({ order, data, actor, mutate, reload }: { order: D;
     return <section className="panel"><h3>Supplier follow-up</h3>
         {evidence ? <><p>Supplier promise: {evidence.promisedDate}. Acknowledgment: {evidence.acknowledgedAt ? when(evidence.acknowledgedAt) : 'not recorded'}.</p><details><summary>Buyer-recorded supplier replies and promises</summary><ul className="ruled-list">{evidence.history.map((h: D) => <li key={h.version}>{when(h.at)} · {h.source} · promised {h.promisedDate}{h.acknowledgedAt && <> · acknowledged {when(h.acknowledgedAt)}</>}</li>)}</ul></details></> : nativeAcknowledgment ? <p>Supplier acknowledged approved revision {nativeAcknowledgment.revision} at {when(nativeAcknowledgment.at)}. The link holder’s stated identity is unverified. No delivery promise has been recorded.</p> : <p>No supplier acknowledgment or promise has been recorded. Issuance alone is not an acknowledgment.</p>}
         {order.mayManagePurchasing && ['issued', 'closed'].includes(order.status) && !order.imported && <>
-            <Form key={policy?.version ?? 0} label="Save chase schedule" initial={{ order: order.id, version: policy?.version ?? 0 }} onSubmit={b => mutate('order-chase-policy', { ...b, enabled: b.enabled === 'yes', cadenceDays: Number(b.cadenceDays), maxChases: Number(b.maxChases) })}>
+            <Form key={policy?.version ?? 0} label="Save chase schedule" initial={{ order: order.id, version: policy?.version ?? 0 }} onSubmit={b => mutate('order-chase-policy', { ...b, agent: b.agent || null, enabled: b.enabled === 'yes', cadenceDays: Number(b.cadenceDays), maxChases: Number(b.maxChases) })}>
+                <Field label="Follow-up executor" name="agent" defaultValue={policy?.agent ?? ''} options={[{ value: '', label: 'Buyer schedule' }, { value: 'AGENT-003', label: 'Governed late-order agent' }]}/>
                 <Field label="Automatic supplier chases" name="enabled" defaultValue={policy?.enabled ? 'yes' : 'no'} options={[{ value: 'yes', label: 'Enabled' }, { value: 'no', label: 'Paused' }]}/>
                 <Field label="Days between chase attempts" name="cadenceDays" type="number" defaultValue={policy?.cadenceDays ?? 3}/>
                 <Field label="Chase attempt limit before escalation" name="maxChases" type="number" defaultValue={policy?.maxChases ?? 3}/>
@@ -20,6 +21,7 @@ export function OrderChasing({ order, data, actor, mutate, reload }: { order: D;
             <button onClick={async () => { try { await call('order-chases', {}); await reload(); setNotice('Due attempts processed. Check each outcome below.'); } catch (e) { setNotice((e as Error).message); } }}>Process due supplier chases</button>
             <p role="status">{notice}</p>
         </>}
+        {policy && !Number.isSafeInteger(policy.operatorVersion) && <p>Save this schedule again to authorize future sends with your current native identity.</p>}
         <Table heads={['When', 'Action', 'Reason', 'Recipient', 'Outcome']}>
             {events.map((e: D) => <tr key={e.id}><td>{when(e.at)}</td><td>{e.kind === 'chase' ? `Chase attempt ${e.sequence}` : 'Buyer escalation'}</td><td>{e.reason.replaceAll('-', ' ')}</td><td>{e.outcome.recipient || 'Contact not configured'}</td><td>{e.outcome.status === 'development' ? 'Suppressed locally' : e.outcome.status === 'accepted' ? 'Provider accepted; delivery unconfirmed' : e.outcome.status}</td></tr>)}
         </Table>

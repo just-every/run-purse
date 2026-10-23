@@ -92,6 +92,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.cashExpectation = all(s, 'cashExpectation').filter(expectation => orderIds.has(expectation.order)
         && ['cash.read', 'payable.terms'].some(permission => allowed(s, a, permission, get(s, 'order', expectation.order))));
     data.cashRequirements = cashView(s, a, orderIds, invoiceIds);
+    data.agentPolicy = a.owner ? all(s, 'agentPolicy') : [];
     data.orderChasePolicy = all(s, 'orderChasePolicy').filter(record => orderIds.has(record.order)
         && allowed(s, a, 'procurement.manage', get(s, 'order', record.order)));
     data.orderChaseEvent = all(s, 'orderChaseEvent').filter(record => orderIds.has(record.order));
@@ -137,6 +138,7 @@ export function download(s: State, a: Actor, kind: string, id: string) {
         const projected = projectProtectedContext('agentRun', record);
         if (record.workflow === 'value-realization') return new Response(JSON.stringify(projectValueRecord(s, a, projected), null, 2), { headers: {
             'content-type': 'application/json', 'content-disposition': 'attachment; filename="value-report.json"' } });
+        if (record.mode !== 'human-preparation') return new Response(JSON.stringify(projected, null, 2), { headers: { 'content-type': 'application/json', 'content-disposition': 'attachment; filename="agent-record.json"' } });
         return new Response(projected.draft + '\n\nMissing: ' + projected.missing.join(', ') + '\nSources: ' + JSON.stringify(projected.references), { headers: {
             'content-type': 'text/plain; charset=utf-8', 'content-disposition': 'attachment; filename="preparation.txt"' } });
     }

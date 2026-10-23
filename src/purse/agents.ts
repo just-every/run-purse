@@ -22,7 +22,7 @@ export function preparation(s: State, a: Actor, op: string, b: Data): Data | und
     if (op === 'edit-preparation') {
         requireThat(roles(s,a).length,'Active business capability required',403);
         const run = get(s, 'agentRun', b.id);
-        requireThat(!['value-realization','recurring-discovery'].includes(run.workflow),'Generated reports are immutable; prepare a new report for changed evidence',409);
+        requireThat(run.mode === 'human-preparation','Generated reports are immutable; prepare a new report for changed evidence',409);
         requireThat(a.owner || run.actor === a.id, 'Preparation outside your scope', 403);
         rejectProtectedInput(run);
         requireThat(run.version === b.version, 'Preparation changed', 409);
@@ -33,7 +33,7 @@ export function preparation(s: State, a: Actor, op: string, b: Data): Data | und
     if (op === 'propose-action') {
         requireThat(roles(s,a).length,'Active business capability required',403);
         const run = get(s, 'agentRun', b.run);
-        requireThat(!['value-realization','recurring-discovery'].includes(run.workflow),'Generated reports use their own source-bound review doors',409);
+        requireThat(run.mode === 'human-preparation','Generated reports use their own source-bound review doors',409);
         requireThat(run.actor === a.id || a.owner, 'Preparation outside your scope', 403);
         rejectProtectedInput(run);
         requireThat(preparationActions.includes(b.action), 'Unsupported action');

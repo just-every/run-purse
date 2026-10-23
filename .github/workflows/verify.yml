@@ -107,7 +107,7 @@ jobs:
       fail-fast: false
       matrix:
         width: [1440, 390]
-        journey: [request-again, protected-web, access, identity, scim, erasure, intake, order-send, evidence-history, integration-tokens, recurring-scenarios]
+        journey: [request-again, protected-web, access, identity, scim, erasure, intake, order-send, evidence-history, integration-tokens, recurring-scenarios, agent-governance]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
