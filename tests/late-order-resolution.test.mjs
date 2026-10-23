@@ -1,4 +1,9 @@
 import test from 'node:test';
+import {join} from 'node:path';
+import {createPortability} from '@runeditrun/rer/modules/portability';
+import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import portability from '../scripts/installer/portability.mjs';
+import {harness} from './purse-harness.mjs';
 import assert from 'node:assert/strict';
 import {agentGovernanceFixture} from './agent-governance-fixture.mjs';
 import {createEmailIntakeEdge,signedInbound} from './email-intake-fixture.mjs';
@@ -24,4 +29,5 @@ test('Signed supplier delay becomes a source-bound promise action, requester not
  const state=(await h.state(requester)).data;assert.equal(state.orderChaseEvidence.find(e=>e.order===order.id).promisedDate,day(41));assert.ok(state.lateOrderNotice.some(n=>n.order===order.id&&n.text.includes(day(41))));assert.equal((await h.state(other)).data.lateOrderNotice.length,0);
  assert.deepEqual(commercial(state.order.find(o=>o.id===order.id)),snapshot);assert.equal(h.messages.length,messages,'Source instructions send no mail or purchasing commitment');await cmd('execute-action',{id:run.proposals[0]},buyer,409);await cmd('late-order-resolve',input,buyer,409);
  const quoteEdit=await cmd('quote',{request:order.request,supplier:alternative.id,currency:'USD',delivery:day(12),freightMinor:0,taxMinor:0,conditions:'New offer',source:'Later exact quote',lines:[{description:'Lifting harness',quantity:'4',unitMinor:14000,category:'Equipment',project:'Site'}]},buyer);assert.notEqual(quoteEdit.id,quoted.id);assert.equal((await h.state()).data.agentRun.find(r=>r.id===run.id).alternatives[0].totalMinor,55500,'Later quotes never rewrite the retained proposal');
+ const archive=join(h.dir,'late-order.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);const restored=await harness();try{await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);const retained=(await restored.state()).data;assert.deepEqual(retained.agentRun.find(r=>r.id===run.id),(await h.state()).data.agentRun.find(r=>r.id===run.id));assert.ok(retained.lateOrderNotice.some(n=>n.run===run.id));}finally{await restored.close();}
 });
