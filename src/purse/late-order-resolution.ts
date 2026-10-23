@@ -56,7 +56,7 @@ export function lateOrderResolution(s: State,a: Actor,op: string,b: Data): Data 
     const refs=[{kind:'order',id:order.id,version:s.get('order:'+order.id)!.revision},{kind:'orderThreadMessage',id:reply.id,version:s.get('orderThreadMessage:'+reply.id)!.revision},
         ...proposals.map(p=>({kind:'quote',id:p.quote,version:s.get('quote:'+p.quote)!.revision}))];
     const message={channel:'in-app',recipient:request.requester,order:order.id,notice:noticeId,
-        text:`${order.number}: supplier states delivery ${promisedDate}; need date ${order.needDate}. ${delay?'The stated promise threatens the need date.':'The stated promise is within the need date.'} ${proposals.length?proposals.length+' source-priced alternative(s) await buyer review.':'No suitable complete priced-and-dated alternative is recorded.'}`};
+        text:`${order.number}: a supplier promise was recorded by ${a.email}.`,recordedBy:a.id}; need date ${order.needDate}. ${delay?'The stated promise threatens the need date.':'The stated promise is within the need date.'} ${proposals.length?proposals.length+' source-priced alternative(s) await buyer review.':'No suitable complete priced-and-dated alternative is recorded.'}`};
     const proposalId='record-promise:'+id;
     put(s,'proposedAction',proposalId,{run:id,runVersion:1,actor:a.id,action:'late-order-record',input:{id,version:1,confirmed:true},status:'proposed',references:refs});
     const run={id,agent:'AGENT-003',workflow:'late-order-resolution',actor:a.id,request:request.id,order:order.id,version:1,at,
@@ -89,8 +89,9 @@ function recordPromise(s: State,a: Actor,b: Data) {
     const source=`Supplier email ${reply.providerEmailId}; original SHA-256 ${reply.original.sha256}; stated sender is unverified. Promised delivery: ${promisedDate}`;
     const entry={version:(previous?.version??0)+1,promisedDate,acknowledgedAt:previous?.acknowledgedAt??reply.at,source,actor:a.id,agent:'AGENT-003',reply:reply.id,at};
     put(s,'supplierOrderEvidence',order.id,{order:order.id,supplier:order.supplier,...entry,history:[...(previous?.history??[]),entry]});
-    put(s,'lateOrderNotice',run.notification.notice,{...run.notification,request:request.id,run:run.id,revision:order.revision,promisedDate,at});
-    put(s,'agentRun',run.id,{...run,messages:[run.notification],outcomes:[{kind:'promise-evidence',status:'recorded',version:entry.version,promisedDate,notice:run.notification.notice,bindingChange:false,actor:a.id,at}]});
+    const notification={...run.notification,text:`${order.number}: a supplier promise was recorded by ${a.email}.`,recordedBy:a.id};
+    put(s,'lateOrderNotice',run.notification.notice,{...notification,request:request.id,run:run.id,revision:order.revision,at});
+    put(s,'agentRun',run.id,{...run,notification,messages:[notification],outcomes:[{kind:'promise-evidence',status:'recorded',version:entry.version,promisedDate,notice:run.notification.notice,bindingChange:false,actor:a.id,at}]});
     put(s,'proposedAction',proposal.id,{...proposal,status:'executed',executedBy:a.id,at});
     audit(s,a,'late-order-record',order.id,{run:run.id,proposal:proposal.id,reply:reply.id,revision:order.revision,promisedDate,notice:run.notification.notice});
     return get(s,'agentRun',run.id);
