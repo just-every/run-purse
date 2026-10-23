@@ -21,7 +21,7 @@ pantryApi.get('/api/purse/pantry', async c => {
 pantryApi.post('/api/purse/pantry/connection', async c => {
     const env=runtimeBindings(c.env),a=await actor(c.req.raw,env),{state,revision}=await load(env.DB),before=structuredClone(state),b=await protectedBody(c.req.raw);
     requireThat(a.owner,'Current native owner required',403);requireThat(b.confirmed===true,'Explicit owner connection consent required');
-    const origin=validatePantryOrigin(b.origin,env),currency=text(b.currency,'Pantry book currency',3).toUpperCase();requireThat(/^[A-Z]{3}$/.test(currency),'Choose the exact Pantry book currency');
+    const origin=validatePantryOrigin(b.origin,env),currency=text(b.currency,'Pantry book currency',3).toUpperCase();requireThat(currency==='USD','This Pantry connector supports USD books only');
     requireThat(all(state,'pantrySync').every(sync=>sync.origin===origin&&sync.currency===currency),'Existing Pantry identities belong to another origin or book currency',409);
     const old=await env.DB.prepare("SELECT * FROM p_pantry_credentials WHERE id='main'").first<Data>();requireThat((old?.generation??0)===b.generation,'Pantry connection changed; reload',409);
     const envelope=encryptPantry(env,b.token),at=new Date().toISOString(),generation=(old?.generation??0)+1;

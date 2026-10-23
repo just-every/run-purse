@@ -18,7 +18,7 @@ export function Pantry({data,reload}:{data:D;reload:()=>Promise<void>}) {
             {view.connection&&<p>{view.connection.origin} · <Chip>{view.connection.revokedAt?'Revoked':'Configured'} · generation {view.connection.generation}</Chip></p>}
             <Form key={view.connection?.generation??0} label={view.connection?'Replace Pantry credential':'Connect Pantry'} onSubmit={async b=>{if(b.confirmed!=='on')throw new Error('Confirm the exact installation and book currency');await act('/connection',{...b,generation:view.connection?.generation??0,confirmed:true});setMappings(undefined);setPreview(undefined);}}>
                 <Field label="Pantry origin" name="origin" defaultValue={view.config?.origin??''}/>
-                <Field label="Pantry book currency" name="currency" defaultValue={view.config?.currency??'USD'}/>
+                <Field label="Pantry book currency" name="currency" defaultValue={view.config?.currency??'USD'} options={[{value:'USD',label:'USD · no currency conversion'}]}/>
                 <Field label="New Pantry credential" name="token" type="password"/>
                 <label><input type="checkbox" name="confirmed"/> I checked this Pantry installation and its book currency, and authorize this connection.</label>
             </Form>

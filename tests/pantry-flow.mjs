@@ -13,7 +13,7 @@ try {
  const {h,ready,call,input,invoice,payable}=f;
  const connection={origin:ready.origin,currency:'USD',token:ready.token,generation:0,confirmed:true};
  await call('/connection',connection,'',401);await call('/connection',connection,f.requester,403);
- await call('/connection',{...connection,confirmed:false},h.owner,400);
+ await call('/connection',{...connection,confirmed:false},h.owner,400);await call('/connection',{...connection,currency:'AUD'},h.owner,400);
  await call('/connection',connection);
  const stored=await h.db.prepare("SELECT * FROM p_pantry_credentials WHERE id='main'").first();assert.ok(!JSON.stringify(stored).includes(ready.token),'Pantry secret is encrypted');
  for(const path of ['', '/options'])assert.ok(!JSON.stringify(await call(path)).includes(ready.token),'No readback');
