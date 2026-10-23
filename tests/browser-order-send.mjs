@@ -69,7 +69,7 @@ export async function initialOrderSendJourney(browser, bundle, width, evidence) 
         await panel.getByLabel('Supplier order contact', { exact: true }).fill('synthetic-purse-2862@example.test'); await panel.getByLabel('Purchase-order send reason', { exact: true }).fill('synthetic-purse-2863'); await panel.getByRole('checkbox').check();
         const send = buyer.waitForResponse(response => response.url().endsWith('/api/purse/order-send') && response.request().method() === 'POST'); await panel.getByRole('button', { name: 'Send exact purchase order', exact: true }).click(); assert.equal((await send).status(), 200);
         await panel.getByText('Mail provider accepted this purchase order. Mailbox delivery is not confirmed.', { exact: false }).waitFor();
-        const message = h.messages.find(message => message.subject.startsWith('Purchase order:')), link = new URL(message.text.match(/http://[^s]+/api/purse/order-link/[^s]+/)[0]);
+        const message = h.messages.find(message => message.subject.startsWith('Purchase order:')), link = new URL(message.text.split(/\s+/).find(word => word.startsWith(h.origin + '/api/purse/order-link/')));
         const supplierContext = await browser.newContext({ viewport: { width, height: 1000 } }); contexts.push(supplierContext); const supplier = await supplierContext.newPage();
         await supplier.goto(link.href); await supplier.getByRole('heading', { name: 'Purchase order · approved revision 1', exact: true }).waitFor();
         const pdf = await supplierContext.request.get(link.href + '/pdf'); assert.equal(pdf.status(), 200); assert.deepEqual(await pdf.body(), Buffer.from(message.attachments[0].content, 'base64')); await writeFile(join(evidence, `PO-001-supplier-${width}.pdf`), await pdf.body());
