@@ -54,6 +54,51 @@ export async function orderSendJourney(browser, bundle, width, evidence) {
         return {width,order:f.order.id,revision:2,changeOrder:1,provider:'network-edge acceptance only',archive};
     } finally {for(const context of contexts)await context.close();await restored?.close();await h.close();}
 }
+
+export async function initialOrderSendJourney(browser, bundle, width, evidence) {
+    const h = await harness(), contexts = []; let restored;
+    try {
+        const f = await orderSendFixture(h), errors = [];
+        const request = await h.command('request', { ...f.request, id: undefined, revision: undefined, title: 'synthetic-purse-2860', needDate: '2026-11-01', lines: f.request.lines.map(line => ({ ...line, id: undefined })) }, f.requester);
+        await h.command('submit', { id: request.id, revision: 1 }, f.requester); await h.command('decision', { id: request.id, revision: 1, decision: 'approved', reason: 'synthetic-purse-2861' }, f.approver);
+        const order = await h.command('convert', { id: request.id, revision: 1, issue: true }, f.buyer);
+        const open = async cookie => { const context = await nativeWebContext(browser, h, width, bundle, cookie); contexts.push(context); const page = await context.newPage(); page.on('pageerror', error => errors.push(error.message)); return page; };
+        const buyer = await open(f.buyer), requester = await open(f.requester);
+        await buyer.goto(h.origin + '/app?tab=Orders'); await buyer.getByRole('row').filter({ has: buyer.getByText(order.number, { exact: true }) }).getByRole('button', { name: 'Open order', exact: true }).click();
+        const panel = buyer.getByRole('region', { name: 'Supplier purchase order', exact: true }); await panel.getByText('Send approved purchase order', { exact: true }).click();
+        await panel.getByLabel('Supplier order contact', { exact: true }).fill('synthetic-purse-2862@example.test'); await panel.getByLabel('Purchase-order send reason', { exact: true }).fill('synthetic-purse-2863'); await panel.getByRole('checkbox').check();
+        const send = buyer.waitForResponse(response => response.url().endsWith('/api/purse/order-send') && response.request().method() === 'POST'); await panel.getByRole('button', { name: 'Send exact purchase order', exact: true }).click(); assert.equal((await send).status(), 200);
+        await panel.getByText('Mail provider accepted this purchase order. Mailbox delivery is not confirmed.', { exact: false }).waitFor();
+        const message = h.messages.find(message => message.subject.startsWith('Purchase order:')), link = new URL(message.text.match(/http://[^s]+/api/purse/order-link/[^s]+/)[0]);
+        const supplierContext = await browser.newContext({ viewport: { width, height: 1000 } }); contexts.push(supplierContext); const supplier = await supplierContext.newPage();
+        await supplier.goto(link.href); await supplier.getByRole('heading', { name: 'Purchase order · approved revision 1', exact: true }).waitFor();
+        const pdf = await supplierContext.request.get(link.href + '/pdf'); assert.equal(pdf.status(), 200); assert.deepEqual(await pdf.body(), Buffer.from(message.attachments[0].content, 'base64')); await writeFile(join(evidence, `PO-001-supplier-${width}.pdf`), await pdf.body());
+        for (let index = 0; index < 2; index++) { const original = await supplierContext.request.get(link.href + '/original/' + index); assert.equal(original.status(), 200); assert.deepEqual(await original.body(), Buffer.from(index ? f.certificate : f.terms, 'base64')); }
+        await supplier.screenshot({ path: join(evidence, `PO-001-supplier-review-${width}.png`), fullPage: true });
+        const respond = async (decision, date) => { await supplier.getByLabel('Your name', { exact: true }).fill('synthetic-purse-2864'); await supplier.getByLabel('Response', { exact: true }).selectOption(decision); await supplier.getByLabel('Promised delivery date', { exact: false }).fill(date); await supplier.getByRole('checkbox').check(); const outcome = supplier.waitForResponse(response => response.url() === link.href && response.request().method() === 'POST'); await supplier.getByRole('button', { name: 'Record supplier response', exact: true }).click(); const result = await outcome; assert.equal(result.status(), 200, await result.text()); await supplier.getByRole('heading', { name: 'Supplier response recorded', exact: true }).waitFor(); };
+        await respond('accept', '2026-11-08');
+        await panel.getByRole('button', { name: 'Refresh supplier acknowledgment', exact: true }).click(); await panel.getByText(/Supplier response to approved revision 1: Accepted\. Promised delivery: 2026-11-08/).waitFor();
+        await supplier.goto(link.href); await supplier.getByLabel('Quantity', { exact: true }).fill('3'); await supplier.getByLabel('Unit price (USD)', { exact: true }).fill('112.25'); await supplier.getByLabel('Response note', { exact: true }).fill('synthetic-purse-2865'); await respond('change', '2026-11-22');
+        await panel.getByRole('button', { name: 'Refresh supplier acknowledgment', exact: true }).click(); await panel.getByText(/Supplier response to approved revision 1: Accepted with proposed changes/).waitFor();
+        await panel.getByText('Supplier response 2 · Accepted with proposed changes', { exact: true }).click(); await panel.getByText(/quantity 2 → 3; unit price/).waitFor();
+        await buyer.screenshot({ path: join(evidence, `PO-001-buyer-response-${width}.png`), fullPage: true });
+        await requester.goto(h.origin + '/app?tab=Requests'); await requester.getByRole('article').filter({ hasText: 'synthetic-purse-2860' }).getByRole('button', { name: 'Open request', exact: true }).click();
+        const requesterPanel = requester.getByRole('region', { name: 'Supplier purchase order', exact: true }); await requesterPanel.getByText(/Supplier response to approved revision 1: Accepted with proposed changes/).waitFor(); assert.equal(await requesterPanel.getByRole('button', { name: 'Create amendment draft from supplier response', exact: true }).count(), 0);
+        await requester.screenshot({ path: join(evidence, `PO-001-requester-response-${width}.png`), fullPage: true });
+        for (const page of [buyer, requester, supplier]) assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'No overflow at ' + width);
+        const before = (await h.state()).data.order.find(row => row.id === order.id); assert.equal(before.lines[0].unitMinor, 10000);
+        await panel.getByLabel('Amendment reason', { exact: true }).fill('synthetic-purse-2866'); await panel.getByLabel('Use the supplier-promised date as the amendment’s need date.', { exact: true }).check(); await panel.getByLabel('I adopt this exact supplier proposal into a draft that needs renewed approval.', { exact: true }).check();
+        const adoption = buyer.waitForResponse(response => response.url().endsWith('/adopt-response') && response.request().method() === 'POST'); await panel.getByRole('button', { name: 'Create amendment draft from supplier response', exact: true }).click(); const adopted = await adoption; assert.equal(adopted.status(), 200, await adopted.text());
+        const draft = (await h.state()).data.request.find(row => row.id === request.id); assert.equal(draft.status, 'draft'); assert.equal(draft.revision, 2); assert.equal(draft.lines[0].unitMinor, 11225); assert.equal(draft.needDate, '2026-11-22'); assert.equal(h.messages.filter(message => message.subject.startsWith('Purchase order:')).length, 1);
+        assert.equal((await supplierContext.request.get(link.href)).status(), 410, 'Draft adoption closes old revision capability');
+        const source = await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability }), archive = join(evidence, `PO-001-${width}.rer`); await exportArchive(source, archive, []);
+        restored = await harness(); const destination = await createPortability({ db: restored.db, buckets: { ORIGINALS: restored.originals }, policy: portability }); await importArchive(destination, archive, []);
+        for (const kind of ['orderSend', 'orderAcknowledgment', 'orderSupplierResponse', 'supplierOrderEvidence']) { const rows = async db => (await db.prepare('SELECT * FROM p_records WHERE kind=? ORDER BY id').bind(kind).all()).results; assert.deepEqual(await rows(h.db), await rows(restored.db)); }
+        const restoredLink = new URL(link.href); restoredLink.host = new URL(restored.origin).host; assert.equal((await fetch(restoredLink)).status, 410); assert.equal((await restored.db.prepare('SELECT count(*) AS n FROM p_order_send_links').first()).n, 0);
+        assert.deepEqual(errors, []); return { width, order: order.id, initialRevision: 1, supplierResponses: 2, amendmentDraft: 2, provider: 'network-edge acceptance only; live delivery/bounce qualification pending', archive };
+    } finally { for (const context of contexts) await context.close(); await restored?.close(); await h.close(); }
+}
+
 async function main() {
     const selected=process.argv.find(argument=>argument.startsWith('--width=')),widths=selected?[Number(selected.slice(8))]:[1440,390];
     assert.ok(widths.every(width=>[1440,390].includes(width)),'Use 1440 or 390');
@@ -61,6 +106,6 @@ async function main() {
     const bundle=await build({stdin:{contents:"import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);",resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'esm',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
     const {chromium}=await import(process.env.PURSE_PLAYWRIGHT_MODULE??'@playwright/test');
     const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic'],...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{})});
-    try {for(const width of widths)console.log(JSON.stringify(await orderSendJourney(browser,bundle.outputFiles[0].text,width,evidence)));} finally {await browser.close();}
+    try {for(const width of widths){console.log(JSON.stringify(await orderSendJourney(browser,bundle.outputFiles[0].text,width,evidence)));console.log(JSON.stringify(await initialOrderSendJourney(browser,bundle.outputFiles[0].text,width,evidence)));}} finally {await browser.close();}
 }
 if (process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).href)await main();
