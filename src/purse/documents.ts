@@ -87,6 +87,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.deposit = all(s, 'deposit').filter(deposit => orderIds.has(deposit.order) && allowed(s, a, 'invoice.read', get(s, 'order', deposit.order)));
     data.budget = a.owner ? all(s, 'budget') : [];
     data.orderAdoption = a.owner ? all(s, 'orderAdoption').filter(adoption => orderIds.has(adoption.order)) : [];
+    data.supplierInvoiceSubmission=all(s,'supplierInvoiceSubmission').filter(row=>invoiceIds.has(row.invoice));
     data.payable = all(s, 'payable').filter(payable => invoiceIds.has(payable.invoice) && ['cash.read', 'payable.terms', 'payable.approve']
         .some(permission => allowed(s, a, permission, get(s, 'invoice', payable.invoice))));
     data.cashExpectation = all(s, 'cashExpectation').filter(expectation => orderIds.has(expectation.order)
@@ -111,6 +112,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
         .map(document => { supplierDocumentIds.add(document.id); return { ...document, compliance: supplierDocumentStatus(s, document) }; });
     for (const kind of ['supplierDocumentReminder', 'supplierDocumentSubmission']) data[kind] = all(s, kind).filter(record => supplierDocumentIds.has(record.document));
     data.attachment = all(s, 'attachment').filter(attachment => canReadRecord(s, a, 'attachment', attachment)).map(({ base64, ...attachment }) => attachment);
+    for(const kind of ['quoteAgentConsent','quoteAgentReview']) data[kind]=all(s,kind).filter(row=>data.rfq.some((rfq:Data)=>rfq.id===row.rfq));
     data.agentRun = all(s, 'agentRun').filter(run => canReadRecord(s, a, 'agentRun', run)).map(run => run.workflow === 'value-realization'
         ? projectValueRecord(s, a, projectProtectedContext('agentRun', run)) : projectProtectedContext('agentRun', run));
     data.proposedAction = all(s, 'proposedAction').filter(proposal => canReadRecord(s, a, 'proposedAction', proposal)).map(proposal => projectProtectedContext('proposedAction', proposal));

@@ -31,6 +31,12 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
         let document = b.document;
         if (b.invoice) {
             const historical = get(s, 'invoice', b.invoice);
+            if(historical.supplierSubmission){
+                requireThat(historical.order===order.id && historical.sourceConfirmation==='pending','Choose a pending supplier invoice on this PO',409);
+                const source=get(s,'invoiceSource',historical.supplierSource),retained=get(s,'attachment',source.attachment);
+                requireThat(source.order===order.id && source.orderRevision===order.revision && retained.kind==='invoiceSource' && retained.record===source.id && retained.sha256===historical.document?.sha256 && !retained.erasure && retained.base64,'Supplier invoice original is unavailable',409);
+                audit(s,a,op,order.id,{source:source.id,invoice:historical.id});return source;
+            }
             requireThat(historical.imported && historical.adoptedVia && historical.order === order.id, 'Choose a historical bill on this adopted PO', 409);
             const retained = all(s, 'attachment').find(file => file.kind === 'invoice' && file.record === historical.id && file.sha256 === historical.document?.sha256);
             requireThat(retained && !retained.erased, 'Retained private original is unavailable; stage the actual original for source confirmation', 409);

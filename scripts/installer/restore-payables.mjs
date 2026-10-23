@@ -3,7 +3,7 @@ const add = (d,n) => new Date(Date.parse(d+'T12:00:00Z')+n*86400000).toISOString
 const terms = ['Net 15','Net 30','Net 60','2/10 Net 30','Due on receipt'];
 export function validatePayables(all,get,check) {
  for (const p of all('payable')) {
-  const i=get('invoice',p.invoice);check(p.id===i.id && (!i.imported || i.adoptedVia && i.sourceConfirmation==='confirmed') && Array.isArray(p.history) && p.history.length>0,'payable_link');
+  const i=get('invoice',p.invoice);check(p.id===i.id && (!i.imported || i.adoptedVia && i.sourceConfirmation==='confirmed') && (!i.supplierSubmission || i.sourceConfirmation==='confirmed') && Array.isArray(p.history) && p.history.length>0,'payable_link');
   for(const [index,h] of p.history.entries()) {
    check(h.version===index+1 && validDate(h.invoiceDate) && terms.includes(h.term),'payable_terms');
    check(h.dueDate===add(h.invoiceDate,h.term==='Due on receipt'?0:h.term==='Net 15'?15:h.term==='Net 60'?60:30) && h.discountDate===(h.term==='2/10 Net 30'?add(h.invoiceDate,10):null) && h.discountPercent===(h.term==='2/10 Net 30'?2:0),'payable_dates');

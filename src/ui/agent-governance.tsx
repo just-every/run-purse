@@ -8,9 +8,9 @@ export function AgentGovernance({ data, mutate }: { data: D; mutate: (op: string
     return <section className="panel" aria-label="Agent controls"><h2>Agent controls</h2>
         <p>Owners enable each native agent for a purchase type. An exact type overrides the all-types setting. Pausing stops subsequent effects; an email already submitted retains its actual outcome.</p>
         <Table heads={['Agent', 'Purchase type', 'State', 'Supplier chase limits', 'Changed']}>
-            {policies.map((row: D) => <tr key={row.id}><td>{row.agent === 'AGENT-003' ? 'Late-order follow-up' : 'Recurring spend'}</td><td>{row.purchaseType}</td><td>{row.enabled ? 'Enabled' : 'Paused'}</td><td>{row.agent === 'AGENT-003' ? `${row.maxChases} attempts · ${row.cadenceDays} days apart` : 'No supplier sends'}</td><td>{when(row.at)}</td></tr>)}
+            {policies.map((row: D) => <tr key={row.id}><td>{row.agent === 'AGENT-003' ? 'Late-order follow-up' : row.agent === 'AGENT-002' ? 'Quote collection' : 'Recurring spend'}</td><td>{row.purchaseType}</td><td>{row.enabled ? 'Enabled' : 'Paused'}</td><td>{row.agent === 'AGENT-003' ? `${row.maxChases} attempts · ${row.cadenceDays} days apart` : 'No supplier sends'}</td><td>{when(row.at)}</td></tr>)}
         </Table>
-        <label className="field">Native agent<select aria-label="Native agent" value={agent} onChange={event => setAgent(event.target.value)}><option value="AGENT-003">Late-order follow-up</option><option value="AGENT-006">Recurring spend</option></select></label>
+        <label className="field">Native agent<select aria-label="Native agent" value={agent} onChange={event => setAgent(event.target.value)}><option value="AGENT-002">Quote collection</option><option value="AGENT-003">Late-order follow-up</option><option value="AGENT-006">Recurring spend</option></select></label>
         <label className="field">Agent purchase type<input aria-label="Agent purchase type" value={type} onChange={event => setType(event.target.value)}/></label>
         <Form key={agent + ':' + type + ':' + (current?.version ?? 0)} label="Save agent controls" onSubmit={body => mutate('agent-policy', { agent, purchaseType: type, version: current?.version ?? 0,
             enabled: body.enabled === 'yes', cadenceDays: Number(body.cadenceDays), maxChases: Number(body.maxChases), reason: body.reason })}>

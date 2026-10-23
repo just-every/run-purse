@@ -17,6 +17,7 @@ const nativeOwner = new Set([
 ]);
 const orderById = new Set(['close-order', 'reopen-order']);
 const orderByOrder = new Set(['order-chase-policy', 'supplier-order-evidence']);
+const quoteAgentCommands = new Set(['quote-agent-consent','quote-agent-run','quote-agent-clarify','quote-agent-review']);
 const requestProcurement = new Set(['agreement-award']);
 const quoteReadingNew = new Set(['quote-extract', 'quote-reading-propose']);
 const quoteReadingExisting = new Set(['quote-reading-edit', 'quote-reading-confirm']);
@@ -47,6 +48,7 @@ function preparationReferences(s: State, a: Actor, references: unknown) {
  */
 export function authorizeAccessCommand(s: State, a: Actor, op: string, b: Data): void {
     if (a.owner || op === 'execute-action') return;
+    if(quoteAgentCommands.has(op)){const rfq=get(s,'rfq',b.rfq);requirePermission(s,a,'rfq.manage',get(s,'request',rfq.request));return;}
     if (globalProcurement.has(op)) { unrestrictedProcurement(s, a); return; }
     if (nativeOwner.has(op)) { requireThat(false, 'Current native owner required', 403); }
     if (orderById.has(op)) { procurementRecord(s, a, 'order', b.id); return; }

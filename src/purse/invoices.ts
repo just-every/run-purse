@@ -30,7 +30,7 @@ export function invoice(s: State, a: Actor, b: Data, confirmation?: { reading: s
 /** The supplier capability is checked and atomically fenced by its HTTP door.
  * It records evidence without impersonating an authenticated native operator. */
 export type InvoiceCaptureAuthority = { kind: 'native'; actor: Actor } | { kind: 'supplier-link'; event: Data };
-export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: Data, confirmation?: { reading: string }) {
+export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: Data, confirmation?: { reading: string }): Data {
     const a = authority.kind === 'native' ? authority.actor : null;
     if (a) requirePermission(s, a, 'invoice.capture');
     const o = get(s, 'order', b.order);

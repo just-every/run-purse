@@ -1,7 +1,7 @@
 import { rejectProtectedInput } from './protected-input';
 import { all, audit, get, put, requireThat, text, type Actor, type Data, type State } from './types';
 
-export const governedAgents = ['AGENT-003', 'AGENT-006'];
+export const governedAgents = ['AGENT-002', 'AGENT-003', 'AGENT-006'];
 export function purchaseTypes(subject: Data): string[] {
     const types = [...new Set((subject.lines ?? []).map((line: Data) => typeof line.category === 'string' ? line.category.trim().toLowerCase() : '').filter(Boolean))] as string[];
     return types.length ? types : ['*'];

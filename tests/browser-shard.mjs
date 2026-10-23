@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 // refusal, equality and continuation checks in browser.mjs. Invoice reading is
 // their one shared domain prerequisite: the restored search check must resolve
 // a real reviewed source, including in the dedicated archive shard.
-export const browserJourneys = Object.freeze(["archive", "supplier-performance", "catalogue", "order-chasing", "supplier-documents", "supplier-duplicates", "payables", "audit-log", "spend-report", "po-documents", "performance-report", "invoice-risk", "receipt-routing", "quote-reading", "rfq", "invoice-reading", "invoice-inbox", "email-intake", "search", "agreements", "integration-tokens", "agent-value", "order-adoption", "protected-storage", "protected-preparation"]);
+export const browserJourneys = Object.freeze(["archive", "supplier-performance", "catalogue", "order-chasing", "supplier-documents", "supplier-duplicates", "payables", "audit-log", "spend-report", "po-documents", "performance-report", "invoice-risk", "receipt-routing", "quote-reading", "rfq", "invoice-reading", "invoice-inbox", "email-intake", "search", "agreements", "integration-tokens", "agent-value", "quote-agent", "order-adoption", "protected-storage", "protected-preparation"]);
 
 export function browserShard(args) {
  const selectors=args.filter(arg=>arg.startsWith('--journey='));

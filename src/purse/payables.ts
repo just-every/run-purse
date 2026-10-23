@@ -21,11 +21,11 @@ export function payables(s: State, a: Actor, op: string, b: Data): Data | undefi
     const invoice = get(s, 'invoice', b.invoice), order = get(s, 'order', invoice.order), old = s.get('payable:' + invoice.id)?.value;
     requirePermission(s, a, permission, invoice);
     requireThat(operationalOrder(s, order) && (!invoice.imported || invoice.adoptedVia), 'Native or explicitly adopted invoice evidence required', 409);
-    if (invoice.imported) requireThat(invoice.sourceConfirmation === 'confirmed', 'Confirm the imported private original through a source-bound invoice reading before new cash-planning terms or approval', 409);
+    if (invoice.imported || invoice.supplierSubmission) requireThat(invoice.sourceConfirmation === 'confirmed', 'Confirm the private invoice original through a source-bound invoice reading before new cash-planning terms or approval', 409);
     requireThat(b.version === (old?.version ?? 0), 'Payable changed; reload', 409);
     requireThat(!old?.approvedAt, 'Approved cash-planning terms are immutable', 409);
     if (op === 'payable-terms') {
-        if (invoice.imported) requireThat(b.invoiceDate === invoice.invoiceDate, 'Use the confirmed source invoice date for imported bill terms', 409);
+        if (invoice.imported || invoice.supplierSubmission) requireThat(b.invoiceDate === invoice.invoiceDate, 'Use the confirmed source invoice date for imported bill terms', 409);
         const entry = { ...termDates(b.invoiceDate, b.term), reason: text(b.reason, 'Terms evidence'), actor: a.id, at: new Date().toISOString(), version: (old?.version ?? 0) + 1 };
         put(s, 'payable', invoice.id, { invoice: invoice.id, ...entry, history: [...(old?.history ?? []), entry] });
         audit(s, a, op, invoice.id, entry);

@@ -1,5 +1,6 @@
 import {browserShard} from './browser-shard.mjs';
 import {orderAdoptionJourney,restoredOrderAdoption} from './browser-order-adoption.mjs';
+import {quoteAgentJourney} from './browser-quote-agent.mjs'
 import {agentValueJourney} from './browser-agent-value.mjs';
 import {agreementsJourney,agreementsEmptyJourney} from './browser-agreements.mjs';
 import {searchJourney} from './browser-search.mjs';
@@ -16,7 +17,7 @@ import {invoiceRiskJourney} from './browser-invoice-risk.mjs'
 import {performanceReportJourney} from './browser-performance-report.mjs'
 import {queuedEntrypoint} from '@runeditrun/rer/queued-entry'
 const queued=await queuedEntrypoint(import.meta.url,'test:purse-browser');if(queued!==null)process.exit(queued);
-import {chromium} from '@playwright/test'
+const {chromium}=await import(process.env.PURSE_PLAYWRIGHT_MODULE||'@playwright/test')
 import assert from 'node:assert/strict'
 import {isDeepStrictEqual} from 'node:util'
 import {access,mkdir,readFile,writeFile,rm,copyFile} from 'node:fs/promises'
@@ -67,6 +68,7 @@ try{
  if(shard.includes('search'))for(const width of widths)results.push(await searchJourney(browser,root,server.origin,width,evidence));
  if(shard.includes('agreements'))for(const width of widths)results.push(await agreementsJourney(browser,root,server.origin,width,evidence,{siteOrigin:server.siteOrigin}));
  if(shard.includes('integration-tokens'))for(const width of widths)results.push(await integrationTokensJourney(browser,root,server.origin,width,evidence));
+ if(shard.includes('quote-agent'))for(const width of widths)results.push(await quoteAgentJourney(browser,root,server.origin,width,evidence));
  if(shard.includes('agent-value'))for(const width of widths)results.push(await agentValueJourney(browser,root,server.origin,width,evidence,{siteOrigin:server.siteOrigin}));
  if(shard.includes('order-adoption'))for(const width of widths)results.push(await orderAdoptionJourney(browser,root,server.origin,width,evidence));
  if(shard.includes('protected-storage'))for(const width of widths)results.push(await protectedStorageJourney(browser,root,server.origin,width,evidence));
