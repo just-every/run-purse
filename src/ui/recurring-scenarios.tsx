@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { RecurringOpportunities } from './recurring-opportunities';
 import { ScenarioSources } from './scenario-sources';
 import { Field, Form, Table, Details, money, type D } from './shared';
 
@@ -7,20 +9,22 @@ const amount = (value: string) => {
     return Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
 };
 export function RecurringScenarios({data,actor,mutate}:{data:D;actor:D;mutate:(op:string,b:D)=>Promise<any>}) {
+    const [choice,setChoice]=useState<D>();
     const owner=actor.roles.includes('owner'), scenarios=data.recurringScenario??[], agreements=data.agreement??[];
     const linked=(agreement:D)=>data.recurringSeries.filter((series:D)=>series.agreement===agreement.id).flatMap((series:D)=>data.order.filter((order:D)=>order.id===series.order&&data.cashRequirements?.commitments.some((row:D)=>row.order===order.id)));
     return <section className="panel" aria-label="Recurring spend scenarios"><h2>Recurring spend scenarios</h2>
         <p>Compare overlapping services using recorded agreements and issued PO obligations. These are human-entered assumptions, never realized savings. Finance and each affected agreement owner approve the exact scenario before a nonbinding brief can be drafted.</p>
         <p className="quiet">Deterministic v1 · model and provider: none. Future unissued renewals stay unknown. Preparing or approving a scenario changes no commitment, cash forecast, agreement or order, and sends nothing.</p>
-        {owner&&<Form label="Prepare recurring scenario" onSubmit={b=>{
+        {owner&&<RecurringOpportunities mutate={mutate} onChoose={setChoice} runs={data.agentRun.filter((run:D)=>run.workflow==='recurring-discovery').sort((a:D,b:D)=>b.at.localeCompare(a.at))}/>}
+        {owner&&<Form key={choice?.id??'manual'} label="Prepare recurring scenario" onSubmit={b=>{
             const selected=agreements.filter((agreement:D)=>b['include-'+agreement.id]==='on');
             const evidence=['valueSeatImport','valueConfirmation','supplierIssue','supplierOrderEvidence','receipt'].flatMap(kind=>(data[kind]??[]).filter((row:D)=>b['evidence-'+kind+'-'+row.id]==='on').map((row:D)=>({kind,id:row.id})));
             return mutate('recurring-scenario-prepare',{kind:b.kind,from:b.from,to:b.to,reason:b.reason,operationalRisk:b.risk,agreementIds:selected.map((row:D)=>row.id),evidence,
                 assumptions:selected.flatMap((agreement:D)=>{const orders=linked(agreement);return orders.length?orders.map((order:D)=>({agreement:agreement.id,order:order.id,expectedDate:b['date-'+order.id],proposedMinor:amount(b['cash-'+order.id]),proposedCommitmentMinor:amount(b['commit-'+order.id]),reason:b['reason-'+agreement.id]})):[{agreement:agreement.id,reason:b['reason-'+agreement.id]}];})});
         }}>
-            <Field label="Scenario action" name="kind" options={['consolidate','renegotiate','cancel'].map(value=>({value,label:value}))}/><Field label="Scenario from" name="from" type="date"/><Field label="Scenario through" name="to" type="date"/>
-            <Field label="Scenario reason" name="reason"/><Field label="Operational risk and mitigation" name="risk" type="textarea"/>
-            <div className="field-wide">{agreements.map((agreement:D)=><fieldset key={agreement.id}><legend><label><input type="checkbox" name={'include-'+agreement.id}/> {agreement.name} · {agreement.currency} · notice {agreement.noticeDeadline}</label></legend>
+            <Field label="Scenario action" name="kind" defaultValue={choice?.kind==='cancellation-review'?'cancel':choice?.kind??''} options={['consolidate','renegotiate','cancel'].map(value=>({value,label:value}))}/><Field label="Scenario from" name="from" type="date" defaultValue={choice?.from??''}/><Field label="Scenario through" name="to" type="date" defaultValue={choice?.to??''}/>
+            <Field label="Scenario reason" name="reason" defaultValue={choice?.reason??''}/><Field label="Operational risk and mitigation" name="risk" type="textarea" defaultValue={choice?.operationalRisk??''}/>
+            <div className="field-wide">{agreements.map((agreement:D)=><fieldset key={agreement.id}><legend><label><input type="checkbox" name={'include-'+agreement.id} defaultChecked={choice?.agreementIds.includes(agreement.id)??false}/> {agreement.name} · {agreement.currency} · notice {agreement.noticeDeadline}</label></legend>
                 <Field label={'Assumption for '+agreement.name} name={'reason-'+agreement.id} required={false}/>
                 {linked(agreement).map((order:D)=><div key={order.id}><p>{order.number} · current forecast {money(data.cashRequirements.commitments.find((row:D)=>row.order===order.id).amountMinor,agreement.currency)}</p><Field label={'Proposed cash for '+order.number+' ('+agreement.currency+')'} name={'cash-'+order.id} required={false}/><Field label={'Proposed commitment for '+order.number+' ('+agreement.currency+')'} name={'commit-'+order.id} required={false}/><Field label={'Proposed date for '+order.number} name={'date-'+order.id} type="date" required={false}/></div>)}
                 {!linked(agreement).length&&<p>No linked outstanding issued PO: future forecast and commitment effect are unknown.</p>}

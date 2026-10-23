@@ -1,3 +1,4 @@
+import { validateRecurringDiscovery } from './restore-recurring-discovery.mjs';
 import { validateRecurringScenarios } from './restore-recurring-scenarios.mjs';
 import { validatePantry } from './restore-pantry.mjs';
 import { validateOrderSends } from './restore-order-sends.mjs';
@@ -78,6 +79,7 @@ export function validatePurchasingArchive(rows) {
  check(all('business').length === 1, 'business'); get('business','main');
  validateAccess(all,get);
  validateRecurringScenarios(all,get,check);
+ validateRecurringDiscovery(all,get,check);
  validateApprovalChains(all,get,check,same);
  validateTravel(all,get,check,same);
  validateOrderSends(all,get,check);
