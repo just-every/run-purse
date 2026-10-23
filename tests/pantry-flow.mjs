@@ -1,0 +1,44 @@
+// Real Purse and Pantry native doors, not a CSV or simulated sibling.
+import assert from 'node:assert/strict';
+import {join,resolve} from 'node:path';
+import {mkdir} from 'node:fs/promises';
+import {createPortability} from '@runeditrun/rer/modules/portability';
+import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import portability from '../scripts/installer/portability.mjs';
+import {records,rows} from './browser-archive.mjs';
+import {harness} from './purse-harness.mjs';
+import {pantryFixture} from './pantry-fixture.mjs';
+const f=await pantryFixture();let restored;
+try {
+ const {h,ready,call,input,invoice,payable}=f;
+ const connection={origin:ready.origin,currency:'USD',token:ready.token,generation:0,confirmed:true};
+ await call('/connection',connection,'',401);await call('/connection',connection,f.requester,403);
+ await call('/connection',{...connection,confirmed:false},h.owner,400);
+ await call('/connection',connection);
+ const stored=await h.db.prepare("SELECT * FROM p_pantry_credentials WHERE id='main'").first();assert.ok(!JSON.stringify(stored).includes(ready.token),'Pantry secret is encrypted');
+ for(const path of ['', '/options'])assert.ok(!JSON.stringify(await call(path)).includes(ready.token),'No readback');
+ const preview=(await call('/preview',input)).plan;
+ await call('/sync',{...input,fingerprint:preview.fingerprint,confirmed:false,reason:'Reviewed'},h.owner,400);
+ const body={...input,fingerprint:preview.fingerprint,confirmed:true,reason:'Owner reviewed exact accounting posting'};
+ const first=(await call('/sync',body)).sync;assert.equal(first.returned.paymentStatus,'unpaid');assert.equal(first.returned.openMinor,25000);
+ assert.ok(first.url.endsWith('/app/sales/bill/'+first.externalId));
+ const repeated=(await call('/sync',body)).sync;assert.equal(repeated.externalId,first.externalId);assert.equal((await f.command('snapshot')).bills.length,1);
+ const current=await h.state();assert.equal(current.data.cashRequirements.bills.find(b=>b.invoice===invoice.id).amountMinor,25000);assert.equal(current.data.cashRequirements.commitments.length,0,'Posted bill is not another commitment');
+ const paid=await f.command('pay',{vendorId:first.externalVendorId,billId:first.externalId,amount:'100.00'});
+ const partial=(await call('/refresh',{invoice:invoice.id})).sync;assert.equal(partial.returned.paymentStatus,'partially-paid');assert.equal(partial.returned.paidMinor,10000);assert.equal(partial.returned.openMinor,15000);assert.equal(partial.returned.payments[0].id,paid.id);
+ assert.equal((await h.state()).data.cashRequirements.bills.find(b=>b.invoice===invoice.id).amountMinor,15000);
+ await f.command('pay',{vendorId:first.externalVendorId,billId:first.externalId,amount:'150.00'});
+ const settled=(await call('/refresh',{invoice:invoice.id})).sync;assert.equal(settled.returned.paymentStatus,'paid');assert.equal(settled.returned.reconciliationStatus,'unknown');
+ assert.equal((await h.state()).data.cashRequirements.bills.length,0);await call('/refresh',{invoice:invoice.id});assert.equal((await h.state()).data.cashRequirements.weeks.length,0,'Repeated payment return never creates another liability or payment');
+ const replacement=await f.command('rotate');await call('/connection',{...connection,token:replacement.token,generation:1});assert.equal((await call('/sync',body)).sync.externalId,first.externalId);assert.equal((await f.command('snapshot')).bills.length,1,'Rotated credential adopts retained external ID');
+ const events=(await h.send('/api/purse/audit',undefined,h.owner)).value.events;assert.ok(events.some(e=>e.action==='pantry-sync-attempt'&&e.record===invoice.id&&e.actor));assert.ok(events.some(e=>e.action==='pantry-sync-result'&&e.externalId===first.externalId&&e.paymentStatus==='paid'&&e.generation));
+ const csv=(await h.send('/api/purse/audit.csv',undefined,h.owner)).value;assert.match(csv,/pantry-sync-result/);assert.ok(!csv.includes(ready.token));assert.ok(!csv.includes(replacement.token));
+ const evidence=resolve(process.env.PURSE_EVIDENCE||'.cache/pantry');await mkdir(evidence,{recursive:true});const archive=join(evidence,'pantry.rer');
+ await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
+ const archived=rows(await records(archive));assert.ok(!archived.some(row=>row.table==='p_pantry_credentials'));for(const secret of [ready.token,replacement.token])assert.ok(!JSON.stringify(archived).includes(secret));
+ restored=await harness();await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
+ assert.equal((await restored.db.prepare('SELECT COUNT(*) n FROM p_pantry_credentials').first()).n,0);const history=await restored.db.prepare("SELECT value FROM p_records WHERE kind='pantrySync' AND id=?").bind(invoice.id).first();assert.equal(JSON.parse(history.value).returned.paymentStatus,'paid');
+ await call('/connection/revoke',{});await call('/refresh',{invoice:invoice.id},h.owner,409);await call('/connection/delete',{});assert.equal((await call('')).connection,null);
+ assert.equal((await h.state()).data.payable.find(p=>p.invoice===invoice.id).approvedAt,payable.approvedAt,'Accounting/payment return never rewrites cash approval evidence');
+ console.log(JSON.stringify({outcome:'passed',pantryHead:ready.head,invoice:invoice.id,bill:first.externalId,paidMinor:25000,scope:'vendor/bill/re-sync/payment-return; reconciliation unknown'}));
+}finally{await restored?.close();await f.close();}
