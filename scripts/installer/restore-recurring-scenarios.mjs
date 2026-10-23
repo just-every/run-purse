@@ -14,9 +14,9 @@ const pick = (v, fields) => Object.fromEntries(fields.split(',').filter(k => v[k
 const fields = {
  agreement: 'version,name,reference,supplier,currency,valueMinor,firstOfferMinor,startDate,endDate,autoRenew,noticeDays,noticeDeadline,owner,priceHistory',
  supplier: 'name,mergedInto', recurringSeries: 'order,request,agreement,status,version,nextDate,endDate,maxOrders,generatedCount',
- order: 'request,revision,status,currency,totalMinor,issuedAt,needDate,supplier,amendedBy,lines', request: 'revision,status,valuePromise',
+ order: 'number,request,revision,status,currency,totalMinor,issuedAt,needDate,supplier,amendedBy,lines', request: 'title,revision,status,valuePromise',
  orderClosure: 'order,active,lines', cashExpectation: 'order,version,expectedDate',
- commitment: 'request,revision,currency,amountMinor,event,at', invoice: 'order,currency,totalMinor,hasSourcePayment,flags,riskReviews,allocations,pantry', payable: 'invoice,version,approvedAt,approvedMinor,invoiceDate,term,dueDate,discountDate,discountPercent',
+ commitment: 'request,revision,currency,amountMinor,event,at', invoice: 'reference,order,currency,totalMinor,hasSourcePayment,flags,riskReviews,allocations,pantry', payable: 'invoice,version,approvedAt,approvedMinor,invoiceDate,term,dueDate,discountDate,discountPercent',
  valueSeatImport: 'request,revision,provider,periodStart,periodEnd,activeRule,sha256,seatCount,activeSeats,provenance',
  valueConfirmation: 'request,revision,usefulness,at,run,runVersion', supplierIssue: 'supplier,order,category,status,at',
  supplierOrderEvidence: 'order,supplier,version,promisedDate,acknowledgedAt', receipt: 'order,line,event,q,quantity,at,valueMinor,mode,percentage,milestone',
@@ -70,6 +70,9 @@ export function validateRecurringScenarios(all, get, check) {
    const key = ref.kind + ':' + ref.id; fail(!byKey.has(key), 'source_duplicate'); byKey.set(key, ref);
    const original = get(ref.kind, ref.id); fail(!original.imported, 'native_source');
    shape(ref.value, fields[ref.kind], 'source_' + ref.kind);
+   if(ref.kind==='order')fail(str(ref.value.number,200),'order_number');
+   if(ref.kind==='request')fail(str(ref.value.title),'request_title');
+   if(ref.kind==='invoice')fail(str(ref.value.reference),'invoice_reference');
    const nested = ref.kind === 'agreement' ? ['priceHistory'] : ['order','orderClosure'].includes(ref.kind) ? ['lines'] : ref.kind === 'request' ? ['valuePromise'] : ref.kind === 'invoice' ? ['flags','riskReviews','allocations','pantry'] : [];
    fail(Object.entries(ref.value).every(([k,v]) => nested.includes(k) || v === null || ['string','number','boolean'].includes(typeof v)), 'source_scalars');
    if (ref.kind === 'order') for (const line of array(ref.value.lines, 100, 'order_lines')) {
@@ -201,7 +204,9 @@ export function validateRecurringScenarios(all, get, check) {
   array(draft.authorityProofs,21,'draft_signatures');for(const p of draft.authorityProofs)shape(p,'actor,operatorVersion,owner','draft_signature');
   const signatures=consents.map(r=>({actor:r.actor,operatorVersion:r.operatorVersion,owner:r.nativeOwner}));
   fail(equal([...draft.authorityProofs].sort((a,b)=>canonical(a).localeCompare(canonical(b))),signatures.sort((a,b)=>canonical(a).localeCompare(canonical(b)))),'draft_signatures');
-  const body=['NONBINDING DRAFT — human review and separate sending required.',`Scenario ${scenario.hash}`,`Action: ${c.kind}`,...s.agreements.map(r=>`Agreement ${r.id}: notice deadline ${r.noticeDeadline}.`),`Assumption reason: ${c.reason}`,`Operational risk: ${c.operationalRisk}`,`Hypothetical cash change: ${s.effect.cashMinor} ${s.currency} minor units. Unknown forecasts: ${s.unknownForecastAgreements.join(', ')||'none'}.`,'No commitment, forecast, agreement, purchase order, supplier communication or cancellation has been changed.'].join('\n');
+  const agreementLabel=id=>{const terms=s.sources.find(r=>r.kind==='agreement'&&r.id===id).value;return `${terms.name} (${terms.reference})`;};
+  const absolute=BigInt(Math.abs(s.effect.cashMinor)),cashText=`${s.currency} ${s.effect.cashMinor<0?'-':''}${absolute/100n}.${String(absolute%100n).padStart(2,'0')}`;
+  const body=['NONBINDING DRAFT — human review and separate sending required.',`Scenario ${scenario.hash}`,`Action: ${c.kind}`,...s.agreements.map(r=>`${agreementLabel(r.id)}: notice deadline ${r.noticeDeadline}.`),`Assumption reason: ${c.reason}`,`Operational risk: ${c.operationalRisk}`,`Hypothetical cash change: ${cashText}. Unknown forecasts: ${s.unknownForecastAgreements.map(agreementLabel).join(', ')||'none'}.`,'No commitment, forecast, agreement, purchase order, supplier communication or cancellation has been changed.'].join('\n');
   fail(draft.text===body&&audit('recurring-scenario-draft',a=>a.record===scenario.id&&a.hash===scenario.hash&&a.kind===draft.kind&&a.actor===draft.actor),'draft_body_audit');
  }
 }

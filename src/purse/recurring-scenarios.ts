@@ -18,6 +18,8 @@ const evidenceFields: Record<string, string> = {
 };
 const pick = (value: Data, fields: string) => Object.fromEntries(fields.split(',').filter(field => value[field] !== undefined).map(field => [field, structuredClone(value[field])]));
 const total = (values: number[]) => { const n = values.reduce((sum, value) => sum + value, 0); requireThat(Number.isSafeInteger(n), 'Scenario total is too large'); return n; };
+const cashText = (value: number, currency: string) => { const absolute = BigInt(Math.abs(value)); return `${currency} ${value < 0 ? '-' : ''}${absolute / 100n}.${String(absolute % 100n).padStart(2, '0')}`; };
+const agreementLabel = (snapshot: Data, id: string) => { const terms = snapshot.sources.find((r: Data) => r.kind === 'agreement' && r.id === id).value; return `${terms.name} (${terms.reference})`; };
 
 function choices(input: Data) {
     requireThat(['consolidate', 'renegotiate', 'cancel'].includes(input.kind), 'Choose consolidate, renegotiate or cancel');
@@ -95,7 +97,7 @@ function snapshot(s: State, a: Actor, input: Data) {
     for (const order of lineage) {
         requireThat(!orderAdoption(s, order), 'Adopted purchase lineages are outside this native scenario', 409);
         requirePermission(s, a, 'cash.read', order); requirePermission(s, a, 'performance.read', order);
-        sources.push(source(s, 'order', order.id, { ...pick(order, 'request,revision,status,currency,totalMinor,issuedAt,needDate,supplier,amendedBy'),
+        sources.push(source(s, 'order', order.id, { ...pick(order, 'number,request,revision,status,currency,totalMinor,issuedAt,needDate,supplier,amendedBy'),
             lines: order.lines.map((l: Data) => ({ ...pick(l, 'id,q,unitMinor,totalMinor,carriedAccepted,carriedCancelled,carriedAcceptedMinor,carriedCancelledMinor'),
                 ...(l.service ? { service: pick(l.service, 'mode') } : {}), position: linePosition(s, order.id, l) })) }));
     }
@@ -108,13 +110,13 @@ function snapshot(s: State, a: Actor, input: Data) {
     for (const requestId of requests) {
         const request = get(s, 'request', requestId);
         requirePermission(s, a, 'request.read', request);
-        sources.push(source(s, 'request', requestId, pick(request, 'revision,status,valuePromise')));
+        sources.push(source(s, 'request', requestId, pick(request, 'title,revision,status,valuePromise')));
     }
     for (const row of all(s, 'commitment').filter(r => requests.has(r.request)))
         sources.push(source(s, 'commitment', row.id, pick(row, 'request,revision,currency,amountMinor,event,at')));
     for (const invoice of all(s, 'invoice').filter(r => lineageIds.has(r.order))) {
         requirePermission(s, a, 'invoice.read', invoice); requirePermission(s, a, 'cash.read', invoice);
-        sources.push(source(s, 'invoice', invoice.id, { ...pick(invoice, 'order,currency,totalMinor'), hasSourcePayment: Boolean(invoice.sourcePayment),
+        sources.push(source(s, 'invoice', invoice.id, { ...pick(invoice, 'reference,order,currency,totalMinor'), hasSourcePayment: Boolean(invoice.sourcePayment),
             flags: (invoice.flags ?? []).map((r: Data) => pick(r, 'id,code')), riskReviews: (invoice.riskReviews ?? []).map((r: Data) => pick(r, 'flag')),
             allocations: (invoice.allocations ?? []).map((r: Data) => pick(r, 'line,q,amountMinor')),
             ...(invoice.pantry ? { pantry: pick(invoice.pantry, 'status,openMinor,dueDate,discountDate') } : {}) }));
@@ -225,9 +227,9 @@ export async function recurringScenarios(s: State, a: Actor, op: string, b: Data
     const row = { scenario: scenario.id, hash: scenario.hash, kind: scenario.choices.kind === 'cancel' ? 'cancellation-brief' : 'negotiation-brief',
         binding: false, sent: false, actor: a.id, at: new Date().toISOString(), authorityProofs: proofs(consents),
         text: ['NONBINDING DRAFT — human review and separate sending required.', `Scenario ${scenario.hash}`, `Action: ${scenario.choices.kind}`,
-            ...fresh.agreements.map((r: Data) => `Agreement ${r.id}: notice deadline ${r.noticeDeadline}.`),
+            ...fresh.agreements.map((r: Data) => `${agreementLabel(fresh, r.id)}: notice deadline ${r.noticeDeadline}.`),
             `Assumption reason: ${scenario.choices.reason}`, `Operational risk: ${scenario.choices.operationalRisk}`,
-            `Hypothetical cash change: ${fresh.effect.cashMinor} ${fresh.currency} minor units. Unknown forecasts: ${fresh.unknownForecastAgreements.join(', ') || 'none'}.`,
+            `Hypothetical cash change: ${cashText(fresh.effect.cashMinor, fresh.currency)}. Unknown forecasts: ${fresh.unknownForecastAgreements.map((id: string) => agreementLabel(fresh, id)).join(', ') || 'none'}.`,
             'No commitment, forecast, agreement, purchase order, supplier communication or cancellation has been changed.'].join('\n') };
     put(s, 'recurringScenarioDraft', scenario.id, row); audit(s, a, op, scenario.id, { hash: scenario.hash, kind: row.kind });
     return { id: scenario.id, ...row };
