@@ -9,6 +9,7 @@ import { validatePurchasingArchive } from '../scripts/installer/restore-validati
 async function original(f, reference = 'synthetic-purse-4501', quantity = '1') {
     const values = { supplier: f.supplier.name, reference, invoiceDate: '2026-10-23', dueDate: null, terms: null, poNumber: f.order.number, currency: 'USD', senderEmail: null, remitTo: null, subtotalAmount: String(Number(quantity) * 100) + '.00', freightAmount: '0.00', taxAmount: '0.00', totalAmount: String(Number(quantity) * 100) + '.00' };
     const document = await PDFDocument.create(), font = await document.embedFont(StandardFonts.Helvetica), page = document.addPage([650,790]);
+    assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent',{...grant,enabled:false,reason:'Owner withdraws supplier invoice access'},h.owner)).status,200);assert.equal((await read(url)).status,410);assert.equal((await read(link)).status,200,'Withdrawal of invoice access preserves the document-only link');
     const rows = Object.entries(values).filter(([, value]) => value !== null).map(([key, value]) => key + ': ' + value).concat(['Description: ' + f.order.lines[0].description, 'Quantity: ' + quantity, 'Unit price: 100.00']);
     rows.forEach((line, index) => page.drawText(line, { x: 20, y: 760 - 24 * index, size: 10, font }));
     return { values, document: { name: reference + '.pdf', mediaType: 'application/pdf', base64: Buffer.from(await document.save()).toString('base64') } };
@@ -22,6 +23,8 @@ test('Supplier invoice link captures exact private PDF and balance ancestry, hol
     assert.equal((await read(url)).status, 410, 'Unacknowledged links cannot invoice');
     const acknowledged = await post(h, link, { decision: 'acknowledge', revision: f.order.revision, consent: true, name: 'synthetic-purse-4502' }); assert.equal(acknowledged.status, 200);
     await h.command('receipt', { order: f.order.id, line: f.order.lines[0].id, event: 'receive', quantity: '1', reason: 'synthetic-purse-4503' });
+    assert.equal((await read(url)).status,410,'A document-only acknowledgment grants no invoice balances');
+    const grant={revision:f.order.revision,enabled:true,consent:true,reason:'Owner explicitly shares remaining quantities and accepts unverified invoice submissions'};assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent',grant,f.buyer)).status,403);const authorized=await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent',grant,h.owner);assert.equal(authorized.status,200,JSON.stringify(authorized.value));
     const prefill = await (await read(url)).json(); assert.equal(prefill.lines[0].quantity, '1'); assert.equal(prefill.lines[0].unitMinor, 10000); assert.equal(prefill.lines[0].orderedQ, 2000); assert.deepEqual(prefill.invoices, []);
     const pdf = await original(f), body = { revision: f.order.revision, consent: true, reference: pdf.values.reference, invoiceDate: pdf.values.invoiceDate, freightAmount: '0.00', taxAmount: '0.00', lines: [{ line: f.order.lines[0].id, quantity: '1', unitAmount: '100.00' }], document: pdf.document };
     const before = (await h.state()).data;
@@ -54,6 +57,7 @@ test('Supplier invoice link captures exact private PDF and balance ancestry, hol
     data = (await h.state()).data; const second = data.invoice.find(value => value.reference === 'synthetic-purse-4516'); for (const code of ['near-duplicate','duplicate-document','po-balance']) assert.ok(second.flags.some(flag => flag.code === code), code); assert.equal(second.allocations[0].q, 1000, 'Excess quantity remains evidence');
     await h.command('payable-terms', { invoice: second.id, version: 0, invoiceDate: body.invoiceDate, term: 'Net 30', reason: 'synthetic-purse-4517' }, f.buyer, 409);
     const status = await (await read(url)).json(); assert.equal(status.invoices.length, 2); assert.ok(!JSON.stringify(status).includes('duplicate-document')); assert.ok(!JSON.stringify(status).includes('riskReviews')); assert.ok(!JSON.stringify(status).includes(source.document.sha256));
+    assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent',{...grant,enabled:false,reason:'Owner withdraws supplier invoice access'},h.owner)).status,200);assert.equal((await read(url)).status,410);assert.equal((await read(link)).status,200,'Withdrawal of invoice access preserves the document-only link');
     const rows = (await h.db.prepare('SELECT * FROM p_records').all()).results; assert.equal(validatePurchasingArchive(rows), true);
     const corrupt = structuredClone(rows), row = corrupt.find(row => row.kind === 'supplierInvoiceSubmission'), altered = JSON.parse(row.value); altered.document.sha256 = '0'.repeat(64); row.value = JSON.stringify(altered); assert.throws(() => validatePurchasingArchive(corrupt), /supplier_invoice_original/);
     await h.send('/api/purse/order-send/' + f.order.id + '/revoke', { reason: 'synthetic-purse-4518' }, f.buyer);

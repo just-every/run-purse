@@ -1,12 +1,13 @@
 import { originalDigest } from '../../src/purse/erasure-journal.mjs';
 const date = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
 const minor = value => Number.isSafeInteger(value) && value >= 0 && value <= 1e12;
-const keys = new Set(['id','send','order','revision','supplier','currency','invoice','source','document','lines','subtotalMinor','freightMinor','taxMinor','totalMinor','actor','identityVerified','at']);
+const keys = new Set(['id','send','order','revision','supplier','currency','invoice','source','document','lines','subtotalMinor','freightMinor','taxMinor','totalMinor','actor','invoiceConsentVersion','identityVerified','at']);
 const lineKeys = new Set(['line','description','unit','unitMinor','orderedQ','acceptedQ','cancelledQ','closedQ','billedQ','remainingQ','quantity','q','invoiceUnitMinor','amountMinor']);
 export function validateSupplierInvoices(all, get, check) {
     for (const source of all('supplierInvoiceSubmission')) {
         check(Object.keys(source).every(key => keys.has(key)), 'supplier_invoice_fields');
         const invoice = get('invoice', source.invoice), order = get('order', source.order), event = get('orderSend', source.send), staged = get('invoiceSource', source.source), attachment = get('attachment', staged.attachment);
+        const consent=event.invoiceConsentHistory?.find(entry=>entry.version===source.invoiceConsentVersion);check(consent?.enabled===true&&consent.owner===true&&consent.revision===source.revision&&consent.pdfSha256===event.pdf.sha256&&Date.parse(consent.at)<=Date.parse(source.at),'supplier_invoice_consent');
         check(source.actor === 'supplier-link' && source.identityVerified === false && Number.isFinite(Date.parse(source.at)), 'supplier_invoice_authorship');
         check(source.order === event.order && source.revision === event.revision && source.revision === order.revision && source.supplier === order.supplier && source.currency === order.currency && invoice.order === order.id && invoice.currency === source.currency && invoice.supplierSubmission === source.id && invoice.supplierSource === staged.id && staged.supplierSubmission === source.id && staged.order === order.id && staged.orderRevision === source.revision, 'supplier_invoice_scope');
         check(event.acknowledgment?.revision === source.revision && event.acknowledgment?.pdfSha256 === event.pdf?.sha256, 'supplier_invoice_acknowledgment');

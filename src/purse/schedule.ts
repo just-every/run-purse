@@ -1,3 +1,4 @@
+import {runPoGeneration} from './po-generation-schedule';
 import { runRecurringOrders } from './recurring-schedule';
 import { runValueCheckins } from './agent-value-checkins';
 import { runAgreementReminders } from './agreement-reminders';
@@ -11,6 +12,7 @@ import { runTravelReleases } from './travel-release-schedule';
 
 export async function runPurchasingSchedule(env: Bindings, now: number) {
     await sendEmailIntakeLinks(env);
+    const generation=await runPoGeneration(env,now);
     const recurring = await runRecurringOrders(env, now);
     const documents = await runSupplierReminders(env, now);
     const orders = await runOrderChases(env, now);
@@ -19,5 +21,5 @@ export async function runPurchasingSchedule(env: Bindings, now: number) {
     const values = await runValueCheckins(env,now);
     const agreements = await runAgreementReminders(env, now);
     const travelReleases = await runTravelReleases(env, now);
-    return { recurring, documents, orders, receipts, rfqs, agreements, values, travelReleases };
+    return { generation, recurring, documents, orders, receipts, rfqs, agreements, values, travelReleases };
 }

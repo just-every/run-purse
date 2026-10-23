@@ -1,3 +1,4 @@
+import {PoGenerationSettings} from './po-generation';
 import { AgentGovernance } from './agent-governance';
 import { BudgetDimensionFields, budgetDimensionForm } from './budget-dimensions';
 import { ApproverEditRules, policyEditRules } from './approver-edit-rules';
@@ -14,7 +15,7 @@ import { CatalogueGrants } from './catalogue-access';
 import { useState } from 'react';
 import { Form, Field, Table, Chip, money, amountText, when, type D, options } from './shared';
 export function Settings({data,actor,mutate,reload}:{data:D;actor:D;mutate:(op:string,b:D)=>Promise<any>;reload:()=>Promise<void>}) {
- return <><IntakeSettings data={data} mutate={mutate}/><AccessSettings data={data} actor={actor} mutate={mutate}/>{actor.roles.includes('owner')&&<><section className="panel"><h2>Identity and provisioning</h2><p><a href="/auth/purse/identity">Manage single sign-on</a></p><p>Provider identity never grants native owner authority. SCIM provisioning starts only after explicit owner consent and department grant mapping.</p></section><ScimSettings owner/><AgentGovernance data={data} mutate={mutate}/><OwnerSettings data={data} mutate={mutate} reload={reload}/></>}</>;
+ return <><IntakeSettings data={data} mutate={mutate}/><AccessSettings data={data} actor={actor} mutate={mutate}/>{actor.roles.includes('owner')&&<><section className="panel"><h2>Identity and provisioning</h2><p><a href="/auth/purse/identity">Manage single sign-on</a></p><p>Provider identity never grants native owner authority. SCIM provisioning starts only after explicit owner consent and department grant mapping.</p></section><ScimSettings owner/><AgentGovernance data={data} mutate={mutate}/><PoGenerationSettings data={data} actor={actor} mutate={mutate}/><OwnerSettings data={data} mutate={mutate} reload={reload}/></>}</>;
 }
 function OwnerSettings({ data, mutate, reload }: {
     data: D;

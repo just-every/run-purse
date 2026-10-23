@@ -1,8 +1,9 @@
+import {orderInvoiceConsent} from './order-invoice-consent';
 import { Hono } from 'hono';
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { requirePermission } from './access';
 import { actor, authority, load, readFence } from './store';
-import { all, get, requireThat, uid } from './types';
+import { all, get, requireThat, uid, type Data } from './types';
 import { insertOrderSendRecord, orderSendSummary, sendOrderChange } from './order-send';
 import { adoptOrderResponse } from './order-response';
 import { supplierOrderChange } from './order-send-public';
@@ -13,12 +14,15 @@ orderSendApi.post('/api/purse/order-send', async c => {
     requireThat(Number(c.req.header('content-length') ?? 0) <= 8192, 'Send request too large', 413);
     return c.json(await sendOrderChange(runtimeBindings(c.env), a, await c.req.json()));
 });
+orderSendApi.post('/api/purse/order-send/:order/invoice-consent',async c=>c.json(await orderInvoiceConsent(runtimeBindings(c.env),await actor(c.req.raw,c.env),c.req.param('order'),await c.req.json())));
 orderSendApi.get('/api/purse/order-send/:order', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB), order = get(state, 'order', c.req.param('order'));
     requirePermission(state, a, 'po.read', order);
     const event = state.get('orderSend:order-send:' + order.id)?.value;
     await readFence(c.env.DB, a, revision);
-    return c.json({ event: event ? orderSendSummary(event) : null, responses: all(state, 'orderSupplierResponse').filter(response => response.order === order.id).sort((left, right) => left.version - right.version) });
+    const summary:Data|null=event?orderSendSummary(event):null;
+    if(summary&&event)summary.invoiceAccessAvailable=Boolean(event.invoiceSubmission&&event.invoiceConsent&&await c.env.DB.prepare("SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active' AND role='owner'").bind(event.invoiceConsent.actor,event.invoiceConsent.operatorVersion).first());
+    return c.json({ event: summary, responses: all(state, 'orderSupplierResponse').filter(response => response.order === order.id).sort((left, right) => left.version - right.version) });
 });
 orderSendApi.post('/api/purse/order-send/:order/revoke', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB), order = get(state, 'order', c.req.param('order'));

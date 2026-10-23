@@ -14,7 +14,7 @@ test('Native agent governance enforces type, current authority, two chases, imme
   return Response.json({id:crypto.randomUUID()});
  }});t.after(()=>f.close());const {h,cmd,order,buyer,requester,other,controls,schedule,tick,day}=f;
  await cmd('order-chase-policy',schedule,buyer,409);
- await cmd('agent-policy',controls,buyer,403);await cmd('agent-policy',{...controls,agent:'AGENT-002'},h.owner,400);
+ await cmd('agent-policy',controls,buyer,403);await cmd('agent-policy',{...controls,agent:'AGENT-004'},h.owner,400);
  await cmd('agent-policy',controls);
  const protectedBase='/api/purse/supplier-protected/'+f.supplier.id,metadata=await h.send(protectedBase,undefined,h.owner);
  const digits={tin:'987651234',bankRouting:'123456789',bankAccount:'9876543215678'};
