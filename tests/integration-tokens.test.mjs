@@ -246,3 +246,58 @@ test('SECURITY-001 explicit encrypted include restores protected fields and matc
     assert.ok(audit.some(event=>event.action==='protected-archive-export'));assert.ok(audit.some(event=>event.action==='protected-archive-restore'));assert.ok(audit.some(event=>event.action==='protected-refused'&&event.operation==='archive-restore'));
     for(const secret of privateValues)assert.ok(!JSON.stringify(audit).includes(secret),'Audit retains neither passphrases, keys nor values');
 });
+
+// Locket's server caller uses the public PO-data door, with no Purse native session.
+test('Owner-scoped Locket PO reads expose only mapped financial data; lifecycle, audit, rate and create-only boundaries hold', async t => {
+    const h=await harness();t.after(()=>h.close());const cmd=h.command;
+    await cmd('business',{name:'North Ridge field operations',currencies:['USD'],locations:['Denver'],costCentres:['Field'],projects:['Safety']});
+    const requester=await h.member('synthetic-purse-801@example.test',['requester']), approver=await h.member('synthetic-purse-802@example.test',['approver']);
+    const supplier=await cmd('supplier',{name:'Canyon equipment',status:'preferred',reason:'Reviewed'}),outside=await cmd('supplier',{name:'River tools',status:'preferred',reason:'Reviewed'});
+    await cmd('policy',{name:'Equipment',currency:'USD',category:'Safety',project:'Safety',approver:'synthetic-purse-802@example.test',limitMinor:100000,budgetMinor:1000000});
+    const orders=[];
+    for(const vendor of [supplier,outside]) {
+        const r=await cmd('request',{title:'Safety harnesses',supplier:vendor.id,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre:'Field',terms:'Net 30',poDetails:{notes:'Private internal comments'},lines:[{description:'Field harness',quantity:'2',unitMinor:12500,category:'Safety',project:'Safety'}]},requester);
+        await cmd('submit',{id:r.id,revision:1},requester);await cmd('decision',{id:r.id,revision:1,decision:'approved',reason:'Reviewed exact purchase'},approver);
+        const order=await cmd('convert',{id:r.id,revision:1});await cmd('issue',{id:order.id,revision:1,reason:'Issued in existing channel'});orders.push(order);
+    }
+    const bill=await cmd('invoice',{order:orders[0].id,reference:'INV-FIELD-801',source:'Private supplier original',senderEmail:'private@example.test',allocations:[{line:orders[0].lines[0].id,quantity:'2',amountMinor:25000}]});
+    const base='/api/purse/integration-tokens', input={name:'Locket AGENT-001',scope:'read-purchase-orders',suppliers:[supplier.id]};
+    for(const cookie of ['',requester,approver])assert.equal((await h.send(base,input,cookie)).status,cookie?403:401);
+    for(const bad of [{suppliers:[]},{suppliers:['unmapped']},{expiresDays:31},{expiresDays:0},{scope:'all'}])assert.equal((await h.send(base,{...input,...bad},h.owner)).status,400);
+    const issued=await h.send(base,input,h.owner);assert.equal(issued.status,200);const {token,integration}=issued.value;
+    assert.ok(Date.parse(integration.expiresAt)>Date.now()+6*86400000 && Date.parse(integration.expiresAt)<=Date.now()+7*86400000);
+    const row=await h.db.prepare('SELECT * FROM p_integration_tokens WHERE id=?').bind(integration.id).first();
+    assert.equal(row.hash,createHash('sha256').update(token).digest('hex'));assert.ok(!JSON.stringify(row).includes(token));
+    const read=async(id=orders[0].id,secret=token,path)=>{
+        const r=await h.mf.dispatchFetch(h.origin+(path??'/api/purse/integration/orders/'+id),{headers:{authorization:'Bearer '+secret}});
+        return {status:r.status,value:await r.json(),cache:r.headers.get('cache-control')};
+    };
+    const result=await read();assert.equal(result.status,200);assert.equal(result.cache,'no-store');
+    assert.equal(result.value.order.number,orders[0].number);assert.equal(result.value.order.totalMinor,25000);assert.equal(result.value.order.status,'issued');
+    assert.deepEqual(result.value.order.lines.map(l=>[l.description,l.quantity,l.unitMinor,l.amountMinor]),[['Field harness','2',12500,25000]]);
+    assert.deepEqual(result.value.order.bills.map(b=>[b.id,b.reference,b.totalMinor,b.status,b.paymentStatus]),[[bill.id,'INV-FIELD-801',25000,'captured','unknown']]);
+    assert.match(result.value.order.bills[0].paymentStatusReason,/not built/);
+    for(const prohibited of ['request','policy','approvalActor','supplierSnapshot','documentProfile','poDetails','issuedBy','terms'])assert.ok(!(prohibited in result.value.order));
+    for(const prohibited of ['source','document','evidence','senderEmail','allocations','actor','remitTo'])assert.ok(!(prohibited in result.value.order.bills[0]));
+    for(const privateValue of ['Private internal comments','Private supplier original','private@example.test',token,row.hash,requester,approver])assert.ok(!JSON.stringify(result.value).includes(privateValue));
+    assert.equal((await read(orders[1].id)).status,404);assert.equal((await read('missing')).status,404);
+    assert.equal((await read('',token,'/api/purse/state')).status,401);
+    assert.equal((await read('',token,'/api/purse/order-pdf/'+orders[0].id)).status,401);
+    const create=await h.send(base,{name:'Linen draft intake',requesterEmail:'synthetic-purse-801@example.test'},h.owner);assert.equal(create.status,200);
+    assert.equal((await read(orders[0].id,create.value.token)).status,403,'Create-draft token still cannot read');
+    const forbidden=await h.mf.dispatchFetch(h.origin+'/api/purse/integration/requests',{method:'POST',headers:{authorization:'Bearer '+token,'idempotency-key':'synthetic-purse-803','content-type':'application/json'},body:'{}'});assert.equal(forbidden.status,403,'PO read token cannot create a draft');
+    const rotated=await h.send(base+'/'+integration.id+'/rotate',{},h.owner);assert.equal(rotated.status,200);assert.equal(rotated.value.integration.expiresAt,integration.expiresAt);assert.deepEqual(rotated.value.integration.suppliers,[supplier.id]);
+    assert.equal((await read()).status,401);const replacement=rotated.value.token;assert.equal((await read(orders[0].id,replacement)).status,200);
+    let limited=false;
+    for(let i=0;i<100;i++){const r=await read(orders[0].id,replacement);if(r.status===429){limited=true;break;}assert.equal(r.status,200);}
+    assert.ok(limited,'A finite durable per-token limit refuses excess reads');
+    await h.send(base+'/'+integration.id+'/revoke',{},h.owner);assert.equal((await read(orders[0].id,replacement)).status,401);
+    const expiring=await h.send(base,{...input,expiresDays:30},h.owner);assert.equal(expiring.status,200);
+    await h.db.prepare('UPDATE p_integration_tokens SET expires_at=? WHERE id=?').bind(new Date(Date.now()-1).toISOString(),expiring.value.integration.id).run();
+    assert.equal((await read(orders[0].id,expiring.value.token)).status,401);
+    const list=(await h.send(base,undefined,h.owner)).value, audit=(await h.send('/api/purse/audit',undefined,h.owner)).value.events,csv=(await h.send('/api/purse/audit.csv',undefined,h.owner)).value;
+    const reads=audit.filter(e=>e.action==='integration-po-read'&&e.integration===integration.id);assert.ok(reads.length>1);assert.ok(reads.every(e=>e.record===orders[0].id&&e.actor==='integration:'+integration.id&&e.status===200));
+    const refused=audit.filter(e=>e.action==='integration-use-refused'&&e.integration===integration.id);for(const status of [404,429,401])assert.ok(refused.some(e=>e.status===status),'Recognized refusal '+status+' is logged');
+    assert.ok(audit.some(e=>e.integration===create.value.integration.id&&e.status===403));assert.match(csv,/integration-po-read/);assert.match(csv,/integration-use-refused/);
+    for(const output of [list,audit,csv,(await h.state()).data])for(const secret of [token,replacement,row.hash,expiring.value.token])assert.ok(!JSON.stringify(output).includes(secret));
+});

@@ -9,17 +9,18 @@ import { uid, type Data } from './types';
 export const integrationRefusals: MiddlewareHandler<{ Bindings: Bindings }> = async (c, next) => {
     await next();
     const authorization = c.req.header('authorization'), management = c.req.path.startsWith('/api/purse/integration-tokens');
+    const poRead = c.req.path.startsWith('/api/purse/integration/orders');
     const intake = c.req.path === '/api/purse/integration/requests';
-    if (c.res.status < 400 || !(authorization?.startsWith('Bearer ') || management || intake)) return;
+    if (c.res.status < 400 || !(authorization?.startsWith('Bearer ') || management || intake || poRead)) return;
     const secret = authorization?.match(/^Bearer ([A-Za-z0-9_-]{43})$/)?.[1];
     const token = secret ? await c.env.DB.prepare('SELECT id,name,requester,requester_email FROM p_integration_tokens WHERE hash=?').bind(await hashRfqToken(secret)).first<Data>() : null;
-    const reasons: Record<number, string> = { 400: 'Invalid request', 401: 'Authentication refused', 403: 'Capability, requester or origin refused', 404: 'Door or record unavailable', 409: 'Body, state or authority conflict', 413: 'Request too large' };
+    const reasons: Record<number, string> = { 400: 'Invalid request', 401: 'Authentication refused', 403: 'Capability, requester or origin refused', 404: 'Door or record unavailable', 409: 'Body, state or authority conflict', 413: 'Request too large', 429: 'Read rate limit exceeded' };
     await insertRfqRecord(c.env.DB, 'audit', {
         id: uid(), actor: token ? `integration:${token.id}` : 'integration:unidentified',
         action: 'integration-use-refused', record: token?.id ?? 'unidentified',
         integration: token?.id ?? null, name: token?.name ?? null,
         requester: token?.requester ?? null, requesterEmail: token?.requester_email ?? null,
-        door: management ? 'token-management' : intake ? 'create-purchase-request' : 'outside-token-scope',
+        door: management ? 'token-management' : intake ? 'create-purchase-request' : poRead ? 'read-purchase-order' : 'outside-token-scope',
         method: c.req.method, status: c.res.status, reason: reasons[c.res.status] ?? 'Request refused',
         at: new Date().toISOString(),
     }).run();

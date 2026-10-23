@@ -125,3 +125,51 @@ export async function integrationTokensJourney(browser, root, origin, width, evi
         if (requester) await requester.context.close();
     }
 }
+
+/** INTAKE-008 standalone Settings journey uses the shipped App and real HTTP/D1. */
+async function poReadSettings() {
+    const {mkdir}=await import('node:fs/promises'),{resolve}=await import('node:path');
+    const {build}=await import('esbuild'),{harness}=await import('./purse-harness.mjs'),{nativeWebContext}=await import('./native-web-fixture.mjs');
+    const {chromium}=await import(process.env.PURSE_PLAYWRIGHT_MODULE||'@playwright/test');
+    const evidence=resolve(process.env.PURSE_EVIDENCE||'.cache/po-read');await mkdir(evidence,{recursive:true});
+    const bundle=await build({stdin:{contents:"import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);",resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'esm',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
+    const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic'],...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{})});
+    try {for(const width of [1440,390]) {
+        const h=await harness();let context;
+        try {
+            await h.command('business',{name:'North Ridge Field Services',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety']});
+            const supplier=await h.command('supplier',{name:'Canyon Safety Equipment',status:'preferred',reason:'Reviewed supplier for Denver field operations'});
+            const requester=await h.member('synthetic-purse-810@example.test',['requester']),approver=await h.member('synthetic-purse-811@example.test',['approver']);
+            await h.command('policy',{name:'Field equipment',currency:'USD',category:'Safety',project:'Safety',approver:'synthetic-purse-811@example.test',limitMinor:100000,budgetMinor:1000000});
+            const r=await h.command('request',{title:'Harness replenishment',supplier:supplier.id,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre:'Operations',terms:'Net 30',lines:[{description:'Fall-arrest harness',quantity:'2',unitMinor:12500,category:'Safety',project:'Safety'}]},requester);
+            await h.command('submit',{id:r.id,revision:1},requester);await h.command('decision',{id:r.id,revision:1,decision:'approved',reason:'Reviewed current equipment need'},approver);
+            const order=await h.command('convert',{id:r.id,revision:1});await h.command('issue',{id:order.id,revision:1,reason:'Issued in existing channel'});
+            await h.command('invoice',{order:order.id,reference:'FIELD-810',source:'Supplier invoice',allocations:[{line:order.lines[0].id,quantity:'2',amountMinor:25000}]});
+            context=await nativeWebContext(browser,h,width,bundle.outputFiles[0].text);const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+            await page.goto(h.origin+'/app?tab=Settings');const panel=page.getByRole('region',{name:'Integration tokens',exact:true});
+            const snap=async name=>{
+                assert.equal(await panel.getByLabel('New integration token',{exact:true}).count(),0,'Never capture secret');
+                assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Settings fits at '+width);
+                // Every Settings control has visible text, or a tooltip for icon-only use.
+                const icons=await page.locator('button').evaluateAll(buttons=>buttons.filter(b=>!b.innerText.trim()).map(b=>({label:b.getAttribute('aria-label'),tooltip:b.getAttribute('aria-describedby')})));
+                assert.ok(icons.every(b=>b.label&&b.tooltip),'Icon-only Settings controls expose tooltips');
+                await panel.screenshot({path:join(evidence,`INTAKE-008-${name}-${width}.png`)});
+            };
+            await panel.getByLabel('PO integration name',{exact:true}).fill('Locket supplier comparison');await panel.getByLabel('Mapped supplier',{exact:true}).selectOption(supplier.id);
+            assert.equal(await panel.getByLabel('Expires in days (1–30)',{exact:true}).inputValue(),'7');
+            const issued=page.waitForResponse(r=>r.url().endsWith('/api/purse/integration-tokens')&&r.request().method()==='POST');
+            await panel.getByRole('button',{name:'Create read-only PO token',exact:true}).click();const response=await issued;assert.equal(response.status(),200);
+            const created=await response.json();let token=created.token;
+            const dismiss=async()=>{const field=panel.getByLabel('New integration token',{exact:true});await field.waitFor();assert.ok((await field.inputValue()).length);await panel.getByRole('button',{name:'Dismiss token',exact:true}).click();await field.waitFor({state:'detached'});};
+            await dismiss();const row=panel.getByRole('row').filter({hasText:'Locket supplier comparison'});await row.getByText('Read PO and bill status only',{exact:true}).waitFor();await snap('issued');
+            const read=secret=>context.request.get(h.origin+'/api/purse/integration/orders/'+order.id,{headers:{authorization:'Bearer '+secret}});
+            assert.equal((await read(token)).status(),200);assert.equal((await (await read(token)).json()).order.bills[0].paymentStatus,'unknown');
+            await page.reload();await row.waitFor();await snap('dismissed');
+            const rotation=page.waitForResponse(r=>r.url().endsWith('/'+created.integration.id+'/rotate'));await row.getByRole('button',{name:'Rotate token',exact:true}).click();const rotated=await (await rotation).json();await dismiss();assert.equal((await read(token)).status(),401);token=rotated.token;assert.equal((await read(token)).status(),200);await snap('rotated');
+            const revocation=page.waitForResponse(r=>r.url().endsWith('/'+created.integration.id+'/revoke'));await row.getByRole('button',{name:'Revoke token',exact:true}).click();assert.equal((await revocation).status(),200);await row.getByText(/Revoked/).waitFor();assert.equal((await read(token)).status(),401);token='';await snap('revoked');
+            const deletion=page.waitForResponse(r=>r.url().endsWith('/'+created.integration.id+'/delete'));await row.getByRole('button',{name:'Delete integration',exact:true}).click();assert.equal((await deletion).status(),200);await row.waitFor({state:'detached'});await snap('deleted');
+            assert.deepEqual(errors,[]);console.log('INTAKE-008 Settings, mapped PO/bill read and lifecycle passed at '+width);
+        } finally {await context?.close();await h.close();}
+    }} finally {await browser.close();}
+}
+if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) await poReadSettings();

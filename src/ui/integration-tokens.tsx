@@ -3,7 +3,7 @@ import { Chip, Field, Form, Table, when, type D } from './shared';
 
 type Integration = {
     id: string; name: string; requesterEmail: string; createdAt: string;
-    rotatedAt?: string; revokedAt?: string; generation: number; scope: 'create-purchase-requests';
+    rotatedAt?: string; revokedAt?: string; generation: number; scope: 'create-purchase-requests' | 'read-purchase-orders'; suppliers: string[]; expiresAt?: string;
 };
 type Requester = { id: string; email: string; name: string };
 async function request(path = '', input?: D) {
@@ -19,6 +19,7 @@ async function request(path = '', input?: D) {
 /** Settings is owner-only; each token operation also checks the native owner session. */
 export function IntegrationTokens() {
     const [tokens, setTokens] = useState<Integration[]>([]);
+    const [suppliers, setSuppliers] = useState<D[]>([]);
     const [requesters, setRequesters] = useState<Requester[]>([]);
     const [loaded, setLoaded] = useState(false), [busy, setBusy] = useState(false);
     const [error, setError] = useState(''), [notice, setNotice] = useState('');
@@ -26,7 +27,7 @@ export function IntegrationTokens() {
     useEffect(() => {
         let active = true;
         request().then(body => {
-            if (active) { setTokens(body.tokens); setRequesters(body.requesters); setLoaded(true); }
+            if (active) { setTokens(body.tokens); setRequesters(body.requesters); setSuppliers(body.suppliers); setLoaded(true); }
         }).catch(e => { if (active) setError(e.message || 'Unable to load integration tokens.'); });
         return () => { active = false; };
     }, []);
@@ -53,10 +54,10 @@ export function IntegrationTokens() {
             <label className="field field-wide">New integration token<textarea aria-label="New integration token" readOnly value={secret} wrap="soft" spellCheck={false} autoComplete="off" style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', overflowWrap: 'anywhere', wordBreak: 'break-all' }}/></label>
             <button type="button" onClick={() => setSecret('')}>Dismiss token</button>
         </div>}
-        <Table heads={['Integration', 'Requester', 'Scope', 'Status', 'Created / rotated', '']}>
+        <Table heads={['Integration', 'Requester / mapped suppliers', 'Scope', 'Status', 'Created / rotated', '']}>
             {tokens.map(token => <tr key={token.id}>
-                <td style={{ overflowWrap: 'anywhere' }}>{token.name}</td><td className="email-cell">{token.requesterEmail}</td>
-                <td>Create purchase request drafts</td><td><Chip>{token.revokedAt ? 'Revoked' : 'Active'} · generation {token.generation}</Chip>{token.revokedAt && <p>{when(token.revokedAt)}</p>}</td>
+                <td style={{ overflowWrap: 'anywhere' }}>{token.name}</td><td className="email-cell">{token.scope === 'read-purchase-orders' ? token.suppliers.map(id => suppliers.find(s => s.id === id)?.name ?? id).join(', ') : token.requesterEmail}</td>
+                <td>{token.scope === 'read-purchase-orders' ? 'Read PO and bill status only' : 'Create purchase request drafts'}{token.expiresAt && <p>Expires {when(token.expiresAt)}</p>}</td><td><Chip>{token.revokedAt ? 'Revoked' : token.expiresAt && token.expiresAt <= new Date().toISOString() ? 'Expired' : 'Active'} · generation {token.generation}</Chip>{token.revokedAt && <p>{when(token.revokedAt)}</p>}</td>
                 <td>{when(token.createdAt)}{token.rotatedAt && <p>Rotated {when(token.rotatedAt)}</p>}</td>
                 <td>{!token.revokedAt && <><button type="button" disabled={busy} onClick={() => action(token, 'rotate')}>Rotate token</button>{' '}<button type="button" disabled={busy} onClick={() => action(token, 'revoke')}>Revoke token</button>{' '}</>}<button type="button" disabled={busy} onClick={() => action(token, 'delete')}>Delete integration</button></td>
             </tr>)}
@@ -70,5 +71,14 @@ export function IntegrationTokens() {
             </Form>
         </fieldset>
         {loaded && requesters.length === 0 && <p>An active native requester must sign in before a token can be bound.</p>}
+        <fieldset disabled={busy || !loaded || suppliers.length === 0} style={{minWidth:0}}>
+            <legend>Create read-only PO token</legend>
+            <p>One named integration can read only the mapped supplier’s PO headers, lines, amounts and bill status. Payment status is unknown until a payment return exists. No originals, comments, requests, approvals or credentials. Every read is audited; up to 60 reads per minute. Rotation keeps the original expiry and mapping.</p>
+            <Form label="Create read-only PO token" onSubmit={b => change('', {name:b.name,scope:'read-purchase-orders',suppliers:[b.supplier],expiresDays:b.expiresDays}, 'Read-only PO token created.')}>
+                <Field label="PO integration name" name="name"/>
+                <Field label="Mapped supplier" name="supplier" options={suppliers.map(s => ({value:s.id,label:s.name}))}/>
+                <Field label="Expires in days (1–30)" name="expiresDays" type="number" defaultValue="7"/>
+            </Form>
+        </fieldset>
     </section>;
 }

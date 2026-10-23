@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { readStream } from '../inbound-mail.server.mjs';
 import { activeIntakeRequester } from './email-intake';
-import { guardedBatch } from './integration-tokens';
+import { guardedBatch, tokenScope } from './integration-tokens';
 import { hashRfqToken, insertRfqRecord } from './rfq-links';
 import { requests } from './requests';
 import { load } from './store';
@@ -20,6 +20,7 @@ integrationRequestsApi.post('/api/purse/integration/requests', async c => {
     const hash = await hashRfqToken(bearer);
     const token = await c.env.DB.prepare('SELECT * FROM p_integration_tokens WHERE hash=? AND revoked_at IS NULL').bind(hash).first<Data>();
     requireThat(token, 'Integration bearer unavailable', 401);
+    requireThat(token.scope === tokenScope, 'Integration scope refused', 403);
     const { state, revision } = await load(c.env.DB), before = structuredClone(state);
     const requester = await activeIntakeRequester(c.env.DB, state, token.requester_email);
     requireThat(requester && requester.id === token.requester, 'Bound requester is no longer active', 403);
