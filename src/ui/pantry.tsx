@@ -15,7 +15,7 @@ export function Pantry({data,reload}:{data:D;reload:()=>Promise<void>}) {
         <p className="quiet">This connector currently covers native PO bills, vendor identity and payment return. Structured PO/source provenance, credits, 1099 boxes, non-PO reporting and reconciliation qualification remain incomplete.</p>
         {error&&<p role="alert">{error}</p>}{!view&&<p role="status">Loading Pantry connection…</p>}
         {view&&<>
-            {view.connection&&<p>{view.connection.origin} · <Chip>{view.connection.revokedAt?'Revoked':'Connected'} · generation {view.connection.generation}</Chip></p>}
+            {view.connection&&<p>{view.connection.origin} · <Chip>{view.connection.revokedAt?'Revoked':'Configured'} · generation {view.connection.generation}</Chip></p>}
             <Form key={view.connection?.generation??0} label={view.connection?'Replace Pantry credential':'Connect Pantry'} onSubmit={async b=>{if(b.confirmed!=='on')throw new Error('Confirm the exact installation and book currency');await act('/connection',{...b,generation:view.connection?.generation??0,confirmed:true});setMappings(undefined);setPreview(undefined);}}>
                 <Field label="Pantry origin" name="origin" defaultValue={view.config?.origin??''}/>
                 <Field label="Pantry book currency" name="currency" defaultValue={view.config?.currency??'USD'}/>
