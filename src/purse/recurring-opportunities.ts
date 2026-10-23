@@ -114,7 +114,7 @@ export async function recurringOpportunities(s: State, a: Actor, op: string, b: 
                 noticeDeadlines: selected.map(r => ({ agreement: r.agreement.id, name: r.agreement.name, reference: r.agreement.reference,
                     date: r.agreement.noticeDeadline, dueInPeriod: r.agreement.noticeDeadline >= from && r.agreement.noticeDeadline <= to,
                     alreadyBeforePeriod: r.agreement.noticeDeadline < from })), ...facts,
-                openServiceIssues: [...new Map(selected.flatMap(r => r.serviceIssues).map(r => [r.id, { id: r.id, ...pick(r, 'order,category,status,at') }])).values()], futureForecast: 'unknown',
+                openServiceIssues: [...new Map(selected.flatMap(r => r.serviceIssues).map(r => [r.id, { id: r.id, ...pick(r, 'order,category,status,at') }])).values()].sort((x,y) => x.id.localeCompare(y.id)), futureForecast: 'unknown',
                 cashEffect: 'Not estimated; a separate owner-entered scenario with reasoned assumptions is required' } });
     };
     for (let left = 0; left < contexts.length; left++) for (let right = left + 1; right < contexts.length; right++) {
@@ -143,7 +143,7 @@ export async function recurringOpportunities(s: State, a: Actor, op: string, b: 
             'Ask the agreement owner to review cancellation because the selected recorded usage reports show zero active seats.',
             'Zero reported activity does not establish that a service is useless, unused by other people or safe to cancel. Review integrations, continuity, service issues and contractual notice; a person must separately approve a scenario and send any eventual notice.');
     }
-    const proposals = await Promise.all(candidates.map(async candidate => ({ id: await valueDigest(canonicalValue({ from, to, ...candidate })), ...candidate })));
+    const proposals: Data[] = await Promise.all(candidates.map(async candidate => ({ id: await valueDigest(canonicalValue({ from, to, ...candidate })), ...candidate })));
     for (const proposal of proposals) rejectProtectedInput(proposal);
     audit(s, a, op, 'recurring-opportunities', { from, to, mode: 'deterministic v1', model: 'none', provider: 'none',
         proposals: proposals.map(proposal => ({ id: proposal.id, kind: proposal.kind, agreements: proposal.agreementIds,
