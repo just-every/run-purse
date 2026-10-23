@@ -56,7 +56,7 @@ export function lateOrderResolution(s: State,a: Actor,op: string,b: Data): Data 
     const refs=[{kind:'order',id:order.id,version:s.get('order:'+order.id)!.revision},{kind:'orderThreadMessage',id:reply.id,version:s.get('orderThreadMessage:'+reply.id)!.revision},
         ...proposals.map(p=>({kind:'quote',id:p.quote,version:s.get('quote:'+p.quote)!.revision}))];
     const message={channel:'in-app',recipient:request.requester,order:order.id,notice:noticeId,
-        text:`${order.number}: a supplier promise was recorded by ${a.email}.`,recordedBy:a.id}; need date ${order.needDate}. ${delay?'The stated promise threatens the need date.':'The stated promise is within the need date.'} ${proposals.length?proposals.length+' source-priced alternative(s) await buyer review.':'No suitable complete priced-and-dated alternative is recorded.'}`};
+        text:`${order.number}: a supplier promise was recorded by ${a.email}.`,recordedBy:a.id};
     const proposalId='record-promise:'+id;
     put(s,'proposedAction',proposalId,{run:id,runVersion:1,actor:a.id,action:'late-order-record',input:{id,version:1,confirmed:true},status:'proposed',references:refs});
     const run={id,agent:'AGENT-003',workflow:'late-order-resolution',actor:a.id,request:request.id,order:order.id,version:1,at,
