@@ -1,3 +1,4 @@
+import { consumeOrderThreadInbound } from './order-thread-inbound';
 import { Hono } from 'hono';
 import { normalizeInbound, createResendAttachmentFetcher, verifyWebhook, readStream } from '../inbound-mail.server.mjs';
 import { runtimeBindings, type Bindings } from '../auth.server';
@@ -49,6 +50,10 @@ emailIntakeApi.post('/api/purse/email-intake/inbound', async c => {
     let persisted = false;
     try {
         const { raw: source, normalized } = await hydrate(env, emailId);
+        // The ingress receipt also consumes supplier-thread webhooks. Their own
+        // retained receipt records source custody; they never create an intake.
+        const thread = await consumeOrderThreadInbound(env, emailId, source, normalized);
+        if (thread) return c.json(thread, 202);
         const { state, revision } = await load(env.DB), before = new Set(state.keys());
         const recipients = normalized.to.map((email: string) => email.toLowerCase());
         const requestAddress = state.get('emailIntakeConfig:main')?.value.address, apAddress = state.get('invoiceInboxConfig:main')?.value.address;

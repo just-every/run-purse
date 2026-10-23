@@ -46,6 +46,7 @@ export function orderChasing(s: State, a: Actor, op: string, b: Data): Data | un
 function eligible(s: State, order: Data, now: number): boolean {
     if (order.imported || !order.issuedAt || order.status !== 'issued' || order.amendedBy
         || !order.lines.some((line: Data) => linePosition(s, order.id, line).outstanding > 0)) return false;
+    if (all(s,'orderSend').some(event => event.order === order.id && event.revision === order.revision && event.response?.decision === 'reject')) return false;
     try {
         const currentSupplier = canonicalSupplier(s, order.supplier);
         supplier(s, currentSupplier);

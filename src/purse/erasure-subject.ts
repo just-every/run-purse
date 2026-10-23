@@ -18,7 +18,7 @@ export async function erasureSubject(db:D1Database,state:State,input:Data):Promi
  for(const row of state.values()) {
   const v=row.value;
   if(v.supplierSnapshot?.id===supplier.id)contacts.push(...v.supplierSnapshot.contacts.filter((c:Data)=>c.email.toLowerCase()===input.email.toLowerCase()));
-  if(row.kind==='orderSend'&&v.supplier===supplier.id&&v.recipient?.toLowerCase()===input.email.toLowerCase()&&!v.erasure)contacts.push({email:v.recipient});
+  if(['orderSend','orderThreadMessage'].includes(row.kind)&&v.supplier===supplier.id&&v.recipient?.toLowerCase()===input.email.toLowerCase()&&!v.erasure)contacts.push({email:v.recipient});
   if(row.kind==='rfq')contacts.push(...v.suppliers.filter((c:Data)=>c.id===supplier.id&&c.email.toLowerCase()===input.email.toLowerCase()).map((c:Data)=>({email:c.email,name:c.contactName,phone:c.phone,address:c.address})));
  }
  requireThat(contacts.length&&!input.email.endsWith('@erased.invalid'),'Supplier contact not found',404);
@@ -29,7 +29,7 @@ export function erasureChoices(state:State) {
  for(const supplier of all(state,'supplier'))for(const contact of supplier.contacts??[])if(contact.email&&!contact.email.endsWith('@erased.invalid'))contacts.set(supplier.id+':'+contact.email,{kind:'contact',id:supplier.id,email:contact.email,label:supplier.name+' · '+contact.name+' · '+contact.email});
  for(const row of state.values()) {
   const v=row.value;
-  if(row.kind==='orderSend'&&!v.erasure&&v.recipient&&!v.recipient.endsWith('@erased.invalid')){const supplier=state.get('supplier:'+v.supplier)?.value;if(supplier)contacts.set(v.supplier+':'+v.recipient,{kind:'contact',id:v.supplier,email:v.recipient,label:supplier.name+' · '+v.recipient});}
+  if(['orderSend','orderThreadMessage'].includes(row.kind)&&!v.erasure&&v.recipient&&!v.recipient.endsWith('@erased.invalid')){const supplier=state.get('supplier:'+v.supplier)?.value;if(supplier)contacts.set(v.supplier+':'+v.recipient,{kind:'contact',id:v.supplier,email:v.recipient,label:supplier.name+' · '+v.recipient});}
   const entries=row.kind==='rfq'?v.suppliers:(v.supplierSnapshot?[{...v.supplierSnapshot,contacts:v.supplierSnapshot.contacts}]:[]);
   for(const supplier of entries)for(const contact of supplier.contacts??[supplier])if(contact.email&&!contact.email.endsWith('@erased.invalid')&&!contacts.has(supplier.id+':'+contact.email))contacts.set(supplier.id+':'+contact.email,{kind:'contact',id:supplier.id,email:contact.email,label:supplier.name+' · '+contact.email});
  }

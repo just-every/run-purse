@@ -20,7 +20,7 @@ export function auditEventAllowed(s:State,a:Actor,event:Data,permission='audit.r
    return grants.length>0&&grants.every((g:Data)=>allowed(s,a,permission,{scope:g.scope??{},entity:'main'}));
   });
  }
- const kinds=['travelExpense','request','order','invoice','receipt','rfq','invoiceReading','invoiceSource','apInvoiceEmail','emailIntake','quote','quoteAward','stockroom','supplierIssue','supplierOrderEvidence','orderClosure','orderChaseEvent','agentRun','valueConfirmation'];
+ const kinds=['travelExpense','request','order','invoice','receipt','rfq','invoiceReading','invoiceSource','apInvoiceEmail','emailIntake','quote','quoteAward','stockroom','supplierIssue','supplierOrderEvidence','orderClosure','orderChaseEvent','orderThreadMessage','agentRun','valueConfirmation'];
  const subject=kinds.map(kind=>s.get(kind+':'+event.record)?.value).find(Boolean);
  if(!subject||!allowed(s,a,permission,subject))return false;
  // A before/after revision may have crossed a scope boundary. Its evidence

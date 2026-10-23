@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS p_order_thread_routes (hash TEXT PRIMARY KEY, thread TEXT NOT NULL, order_id TEXT NOT NULL, expires_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS p_order_thread_receipts (provider TEXT NOT NULL, email_id TEXT NOT NULL, message TEXT NOT NULL, thread TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('claimed','stored','uncertain')), created_at TEXT NOT NULL, PRIMARY KEY(provider,email_id));

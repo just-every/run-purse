@@ -1,3 +1,4 @@
+import { validateOrderThreadObjects } from './restore-order-thread.mjs';
 import { validateErasureObjects } from './restore-erasure.mjs';
 import { migrateInvoiceArchive } from './migrate-invoice-archive.mjs';
 import { hasUnsafeProtectedContext } from '../../src/purse/protected-context-fields.mjs';
@@ -6,7 +7,7 @@ import { check, validatePurchasingArchive } from './restore-validation.mjs';
 export default {
  product: 'just-every/procurement-purse',
  replaceableTables: ['p_meta'],
- excludeTables: ['p_pantry_credentials', 'p_order_send_links', 'p_scim_links', 'p_scim_authority', 'p_supplier_protected', 'p_search_fts', 'p_search_fts_data', 'p_search_fts_idx', 'p_search_fts_docsize', 'p_search_fts_config', 'p_search_fold', 'p_search_drop', 'p_integration_tokens', 'p_integration_requests', 'p_import_custody', 'p_supplier_document_links', 'p_rfq_links'],
+ excludeTables: ['p_order_thread_routes','p_pantry_credentials', 'p_order_send_links', 'p_scim_links', 'p_scim_authority', 'p_supplier_protected', 'p_search_fts', 'p_search_fts_data', 'p_search_fts_idx', 'p_search_fts_docsize', 'p_search_fts_config', 'p_search_fold', 'p_search_drop', 'p_integration_tokens', 'p_integration_requests', 'p_import_custody', 'p_supplier_document_links', 'p_rfq_links'],
  exportRow(table,row) {
   if(table!=='p_records')return row;
   const value=JSON.parse(row.value);
@@ -22,6 +23,7 @@ export default {
  validateStaged: async ({ db, tables, read, manifest }) => {
   const rows = await migrateInvoiceArchive({rows:await read('p_records'),db,tables,manifest,check});
   validatePurchasingArchive(rows);
+  validateOrderThreadObjects(rows,await read('p_order_thread_receipts'),manifest,check);
   validateErasureObjects(rows,manifest,check);
   validateSearchProjection(rows, await read('p_search'), check);
   for (const row of rows.filter(row => row.kind === 'rfqResponse')) for (const file of JSON.parse(row.value).files) if (file.key && !file.erasure) {

@@ -23,7 +23,7 @@ export function validateErasure(rows,check) {
  const markers=(value,path,row)=>{if(!value||typeof value!=='object')return;if(value.erasure){const field=latest.get(JSON.stringify([row.kind,row.id,[...path,'erasure']]));check(field&&field.after===erasureDigest(value.erasure),'erasure_marker');}for(const [key,item]of Object.entries(value))markers(item,[...path,Array.isArray(value)?Number(key):key],row);};
  for(const row of records)if(row.kind!=='erasureReceipt')markers(row.data,[],row);
  for(const attachment of all('attachment'))if(attachment.erasure)check(erasedOriginal(all,attachment),'erasure_original');
- for(const kind of ['rfqResponse','emailIntake','apInvoiceEmail'])for(const record of all(kind))for(const file of [record.original,...record.files??[],...record.embedded??[]].filter(Boolean))if(file.erasure) {
+ for(const kind of ['orderThreadMessage','rfqResponse','emailIntake','apInvoiceEmail'])for(const record of all(kind))for(const file of [record.original,...record.files??[],...record.embedded??[]].filter(Boolean))if(file.erasure) {
   if(file.key)check(receipts.some(r=>r.id===file.erasure&&r.originals.includes(file.key)),'erasure_blob');
   check(!file.base64,'erasure_inline_original');
  }

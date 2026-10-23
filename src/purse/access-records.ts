@@ -50,6 +50,11 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
             || performanceAgreementSources(s, a).attachments.has(record.id);
         return canReadRecord(s, a, record.kind, parent, visited);
     }
+    if (kind === 'orderThreadMessage') {
+        const order=s.get('order:'+record.order)?.value;
+        const request=order&&s.get('request:'+order.request)?.value;
+        return Boolean(order&&request&&(allowed(s,a,'procurement.manage',order)||request.requester===a.id&&allowed(s,a,'po.read',order)));
+    }
     if (kind === 'agentRun') {
         if (a.owner) return true;
         if (record.workflow === 'value-realization') {

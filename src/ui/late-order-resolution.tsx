@@ -1,0 +1,13 @@
+import { useEffect,useState } from 'react';
+import {call,money,when,type D} from './shared';
+
+export function LateOrderResolution({order,data,mutate}:{order:D;data:D;mutate:(op:string,b:D)=>Promise<any>}) {
+ const [replies,setReplies]=useState<D[]>([]),[error,setError]=useState('');
+ const runs=data.agentRun.filter((r:D)=>r.workflow==='late-order-resolution'&&r.order===order.id);
+ useEffect(()=>{let live=true;if(order.mayManagePurchasing)call('order-thread/'+encodeURIComponent(order.id)).then(r=>{if(live)setReplies(r.messages.filter((m:D)=>m.direction==='inbound'&&!m.erasure));}).catch(e=>{if(live)setError(e.message);});return()=>{live=false;};},[order.id,data.agentRun.length,order.mayManagePurchasing]);
+ return <section aria-label="Late-order resolution"><h3>Late-order resolution</h3>
+ {(data.lateOrderNotice??[]).filter((n:D)=>n.order===order.id).map((n:D)=><p key={n.id} role="status">{n.text} · {when(n.at)}</p>)}
+ {order.mayManagePurchasing&&<><p>The governed reader recognizes an explicit “Promised delivery: YYYY-MM-DD” in a supplier reply. Other wording needs buyer clarification. It records the supplier's statement, informs the requester here, and cites complete current alternative quotes; it never changes commercial terms or sends a message.</p>{replies.map(reply=><div key={reply.id}><p>{reply.subject} · {when(reply.at)}</p><button disabled={runs.some((r:D)=>r.inputs.reply.id===reply.id)} onClick={async()=>{try{await mutate('late-order-resolve',{order:order.id,revision:order.revision,message:reply.id});setError('');}catch(e){setError((e as Error).message);}}}>Read supplier reply</button></div>)}{!replies.length&&<p>No supplier reply is available in this PO's email thread.</p>}{error&&<p role="alert">{error}</p>}</>}
+ {runs.map((run:D)=><article key={run.id}><h4>Supplier promise: {run.outcomes[0].promisedDate}</h4><p>{run.outcomes[0].status==='recorded'?'Recorded statement; requester informed here.':'Proposed statement; awaiting buyer confirmation.'} Sender identity unverified. Purchasing terms remain unchanged.</p>{order.mayManagePurchasing&&run.outcomes[0].status==='proposed'&&<button onClick={async()=>{try{await mutate('execute-action',{id:run.proposals[0]});setError('');}catch(e){setError((e as Error).message);}}}>Record promise and inform requester</button>}{run.alternatives.map((proposal:D)=><p key={proposal.quote}>{proposal.supplierName}: {money(proposal.totalMinor,proposal.currency)}, delivery {proposal.delivery}. {proposal.reason} Source: {proposal.source}</p>)}{run.missing.map((missing:string)=><p key={missing}>{missing}</p>)}<p>To adopt an alternative, the buyer creates a PUR-009 amendment and obtains its current approval. No recommendation authorizes a purchase.</p></article>)}
+ </section>;
+}

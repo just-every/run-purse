@@ -1,3 +1,5 @@
+import { OrderThread } from './order-thread';
+import { LateOrderResolution } from './late-order-resolution';
 import { useState } from 'react';
 import { Form, Field, Table, call, when, type D } from './shared';
 
@@ -26,5 +28,7 @@ export function OrderChasing({ order, data, actor, mutate, reload }: { order: D;
             {events.map((e: D) => <tr key={e.id}><td>{when(e.at)}</td><td>{e.kind === 'chase' ? `Chase attempt ${e.sequence}` : 'Buyer escalation'}</td><td>{e.reason.replaceAll('-', ' ')}</td><td>{e.outcome.recipient || 'Contact not configured'}</td><td>{e.outcome.status === 'development' ? 'Suppressed locally' : e.outcome.status === 'accepted' ? 'Provider accepted; delivery unconfirmed' : e.outcome.status}</td></tr>)}
         </Table>
         <p className="quiet">Every attempt retains its outcome. An interrupted attempt stays unknown and is not sent again. Supplier promises shown here are recorded by a buyer; exact-revision supplier-link acknowledgment stops acknowledgment-only chasing. Check your usual email inbox for new replies.</p>
+        {order.mayReadSupplierThread&&<OrderThread order={order} maySend={order.mayManagePurchasing} changed={reload}/>}
+        <LateOrderResolution order={order} data={data} mutate={mutate}/>
     </section>;
 }

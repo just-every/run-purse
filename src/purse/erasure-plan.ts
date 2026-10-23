@@ -29,7 +29,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
  // cannot prove the absence of identity in a PDF, image or provider attachment.
  let changed=true;
  while(changed){changed=false;for(const row of before.values()){
-  if(!['orderSend','orderAcknowledgment','travelExpense','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
+  if(!['agentRun','orderChaseEvent','orderThreadMessage','orderSupplierResponse','orderSend','orderAcknowledgment','travelExpense','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
   const v=row.value;
   if([v.request,v.order,v.record,v.source,v.reading,v.emailIntake,v.apInvoiceEmail,v.attachment,v.rfq].some(ref=>linked.has(ref))&&!linked.has(row.id)){linked.add(row.id);changed=true;}
  }}
@@ -63,7 +63,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   if(row.kind==='erasureReceipt'&&row.value.actor===subject.operator){const value={...row.value,actor:alias};state.set(oldKey,{...row,value});fields.push({kind:row.kind,id:row.id,path:['actor'],before:erasureDigest(row.value.actor),after:erasureDigest(alias)});continue;}
   if(['supplierMatchingKey','invoiceEvidenceKey','erasureReceipt'].includes(row.kind))continue;
   const affected=linked.has(row.id),value=visit(row.value,'',affected);
-  if(row.kind==='orderSend'&&affected)value.erasure=id;
+  if(['orderThreadMessage','orderSend'].includes(row.kind)&&affected)value.erasure=id;
   if(row.kind==='travelExpense'&&affected)Object.assign(value,{erasure:id,originalStatus:'withdrawn',originalSourceVerified:false,sourceBasis:'Original withdrawn by personal-data erasure; normalized financial evidence retained. The original source cannot be reverified.'});
   if(row.kind==='attachment'&&affected)Object.assign(value,eraseFile(value));
   if(row.kind==='emailIntakeMailEvent'&&value.status==='pending'&&contains(row.value)){value.status='suppressed';}

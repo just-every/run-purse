@@ -95,6 +95,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.agentPolicy = a.owner ? all(s, 'agentPolicy') : [];
     data.orderChasePolicy = all(s, 'orderChasePolicy').filter(record => orderIds.has(record.order)
         && allowed(s, a, 'procurement.manage', get(s, 'order', record.order)));
+    data.lateOrderNotice = all(s, 'lateOrderNotice').filter(record => orderIds.has(record.order));
     data.orderChaseEvent = all(s, 'orderChaseEvent').filter(record => orderIds.has(record.order));
     data.order = data.order.map((order: Data) => {
         const acknowledgment = all(s, 'orderSend').find(sent => sent.order === order.id && sent.revision === order.revision)?.acknowledgment;
