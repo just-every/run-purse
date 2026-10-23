@@ -158,6 +158,9 @@ jobs:
       - run: node tests/browser-evidence-history.mjs --width=${{ matrix.width }}
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
+      - run: node tests/browser-integration-tokens.mjs --width=${{ matrix.width }}
+        env:
+          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
       - uses: actions/upload-artifact@v4
         if: always()
         with:

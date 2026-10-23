@@ -134,7 +134,8 @@ async function poReadSettings() {
     const evidence=resolve(process.env.PURSE_EVIDENCE||'.cache/po-read');await mkdir(evidence,{recursive:true});
     const bundle=await build({stdin:{contents:"import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);",resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'esm',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
     const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic'],...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{})});
-    try {for(const width of [1440,390]) {
+    const selected=process.argv.find(arg=>arg.startsWith('--width='));
+    try {for(const width of selected?[Number(selected.slice(8))]:[1440,390]) {
         const h=await harness();let context;
         try {
             await h.command('business',{name:'North Ridge Field Services',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety']});
