@@ -11,7 +11,7 @@ export async function pantryFixture() {
  const pending=new Map();let sequence=0;
  child.on('message',message=>{const waiter=pending.get(message.id);if(waiter){pending.delete(message.id);message.error?waiter.reject(new Error(message.error)):waiter.resolve(message.result);}});
  const command=(action,input={})=>new Promise((resolve,reject)=>{const id='operation-'+(++sequence);pending.set(id,{resolve,reject});child.send({...input,action,id});});
- const h=await harness({protectedKey:'a'.repeat(64),mailRequest:async request=>{if(new URL(request.url).origin!==ready.origin)return;const response=await fetch(request);if(response.status>=400){const value=(await response.clone().text()).replaceAll(ready.token,'[redacted]');console.error('Pantry edge '+new URL(request.url).pathname+' '+response.status+': '+value.slice(0,800));}return response;}});
+ const h=await harness({protectedKey:'a'.repeat(64),mailRequest:async request=>{if(new URL(request.url).origin!==ready.origin)return;const headers=new Headers(request.headers);headers.delete('host');const response=await fetch(request.url,{method:request.method,headers,...(['GET','HEAD'].includes(request.method)?{}:{body:await request.arrayBuffer()})});if(response.status>=400){const value=(await response.clone().text()).replaceAll(ready.token,'[redacted]');console.error('Pantry edge '+new URL(request.url).pathname+' '+response.status+': '+value.slice(0,800));}return response;}});
  try {
  const cmd=h.command;
  await cmd('business',{name:'North Ridge Field Services',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety']});
