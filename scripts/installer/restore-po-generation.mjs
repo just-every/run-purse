@@ -14,7 +14,7 @@ export function validatePoGeneration(all,get,check) {
     }
     for(const event of all('poGenerationEvent')) {
         const source=get('revision',event.request+':'+event.revision),policy=get('poGenerationPolicy',event.policy),authority=policy.history[event.policyVersion-1];
-        check(event.id===event.request+':'+event.revision&&source.request===event.request&&!source.imported&&instant(event.at)&&authority?.enabled&&authority.currency===source.currency&&event.outbound==='buyer-consent-required','po_generation_event_source');
+        check(event.id===event.request+':'+event.revision&&source.request===event.request&&!source.imported&&instant(event.at)&&authority?.enabled&&authority.currency===source.currency&&(authority.supplier==='*'||authority.supplier===source.supplier)&&event.outbound==='buyer-consent-required','po_generation_event_source');
         check(['held','generated'].includes(event.status),'po_generation_event_status');
         if(event.status==='held')check(nonempty(event.reason),'po_generation_hold');
         else {

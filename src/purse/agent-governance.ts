@@ -3,6 +3,8 @@ import { all, audit, get, put, requireThat, text, type Actor, type Data, type St
 
 export const governedAgents = ['AGENT-002', 'AGENT-003', 'AGENT-006'];
 export function purchaseTypes(subject: Data): string[] {
+    const declared=subject.purchaseType??subject.intakeFormSnapshot?.purchaseType;
+    if(typeof declared==='string'&&declared.trim())return [declared.trim().toLowerCase()];
     const types = [...new Set((subject.lines ?? []).map((line: Data) => typeof line.category === 'string' ? line.category.trim().toLowerCase() : '').filter(Boolean))] as string[];
     return types.length ? types : ['*'];
 }

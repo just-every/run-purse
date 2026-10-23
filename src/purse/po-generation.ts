@@ -1,3 +1,4 @@
+import {purchaseTypes} from './agent-governance';
 import { currentDecision } from './approval';
 import { currentPrice } from './catalogue';
 import { moneyInput } from './money';
@@ -6,9 +7,8 @@ import { all, audit, Fault, get, put, requirePermission, requireThat, text, type
 
 export const poGenerationKey = (purchaseType: string, supplier: string, currency: string) => JSON.stringify([purchaseType,supplier,currency]);
 function matchesType(rule: Data, request: Data) {
-    return rule.purchaseType === '*' || rule.purchaseType === request.purchaseType?.toLowerCase()
-        || rule.purchaseType === 'catalogue' && request.lines.every((line: Data) => Boolean(line.catalogue))
-        || request.lines.every((line: Data) => line.category.toLowerCase() === rule.purchaseType);
+    return rule.purchaseType === '*' || rule.purchaseType === 'catalogue' && request.lines.every((line:Data)=>Boolean(line.catalogue))
+        || purchaseTypes(request).every(type=>type===rule.purchaseType);
 }
 /** Specific rules, including a paused rule, override the broad rule. Ambiguity holds for a buyer. */
 export function generationRule(s: State, request: Data): Data | undefined {
