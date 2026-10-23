@@ -1,3 +1,4 @@
+import { purchaseTypes, requireAgentPolicies } from './agent-governance';
 import { canonicalValue, valueDigest } from './agent-value-evidence';
 import { orderAdoption } from './adoption-position';
 import { rejectProtectedInput } from './protected-input';
@@ -72,6 +73,7 @@ export async function recurringOpportunities(s: State, a: Actor, op: string, b: 
             canonicalSupplier(s, order.supplier) === family && links.some(link => link.kind === 'recurringSeries'
                 ? link.row.order === order.id || link.row.request === order.request || link.row.id === order.recurring?.series
                 : link.row.request === order.request && link.row.revision === order.revision));
+        requireAgentPolicies(s, 'AGENT-006', nativeOrders.length ? [...new Set(nativeOrders.flatMap(purchaseTypes))] : ['*']);
         const orderIds = new Set(nativeOrders.map(r => r.id));
         const categories = [...new Set(nativeOrders.flatMap(order => order.lines.map((line: Data) => category(line.category))).filter(Boolean))].sort();
         const usageRows = usage.filter(row => !row.imported && nonnegative(row.seatCount) && row.seatCount > 0 && nonnegative(row.activeSeats) && row.activeSeats <= row.seatCount &&
@@ -101,6 +103,7 @@ export async function recurringOpportunities(s: State, a: Actor, op: string, b: 
         for (const row of serviceIssues) sources.push(source(s, 'supplierIssue', row.id, pick(row, 'order,supplier,category,status,at')));
         return { agreement, family, categories, sources, reportedUsage, serviceIssues, increases: priceIncreases(agreement, from, to) };
     });
+    if (!contexts.length) requireAgentPolicies(s, 'AGENT-006', ['*']);
     const candidates: Data[] = [];
     let citedRecords = 0;
     const add = (kind: string, selected: typeof contexts, facts: Data, reason: string, operationalRisk: string) => {

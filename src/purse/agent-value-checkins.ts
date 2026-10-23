@@ -1,6 +1,6 @@
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { operatorMail } from '../mail.server.mjs';
-import { buildValueSnapshot, valueDelivery } from './agent-value';
+import { buildValueSnapshot, valueDelivery, valuePolicyAllows } from './agent-value';
 import { load } from './store';
 import { all, allowed, key, uid, type Data, type State } from './types';
 
@@ -44,7 +44,7 @@ async function send(env: Bindings, event: Data, now: number): Promise<Data> {
     if (!delivery || delivery.receipt !== event.deliveryReceipt || delivery.at !== event.deliveredAt || delivery.order !== event.order
         || event.dueAt !== new Date(Date.parse(delivery.at) + event.intervalDays * day).toISOString()) return { ...suppressed, code: 'delivery-changed' };
     const policy = fresh.state.get(key('valuePolicy', 'main'))?.value;
-    if (!policy?.enabled || policy.version !== event.policyVersion) return { ...suppressed, code: 'paused-or-policy-changed' };
+    if (!valuePolicyAllows(fresh.state, request) || policy?.version !== event.policyVersion) return { ...suppressed, code: 'paused-or-policy-changed' };
     const member = membership(fresh.state, request);
     const native = await env.DB.prepare("SELECT version FROM oa_operators WHERE id=? AND lower(email)=? AND status='active'").bind(event.requester,event.requesterEmail).first<{version:number}>();
     if (request.requester !== event.requester || request.requesterEmail.toLowerCase() !== event.requesterEmail

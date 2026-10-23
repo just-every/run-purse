@@ -65,6 +65,7 @@ function validateAssessment(input, fail) {
 export function validateAgentValue(all, get, check, rows) {
  const revisions = new Map(rows.map(r => [r.kind + ':' + r.id, r.revision]));
  const fail = (ok, label) => check(ok, 'agent_value_' + label);
+ const validTypes = row => row.purchaseTypes === undefined || Array.isArray(row.purchaseTypes) && row.purchaseTypes.length > 0 && row.purchaseTypes.length <= 100 && row.purchaseTypes.every(t=>nonempty(t) && t.length <= 200 && t === t.trim().toLowerCase()) && equal(row.purchaseTypes,[...new Set(row.purchaseTypes)].sort()) && (!row.purchaseTypes.includes('*') || row.purchaseTypes.length === 1);
  const audit = (action, predicate) => all('audit').some(a => a.action === action && predicate(a));
  const approved = (request, revision) => {
   const source = get('revision', request + ':' + revision);
@@ -81,11 +82,13 @@ export function validateAgentValue(all, get, check, rows) {
  }
  for (const policy of all('valuePolicy')) {
   fail(policy.id === 'main' && typeof policy.enabled === 'boolean' && Number.isSafeInteger(policy.version) && policy.version > 0 && Array.isArray(policy.history) && policy.history.length === policy.version, 'policy');
+  fail(validTypes(policy), 'policy_purchase_types');
   for (const [index, h] of policy.history.entries()) {
+   fail(validTypes(h), 'policy_history_purchase_types');
    fail(h.version === index + 1 && typeof h.enabled === 'boolean' && nonempty(h.actor) && Number.isSafeInteger(h.operatorVersion) && h.operatorVersion > 0 && timestamp(h.at) && nonempty(h.reason), 'policy_history');
-   fail(audit('value-policy',a => a.record === policy.id && a.version === h.version && a.actor === h.actor && a.enabled === h.enabled && a.reason === h.reason), 'policy_audit');
+   fail(audit('value-policy',a => a.record === policy.id && a.version === h.version && a.actor === h.actor && a.enabled === h.enabled && equal(a.purchaseTypes,h.purchaseTypes) && a.reason === h.reason), 'policy_audit');
   }
-  fail(Object.keys(policy.history.at(-1)).every(k => equal(policy[k],policy.history.at(-1)[k])), 'policy_current');
+  fail(equal(policy.purchaseTypes,policy.history.at(-1).purchaseTypes) && Object.keys(policy.history.at(-1)).every(k => equal(policy[k],policy.history.at(-1)[k])), 'policy_current');
  }
  for (const usage of all('valueSeatImport')) {
   approved(usage.request,usage.revision);
@@ -130,7 +133,10 @@ export function validateAgentValue(all, get, check, rows) {
    if (['quote','quoteAward','agreementAward'].includes(ref.kind)) fail(ref.value.request === input.request && ref.value.revision <= input.revision, 'source_award_scope');
    if (ref.kind === 'invoice') fail(input.sources.some(s=>s.kind === 'order' && s.id === ref.value.order), 'source_invoice_scope');
    if (ref.kind === 'payable') fail(input.sources.some(s=>s.kind === 'invoice' && s.id === ref.value.invoice), 'source_payable_scope');
-   if (ref.kind === 'valuePolicy') fail(current.history.some(h=>h.version === ref.value.version && h.enabled === ref.value.enabled), 'source_policy_history');
+   if (ref.kind === 'valuePolicy') {
+    fail(validTypes(ref.value) && Array.isArray(ref.value.history) && ref.value.history.every(validTypes), 'source_policy_purchase_types');
+    fail(current.history.some(h=>h.version === ref.value.version && h.enabled === ref.value.enabled && equal(h.purchaseTypes,ref.value.purchaseTypes)) && equal(ref.value.history,current.history.slice(0,ref.value.version)), 'source_policy_history');
+   }
   }
   const fingerprintInput = Object.fromEntries(['request','revision','requester','promise','sources','assessment','mode','model','provider'].map(k=>[k,input[k]]));
   fail((input.fingerprint === digest(canonical(fingerprintInput)) || erasedSourceFact(all,'valueSnapshot',input.fingerprint,fingerprintInput)), 'fingerprint');

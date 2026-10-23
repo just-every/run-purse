@@ -16,7 +16,7 @@ async function fixture(t) {
  await h.command('policy',{name:'Software authority',currency:'USD',category:'*',project:'*',approver:'approver@example.test',limitMinor:10000000,budgetMinor:100000000});
  const base={title:'Software purchase',supplier:supplier.id,currency:'USD',needDate:'2026-12-20',location:'Denver',costCentre:'IT',terms:'Net 30',freightMinor:0,taxMinor:0,lines:[{description:'Seat license',quantity:'50',unitMinor:1000,category:'Software',project:'Operations'}]};
  const approve=async request=>{await h.command('submit',{id:request.id,revision:request.revision},requester);return h.command('decision',{id:request.id,revision:request.revision,decision:'approved',reason:'Approved exact promise'},approver)};
- const policy=async enabled=>{const p=(await h.state()).data.valuePolicy[0];return h.command('value-policy',{version:p?.version??0,enabled,reason:enabled?'Owner enables value tracking':'Owner pauses value tracking'})};
+ const policy=async(enabled,purchaseTypes)=>{const p=(await h.state()).data.valuePolicy[0];return h.command('value-policy',{version:p?.version??0,enabled,purchaseTypes,reason:enabled?'Owner enables value tracking':'Owner pauses value tracking'})};
  const report=request=>h.command('value-report',{request:request.id,revision:request.revision},requester);
  const answer=(run,usefulness=true)=>({id:run.id,version:run.version,request:run.request,revision:run.revision,fingerprint:run.inputs.fingerprint,usefulness,notes:''});
  await policy(true);
@@ -32,6 +32,12 @@ test('AGENT-005 exact approved promises, original provider-reported 50/31/19 evi
  await cmd('value-report',{request:request.id,revision:request.revision},requester,409);
  request=await approve(request);
  assert.deepEqual((await h.state(requester)).data.revision.find(r=>r.request===request.id).valuePromise,{kind:'seats',seats:50});
+ await policy(true,['Hardware']);await cmd('value-report',{request:request.id,revision:request.revision},requester,409);
+ const scoped=await policy(true,[' Software ','software']);assert.deepEqual(scoped.purchaseTypes,['software']);
+ for(const purchaseTypes of [[],['*','software'],[' '],[7]])await cmd('value-policy',{version:scoped.version,enabled:true,purchaseTypes,reason:'Invalid selection'},h.owner,400);
+ const mixed=await approve(await cmd('request',{...base,title:'Mixed purchase types',valuePromise:{kind:'seats',seats:50},lines:[...base.lines,{...base.lines[0],description:'Hardware seat controller',category:'Hardware'}]},requester));
+ await cmd('value-report',{request:mixed.id,revision:mixed.revision},requester,409);
+ await policy(true,['Software','Hardware']);assert.equal((await report(mixed)).request,mixed.id);await policy(true,['Software']);
  const empty=await report(request);assert.equal(empty.report.status,'no-evidence');assert.equal(empty.report.activeSeats,null);assert.equal(empty.report.shortfall,null);
  const denied=answer(empty);
  for(const cookie of [other,approver,buyer,h.owner])await cmd('value-confirm',denied,cookie,403);
@@ -52,6 +58,7 @@ test('AGENT-005 exact approved promises, original provider-reported 50/31/19 evi
  await cmd('value-seat-import',{...input,activeRule:'any-sign-in'},requester,400);
  const duplicate=await attach(request.id,JSON.stringify({seats:[{id:'same',active:true},{id:'same',active:false}]}));await cmd('value-seat-import',{...input,attachment:duplicate.id},requester,400);
  const unrelated=await cmd('request',{...base,title:'Other request',valuePromise:{kind:'seats',seats:50}},requester),unrelatedFile=await attach(unrelated.id,original);await cmd('value-seat-import',{...input,attachment:unrelatedFile.id},requester,403);
+ await policy(true,['Hardware']);await cmd('value-seat-import',input,requester,409);await policy(true,['Software']);
  const usage=await cmd('value-seat-import',input,requester);
  assert.equal(usage.deliveryReceipt,deliveredReceipt.id);assert.equal(usage.deliveryAt,deliveredReceipt.at);assert.equal(usage.activeSeats,31);assert.equal(usage.seatCount,50);assert.equal(usage.provenance,'provider-reported, unverified');assert.equal(usage.sha256,createHash('sha256').update(original).digest('hex'));
  await cmd('value-confirm',denied,requester,409);
@@ -67,7 +74,8 @@ test('AGENT-005 exact approved promises, original provider-reported 50/31/19 evi
  assert.equal(confirmed.usefulness,false);assert.equal(confirmed.request,request.id);assert.equal(confirmed.fingerprint,run.inputs.fingerprint);assert.deepEqual(confirmed.inputs,run.inputs);
  await cmd('value-confirm',answer(run),requester,409);await cmd('execute-action',{id:proposal.id,usefulness:true,notes:''},requester,409);
  assert.equal((await h.state()).data.order.length,1,'Value evaluation and source instructions create no orders beyond the explicit buyer purchase');
- let next=await report(request);await policy(false);await cmd('value-confirm',answer(next),requester,409);await cmd('value-report',{request:request.id,revision:1},requester,409);await policy(true);await cmd('value-confirm',answer(next),requester,409);
+ let next=await report(request);await policy(true,['Hardware']);await cmd('value-confirm',answer(next),requester,409);await policy(true,['Software']);
+ next=await report(request);await policy(false);await cmd('value-confirm',answer(next),requester,409);await cmd('value-report',{request:request.id,revision:1},requester,409);await policy(true);await cmd('value-confirm',answer(next),requester,409);
  next=await report(request);await cmd('member',{email:'requester@example.test',name:'Requester',roles:['finance-viewer'],active:true});await cmd('value-confirm',answer(next),requester,403);await cmd('member',{email:'requester@example.test',name:'Requester',roles:['requester'],active:true});
  const amended=await cmd('amend',{...base,lines:base.lines.map(line=>({...line,id:request.lines[0].id,quantity:'60'})),id:request.id,revision:request.revision,valuePromise:{kind:'seats',seats:60},reason:'New outcome requires renewed exact approval'},requester);
  await cmd('value-confirm',answer(next),requester,409);await cmd('value-report',{request:request.id,revision:1},requester,409);
@@ -82,11 +90,12 @@ test('AGENT-005 exact approved promises, original provider-reported 50/31/19 evi
  const amendedDelivery=deliveredReceipt;
  const checkinAt=Date.parse(amendedDelivery.at)+30*86400000;const scheduled=await h.mf.dispatchFetch(h.origin+'/cdn-cgi/local/scheduled?time='+checkinAt);assert.equal(scheduled.status,200);assert.equal((await h.state()).data.valueCheckin.filter(e=>e.request===request.id&&e.revision===request.revision).length,1,'AGENT-005 real delivered-revision check-in enters the portable graph');
  const records=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(records),true);
- for(const kind of ['valueSeatImport','valueConfirmation','agentRun','proposedAction']){
+ for(const kind of ['valuePolicy','valueSeatImport','valueConfirmation','agentRun','proposedAction']){
   const corrupted=structuredClone(records),row=corrupted.find(r=>r.kind===kind&&(kind!=='agentRun'||JSON.parse(r.value).id===run.id)),value=JSON.parse(row.value);
-  if(kind==='valueSeatImport')value.activeSeats++;if(kind==='valueConfirmation')value.actor='other-native-requester';if(kind==='agentRun')value.inputs.sources.find(s=>s.kind==='attachment'&&s.id===attachment.id).value.size++;if(kind==='proposedAction')value.input.revision=999;
+  if(kind==='valuePolicy')value.history[0].purchaseTypes=[' Software '];if(kind==='valueSeatImport')value.activeSeats++;if(kind==='valueConfirmation')value.actor='other-native-requester';if(kind==='agentRun')value.inputs.sources.find(s=>s.kind==='attachment'&&s.id===attachment.id).value.size++;if(kind==='proposedAction')value.input.revision=999;
   row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupted),/purse_agent_value/);
  }
+ for(const purchaseTypes of [[],['*','software'],['software','software'],'software']){const corrupted=structuredClone(records),row=corrupted.find(r=>r.kind==='valuePolicy'),value=JSON.parse(row.value);value.purchaseTypes=purchaseTypes;row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupted),/purse_agent_value/)}
  const archive=join(h.dir,'confirmed-value.rer'),sourcePortability=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});
  await exportArchive(sourcePortability,archive,[]);
  let restoredMail=0;const restored=await harness({empty:true,mail:()=>{restoredMail++;return Response.json({id:crypto.randomUUID()})}});t.after(()=>restored.close());
@@ -145,10 +154,14 @@ test('AGENT-005 receipt need-date and confirmed quoted-saving evidence reuse REP
 });
 
 test('Recurring consolidation scenarios recompute from native sources, require independent exact consents and never change or send purchasing',async t=>{
- const {recurringScenarioFixture}=await import('./recurring-scenario-fixture.mjs');const f=await recurringScenarioFixture(),{h,input}=f;t.after(()=>f.close());
+ const {recurringScenarioFixture}=await import('./recurring-scenario-fixture.mjs');const f=await recurringScenarioFixture({mixedTypes:true}),{h,input}=f;t.after(()=>f.close());
  const before=(await h.state()).data, unchanged=()=>h.state().then(({data})=>Object.fromEntries(['commitment','cashRequirements','order','agreement','recurringSeries'].map(kind=>[kind,data[kind]])));
  const originals=await unchanged(),mail=h.messages.length;
- const discovery={from:'2026-10-01',to:input.to};await h.command('recurring-scenario-discover',discovery,'',401);await h.command('recurring-scenario-discover',discovery,f.finance,403);const opportunities=await h.command('recurring-scenario-discover',discovery);assert.ok(opportunities.proposals.some(row=>row.kind==='consolidate'));assert.ok(opportunities.proposals.some(row=>row.kind==='renegotiate'&&row.sources.some(source=>source.kind==='valueSeatImport'&&source.value.activeSeats===31)));assert.ok(opportunities.proposals.every(row=>row.conditional&&row.reviewRequired));assert.ok(opportunities.proposals.some(row=>row.kind==='renegotiate'&&row.baseline.priceIncreases.some(price=>price.beforeUnitMinor===2000&&price.afterUnitMinor===2200)));assert.ok(opportunities.proposals.some(row=>row.kind==='cancellation-review'&&row.sources.some(source=>source.kind==='valueSeatImport'&&source.value.activeSeats===0)));const generation=(await h.state()).data.agentRun.find(row=>row.id===opportunities.id);assert.deepEqual(generation.proposals,opportunities.proposals);await h.command('edit-preparation',{id:generation.id,version:generation.version,draft:'Changed finding'},h.owner,409);await h.command('propose-action',{run:generation.id,action:'issue',input:{}},h.owner,409);assert.equal(opportunities.proposals.find(row=>row.kind==='consolidate').baseline.futureForecast,'unknown');assert.deepEqual(await unchanged(),originals);assert.equal(h.messages.length,mail);
+ const setRecurringPolicy=async(purchaseType,enabled)=>{const data=(await h.state()).data,current=(data.agentPolicy??[]).find(p=>p.agent==='AGENT-006'&&p.purchaseType.toLowerCase()===purchaseType.toLowerCase());return h.command('agent-policy',{agent:'AGENT-006',purchaseType,version:current?.version??0,enabled,cadenceDays:7,maxChases:3,reason:'Owner selects allowed research purchase types'})};
+ const discovery={from:'2026-10-01',to:input.to};
+ await h.command('recurring-scenario-discover',discovery,h.owner,409);await h.command('recurring-scenario-prepare',input,h.owner,409);
+ await setRecurringPolicy('Hardware',true);await setRecurringPolicy('Software',false);
+ await h.command('recurring-scenario-discover',discovery,h.owner,409);await h.command('recurring-scenario-prepare',input,h.owner,409);await setRecurringPolicy('Software',true);await h.command('recurring-scenario-discover',discovery,'',401);await h.command('recurring-scenario-discover',discovery,f.finance,403);const opportunities=await h.command('recurring-scenario-discover',discovery);assert.ok(opportunities.proposals.some(row=>row.kind==='consolidate'));assert.ok(opportunities.proposals.some(row=>row.kind==='renegotiate'&&row.sources.some(source=>source.kind==='valueSeatImport'&&source.value.activeSeats===31)));assert.ok(opportunities.proposals.every(row=>row.conditional&&row.reviewRequired));assert.ok(opportunities.proposals.some(row=>row.kind==='renegotiate'&&row.baseline.priceIncreases.some(price=>price.beforeUnitMinor===2000&&price.afterUnitMinor===2200)));assert.ok(opportunities.proposals.some(row=>row.kind==='cancellation-review'&&row.sources.some(source=>source.kind==='valueSeatImport'&&source.value.activeSeats===0)));const generation=(await h.state()).data.agentRun.find(row=>row.id===opportunities.id);assert.deepEqual(generation.proposals,opportunities.proposals);await h.command('edit-preparation',{id:generation.id,version:generation.version,draft:'Changed finding'},h.owner,409);await h.command('propose-action',{run:generation.id,action:'issue',input:{}},h.owner,409);assert.equal(opportunities.proposals.find(row=>row.kind==='consolidate').baseline.futureForecast,'unknown');assert.deepEqual(await unchanged(),originals);assert.equal(h.messages.length,mail);
 
  await h.command('recurring-scenario-prepare',input,'',401);await h.command('recurring-scenario-prepare',input,f.finance,403);
  await h.command('recurring-scenario-prepare',{...input,bankAccount:'synthetic-purse-905'},h.owner,400);
@@ -158,8 +171,12 @@ test('Recurring consolidation scenarios recompute from native sources, require i
  const consent={id:scenario.id,hash:scenario.hash,confirmed:true,reason:'Reviewed exact reproducible figures'};
  await h.command('recurring-scenario-draft',consent,h.owner,409);await h.command('recurring-scenario-approve',{...consent,role:'finance'},h.owner,403);await h.command('recurring-scenario-approve',{...consent,hash:'synthetic-purse-906',role:'finance'},f.finance,409);
  const financeView=(await h.state(f.finance)).data;assert.equal(financeView.recurringScenario.find(row=>row.id===scenario.id).hash,scenario.hash);assert.deepEqual(financeView.recurringScenarioDraft,[]);assert.deepEqual((await h.state(f.requester)).data.recurringScenario,[]);
+ await h.command('agent-pause',{agent:'AGENT-006',reason:'Owner instantly pauses recurring generation'});
+ await h.command('recurring-scenario-discover',discovery,h.owner,409);await h.command('recurring-scenario-prepare',input,h.owner,409);
  await h.command('recurring-scenario-approve',{...consent,role:'finance'},f.finance);
  for(const agreement of f.agreements)await h.command('recurring-scenario-approve',{...consent,role:'owner',agreement:agreement.id});
+ await h.command('recurring-scenario-draft',consent,h.owner,409);
+ assert.equal((await h.state(f.finance)).data.recurringScenario.find(row=>row.id===scenario.id).hash,scenario.hash,'Pause preserves human reads and approvals');await setRecurringPolicy('Software',true);await h.command('recurring-scenario-draft',consent,h.owner,409);await setRecurringPolicy('Hardware',true);
  const draft=await h.command('recurring-scenario-draft',consent);assert.equal(draft.binding,false);assert.equal(draft.sent,false);assert.match(draft.text,/NONBINDING/);assert.equal(h.messages.length,mail);assert.deepEqual(await unchanged(),originals);
  const authorityCase=await h.command('recurring-scenario-prepare',input),authorityConsent={...consent,id:authorityCase.id,hash:authorityCase.hash};
  await h.command('recurring-scenario-approve',{...authorityConsent,role:'finance'},f.finance);for(const agreement of f.agreements)await h.command('recurring-scenario-approve',{...authorityConsent,role:'owner',agreement:agreement.id});

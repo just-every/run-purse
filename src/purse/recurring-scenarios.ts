@@ -1,3 +1,4 @@
+import { purchaseTypes, requireAgentPolicies } from './agent-governance';
 import { cashRequirements } from './cash-requirements';
 import { canonicalValue, valueDigest } from './agent-value-evidence';
 import { canonicalSupplier } from './supplier-identity';
@@ -173,6 +174,11 @@ function snapshot(s: State, a: Actor, input: Data) {
         basis: 'Hypothetical scenario on selected native issued PO obligations; approved bills unchanged; future unissued renewals unknown; never realized savings' };
 }
 
+function generationAuthority(s: State, captured: Data) {
+    const types = captured.sources.filter((row: Data) => row.kind === 'order').flatMap((row: Data) => purchaseTypes(get(s, 'order', row.id)));
+    requireAgentPolicies(s, 'AGENT-006', types.length ? [...new Set<string>(types)] : ['*']);
+}
+
 function consentAuthority(s: State, a: Actor, scenario: Data, role: string, agreementId?: string) {
     if (role === 'owner') {
         const agreement = get(s, 'agreement', agreementId!);
@@ -196,6 +202,7 @@ export async function recurringScenarios(s: State, a: Actor, op: string, b: Data
     if (op === 'recurring-scenario-prepare') {
         requireThat(a.owner, 'Current native owner required to prepare scenarios', 403);
         const input = choices(b), captured = snapshot(s, a, input);
+        generationAuthority(s, captured);
         const hash = await valueDigest(canonicalValue({ choices: input, snapshot: captured })), id = uid();
         const row = { choices: input, snapshot: captured, hash, mode: 'deterministic v1', model: 'none', provider: 'none',
             label: 'Scenario — not realized savings', preparedBy: a.id, at: new Date().toISOString(), status: 'proposed' };
@@ -219,6 +226,7 @@ export async function recurringScenarios(s: State, a: Actor, op: string, b: Data
         return { id: scenario.id, hash: scenario.hash, status: 'consent-recorded', authorityProofs: proofs([row]) };
     }
     requireThat(a.owner, 'Current native owner required to draft a nonbinding brief', 403);
+    generationAuthority(s, fresh);
     requireThat(!s.has('recurringScenarioDraft:' + scenario.id), 'A brief for this scenario already exists', 409);
     const consents = all(s, 'recurringScenarioConsent').filter(c => c.scenario === scenario.id && c.hash === scenario.hash);
     requireThat(consents.some(c => c.role === 'finance') && scenario.choices.agreementIds.every((id: string) => consents.some(c => c.role === 'owner' && c.agreement === id)), 'Independent finance and every affected agreement owner must approve this hash', 409);

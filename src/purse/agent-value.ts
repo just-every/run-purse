@@ -1,19 +1,39 @@
 import { mayReadPolicySnapshot, projectApprovalEdit } from './approval-edit-view';
+import { purchaseTypes } from './agent-governance';
 import { canReadRecord } from './access-records';
 import { projectProtectedContext, protectedContextPending } from './protected-context';
 import { approvedValueRequest, buildValueSnapshot, canonicalValue, parseSeatOriginal, valueDigest, valueMode, valueDelivery } from './agent-value-evidence';
 import { all, allowed, audit, can, date, get, key, own, put, requirePermission, requireThat, roles, text, uid, type Actor, type Data, type State } from './types';
 export { buildValueSnapshot, valueDelivery } from './agent-value-evidence';
 
-function enabled(s: State) {
+/** Omitted controls retain historical all-type behavior. Explicit types are
+ * trimmed, case-insensitive, unique and sorted; * must stand alone. */
+function normalizedPurchaseTypes(value: unknown): string[] {
+    if (value === undefined) return ['*'];
+    requireThat(Array.isArray(value) && value.length > 0 && value.length <= 100, 'Choose 1–100 purchase types, or * for all');
+    const types = value.map(v => text(v, 'Purchase type', 200).toLowerCase());
+    const normalized = [...new Set<string>(types)].sort();
+    requireThat(!normalized.includes('*') || normalized.length === 1, '* must be the only purchase type');
+    return normalized;
+}
+
+export function valuePolicyAllows(s: State, subject: Data): boolean {
+    const policy = s.get('valuePolicy:main')?.value;
+    const selected: string[] = policy?.purchaseTypes ?? ['*'];
+    return policy?.enabled === true && (selected.includes('*') || purchaseTypes(subject).every(type => selected.includes(type.trim().toLowerCase())));
+}
+
+function enabled(s: State, subject?: Data) {
     const policy = s.get('valuePolicy:main')?.value;
     requireThat(policy?.enabled === true, 'Value tracking is paused; owner must enable it', 409);
+    if (subject) requireThat(valuePolicyAllows(s, subject), 'Owner must enable value tracking for every request purchase type', 409);
     return policy;
 }
 function currentRequest(s: State, a: Actor, b: Data) {
     requireThat(roles(s, a).length, 'Active business capability required', 403);
     const r = get(s, 'request', b.request); own(s, a, r);
     approvedValueRequest(s, r, b.revision);
+    enabled(s, r);
     return r;
 }
 
@@ -24,9 +44,9 @@ export async function agentValue(s: State, a: Actor, op: string, b: Data): Promi
         const previous = s.get('valuePolicy:main')?.value;
         requireThat(b.version === (previous?.version ?? 0), 'Value policy changed; reload', 409);
         requireThat(typeof b.enabled === 'boolean', 'Choose enabled or paused');
-        const entry = { version: (previous?.version ?? 0) + 1, enabled: b.enabled, actor: a.id, operatorVersion: a.version, at: new Date().toISOString(), reason: text(b.reason, 'Value policy reason') };
+        const entry = { version: (previous?.version ?? 0) + 1, enabled: b.enabled, purchaseTypes: normalizedPurchaseTypes(b.purchaseTypes), actor: a.id, operatorVersion: a.version, at: new Date().toISOString(), reason: text(b.reason, 'Value policy reason') };
         put(s, 'valuePolicy', 'main', { ...entry, history: [...(previous?.history ?? []), entry] });
-        audit(s, a, op, 'main', { version: entry.version, enabled: entry.enabled, reason: entry.reason });
+        audit(s, a, op, 'main', { version: entry.version, enabled: entry.enabled, purchaseTypes: entry.purchaseTypes, reason: entry.reason });
         return get(s, 'valuePolicy', 'main');
     }
     enabled(s);
@@ -68,6 +88,7 @@ export async function agentValue(s: State, a: Actor, op: string, b: Data): Promi
     requireThat(!protectedContextPending('agentRun',run)&&!run.protectedContextCleanup?.authorityInvalidated,'Historical protected context requires a new report',409);
     requireThat(run.workflow === 'value-realization', 'Value report required', 409);
     const request = get(s, 'request', run.request);
+    enabled(s, request);
     // Owner authority never substitutes for this exact native requester identity.
     requireThat(a.id === request.requester && allowed(s, a, 'request.edit', request), 'Only the current requester with requester capability may confirm usefulness', 403);
     requireThat(b.request === request.id && b.revision === run.revision && b.version === run.version && b.fingerprint === run.inputs.fingerprint, 'Value report input changed; reload', 409);

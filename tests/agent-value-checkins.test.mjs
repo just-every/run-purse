@@ -13,7 +13,7 @@ async function fixture(t,options={}) {
  await h.command('policy',{name:'IT purchases',currency:'USD',category:'*',project:'*',approver:'approver@example.test',limitMinor:1000000,budgetMinor:10000000})
  const read=async()=>(await h.state()).data
  const tick=async now=>{const response=await h.mf.dispatchFetch(h.origin+'/cdn-cgi/local/scheduled?time='+now);assert.equal(response.status,200,await response.text())}
- const policy=async enabled=>{const current=(await read()).valuePolicy.find(p=>p.id==='main');return h.command('value-policy',{enabled,version:current?.version??0,reason:enabled?'Enable value check-ins':'Pause value check-ins'})}
+ const policy=async(enabled,purchaseTypes)=>{const current=(await read()).valuePolicy.find(p=>p.id==='main');return h.command('value-policy',{enabled,purchaseTypes,version:current?.version??0,reason:enabled?'Enable value check-ins':'Pause value check-ins'})}
  const purchase=async(title='50-seat software',cookie=requester,promise={kind:'seats',seats:50},deliver=true)=>{
   const request=await h.command('request',{title,supplier:supplier.id,currency:'USD',needDate:'2026-12-20',location:'Denver',costCentre:'IT',terms:'Net 30',valuePromise:promise,lines:[{description:'Software seats',quantity:'50',unitMinor:1000,category:'Software',project:'Operations'}]},cookie)
   await h.command('submit',{id:request.id,revision:request.revision},cookie)
@@ -39,6 +39,7 @@ test('AGENT-005 real scheduled 30/90-day requester check-ins claim once concurre
  assert.equal(h.messages.length,quiet,'Approval alone cannot trigger an after-delivery check-in')
  assert.ok(!(await read()).valueCheckin.some(e=>e.request===undelivered.id),'No delivery means no durable check-in claim')
  const request=await purchase()
+ await policy(true,[' Software '])
  const original=JSON.stringify({seats:Array.from({length:50},(_,index)=>({id:'seat-'+index,active:index<31}))})
  const attachment=await h.command('attachment',{kind:'request',record:request.id,name:'provider-seats.json',mediaType:'application/json',base64:Buffer.from(original).toString('base64')},requester)
  const usageDate=request.receipt.at.slice(0,10)
@@ -88,16 +89,18 @@ test('AGENT-005 real scheduled 30/90-day requester check-ins claim once concurre
  await h.command('value-confirm',answer,approver,403)
  const confirmation=await h.command('value-confirm',answer,requester)
  assert.equal(confirmation.run,event.run,'The scheduled report supports the same requester confirmation door')
- await policy(false)
+ await policy(true,['Hardware'])
  await tick(request.deliveredAt+90*day)
  data=await read();events=data.valueCheckin.filter(e=>e.request===request.id)
  assert.equal(events.length,2)
  assert.equal(events.find(e=>e.intervalDays===90).outcome.status,'suppressed')
+ assert.equal(events.find(e=>e.intervalDays===90).outcome.code,'paused-or-policy-changed','An enabled policy for another type blocks the actual final send')
  assert.equal(h.messages.length,before+1)
- await policy(true)
+ await policy(true,['Software'])
  await tick(request.deliveredAt+91*day)
  assert.equal(h.messages.length,before+1,'Re-enable cannot replay a suppressed or previously accepted interval')
  assert.equal((await read()).valueCheckin.filter(e=>e.request===request.id).length,2)
+ const paused=await purchase('Owner-paused final check-in');await policy(false);const pausedBefore=h.messages.length;await tick(paused.deliveredAt+30*day);assert.equal(h.messages.length,pausedBefore);assert.equal((await read()).valueCheckin.find(e=>e.request===paused.id).outcome.status,'suppressed','Global pause still blocks the actual final send');await policy(true,['Software']);await tick(paused.deliveredAt+31*day);assert.equal(h.messages.length,pausedBefore,'Global pause also consumes the interval without replay')
  const records=(await h.db.prepare('SELECT * FROM p_records').all()).results
  assert.equal(validatePurchasingArchive(records),true,'Scheduled claims, source snapshots and requester confirmations satisfy restore validation')
 })
