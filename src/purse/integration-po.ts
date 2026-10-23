@@ -24,7 +24,8 @@ function orderData(order: Data, invoices: Data[]) {
             id: invoice.id, reference: invoice.reference, currency: invoice.currency,
             totalMinor: invoice.totalMinor, status: invoice.status ?? 'captured',
             invoiceDate: invoice.invoiceDate ?? null, dueDate: invoice.dueDate ?? null,
-            paymentStatus: 'unknown', paymentStatusReason: 'Payment status return is not built (AP-001/AP-002)',
+            paymentStatus: invoice.pantry?.paymentStatus ?? 'unknown', paymentStatusAt: invoice.pantry?.returnedAt ?? null,
+            paymentStatusReason: invoice.pantry ? 'Last authenticated Pantry return; refresh in Purse for changes' : 'Payment status return is not built (AP-001/AP-002)',
         })),
     };
 }
