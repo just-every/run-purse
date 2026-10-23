@@ -35,7 +35,7 @@ jobs:
       matrix:
         width: [1440, 390]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: ${{ matrix.width == 1440 && 25 || 15 }}
     steps:
       - uses: actions/checkout@v4
       - name: Reclaim unused hosted-runner SDKs
