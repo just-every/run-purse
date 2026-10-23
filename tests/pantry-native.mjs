@@ -14,7 +14,7 @@ try {
   try {
    let result;
    if(message.action==='pay')result=await h.command('payment.record',{direction:'paid',contactId:message.vendorId,date:'2026-10-23',amount:message.amount,method:'ach',bankAccountId:bank.id,allocations:[{targetId:message.billId,amount:message.amount}]});
-   else if(message.action==='reverse')result=await h.command('payment.void',{paymentId:message.paymentId,date:'2026-10-24',reason:'Returned payment correction'});
+   else if(message.action==='reverse')result=await h.command('journal.reverse',{id:message.journalId,date:'2026-10-24',memo:'Returned payment correction'});
    else if(message.action==='snapshot')result=await h.view('sales');
    else if(message.action==='rotate'){await h.command('integration.revoke',{id:credential.id});credential=await issue();result={token:credential.token};}
    else if(message.action==='close'){resolve();return;}
