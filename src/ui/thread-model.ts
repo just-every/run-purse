@@ -53,8 +53,10 @@ export function nextStep(data: D, actor: D, r: D) {
     return '';
 }
 
-/** Invoice value already drawn against a blanket request's cap, from its order's blanket balance. */
-const billed = (data: D, r: D) => r.poDetails?.blanket ? data.order.find((o: D) => o.request === r.id && o.currency === r.currency && o.blanketPosition)?.blanketPosition.billedMinor ?? 0 : 0;
+/** Invoice value already drawn against a blanket request's cap, from its order's blanket balance or,
+ * for readers without invoice access, from the draw-down their commitment ledger records. */
+const billed = (data: D, r: D) => r.poDetails?.blanket ? data.order.find((o: D) => o.request === r.id && o.currency === r.currency && o.blanketPosition)?.blanketPosition.billedMinor
+    ?? data.commitment.filter((e: D) => e.request === r.id && e.currency === r.currency && e.kind === 'blanket-invoice-drawdown').reduce((n: number, e: D) => n - e.amountMinor, 0) : 0;
 const balance = (data: D, policy: string, request?: string) => data.commitment.filter((e: D) => e.policy === policy && (!request || e.request === request)).reduce((n: number, e: D) => n + e.amountMinor, 0);
 /** The checks Purse runs before approval, as chips: budget room under the covering policy, and the supplier's standing. */
 export function checks(data: D, actor: D, r: D) {
