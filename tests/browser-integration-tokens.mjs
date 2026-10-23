@@ -162,7 +162,7 @@ async function poReadSettings() {
             await panel.getByRole('button',{name:'Create read-only PO token',exact:true}).click();const response=await issued;assert.equal(response.status(),200);
             const created=await response.json();let token=created.token;
             const dismiss=async()=>{const field=panel.getByLabel('New integration token',{exact:true});await field.waitFor();assert.ok((await field.inputValue()).length);await panel.getByRole('button',{name:'Dismiss token',exact:true}).click();await field.waitFor({state:'detached'});};
-            await dismiss();const row=panel.getByRole('row').filter({hasText:'Locket supplier comparison'});await row.getByText('Read PO and bill status only',{exact:true}).waitFor();await snap('issued');
+            await dismiss();const row=panel.getByRole('row').filter({hasText:'Locket supplier comparison'});await row.getByRole('cell').filter({hasText:'Read PO and bill status only'}).waitFor();await snap('issued');
             const read=secret=>context.request.get(h.origin+'/api/purse/integration/orders/'+order.id,{headers:{authorization:'Bearer '+secret}});
             assert.equal((await read(token)).status(),200);assert.equal((await (await read(token)).json()).order.bills[0].paymentStatus,'unknown');
             await page.reload();await row.waitFor();await snap('dismissed');
