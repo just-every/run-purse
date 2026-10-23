@@ -1,3 +1,4 @@
+import { TooltipButton } from './tooltip-button';
 import { separated } from './separated';
 import { Children, cloneElement, isValidElement, useState, type ReactElement, type ReactNode } from 'react';
 export type D = Record<string, any>;
@@ -15,10 +16,11 @@ export function Field({ label, name = label, defaultValue = '', type = 'text', r
     }[];
 }) { return <label className={type === 'textarea' ? 'field field-wide' : 'field'}>{label}{options ? <select aria-label={label} name={name} defaultValue={defaultValue} required={required}><option value="">Choose…</option>{options.map(x => <option key={x.value} value={x.value}>{x.label}</option>)}</select> : type === 'textarea' ? <textarea aria-label={label} name={name} defaultValue={defaultValue} required={required}/> : <input aria-label={label} name={name} type={type} defaultValue={defaultValue} required={required} step={type === 'number' ? '1' : undefined}/>}</label>; }
 /** A record form: quiet labels over thin fields, the blue primary action at its end, and its error beside the action. */
-export function Form({ children, onSubmit, label = 'Save', initial = {}, className = '' }: {
+export function Form({ children, onSubmit, label = 'Save', initial = {}, className = '', tooltip }: {
     children: ReactNode;
     onSubmit: (b: D) => Promise<any>;
     label?: string;
+    tooltip?: string;
     initial?: D;
     className?: string;
 }) { const [busy, setBusy] = useState(false), [error, setError] = useState(''); return <form className={`record-form ${className}`.trim()} onSubmit={async (e) => { e.preventDefault(); const form = e.currentTarget; setBusy(true); setError(''); try {
@@ -29,7 +31,7 @@ catch (error) {
 }
 finally {
     setBusy(false);
-} }}>{children}<div className="form-end"><button className="btn-primary" disabled={busy}>{busy ? 'Saving…' : label}</button>{error && <p role="alert">{error}</p>}</div></form>; }
+} }}>{children}<div className="form-end">{tooltip ? <TooltipButton label={tooltip} aria-label={label} className="btn-primary" disabled={busy}>{busy ? 'Saving…' : label}</TooltipButton> : <button className="btn-primary" disabled={busy}>{busy ? 'Saving…' : label}</button>}{error && <p role="alert">{error}</p>}</div></form>; }
 export const options = (rows: D[], label = 'name') => rows.map(r => ({ value: r.id, label: r[label] || r.id }));
 const grouped = (whole: string) => whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 /** Exact minor units: "$5,148.00" in US dollars, "AUD 5,148.00" in any other currency; unlike currencies are never added together. */

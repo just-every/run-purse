@@ -51,13 +51,19 @@ async function attempt(env: Bindings, candidate: Data, now: number): Promise<Dat
     const prompt = receiptPrompts(state, now).find(row => row.order === candidate.order && row.reason === candidate.reason
         && row.receiver.toLowerCase() === receiver);
     if (!prompt) return;
+    const order = state.get(key('order', prompt.order));
+    if (!order) return;
+    const scopedOrder = { ...order.value, id: order.id };
+    const assignment = receiptAssignment(state, scopedOrder);
+    const recipient = { id: '', email: receiver, owner: false, dev: false, session: '', version: 0 };
+    const member = activeReceiver(state, receiver, scopedOrder) || !assignment.explicit && allowed(state, recipient, 'request.edit', scopedOrder);
     const id = await eventId(prompt, receiptDay(state, now));
     const event: Data = { id, order: prompt.order, receiver, reason: prompt.reason, at: new Date(now).toISOString(),
         outcome: { recipient: receiver, status: 'uncertain' } };
     // A claimed attempt is consumed even if the worker stops before persisting the mail result.
     const inserted = await env.DB.prepare(`INSERT OR IGNORE INTO p_records(business,kind,id,revision,value)
-        SELECT 'main','receiptPromptEvent',?,?,? WHERE (SELECT revision FROM p_meta WHERE id=1)=?`)
-        .bind(id, uid(), JSON.stringify(event), revision).run();
+        SELECT 'main','receiptPromptEvent',?,?,? WHERE (SELECT revision FROM p_meta WHERE id=1)=? AND ${activeRecipient}`)
+        .bind(id, uid(), JSON.stringify(event), revision, receiver, member ? 1 : 0).run();
     if (!inserted.meta.changes) return;
     event.outcome = await send(env, event, now);
     await env.DB.prepare("UPDATE p_records SET revision=?,value=? WHERE business='main' AND kind='receiptPromptEvent' AND id=?")

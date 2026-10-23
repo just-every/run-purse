@@ -48,5 +48,12 @@ test('RECEIVE-001 responsible receivers, due email prompts, automatic invoice ho
  await cmd('member',{email:'facilities@example.test',name:'Facilities',roles:['receiver'],active:false});await cmd('receipt',{order:next.id,line:next.lines[0].id,event:'receive',quantity:'1',reason:'Deactivated'},facilities,403);const inactive=h.messages.length;await tick('2026-11-04T12:00:00Z');assert.ok(!h.messages.slice(inactive).some(m=>m.to.includes('facilities@example.test')));
  await cmd('receipt',{order:next.id,line:next.lines[0].id,event:'receive',quantity:'1',reason:'Owner override records physical delivery'});assert.ok((await read()).audit.some(e=>e.action==='receipt'&&e.record===next.id&&e.ownerOverride));
  const audit=await h.send('/api/purse/audit.csv');assert.equal(audit.status,401);const csv=await h.send('/api/purse/audit.csv',undefined,h.owner);assert.match(csv.value,/IT covers remaining delivery/);
+ const promptRows=async()=> (await h.db.prepare("SELECT * FROM p_records WHERE kind='receiptPromptEvent' ORDER BY id").all()).results;
+ const retainedPrompts=await promptRows(), retainedMessages=h.messages.length;
+ // A restored domain has no native receiver identities until they sign in again.
+ await h.db.prepare("UPDATE oa_operators SET status='inactive' WHERE role<>'owner'").run();
+ await tick('2026-11-05T12:00:00Z');
+ assert.deepEqual(await promptRows(),retainedPrompts,'Restore without active native receivers preserves every prompt record');
+ assert.equal(h.messages.length,retainedMessages,'Missing native receivers never consume a prompt or send mail');
  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true,'RECEIVE-001 retained assignments, history and outcomes validate for archive restore');
 });

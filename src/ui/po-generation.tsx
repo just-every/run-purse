@@ -7,7 +7,7 @@ export function PoGeneration({data,mutate}:Props) {
     </section>;
 }
 function PolicyForm({policy,data,mutate}:{policy?:D;data:D;mutate:Props['mutate']}) {
-    return <Form key={policy ? policy.id+':'+policy.version : 'new'} label={policy ? 'Save generation rule' : 'Add generation rule'} initial={{version:policy?.version??0,...(policy?{purchaseType:policy.purchaseType,supplier:policy.supplier,currency:policy.currency}:{})}}
+    return <Form key={policy ? policy.id+':'+policy.version : 'new'} label={policy ? 'Save generation rule' : 'Add generation rule'} tooltip="Generation rule" initial={{version:policy?.version??0,...(policy?{purchaseType:policy.purchaseType,supplier:policy.supplier,currency:policy.currency}:{})}}
         onSubmit={input=>{const {mode,consent,...body}=input;return mutate('po-generation-policy',{...body,enabled:mode==='automatic',consent:consent==='on'});}}>
         {!policy && <><Field label="Purchase type or category (* for all, catalogue for catalog purchases)" name="purchaseType" defaultValue="*"/><Field label="Generation supplier" name="supplier" defaultValue="*" options={[{value:'*',label:'All suppliers'},...options(data.supplier??[])]}/><Field label="Generation currency" name="currency" options={(data.business?.[0]?.currencies??[]).map((c:string)=>({value:c,label:c}))}/></>}
         <Field label="Generation mode" name="mode" defaultValue={policy?.enabled?'automatic':'manual'} options={[{value:'manual',label:'Manual buyer review'},{value:'automatic',label:'Automatic internal PO generation'}]}/>

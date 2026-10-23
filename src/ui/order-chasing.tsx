@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Form, Field, Table, call, when, type D } from './shared';
 
 export function OrderChasing({ order, data, actor, mutate, reload }: { order: D; data: D; actor: D; mutate: (op: string, b: D) => Promise<any>; reload: () => Promise<void> }) {
-    const [notice, setNotice] = useState('');
+    const [notice, setNotice] = useState(''), [saving, setSaving] = useState(false);
     const policy = data.orderChasePolicy.find((p: D) => p.order === order.id);
     const events = data.orderChaseEvent.filter((e: D) => e.order === order.id);
     const evidence = data.orderChaseEvidence.find((e: D) => e.order === order.id);
@@ -12,7 +12,7 @@ export function OrderChasing({ order, data, actor, mutate, reload }: { order: D;
     return <section className="panel"><h3>Supplier follow-up</h3>
         {evidence ? <><p>Supplier promise: {evidence.promisedDate}. Acknowledgment: {evidence.acknowledgedAt ? when(evidence.acknowledgedAt) : 'not recorded'}.</p><details><summary>Buyer-recorded supplier replies and promises</summary><ul className="ruled-list">{evidence.history.map((h: D) => <li key={h.version}>{when(h.at)} · {h.source} · promised {h.promisedDate}{h.acknowledgedAt && <> · acknowledged {when(h.acknowledgedAt)}</>}</li>)}</ul></details></> : nativeAcknowledgment ? <p>Supplier acknowledged approved revision {nativeAcknowledgment.revision} at {when(nativeAcknowledgment.at)}. The link holder’s stated identity is unverified. No delivery promise has been recorded.</p> : <p>No supplier acknowledgment or promise has been recorded. Issuance alone is not an acknowledgment.</p>}
         {order.mayManagePurchasing && ['issued', 'closed'].includes(order.status) && !order.imported && <>
-            <Form key={policy?.version ?? 0} label="Save chase schedule" initial={{ order: order.id, version: policy?.version ?? 0 }} onSubmit={b => mutate('order-chase-policy', { ...b, agent: b.agent || null, enabled: b.enabled === 'yes', cadenceDays: Number(b.cadenceDays), maxChases: Number(b.maxChases) })}>
+            <Form key={policy?.version ?? 0} label="Save chase schedule" initial={{ order: order.id, version: policy?.version ?? 0 }} onSubmit={async b => { setSaving(true); try { return await mutate('order-chase-policy', { ...b, agent: b.agent || null, enabled: b.enabled === 'yes', cadenceDays: Number(b.cadenceDays), maxChases: Number(b.maxChases) }); } finally { setSaving(false); } }}>
                 <Field label="Follow-up executor" name="agent" defaultValue={policy?.agent ?? ''} options={[{ value: '', label: 'Buyer schedule' }, { value: 'AGENT-003', label: 'Governed late-order agent' }]}/>
                 <Field label="Automatic supplier chases" name="enabled" defaultValue={policy?.enabled ? 'yes' : 'no'} options={[{ value: 'yes', label: 'Enabled' }, { value: 'no', label: 'Paused' }]}/>
                 <Field label="Days between chase attempts" name="cadenceDays" type="number" defaultValue={policy?.cadenceDays ?? 3}/>
@@ -20,7 +20,7 @@ export function OrderChasing({ order, data, actor, mutate, reload }: { order: D;
                 <Field label="Escalation buyer email" name="escalateTo" type="email" defaultValue={policy?.escalateTo ?? actor.email}/>
                 <p className="quiet">Use an active buyer, or your own address as owner. Each saved schedule starts a new attempt limit. Chases use the approved PO contact. Closed balances and current supplier holds stop follow-up. Cadence days are elapsed 24-hour periods; overdue dates use America/New_York.</p>
             </Form>
-            <button onClick={async () => { try { await call('order-chases', {}); await reload(); setNotice('Due attempts processed. Check each outcome below.'); } catch (e) { setNotice((e as Error).message); } }}>Process due supplier chases</button>
+            <button disabled={saving} onClick={async () => { try { await call('order-chases', {}); await reload(); setNotice('Due attempts processed. Check each outcome below.'); } catch (e) { setNotice((e as Error).message); } }}>Process due supplier chases</button>
             <p role="status">{notice}</p>
         </>}
         {policy && !Number.isSafeInteger(policy.operatorVersion) && <p>Save this schedule again to authorize future sends with your current native identity.</p>}

@@ -156,6 +156,17 @@ async function poReadSettings() {
                 assert.ok(icons.every(b=>b.label&&b.tooltip),'Icon-only Settings controls expose tooltips');
                 await panel.screenshot({path:join(evidence,`INTAKE-008-${name}-${width}.png`)});
             };
+            const generation=page.getByRole('region',{name:'PO generation rules',exact:true});
+            await generation.getByText('Add a PO generation rule',{exact:true}).click();
+            const control=generation.getByRole('button',{name:'Add generation rule',exact:true});
+            const tooltip=generation.getByRole('tooltip',{name:'Generation rule',exact:true});
+            await control.focus();assert.equal(await tooltip.isVisible(),true,'Keyboard focus shows tooltip immediately');
+            await control.evaluate(button=>button.blur());await page.mouse.move(0,0);
+            await page.clock.install();await control.hover();await page.clock.runFor(200);
+            assert.equal(await tooltip.isVisible(),false,'Hover tooltip waits before appearing');
+            await page.clock.runFor(101);assert.equal(await tooltip.isVisible(),true,'Hover tooltip appears after 300 ms');
+            await page.clock.resume();await page.mouse.move(0,0);
+            await generation.getByText('Add a PO generation rule',{exact:true}).click();
             await panel.getByLabel('PO integration name',{exact:true}).fill('Locket supplier comparison');await panel.getByLabel('Mapped supplier',{exact:true}).selectOption(supplier.id);
             assert.equal(await panel.getByLabel('Expires in days (1–30)',{exact:true}).inputValue(),'7');
             const issued=page.waitForResponse(r=>r.url().endsWith('/api/purse/integration-tokens')&&r.request().method()==='POST');
