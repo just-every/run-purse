@@ -22,4 +22,4 @@ try {
    process.send({id:message.id,result});
   }catch(error){process.send({id:message.id,error:error.message});}
  });});
-} finally {await h.close();}
+} finally {await h.close();if(process.connected)process.disconnect();}
