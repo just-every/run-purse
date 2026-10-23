@@ -10,7 +10,7 @@ try {
  const issue=()=>h.command('integration.create',{name:'Purse native connection',scopes:['contacts:write','bills:write','payments:read','post']});
  let credential=await issue();
  process.send({ready:true,origin:h.origin,token:credential.token,accountId:acct['6100'],head:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim()});
- await new Promise(resolve=>process.on('message',async message=>{
+ await new Promise(resolve=>{process.once('disconnect',resolve);process.once('SIGTERM',resolve);process.on('message',async message=>{
   try {
    let result;
    if(message.action==='pay')result=await h.command('payment.record',{direction:'paid',contactId:message.vendorId,date:'2026-10-23',amount:message.amount,method:'ach',bankAccountId:bank.id,allocations:[{targetId:message.billId,amount:message.amount}]});
@@ -21,5 +21,5 @@ try {
    else throw new Error('Unknown native Pantry test operation');
    process.send({id:message.id,result});
   }catch(error){process.send({id:message.id,error:error.message});}
- }));
+ });});
 } finally {await h.close();}
