@@ -58,7 +58,7 @@ jobs:
       # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install --with-deps --only-shell chromium
       - run: node tests/browser.mjs --width=${{ matrix.width }}
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
@@ -92,7 +92,7 @@ jobs:
       # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install --with-deps --only-shell chromium
       - run: node tests/browser-po-kinds.mjs
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-po-kinds
@@ -130,7 +130,7 @@ jobs:
       # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install --with-deps --only-shell chromium
       - run: node tests/browser-request-again.mjs --width=${{ matrix.width }}
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
@@ -188,7 +188,7 @@ jobs:
       # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install --with-deps --only-shell chromium
       - run: node tests/browser-search-scale.mjs
         env:
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
