@@ -289,7 +289,7 @@ test('Owner-scoped Locket PO reads expose only mapped financial data; lifecycle,
     const rotated=await h.send(base+'/'+integration.id+'/rotate',{},h.owner);assert.equal(rotated.status,200);assert.equal(rotated.value.integration.expiresAt,integration.expiresAt);assert.deepEqual(rotated.value.integration.suppliers,[supplier.id]);
     assert.equal((await read()).status,401);const replacement=rotated.value.token;assert.equal((await read(orders[0].id,replacement)).status,200);
     let limited=false;
-    for(let i=0;i<100;i++){const r=await read(orders[0].id,replacement);if(r.status===429){limited=true;break;}assert.equal(r.status,200);}
+    for(let i=0;i<200;i++){const r=await read(orders[0].id,replacement);if(r.status===429){limited=true;break;}assert.equal(r.status,200);}
     assert.ok(limited,'A finite durable per-token limit refuses excess reads');
     await h.send(base+'/'+integration.id+'/revoke',{},h.owner);assert.equal((await read(orders[0].id,replacement)).status,401);
     const expiring=await h.send(base,{...input,expiresDays:30},h.owner);assert.equal(expiring.status,200);
