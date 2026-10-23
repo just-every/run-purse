@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import {join} from 'node:path'
 import {session,api,current} from './browser-journey.mjs'
 
-export async function orderChasingJourney(browser,root,origin,width,evidence){
- const buyer=await session(browser,root,origin,'buyer',width),requester=await session(browser,root,origin,'requester',width),approver=await session(browser,root,origin,'approver',width),owner=await session(browser,root,origin,'owner',width)
+export async function orderChasingJourney(browser,root,origin,width,evidence,{openSession=session}={}){
+ const buyer=await openSession(browser,root,origin,'buyer',width),requester=await openSession(browser,root,origin,'requester',width),approver=await openSession(browser,root,origin,'approver',width),owner=await openSession(browser,root,origin,'owner',width)
  try{
   const tag=width+' '+crypto.randomUUID().slice(0,6)
   const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(Date.now())
@@ -42,4 +42,27 @@ export async function orderChasingJourney(browser,root,origin,width,evidence){
   for(const page of [buyer.page,requester.page])assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`PO-003 fits ${width}px`)
   return {clause:'PO-003',width,order:o.id}
  }catch(e){await buyer.page.screenshot({path:join(evidence,`PO-003-failure-${width}.png`),fullPage:true}).catch(()=>{});throw e}finally{await buyer.context.close();await requester.context.close();await approver.context.close();await owner.context.close()}
+}
+
+// The same public-door assertions can use native mail and screening edges in a
+// network-restricted runner; the normal built-product entry remains unchanged.
+if (import.meta.url === (await import('node:url')).pathToFileURL(process.argv[1]).href) {
+ const {build}=await import('esbuild'),{harness}=await import('./purse-harness.mjs'),{nativeWebContext}=await import('./native-web-fixture.mjs');
+ const {mkdir}=await import('node:fs/promises'),{resolve}=await import('node:path');
+ const {chromium}=await import(process.env.PURSE_PLAYWRIGHT_MODULE||'@playwright/test');
+ const evidence=resolve(process.env.PURSE_EVIDENCE||'.cache/order-chasing');await mkdir(evidence,{recursive:true});
+ const bundle=await build({stdin:{contents:"import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);",resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'esm',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
+ const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic'],...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{})});
+ try {for(const width of [1440,390]) {
+  const h=await harness();
+  try {
+   await h.command('business',{name:'Canyon Building Services',currencies:['USD'],locations:['Brisbane'],costCentres:['Operations'],projects:['Fitout']});
+   const cookies={owner:h.owner};for(const role of ['buyer','requester','approver'])cookies[role]=await h.member(role+'@dev.localhost',[role]);
+   const openSession=async(_browser,_root,origin,role,viewport)=>{const context=await nativeWebContext(browser,h,viewport,bundle.outputFiles[0].text,cookies[role]);const page=await context.newPage();await page.goto(origin+'/app');await page.getByRole('navigation').waitFor();return {context,page};};
+   // Native local mail is suppressed by the same adapter used by rer dev.
+   await h.configureMail({MAIL_PROVIDER:'development'});
+   await orderChasingJourney(browser,process.cwd(),h.origin,width,evidence,{openSession});
+   console.log('PO-003 unchanged chase assertions passed at '+width);
+  } finally {await h.close();}
+ }} finally {await browser.close();}
 }

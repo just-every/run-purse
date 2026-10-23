@@ -55,5 +55,16 @@ test('RECEIVE-001 responsible receivers, due email prompts, automatic invoice ho
  await tick('2026-11-05T12:00:00Z');
  assert.deepEqual(await promptRows(),retainedPrompts,'Restore without active native receivers preserves every prompt record');
  assert.equal(h.messages.length,retainedMessages,'Missing native receivers never consume a prompt or send mail');
+ const {createPortability}=await import('@runeditrun/rer/modules/portability');
+ const {exportArchive,importArchive}=await import('@runeditrun/rer/internal/modules/portability/files.mjs');
+ const {default:portability}=await import('../scripts/installer/portability.mjs');
+ const archive=h.dir+'/receipt-prompts.rer';
+ await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
+ const restored=await harness();t.after(()=>restored.close());
+ await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
+ const restoredPrompts=async()=> (await restored.db.prepare("SELECT * FROM p_records WHERE kind='receiptPromptEvent' ORDER BY id").all()).results;
+ assert.deepEqual(await restoredPrompts(),retainedPrompts,'Actual archive import preserves every receipt prompt byte');
+ const restoredTick=await restored.mf.dispatchFetch(restored.origin+'/cdn-cgi/local/scheduled?time='+Date.parse('2026-11-06T12:00:00Z'));assert.equal(restoredTick.status,200,await restoredTick.text());
+ assert.deepEqual(await restoredPrompts(),retainedPrompts,'Scheduled continuation after actual restore preserves prompt records without native receivers');
  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true,'RECEIVE-001 retained assignments, history and outcomes validate for archive restore');
 });
