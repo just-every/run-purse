@@ -125,7 +125,8 @@ export function spendReport(data: Data, filters: Data = {}) {
         choices: Object.fromEntries(dimensions.map(d => [d, [...new Map(rows.filter(r=>r[d]!==undefined&&r[d]!=='').map(r => [r[d], { value: r[d], label: d === 'supplier' ? r.supplierName : r[d] }])).values()].sort((a, b) => String(a.label).localeCompare(String(b.label)))])), rows: selected };
 }
 function outstanding(order: Data) {
-    if(order.blanketPosition) return Math.min(order.totalMinor, order.blanketPosition.remainingMinor);
+    // Readers without invoice access get no billed balance; their ledger already nets drawn invoices.
+    if(order.blanketPosition) return Math.min(order.totalMinor, order.blanketPosition.remainingMinor ?? order.totalMinor);
     const base = order.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0);
     const value = order.lines.reduce((n: bigint, l: Data) => {
         const p = order.positions.find((p: Data) => p.line === l.id);

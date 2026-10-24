@@ -36,7 +36,7 @@ jobs:
         width: [1440, 390]
         journey: [archive, supplier-performance, catalogue, order-chasing, supplier-documents, supplier-duplicates, payables, audit-log, spend-report, po-documents, performance-report, invoice-risk, receipt-routing, quote-reading, rfq, invoice-reading, invoice-inbox, email-intake, search, agreements, integration-tokens, agent-value, quote-agent, order-adoption, protected-storage, protected-preparation]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: ${{ matrix.width == 1440 && 25 || 15 }}
     steps:
       - uses: actions/checkout@v4
       - name: Reclaim unused hosted-runner SDKs

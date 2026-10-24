@@ -25,6 +25,25 @@ test('SEARCH-001 public search in 100000 real D1 records finds exact purchasing 
 });
 
 
+test('scoped search lists only purchases whose every line, split allocation and order coding fits the reader grant',async t=>{
+ const h=await harness();t.after(()=>h.close());const cmd=h.command;
+ await cmd('business',{name:'synthetic-purse-3100',currencies:['USD'],locations:['Boston','Chicago'],costCentres:['Engineering','Finance'],projects:['IT','Secret']});
+ const supplier=await cmd('supplier',{name:'synthetic-purse-3101',status:'preferred',reason:'Reviewed supplier'});
+ const approver=await h.member('synthetic-purse-3102@example.test',['approver']),receiver=await h.member('synthetic-purse-3103@example.test',['receiver']);
+ await cmd('member',{email:'synthetic-purse-3103@example.test',name:'Scoped receiver',grants:[{role:'receiver',scope:{departments:['Engineering'],locations:['Boston'],projects:['IT'],entities:['main']}}]});
+ await cmd('policy',{name:'synthetic-purse-3104',currency:'USD',category:'*',project:'*',approver:'synthetic-purse-3102@example.test',limitMinor:1000000,budgetMinor:10000000,editRules:{'*':{allowed:['costCentre','location'],material:['costCentre']}}});
+ const line={description:'synthetic-purse-3105 sensor',quantity:'1',unitMinor:50000,category:'Equipment',project:'IT'},split=[{costCentre:'Engineering',project:'IT',location:'Boston',basisPoints:5000},{costCentre:'Finance',project:'Secret',location:'Chicago',basisPoints:5000}];
+ const input=(title,lines)=>({title,supplier:supplier.id,currency:'USD',needDate:'2026-11-30',location:'Boston',costCentre:'Engineering',terms:'Net 30',lines});
+ const purchase=async(title,lines)=>{const r=await cmd('request',input(title,lines));await cmd('submit',{id:r.id,revision:1});return r;};
+ const issue=async r=>{await cmd('decision',{id:r.id,revision:1,decision:'approved',reason:'Reviewed coding'},approver);const o=await cmd('convert',{id:r.id,revision:1});await cmd('issue',{id:o.id,revision:o.revision,reason:'Approved order issued'});return o;};
+ const inside=await purchase('synthetic-purse-3106 inside',[line]),allocated=await purchase('synthetic-purse-3107 allocated',[{...line,allocations:split}]),coded=await purchase('synthetic-purse-3108 coded',[line]),narrowed=await purchase('synthetic-purse-3109 narrowed',[{...line,allocations:split}]);
+ const insideOrder=await issue(inside);await issue(allocated);await issue(narrowed);
+ await cmd('approver-edit',{id:coded.id,revision:1,changes:{lines:[{id:coded.lines[0].id,costCentre:'Finance',location:'Chicago'}]},reason:'Finance owns this line'},approver);
+ await cmd('amend',{...input('synthetic-purse-3109 narrowed',[{...line,id:narrowed.lines[0].id}]),id:narrowed.id,revision:1,reason:'Engineering keeps the whole line'});
+ const {data}=await h.state(receiver);assert.deepEqual(data.request.map(row=>row.id).sort(),[inside.id,narrowed.id].sort());assert.deepEqual(data.order.map(row=>row.id),[insideOrder.id]);
+ for(const kind of ['request','order']){const found=await h.send('/api/purse/search?kind='+kind,undefined,receiver);assert.equal(found.status,200,JSON.stringify(found.value));assert.deepEqual(found.value.results.map(row=>row.id).sort(),data[kind].map(row=>row.id).sort(),kind);assert.equal(found.value.total,data[kind].length,kind);}
+});
+
 test('SEARCH-001 complete archive restore preserves source-bound search and rebuilds full-text lookup before readiness',async t=>{
  const h=await harness();t.after(()=>h.close());const f=await searchPurchasing(h),archive=join(h.dir,'search.rer'),service=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});await exportArchive(service,archive,[]);
  const restored=await harness({empty:true});t.after(()=>restored.close());const target=await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability});await importArchive(target,archive,[]);const boot=await restored.send('/auth/bootstrap',{token:'synthetic-local-test-bootstrap-token-0123456789',displayName:'Restored owner'});assert.equal(boot.status,303);const ready=await restored.send('/api/purse/search/meta',undefined,boot.cookie);assert.equal(ready.status,200);const found=await restored.send('/api/purse/search?'+new URLSearchParams({q:pdfPhrase}),undefined,boot.cookie);assert.equal(found.status,200);assert.ok(found.value.results.some(row=>row.kind==='invoiceReading'&&row.id===f.reading.id));assert.equal((await restored.send('/api/purse/search?'+new URLSearchParams({q:bankNumber}),undefined,boot.cookie)).value.total,0);

@@ -3,10 +3,13 @@ import { supplierPublicValue } from './supplier-identity';
 import { targets } from './import-target';
 import { mappedSource } from './import-mapping';
 import { authority } from './store';
+import { ensureSearchStorage } from './search-storage';
 import { claimImport, importAuthorization } from './import-custody';
 import { can, requireThat, type Actor, type State, type Data } from './types';
 export async function imports(db: D1Database, s: State, a: Actor, op: string, b: Data) {
     can(s, a, 'owner');
+    // Import-kit writes bypass store.save, including restored-batch reversal.
+    if (['commit', 'resume', 'undo'].includes(op)) await ensureSearchStorage(db);
     const context = (version: string): D1ImportContext => ({ destination: 'main', reversalPolicy:'preserve-conflicts', namespace: 'procurify', mappingVersion: version, storage: { database: db as any, targets }, authorization: { principalId: a.id, predicate: () => authority(a, true) }, batchSize: 20, maxBatches: 2 });
     if (op === 'preview' || op === 'commit') {
         const { source, mapping, report } = mappedSource(s, b), ctx = context(mapping.version), plan = await planD1Import(source, mapping, ctx);

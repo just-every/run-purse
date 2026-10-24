@@ -1,14 +1,41 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { call, Field, Form, Table, money, calendarDay, type D } from './shared';
 import { TopBar } from './top-bar';
 
 /** Search has its own lightweight session door so a large workspace need not download every record. */
 export function SearchWorkspace() {
     const [business,setBusiness]=useState<string>(),[actor,setActor]=useState<D>(),[error,setError]=useState(''),[result,setResult]=useState<D>(),[query,setQuery]=useState<D>(),[opened,setOpened]=useState<D|null>();
-    useEffect(()=>{const q=new URLSearchParams(window.location.search).get('q');call('search/meta').then(value=>{setActor(value.actor);setBusiness(value.business);if(q)search({q}).catch(error=>setError(error.message));}).catch(error=>setError(error.message));const open=new URLSearchParams(window.location.search).get('open');if(open){const colon=open.indexOf(':');const params=new URLSearchParams({kind:open.slice(0,colon),id:open.slice(colon+1)});call('search?'+params).then(value=>setOpened(value.results[0]??null)).catch(error=>setError(error.message));}},[]);
-    async function search(fields:D,offset=0) {
-        const params=new URLSearchParams();for(const [key,value]of Object.entries(fields))if(typeof value==='string'&&value.trim())params.set(key,value.trim());params.set('offset',String(offset));
-        const value=await call('search?'+params);setQuery(fields);setResult(value);
+    const searchVersion = useRef(0);
+    useEffect(() => {
+        let active = true;
+        const location = new URLSearchParams(window.location.search), q = location.get('q');
+        call('search/meta').then(value => {
+            if (!active) return;
+            setActor(value.actor);
+            setBusiness(value.business);
+            if (q) search({ q }).catch(error => { if (active) setError(error.message); });
+        }).catch(error => { if (active) setError(error.message); });
+        const open = location.get('open');
+        if (open) {
+            const colon = open.indexOf(':'), params = new URLSearchParams({ kind: open.slice(0, colon), id: open.slice(colon + 1) });
+            call('search?' + params).then(value => { if (active) setOpened(value.results[0] ?? null); })
+                .catch(error => { if (active) setError(error.message); });
+        }
+        return () => { active = false; searchVersion.current++; };
+    }, []);
+    async function search(fields: D, offset = 0) {
+        const version = ++searchVersion.current, params = new URLSearchParams();
+        for (const [key, value] of Object.entries(fields)) if (typeof value === 'string' && value.trim()) params.set(key, value.trim());
+        params.set('offset', String(offset));
+        try {
+            const value = await call('search?' + params);
+            // Navigation, the initial query and pagination can overlap a form submission.
+            if (version !== searchVersion.current) return;
+            setQuery(fields);
+            setResult(value);
+        } catch (error) {
+            if (version === searchVersion.current) throw error;
+        }
     }
     return <div className="app"><TopBar actor={actor} business={business} tab="Search" onAsk={business ? () => window.location.assign('/app?ask=1') : undefined}/><main className="workspace"><h1 className="page-title">Search purchasing records</h1>
         {error?<p role="alert">{error} · <a href="/signin">Sign in</a></p>:!actor?<p>Opening search…</p>:<><p className="quiet">Find records by number, supplier, description or readable document text. Search respects your current purchasing access. Invoice document text is private to owners and buyers; bank and tax identifiers are excluded.</p>

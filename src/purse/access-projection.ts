@@ -24,6 +24,16 @@ function mayApprove(s: State, a: Actor, request: Data) {
     return Boolean(policy && (policy.approver === a.email || all(s, 'delegation').some(delegation => delegation.policy === policy.id
         && delegation.from === policy.approver && delegation.delegate === a.email && delegation.active && Date.parse(delegation.expires) > Date.now())));
 }
+/** Billed balances sum every invoice on the blanket's purchase, so only a reader of each
+ * such invoice sees them; other PO readers keep the approved cap, validity and releases.
+ */
+function blanketView(s: State, a: Actor, order: Data) {
+    const blanket = blanketPosition(s, order)!, position = releasePosition(s, order);
+    const invoices = all(s, 'invoice').filter(invoice => s.get('order:' + invoice.order)?.value.request === order.request);
+    if (allowed(s, a, 'invoice.read', order) && invoices.every(invoice => allowed(s, a, 'invoice.read', invoice))) return { blanketPosition: blanket, releasePosition: position };
+    const { billedMinor, remainingMinor, overCapMinor, ...approved } = blanket;
+    return { blanketPosition: approved, releasePosition: { currentOrder: position.currentOrder, releases: position.releases.map(({ billedMinor, remainingMinor, ...release }: Data) => release) } };
+}
 export function purchasingProjection(s: State, a: Actor) {
     const budgetPolicies=all(s,'policy');
     const requests = all(s, 'request').filter(request => allowed(s, a, 'request.read', request));
@@ -35,7 +45,7 @@ export function purchasingProjection(s: State, a: Actor) {
             mayPrepareValue: ['request.edit', 'request.approve', 'receive', 'procurement.manage'].some(permission => allowed(s, a, permission, request)),
             mayConvert: request.purchaseType !== 'travel' && allowed(s, a, 'po.convert', request), mayChangeNeedDate: request.purchaseType !== 'travel' && request.status === 'approved' && (request.requester === a.id && allowed(s,a,'request.edit',request) || allowed(s,a,'request.approve',request)), mayManagePurchasing: allowed(s, a, 'procurement.manage', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
             buyerLimit: buyerLimit(s, a, request), buyerLimits: buyerLimits(s, a, request) })),
-        order: orders.map(order => ({ ...order, ...(orderAdoption(s, order) ? { adoptionBasis: 'Owner adopted imported obligation; source approval is historical', ...(allowed(s,a,'invoice.read',order) ? { depositPosition: adoptionDeposits(s, order) } : {}) } : {}), ...(order.poDetails?.blanket ? { blanketPosition: blanketPosition(s, order), releasePosition: releasePosition(s, order) } : {}),
+        order: orders.map(order => ({ ...order, ...(orderAdoption(s, order) ? { adoptionBasis: 'Owner adopted imported obligation; source approval is historical', ...(allowed(s,a,'invoice.read',order) ? { depositPosition: adoptionDeposits(s, order) } : {}) } : {}), ...(order.poDetails?.blanket ? blanketView(s, a, order) : {}),
             receiverAssignment: receiptAssignment(s, order), mayReceive: mayReceive(s, a, order), receiptVersion: receiptVersion(s, order),
             ...(mayReceive(s, a, order) ? { receiptMatchingStatus: receiptMatchingStatus(s, order) } : {}),
             mayCaptureInvoice: allowed(s, a, 'invoice.capture', order), maySetCashExpectation: allowed(s, a, 'payable.terms', order),

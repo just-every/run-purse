@@ -51,6 +51,28 @@ test('PO-005 blanket invoice draw-down preserves approved caps, validity, commit
  const corrupt=structuredClone(rows),row=corrupt.find(row=>row.kind==='order'&&row.id===next.id),value=JSON.parse(row.value);value.poDetails.blanket.validThrough='2027-02-30';row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt));
 });
 
+test('blanket orders show billed balances only to readers of every invoice they sum',async t=>{
+ const h=await harness();t.after(()=>h.close());const cmd=h.command;
+ await cmd('business',{name:'synthetic-purse-3200',currencies:['USD'],locations:['Denver'],costCentres:['Operations','Engineering'],projects:['Maintenance']});
+ const requester=await h.member('synthetic-purse-3201@example.test',['requester']),approver=await h.member('synthetic-purse-3202@example.test',['approver']),buyer=await h.member('synthetic-purse-3203@example.test',['buyer']),receiver=await h.member('synthetic-purse-3204@example.test',['receiver']),clerk=await h.member('synthetic-purse-3205@example.test',['ap-clerk']);
+ await cmd('member',{email:'synthetic-purse-3205@example.test',name:'Engineering AP clerk',grants:[{role:'ap-clerk',scope:{departments:['Engineering']}}]});
+ const supplier=await cmd('supplier',{name:'synthetic-purse-3206',status:'preferred',reason:'Reviewed supplier'});
+ await cmd('policy',{name:'synthetic-purse-3207',currency:'USD',category:'*',project:'*',approver:'synthetic-purse-3202@example.test',limitMinor:10000000,budgetMinor:10000000});
+ const input={title:'synthetic-purse-3208',supplier:supplier.id,currency:'USD',needDate:'2026-12-31',location:'Denver',costCentre:'Operations',terms:'Net 30',poDetails:{blanket:{validFrom:'2026-01-01',validThrough:'2027-12-31'}},lines:[{description:'synthetic-purse-3209',quantity:'24',unitMinor:100000,category:'Maintenance',project:'Maintenance'}]};
+ const issue=async request=>{await cmd('submit',{id:request.id,revision:request.revision},requester);await cmd('decision',{id:request.id,revision:request.revision,decision:'approved',reason:'Annual cap reviewed'},approver);const order=await cmd('convert',{id:request.id,revision:request.revision},buyer);await cmd('issue',{id:order.id,revision:order.revision,reason:'Approved blanket issued'},buyer);return order;};
+ const r=await cmd('request',input,requester),first=await issue(r);
+ const release=await cmd('blanket-release',{order:first.id,revision:1,reference:'synthetic-purse-3210',amountMinor:600000,needDate:'2026-12-01',reason:'First draw'},buyer);
+ const bill=await cmd('invoice',{order:first.id,release:release.id,reference:'synthetic-purse-3211',source:'Original supplier invoice',invoiceDate:'2026-11-01',allocations:[{line:first.lines[0].id,quantity:'1',amountMinor:100000}]},buyer);
+ const current=await issue(await cmd('amend',{...input,id:r.id,revision:1,costCentre:'Engineering',lines:[{...r.lines[0]}],reason:'Engineering takes over the blanket'},buyer));
+ const full=(await h.state(buyer)).data.order.find(row=>row.id===current.id);assert.equal(full.blanketPosition.billedMinor,100000);assert.equal(full.releasePosition.releases[0].billedMinor,100000);
+ for(const cookie of [receiver,clerk]){
+  const {data}=await h.state(cookie),order=data.order.find(row=>row.id===current.id);assert.ok(!data.invoice.some(row=>row.id===bill.id));
+  assert.deepEqual(order.blanketPosition,{validFrom:'2026-01-01',validThrough:'2027-12-31',currentOrder:current.id,capMinor:full.blanketPosition.capMinor});
+  assert.deepEqual(order.releasePosition.releases.map(({reference,amountMinor,billedMinor,remainingMinor})=>({reference,amountMinor,billedMinor,remainingMinor})),[{reference:'synthetic-purse-3210',amountMinor:600000,billedMinor:undefined,remainingMinor:undefined}]);
+  for(const field of ['releasedMinor','unreleasedBilledMinor','availableMinor'])assert.equal(order.releasePosition[field],undefined,field);
+ }
+});
+
 test('PO-005 real release authority, structured service value matching and consented recurring Cron pause at agreement boundaries',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'synthetic-purse-1',currencies:['USD'],locations:['synthetic-purse-2'],costCentres:['synthetic-purse-3'],projects:['synthetic-purse-4']});
