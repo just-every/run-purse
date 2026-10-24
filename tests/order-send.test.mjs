@@ -117,7 +117,8 @@ test('Initial supplier responses retain exact frozen PO and promises, and only b
     await h.command('order-chase-policy', { order: f.order.id, version: 0, enabled: true, cadenceDays: 1, maxChases: 2, escalateTo: 'synthetic-purse-2804@example.test' }, f.buyer);
     await h.mf.dispatchFetch(h.origin + '/cdn-cgi/local/scheduled?time=' + Date.now());
     assert.equal((await h.state()).data.orderChaseEvent.filter(row => row.order === f.order.id).length, 0, 'Response stops acknowledgment chasing and its promise replaces the earlier need date for delivery chasing');
-    const earlierPromise=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    // Delivery chasing compares dates in the business calendar (America/New_York), not UTC.
+    const earlierPromise=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York'}).format(Date.now()-86400000);
     assert.equal((await respond(h,link,{version:1,promisedDate:earlierPromise})).status,200);
     await h.mf.dispatchFetch(h.origin + '/cdn-cgi/local/scheduled?time=' + Date.now());
     const chase = (await h.state()).data.orderChaseEvent.find(row => row.order === f.order.id); assert.equal(chase.reason, 'overdue-delivery'); assert.equal(chase.evidence.promisedDate, earlierPromise);
