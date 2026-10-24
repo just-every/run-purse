@@ -3,6 +3,19 @@ import { Check } from '../parts/icons'
 import { SectionHead } from '../parts/SectionHead'
 import '../styles/switching.css'
 
+// The one start line every Run Edit Run page shows, and the alternative for people who already have Node.
+const START = 'curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-purse'
+const ALTERNATIVE = 'Already have Node 22 or later? npx -y @runeditrun/rer dev just-every/run-purse'
+
+/** A command that wraps only between words, keeping the installer's `install.sh | sh` together. */
+function command(line: string) {
+  return line.split(/(\S*install\.sh \| sh|\S+)/).map((part, index) => {
+    const pipe = /^(.*\/)(install\.sh \| sh)$/.exec(part)
+    if (pipe) return <span key={index}><span className="nb">{pipe[1]}</span><wbr /><span className="nb">{pipe[2]}</span></span>
+    return part.trim() ? <span key={index} className="nb">{part}</span> : part
+  })
+}
+
 const before = [<>Tue Sep 22<br />issued in Procurify</>, <>Wed Sep 23<br />acknowledged</>, <>Tue Sep 29<br />8 of 20 received</>]
 const after = [<>Thu Oct 8 · 12 received at Columbus in Purse · <span className="nb">20 of 20<Check /></span></>, <>Fri Oct 9 · Uline invoice 7719320, $4,380.00, matched to <span className="nb">PO 3052<Check /></span></>, <>Bill linked to the QuickBooks PO Procurify had synced · one PO in <span className="nb">QuickBooks<Check /></span></>]
 
@@ -28,7 +41,7 @@ export function Switching() {
         <p><span className="dot tang" aria-hidden="true" /><span>Also moves in from Coupa, Precoro and spreadsheets.</span></p>
         <div className="terminal" aria-label="Start Purse on your computer">
           <span className="terminal-lights" aria-hidden="true"><i /><i /><i /></span>
-          <pre><code><span className="prompt" aria-hidden="true">$ </span>npx -y @runeditrun/rer dev <span className="nb">just-every/run-purse</span>{'\n'}<span className="ready">✓ Purse is ready</span></code></pre>
+          <pre><code><span className="prompt" aria-hidden="true">$ </span>{command(START)}{'\n'}<span className="comment"><span aria-hidden="true"># </span>{command(ALTERNATIVE)}</span>{'\n'}<span className="ready">✓ Purse is ready</span></code></pre>
         </div>
       </div>
     </section>

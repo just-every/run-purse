@@ -33,6 +33,7 @@
 .terminal pre { margin: 14px 0 0; font: 500 14.5px/1.75 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; }
 .terminal .prompt { color: #9aa4ae; }
 .terminal .ready { color: #4ade80; }
+.terminal .comment { color: #9aa4ae; }
 
 @media (max-width: 1380px) {
   .switch-foot { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
