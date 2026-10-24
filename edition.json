@@ -1,4 +1,59 @@
 {
   "schemaVersion": 1,
-  "id": "just-every/run-purse"
+  "id": "just-every/run-purse",
+  "toolchain": {
+    "id": "runeditrun/edition-authoring",
+    "version": "1.1.0"
+  },
+  "parent": null,
+  "components": [
+    {
+      "id": "runeditrun/base",
+      "role": "foundation",
+      "source": {
+        "kind": "local",
+        "paths": [
+          ".github/workflows/run-demo.yml",
+          "public/fonts/fonts.css",
+          "src/base/dispatch.ts",
+          "src/base/font-head.ts",
+          "scripts/delivery/base/setup-manifest.mjs"
+        ],
+        "origin": {
+          "repository": "https://github.com/runeditrun/base",
+          "revision": "4280971d7c0295b8a88c3e1179048efcbbe14f30",
+          "path": ".",
+          "paths": [
+            "export/run-demo.yml",
+            "default-seed/public/fonts/fonts.css",
+            "foundation/runtime/dispatch.ts",
+            "foundation/runtime/font-head.ts",
+            "modules/delivery-producer/setup-manifest.mjs"
+          ]
+        },
+        "mappings": [
+          {
+            "path": ".github/workflows/run-demo.yml",
+            "originPath": "export/run-demo.yml"
+          },
+          {
+            "path": "public/fonts/fonts.css",
+            "originPath": "default-seed/public/fonts/fonts.css"
+          },
+          {
+            "path": "src/base/dispatch.ts",
+            "originPath": "foundation/runtime/dispatch.ts"
+          },
+          {
+            "path": "src/base/font-head.ts",
+            "originPath": "foundation/runtime/font-head.ts"
+          },
+          {
+            "path": "scripts/delivery/base/setup-manifest.mjs",
+            "originPath": "modules/delivery-producer/setup-manifest.mjs"
+          }
+        ]
+      }
+    }
+  ]
 }

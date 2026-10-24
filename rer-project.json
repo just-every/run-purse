@@ -3,5 +3,25 @@
   "projectId": "just-every/run-purse",
   "name": "Purse",
   "sourceRepository": "https://github.com/just-every/run-purse",
-  "license": "MIT"
+  "license": "MIT",
+  "deployment": {
+    "target": "cloudflare-workers",
+    "artifactFile": "rer-worker-artifact.json"
+  },
+  "operations": {
+    "setup": "pnpm install --frozen-lockfile && pnpm exec rer install",
+    "build": "pnpm run build",
+    "verify": "pnpm run verify && pnpm exec rer check --profile first-party && pnpm check:deployment-spec && pnpm sources:check",
+    "artifact": "node scripts/delivery/base/cli.mjs artifact --config packaging.json",
+    "recovery": "Follow OPERATIONS.md: retain exact source, a private native export and installation secrets; restore only into empty resources at the release that made the archive, verify records and original attachment bytes, then upgrade source in place. Preserve applied migration names and bytes."
+  },
+  "verification": {
+    "migrationDirectories": [
+      "migrations/core"
+    ]
+  },
+  "setup": {
+    "path": "rer-setup.json",
+    "sha256": "3837129efacd7b5b42a50a34b41d8c6a3ea6fe7dcd5ace2fbfa62250248e85e3"
+  }
 }

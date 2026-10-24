@@ -76,3 +76,17 @@ archive directly into the current release.
 
 
 Email request intake optionally uses Resend receiving. Configure the business request address in Requests, route that exact address in the receiving provider, and connect its signed `email.received` webhook to `/api/purse/email-intake/inbound`. Provide `EMAIL_INTAKE_WEBHOOK_SECRET` and `MAIL_API_KEY` as private deployment inputs; do not commit them. The configured outbound provider sends the native sign-in-required draft link. Address configuration is a record, not proof of mailbox delivery. The owner can inspect durable ingestion outcomes in Requests and reconcile uncertain provider messages; automatic replay never repeats a claimed ingestion or send. Source originals use the declared private `ORIGINALS` R2 binding and travel in complete local RER archives.
+
+## Hosted installation package
+
+`packaging.json` declares Purse's existing Worker, D1 migrations and private
+ORIGINALS bucket. Run `pnpm run build`, `pnpm delivery:spec`, then
+`node scripts/delivery/base/cli.mjs package --config packaging.json --output rer-package`.
+`pnpm check:deployment-spec` refuses a stale committed import specification.
+The Managed workflow is dispatch only; packaging creates no deployment or release.
+
+Hosted sign-in and notification mail supports RER managed relay, Resend, SendGrid
+and Cloudflare. Assisted setup collects the selected provider's sender and private
+credential; Cloudflare also requires its account ID. RER supplies the relay URL
+and installation credential for Managed hosting. Local development keeps mail
+suppressed. Packaging does not prove provider delivery.

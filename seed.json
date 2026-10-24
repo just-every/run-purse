@@ -1,7 +1,7 @@
 {
   "id": "purse",
   "name": "Purse",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "maturity": "phase-1-local-validation",
   "category": "procurement",
   "spine": {
@@ -128,5 +128,6 @@
       "mail",
       "import-kit"
     ]
-  }
+  },
+  "replaces": []
 }

@@ -35,7 +35,8 @@ export interface Bindings extends IdentityBindings {
  PROTECTED_DATA_PREVIOUS_KEY?: string
  SESSION_SECRET: string
  SETUP_TOKEN?: string
- MAIL_PROVIDER?: 'development' | 'resend' | 'sendgrid' | 'cloudflare'
+ MAIL_PROVIDER?: 'development' | 'resend' | 'sendgrid' | 'cloudflare' | 'rer'
+ MAIL_RELAY_URL?: string
  MAIL_FROM?: string
  EMAIL_INTAKE_WEBHOOK_SECRET?: string
  MAIL_API_KEY?: string

@@ -1,4 +1,26 @@
 {
-  "version": "0.1.0",
-  "publicReleaseNotes": "First public release of Purse: local purchasing requests, approvals, orders, receiving, invoice evidence and portable archives."
+  "version": "0.1.1",
+  "previousVersion": "0.1.0",
+  "publicReleaseNotes": "Prepare Purse for hosted installation with a digest-bound setup manifest, deployment specification, dispatch-only Managed workflow and configurable mail providers. Native release publication follows in a later round.",
+  "migrations": [
+    "migrations/core/0021_owner_signin.sql",
+    "migrations/core/0022_import_kit_progress.sql",
+    "migrations/core/0023_supplier_document_links.sql",
+    "migrations/core/0024_rfq_links.sql",
+    "migrations/core/0025_email_intake.sql",
+    "migrations/core/0026_integration_tokens.sql",
+    "migrations/core/0027_search_names.sql",
+    "migrations/core/0028_search.sql",
+    "migrations/core/0029_agreement_search.sql",
+    "migrations/core/0030_agreement_document_search.sql",
+    "migrations/core/0031_supplier_protected.sql",
+    "migrations/core/0032_scim_authority.sql",
+    "migrations/core/0033_scim_links.sql",
+    "migrations/core/0034_order_send_links.sql",
+    "migrations/core/0035_integration_po_reads.sql",
+    "migrations/core/0036_pantry_credentials.sql",
+    "migrations/core/0037_order_thread.sql"
+  ],
+  "breaking": false,
+  "agentUpdateInstructions": "Retain the previous source and a private native export. Follow OPERATIONS.md for same-release recovery before upgrading; preserve existing migration bytes and installation secrets."
 }
