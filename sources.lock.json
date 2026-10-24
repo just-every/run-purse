@@ -668,7 +668,7 @@
       "executable": false
     },
     "scripts/build-deployment-spec.mjs": {
-      "sha256": "c7d37c22c9c9ae8a4683dc9312bcfdcd6b975fd5923e09e6e4926fbae2c169dc",
+      "sha256": "8c73eaf902b0c2267c87e41ace55d6ff1bc93c022c8ac38faac9e265ff1a4d18",
       "executable": false
     },
     "scripts/delivery/base/artifact.mjs": {
