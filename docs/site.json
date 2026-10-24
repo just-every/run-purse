@@ -4,7 +4,7 @@
       "title": "Get started",
       "pages": [
         { "slug": "introduction", "title": "What Purse is", "file": "introduction.md", "summary": "How a purchase moves through Purse, from request to approval, order, receipt and invoice." },
-        { "slug": "run", "title": "Run Purse on your computer", "file": "run.md", "summary": "Get Purse and start it with one line and finish first-run setup." },
+        { "slug": "getting-started", "title": "Run Purse on your computer", "file": "getting-started.md", "summary": "Get Purse and start it with one line and finish first-run setup." },
         { "slug": "set-up", "title": "Set up your business", "file": "set-up.md", "summary": "Business codes, people and their purchasing capabilities, approval policies and delegation." }
       ]
     },

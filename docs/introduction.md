@@ -25,6 +25,6 @@ Purse sends nothing to suppliers: you send the purchase order through the channe
 
 ## Where to go next
 
-- [Run Purse on your computer](/docs/run)
+- [Run Purse on your computer](/docs/getting-started)
 - [Set up your business](/docs/set-up)
 - [Requests, quotes and approvals](/docs/requests)
