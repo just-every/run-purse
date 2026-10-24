@@ -132,7 +132,7 @@
       "executable": false
     },
     "deploy.json": {
-      "sha256": "835d0020452d9dc217ec6e7e86e352f976626f775f296fb50cb0e63c2871e0d9",
+      "sha256": "0bd0b13dbcd6e295395df79aa91b7b0232d20868258d7a1150afe4b4a1ff03c2",
       "executable": false
     },
     "docs/backup-and-restore.md": {
