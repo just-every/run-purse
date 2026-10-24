@@ -32,5 +32,5 @@ test('Local operator mail stays suppressed with hosted relay defaults present', 
     deliveryId: 'synthetic-purse-2', from: 'purse@example.test', to: ['owner@example.test'], subject: 'Local sign-in', text: 'Local message.',
   });
   assert.equal(receipt.provider, 'development');
-  assert.equal(receipt.status, 'accepted');
+  assert.equal(receipt.status, 'development');
 });

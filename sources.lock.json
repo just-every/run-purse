@@ -4600,7 +4600,7 @@
       "executable": false
     },
     "tests/mail.test.mjs": {
-      "sha256": "82be2b976aa551bbd5cf4a07ff8b6578050276c7325b5dcec3359110dcc51d79",
+      "sha256": "3f63deeddee3913a2d580b5f27e6755216ba9920dcdc8d78c6ef4f1babe94642",
       "executable": false
     },
     "tests/native-http-proxy.mjs": {
