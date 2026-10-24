@@ -1,7 +1,7 @@
 {
   "version": "0.1.1",
   "previousVersion": "0.1.0",
-  "publicReleaseNotes": "Prepare Purse for hosted installation with a digest-bound setup manifest, deployment specification, dispatch-only Managed workflow and configurable mail providers. Native release publication follows in a later round.",
+  "publicReleaseNotes": "Purse now supports hosted installation with a digest-bound setup manifest, deployment specification, dispatch-only Managed workflow and configurable mail providers. This native release uses rer 0.2.80 for archive portability.",
   "migrations": [
     "migrations/core/0021_owner_signin.sql",
     "migrations/core/0022_import_kit_progress.sql",
