@@ -1,3 +1,4 @@
+import { materializeTravelReleasePolicies } from './travel-release-rule';
 import { activeTraveler, travelerReferences } from './travel-reference';
 import { currentDecision } from './approval';
 import { allowed } from './access';
@@ -6,6 +7,9 @@ import { ledger, requests } from './requests';
 import { travelCostCategories, travelCostLabels, travelFields } from './travel-fields';
 import { all, audit, get, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
+export function mayAmendTravel(s: State, a: Actor, request: Data) {
+    return a.owner || request.requester === a.id && allowed(s, a, 'request.edit', request) || allowed(s, a, 'request.approve', request) && (request.approvalRoute ?? []).some((step:Data) => step.email === a.email);
+}
 export function travelRequest(s: State, id: string) {
     const request = get(s, 'request', id);
     requireThat(request.purchaseType === 'travel' && request.travel, 'Travel request required', 409);
@@ -26,8 +30,7 @@ export function travelCommands(s: State, a: Actor, op: string, input: Data): Dat
         requireThat(op !== 'travel-amend' || previous, 'Existing travel request required');
         if (previous) {
             requireThat(input.revision === previous.revision, 'Stale travel revision', 409);
-            requirePermission(s, a, 'request.edit', previous);
-            requireThat(a.owner || previous.requester === a.id, 'Only the requester or owner may amend this trip', 403);
+            requireThat(mayAmendTravel(s, a, previous), 'Only the creator or an assigned approver may amend this trip', 403);
             requireThat(!previous.travel.closedAt, 'The expense report has closed this trip', 409);
             requireThat(!previous.imported, 'Imported travel history cannot grant native authority', 409);
             requireThat(['draft', 'returned', 'rejected', 'approved'].includes(previous.status), 'Return the pending trip before amending it', 409);
@@ -43,7 +46,7 @@ export function travelCommands(s: State, a: Actor, op: string, input: Data): Dat
         const lines = travelCostCategories.map(category => ({ id: previous?.lines.find((line: Data) => line.travelCategory === category)?.id ?? uid(), description: travelCostLabels[category], quantity: '1', q: 1000, unitMinor: travel.costs[category + 'Minor'], totalMinor: travel.costs[category + 'Minor'], category: 'travel', travelCategory: category, project, allocations: [], requiredAttachments: [], unit: 'trip', partNumber: '', lineTaxMinor: 0 }));
         const request: Data = { id, revision, status: 'draft', purchaseType: 'travel', requester: previous?.requester ?? a.id, requesterEmail: previous?.requesterEmail ?? a.email, requesterOwner: previous?.requesterOwner ?? a.owner,
             title: text(input.title, 'Travel request title'), travel, currency: input.currency, location, costCentre, project, needDate: travel.departureDate, supplier: null, supplierSnapshot: null, lines, freightMinor: 0, taxMinor: 0, totalMinor: travel.totalMinor, terms: travel.purpose, policy: null, poDetails: { depositTerms: '', notes: '', shippingTerms: '', buyerContact: '' } };
-        requirePermission(s, a, previous ? 'request.edit' : 'request.create', request);
+        requirePermission(s, a, previous && previous.requester !== a.id && !a.owner ? 'request.approve' : previous ? 'request.edit' : 'request.create', request);
         if (previous) {
             const balances = new Map<string, Data>();
             for (const event of all(s, 'commitment').filter(event => event.request === id)) {
@@ -69,6 +72,7 @@ export function travelCommands(s: State, a: Actor, op: string, input: Data): Dat
         // Freeze the final approved trip alongside its exact submitted terms.
         put(s, 'revision', result.id + ':' + result.revision, { ...approved, request: result.id });
         audit(s, a, 'travel-approved', result.id, { revision: result.revision, approvalReference });
+        materializeTravelReleasePolicies(s);
         return approved;
     }
     return result;
@@ -76,7 +80,8 @@ export function travelCommands(s: State, a: Actor, op: string, input: Data): Dat
 export function visibleTravel(s: State, a: Actor, requestIds?: Set<string>) {
     const visible = (request: string) => (!requestIds || requestIds.has(request)) && allowed(s, a, 'request.read', get(s, 'request', request));
     return { travelReference: activeTraveler(s, a) ? travelerReferences(s, a) : [],
-        travelReleasePolicy: all(s, 'travelReleasePolicy').filter(policy => visible(policy.request)).map(policy => a.owner ? policy : Object.fromEntries(['id', 'request', 'revision', 'version', 'status', 'days', 'dueDate', 'timezone', 'pauseReason', 'releasedAt'].map(field => [field, policy[field]]))),
+        travelReleaseRule: a.owner ? all(s, 'travelReleaseRule') : [],
+        travelReleasePolicy: all(s, 'travelReleasePolicy').filter(policy => visible(policy.request)).map(policy => a.owner ? policy : Object.fromEntries(['id', 'request', 'revision', 'version', 'status', 'days', 'dueDate', 'timezone', 'pauseReason', 'releasedAt', 'source', 'ruleVersion'].map(field => [field, policy[field]]))),
         travelRelease: all(s, 'travelRelease').filter(event => visible(event.request)).map(event => Object.fromEntries(['id', 'request', 'revision', 'amountMinor', 'currency', 'at', 'dueDate', 'timezone'].map(field => [field, event[field]]))),
-        travelExpense: all(s, 'travelExpense').filter(expense => visible(expense.request)).map(expense=>a.owner?expense:Object.fromEntries(['id','request','revision','approvalReference','currency','totalMinor','releasedMinor','externalId','externalRevision','externalNumber','title','items','at','sourceBasis','earlierRelease','remainingEstimateMinor','erasure','originalStatus','originalSourceVerified'].map(field=>[field,expense[field]]))) };
+        travelExpense: all(s, 'travelExpense').filter(expense => visible(expense.request)).map(expense=>a.owner?expense:Object.fromEntries(['id','request','revision','provider','approvalReference','currency','totalMinor','releasedMinor','externalId','externalRevision','externalNumber','title','items','at','sourceBasis','earlierRelease','remainingEstimateMinor','erasure','originalStatus','originalSourceVerified'].map(field=>[field,expense[field]]))) };
 }

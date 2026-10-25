@@ -1011,12 +1011,16 @@
       "sha256": "3da7786fe00ea5f4ccd7c770d71c9c24e5dce9acf182389ccf87dee562f12f39",
       "executable": false
     },
+    "scripts/installer/restore-travel-export.mjs": {
+      "sha256": "ae2d19ea0005db8861516fd61a919fd0b659ba598812a056a1d2374c92d8cea5",
+      "executable": false
+    },
     "scripts/installer/restore-travel.mjs": {
-      "sha256": "7612a71dc4b82ec65e2994612069fc2d4e85e47b5203c0eb8a0a9616d87fe9e0",
+      "sha256": "cd2095ef934d5d1946e43df9c5687e72e5ffe9e8980cb7b5e38f9b30d18e8083",
       "executable": false
     },
     "scripts/installer/restore-validation.mjs": {
-      "sha256": "84b589b300d4bf41d3ec14b3335ea7bd1b68176e8b4d1a73be1b3c34a76873c9",
+      "sha256": "139fabe113702d48ac9930e0c0f4d92878ed85308488bd41ff260ca989e5d173",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -2856,7 +2860,7 @@
       "executable": false
     },
     "src/purse/access-projection.ts": {
-      "sha256": "f35d4ffbe8d07cd5dc6e66d1471f1ff229e919a7ef2f6ce1f04e65f05f72ff2b",
+      "sha256": "6641fbb99221056aded82ca666f732029e01e2d787bd53d84bea117fa72748ad",
       "executable": false
     },
     "src/purse/access-records.ts": {
@@ -2872,7 +2876,7 @@
       "executable": false
     },
     "src/purse/admin.ts": {
-      "sha256": "e853c1e5323fff7687bb867dbe4b9154d7da06e5a9b5481418c5105722745fb1",
+      "sha256": "df8911968fd49a599ebe80ce68c8e4adc6b58a7f5fc75be3370e82345bf9f332",
       "executable": false
     },
     "src/purse/adoption-amendments.ts": {
@@ -2976,7 +2980,7 @@
       "executable": false
     },
     "src/purse/budget-view.ts": {
-      "sha256": "2692cba00185b9f1399cd297422ce8d7a565e3306f6493ec4ba6c564c7ae90fe",
+      "sha256": "361a034ae9428326d68303e57d5938b72bd34b13fd137ee43e2e34e7950597f5",
       "executable": false
     },
     "src/purse/cash-requirements.ts": {
@@ -3688,7 +3692,7 @@
       "executable": false
     },
     "src/purse/travel-api.ts": {
-      "sha256": "7f17b2d168c379fce0dbbe0c3af813dba70642a9555aa7532582635558be536d",
+      "sha256": "3a9fb5d41f6f0be94ab5954d6fbc213cb3271f6f7fb0b860341d422e88a473a7",
       "executable": false
     },
     "src/purse/travel-approval-evidence.ts": {
@@ -3700,7 +3704,19 @@
       "executable": false
     },
     "src/purse/travel-expenses.ts": {
-      "sha256": "999ab1730e0377e3bb51cd9f1c19349e69d4172407c22005169cd77567a1dc84",
+      "sha256": "110ef532b46298a7f1e5df2f0229738bb9f6ac90067d5fcaf63e11df8c18e87e",
+      "executable": false
+    },
+    "src/purse/travel-export-format.d.mts": {
+      "sha256": "b6f3a1dd9ba4af31bec12eee23043a5c121446de32b8d82cb7e5192085bf9a7d",
+      "executable": false
+    },
+    "src/purse/travel-export-format.mjs": {
+      "sha256": "f0f35df8765faa5125a4699c05d4d55c07b5bb8accca2116eefd709c74d4b4e2",
+      "executable": false
+    },
+    "src/purse/travel-export.ts": {
+      "sha256": "9612cca883d08688d40b4be1aa4e77cafc94e36a890bc1cbceec7f07a8a46e4e",
       "executable": false
     },
     "src/purse/travel-fields.ts": {
@@ -3712,19 +3728,23 @@
       "executable": false
     },
     "src/purse/travel-reference.ts": {
-      "sha256": "174670f249ed8704b024b84c09430b844bef1d89973ded520076c754338c270b",
+      "sha256": "2d6188e800ba37c14db58394eaea13db4e9c5b1a8808fa7583a32c59451e7eab",
+      "executable": false
+    },
+    "src/purse/travel-release-rule.ts": {
+      "sha256": "b870689bbe9211291a028d451b87a3d5acc8ad73820627ebcb9efed17e6d5116",
       "executable": false
     },
     "src/purse/travel-release-schedule.ts": {
-      "sha256": "58eaed9b0c1c5fdd08a8d59ba5ea17b71a76b9d40bea4179441ad88bf1421363",
+      "sha256": "21e74fc6f1fd866add3564092aed04008c9f21cd9e6472febfa249ede244d11d",
       "executable": false
     },
     "src/purse/travel-release.ts": {
-      "sha256": "ff74f000f50856d809b7f2bd322e500220f67602737bc368f84be32117df6f5e",
+      "sha256": "4ade397008c1b5239ca3b5b0a5f7df7c2d6001a208a8e786a4cd3e48879ead84",
       "executable": false
     },
     "src/purse/travel.ts": {
-      "sha256": "b28c99adb5c98441d49ca5e31a488ad88172c014adcbcac1c9e8fc28e2d93979",
+      "sha256": "922f6d92eceb62ccf4300d5b17c28aab2ba549417e160dfd06539b7a1129c92d",
       "executable": false
     },
     "src/purse/types.ts": {
@@ -4288,7 +4308,7 @@
       "executable": false
     },
     "src/ui/settings.tsx": {
-      "sha256": "da67c4e311c77975d8f721c4de626bdd8085202053069114e720f057b129002b",
+      "sha256": "c9d5dee0e5fb32720e5d2e90a232d3f60d109100792c8cf6c953bf56276c3697",
       "executable": false
     },
     "src/ui/shared.tsx": {
@@ -4355,20 +4375,28 @@
       "sha256": "aaa456472cec850063df43baf834c7088a4ed0559f9d1066e9833c6b100d670b",
       "executable": false
     },
+    "src/ui/travel-expense.tsx": {
+      "sha256": "6ba2196fcb6414857767fc08864666f38305d7fa6cf04d073807d3c94b736cff",
+      "executable": false
+    },
     "src/ui/travel-form.tsx": {
       "sha256": "de0f7e83e6a19894d17dd0cc91a1d38fafe587d89da35a752d8ebc32fe40c41e",
       "executable": false
     },
     "src/ui/travel-record.tsx": {
-      "sha256": "8bc6030a4ce1030efd080bea25554e83803c196ffdfc546f42d52f706d4402e9",
+      "sha256": "6c27ee889ea742c71b0dcaac40d2b4d0e891c828803d60eb6aa99f0f6c0b9622",
       "executable": false
     },
     "src/ui/travel-reference.tsx": {
-      "sha256": "e4cef0374a6e17e6bc4db178878e955335e5ea220840339d453d40d4e3e4d6e6",
+      "sha256": "fb0afbb3ed337580285be5983d888c0c73d4a3444508700e906ef040492ed07f",
+      "executable": false
+    },
+    "src/ui/travel-release-rule.tsx": {
+      "sha256": "6d47d2bc1fbd3147ffab12bdabec597de02f846c53ba5a67431192c2ed162210",
       "executable": false
     },
     "src/ui/travel-release.tsx": {
-      "sha256": "585bda5bb3d6c4845ca9e3b042f5d01aef0e783382b10415fb9da903574b97a5",
+      "sha256": "803cef9bfed0c57701504754185c0dbfe9a834f6d7ca9c14e6d69049ad588aa8",
       "executable": false
     },
     "src/ui/use-record.ts": {
@@ -4931,20 +4959,28 @@
       "sha256": "1ab2c0a37ce1d340520fd42798dcee0a02435a7b75cb2504c1e5ba71ee03b6f2",
       "executable": false
     },
+    "tests/travel-browser-exports.mjs": {
+      "sha256": "60c3a189dbac6828589165a4df23a38673e877f0cc459e4c5b33857105bacdfb",
+      "executable": false
+    },
     "tests/travel-browser-policy.mjs": {
       "sha256": "1938e74dc5483b7794d4fa9e6e18cf0e3f4f869240736bafe8d5e3b828075b6d",
       "executable": false
     },
     "tests/travel-browser-release.mjs": {
-      "sha256": "33f008548342fc670b52cc69c1e4a50bdcf671e4e1654a9a85aafe6eadbdd86e",
+      "sha256": "f17ec5c66bbb4c1b8e7bc8c1a1c4c9fc540cac6f466094339e803de51960c8c2",
       "executable": false
     },
     "tests/travel-browser.mjs": {
-      "sha256": "cea4c1e6e335ba3b8b3a47344a84a1d06e65f9e0dbd4a3089b0ed4b354bb8a49",
+      "sha256": "e38e9ea8bfbc0aed9394a2a3571c038b726b8235919f955c12e6c1c380bcfdba",
       "executable": false
     },
     "tests/travel-coaster.mjs": {
       "sha256": "2a0232a977f37f9f457ffa4474293830d163f077a02d4c065c3b440942db61c6",
+      "executable": false
+    },
+    "tests/travel-exports-flow.mjs": {
+      "sha256": "f38bfd4af43e1061216f67d67a3ae0b616898cd01b25baf7bbb3649ad1c96510",
       "executable": false
     },
     "tests/travel-flow.mjs": {
@@ -4952,11 +4988,11 @@
       "executable": false
     },
     "tests/travel-helpers.mjs": {
-      "sha256": "d8def1b93dfbc09158964a591bac40c50dbe20169abc5aab065004675de0c48a",
+      "sha256": "1330796e0fa990f0a33deddc7b7fb51b57d64ef82d63e36edc4000c8aeda3f28",
       "executable": false
     },
     "tests/travel-release-flow.mjs": {
-      "sha256": "3ea7c98f86c2b8cd9f96be83bc618d96896ecc826aadbdf6dc26b6ec95de4ec2",
+      "sha256": "2be34cda813277159a13707e1c88b9155fd03edac5a3c48ba6b12004e3974c4f",
       "executable": false
     },
     "tests/travel-routing.test.mjs": {
@@ -4964,7 +5000,7 @@
       "executable": false
     },
     "tests/travel.test.mjs": {
-      "sha256": "1229add6994f746bd44bea28a4288ae2d9f2df2c6c31f872b8915459863c2458",
+      "sha256": "5b432952d2aad4c36c95449ed94b330a4f4c82cda9ab646d728c071b9f93ed92",
       "executable": false
     },
     "tsconfig.json": {

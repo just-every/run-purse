@@ -1,3 +1,4 @@
+import { pauseTravelReleaseRule } from './travel-release-rule';
 import { budgetDimensionInput, sameBudgetDimensions } from './budget-dimensions';
 import { budgetPeriod } from './budget-position';
 import { policyWorkflow } from './approval-chain';
@@ -11,10 +12,11 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
         const currencies = (b.currencies ?? ['AUD']).map((c: unknown) => text(c, 'Currency'));
         requireThat(currencies.length && currencies.every((c: string) => /^[A-Z]{3}$/.test(c)), 'Use ISO currency codes');
         for(const field of ['locations','costCentres','projects']){requireThat(Array.isArray(b[field])&&b[field].length>0&&b[field].length<=100,field+' requires 1–100 codes');requireThat(b[field].every((v:unknown)=>typeof v==='string'&&v.trim().length>0&&v.length<=200),field+' must contain nonempty names');requireThat(new Set(b[field]).size===b[field].length,field+' contains duplicates')}
-        const timezone = b.timezone || s.get('business:main')?.value.timezone || 'America/New_York';
-        try { new Intl.DateTimeFormat('en-US',{timeZone:timezone}).format(); } catch { requireThat(false,'Use a valid IANA installation timezone'); }
+        const timezone = Object.hasOwn(b, 'timezone') ? b.timezone || undefined : s.get('business:main')?.value.timezone;
+        try { if (timezone) new Intl.DateTimeFormat('en-US',{timeZone:timezone}).format(); } catch { requireThat(false,'Use a valid IANA installation timezone'); }
         const next = { timezone, name: text(b.name, 'Business name'), currencies, locations: b.locations ?? [], costCentres: b.costCentres ?? [], projects: b.projects ?? [] };
         requireAdministrativeEdit(s, a, s.get('business:main')?.value, next);
+        if (s.get('business:main')?.value.timezone !== timezone) pauseTravelReleaseRule(s, 'Business calendar changed; renew timed release consent');
         put(s, 'business', 'main', next);
         initializeSupplierMatching(s);
         audit(s, a, op, 'main');

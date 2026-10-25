@@ -1,3 +1,4 @@
+import { travelExportsJourney } from './travel-exports-flow.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { join } from 'node:path';
@@ -79,6 +80,7 @@ test('INTAKE-006 native Austin travel estimate, manager and finance chain, date 
 });
 
 test('INTAKE-006 native report import rejects wrong authority and sources, transfers actual and releases once', async t => {
+    await travelExportsJourney();
     const fixture = await travelFixture(); t.after(() => fixture.h.close());
     const { travel, h } = fixture, request = await approvedAmendedTrip(fixture), original = syntheticCoasterReport(request);
     const body = { id: request.id, revision: request.revision, original, sourceUrl: 'http://127.0.0.1:8788/api/coaster/claims/synthetic-purse-20', confirmed: true, closed: true, reason: 'synthetic-purse-29' };
@@ -126,11 +128,11 @@ test('INTAKE-006 native report import rejects wrong authority and sources, trans
 
 });
 
-test('Assistant travel gives only the exact active traveler a booking reference and keeps source custody unchanged', async t => {
+test('Assistant travel gives only the exact active traveler approved booking terms and keeps source custody unchanged', async t => {
     const f = await travelFixture(); t.after(() => f.h.close());
     const { h, travel, input, stranger } = f;
     const draft = await travel('request', { ...input, travel: { ...input.travel, travelerEmail: 'synthetic-purse-9@example.test', traveler: 'synthetic-purse-9' } });
-    const approved = await f.approve(draft), reference = { approvalReference: approved.travel.approvalReference, revision: approved.revision, status: 'approved' };
+    const approved = await f.approve(draft), reference = { approvalReference: approved.travel.approvalReference, revision: approved.revision, status: 'approved', destinations: approved.travel.destinations, departureDate: approved.travel.departureDate, returnDate: approved.travel.returnDate, costs: approved.travel.costs, currency: approved.currency };
     assert.equal((await h.send('/api/purse/travel/references')).status, 401);
     assert.deepEqual((await h.send('/api/purse/travel/references', undefined, stranger)).value.travelReference, [reference]);
     assert.deepEqual((await h.send('/api/purse/travel/references?email=synthetic-purse-6@example.test', undefined, stranger)).value.travelReference, [reference], 'Input cannot impersonate the native email identity');
@@ -139,11 +141,19 @@ test('Assistant travel gives only the exact active traveler a booking reference 
     assert.deepEqual(data.travelReference, [reference]);
     for (const kind of ['request', 'revision', 'decision', 'commitment', 'travelExpense', 'travelRelease', 'travelReleasePolicy']) assert.equal(data[kind].some(row => row.id === approved.id || row.request === approved.id), false, `${kind} remains private`);
     assert.equal(data.policy.some(row => row.id === approved.policy), false);
+    for (const [kind,id] of [['request',approved.id],['policy',approved.policy]]) assert.equal((await h.send('/api/purse/download/' + kind + '/' + id, undefined, stranger)).status,403);
+    assert.equal(data.periodBudgets.some(row=>row.id===approved.policy),false);
     const attachment = await h.command('attachment', { kind: 'request', record: draft.id, name: 'synthetic-purse-60.txt', mediaType: 'text/plain', base64: Buffer.from('synthetic-purse-61').toString('base64') }, f.requester);
     assert.equal((await h.send('/api/purse/download/attachment/' + attachment.id, undefined, stranger)).status, 403);
+    await travel('amend', { ...input, id: draft.id, revision: draft.revision, reason: 'synthetic-purse-65' }, stranger, 403);
     const amended = await travel('amend', { ...input, id: draft.id, revision: draft.revision, reason: 'synthetic-purse-62', travel: { ...input.travel, travelerEmail: 'synthetic-purse-9@example.test', traveler: 'synthetic-purse-9' } });
     assert.equal(amended.travel.approvalReference, undefined);
     assert.deepEqual((await h.send('/api/purse/travel/references', undefined, stranger)).value.travelReference, []);
+    const again = await f.approve(amended);
+    const approverAmend = await travel('amend', { ...input, id: again.id, revision: again.revision, reason: 'synthetic-purse-66', travel: { ...input.travel, travelerEmail: 'synthetic-purse-9@example.test', traveler: 'synthetic-purse-9' } }, f.manager);
+    assert.equal(approverAmend.status, 'draft');
+    assert.equal(approverAmend.travel.approvalReference, undefined);
+    assert.equal(await f.balance(again.id), 0);
     await h.command('member', { email: 'synthetic-purse-9@example.test', name: 'synthetic-purse-9', roles: ['requester'], active: false });
     assert.equal((await h.send('/api/purse/travel/references', undefined, stranger)).status, 403);
     await h.command('member', { email: 'synthetic-purse-9@example.test', name: 'synthetic-purse-9', roles: ['requester'], active: true });

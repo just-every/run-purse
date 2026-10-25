@@ -1,26 +1,24 @@
 import { retainedTravelApproval } from './travel-approval-evidence';
 import { travelReservation } from './travel-release';
-import { coasterSource, coasterTravelReport } from './travel-coaster';
+import { travelExpenseImport } from './travel-export';
 import { ledger } from './requests';
 import { travelRequest } from './travel';
-import { all, audit, get, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
+import { all, audit, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
 export async function travelExpenses(s: State, a: Actor, op: string, input: Data): Promise<Data | undefined> {
     if (op !== 'travel-expense-return') return;
     const request = travelRequest(s, input.id);
-    requireThat(a.owner, 'Current native owner required to confirm an external expense report', 403);
     requirePermission(s, a, 'request.read', request);
     requirePermission(s, a, 'payable.approve', request);
     requireThat(input.revision === request.revision, 'Stale travel revision', 409);
     requireThat(input.confirmed === true && input.closed === true, 'Confirm the native report source and that this is the trip’s final expense report');
     const approvalReference = request.travel.approvalReference;
     requireThat(approvalReference, 'Approved travel reference required', 409);
-    const report = coasterTravelReport(input.original, approvalReference, request.travel.travelerEmail), source = coasterSource(input.sourceUrl, report.id);
+    const imported = await travelExpenseImport(input, approvalReference, request.travel.travelerEmail), { report, source, bytes, sha256, reportFingerprint } = imported;
     requireThat(report.currency === request.currency, 'Expense report currency differs from the approved reservation', 409);
-    const sha256 = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input.original)))].map(byte => byte.toString(16).padStart(2, '0')).join('');
     const existing = all(s, 'travelExpense').find(expense => expense.sourceOrigin === source.sourceOrigin && expense.externalId === report.id);
     if (existing) {
-        requireThat(existing.request === request.id && existing.sha256 === sha256, 'This Coaster report was already reconciled; its source or request differs', 409);
+        requireThat(existing.request === request.id && existing.sha256 === sha256 && (existing.reportFingerprint ?? existing.sha256) === reportFingerprint, 'This expense report was already reconciled; its source, reviewed metadata or request differs', 409);
         return existing;
     }
     requireThat(request.status === 'approved' && !request.travel.closedAt && !request.imported, 'An open native approved trip is required', 409);
@@ -29,21 +27,21 @@ export async function travelExpenses(s: State, a: Actor, op: string, input: Data
     requireThat(report.totalMinor <= request.totalMinor, 'The expense report exceeds the approved estimate; renew travel approval first', 409);
     const balance = travelReservation(s, request), earlierRelease = s.get('travelRelease:' + request.id + ':' + request.revision)?.value;
     requireThat(earlierRelease ? balance === 0 && earlierRelease.amountMinor === request.totalMinor && earlierRelease.approvalReference === approvalReference : balance === request.totalMinor, 'Exact approved reservation or retained timed release is required', 409);
-    const id = uid(), attachment = uid(), at = new Date().toISOString(), bytes = new TextEncoder().encode(input.original);
+    const id = uid(), attachment = uid(), at = new Date().toISOString();
     let raw = ''; for (const byte of bytes) raw += String.fromCharCode(byte);
-    put(s, 'attachment', attachment, { kind: 'travelExpense', record: id, name: `coaster-report-${report.id}.json`, mediaType: 'application/json', base64: btoa(raw), size: bytes.length, actor: a.id, at });
-    audit(s,a,'attachment',id,{attachment,kind:'travelExpense',name:`coaster-report-${report.id}.json`,size:bytes.length,revision:request.revision});
+    put(s, 'attachment', attachment, { kind: 'travelExpense', record: id, name: imported.name, mediaType: imported.mediaType, base64: btoa(raw), size: bytes.length, actor: a.id, at });
+    audit(s,a,'attachment',id,{attachment,kind:'travelExpense',name:imported.name,size:bytes.length,revision:request.revision});
     const expense = { id, request: request.id, revision: request.revision, approvalReference, policy: request.policy, currency: request.currency, totalMinor: report.totalMinor, releasedMinor: earlierRelease ? 0 : balance - report.totalMinor,
         ...(earlierRelease ? { earlierRelease: { id: earlierRelease.id, at: earlierRelease.at, amountMinor: earlierRelease.amountMinor }, remainingEstimateMinor: request.totalMinor - report.totalMinor } : {}),
-        externalId: report.id, externalRevision: report.revision, externalNumber: report.number, title: report.title, employeeEmail: report.employeeEmail, sourceStatus: report.status, ...source, sha256, attachment, items: report.items,
-        sourceBasis: 'Manually imported native Coaster report; original retained for review', actor: a.id, at, reason: text(input.reason, 'Expense return reason') };
+        externalId: report.id, externalRevision: report.revision, externalNumber: report.number, title: report.title, employeeEmail: report.employeeEmail, sourceStatus: report.status, ...source, sha256, reportFingerprint, attachment, items: report.items,
+        ...(report.sourceReview ? { sourceReview: report.sourceReview, columns: report.columns, confirmed: true, closed: true, confirmerEmail: a.email } : {}), actor: a.id, at, reason: text(input.reason, 'Expense return reason') };
     ledger(s, a, request, earlierRelease ? 0 : -report.totalMinor, earlierRelease ? 'travel-actual-recorded-after-release' : 'travel-actual-movement');
     if (expense.releasedMinor) ledger(s, a, request, -expense.releasedMinor, 'travel-unspent-release');
     put(s, 'travelExpense', id, expense);
     const releasePolicy = s.get('travelReleasePolicy:' + request.id)?.value;
     if (releasePolicy && releasePolicy.revision === request.revision && releasePolicy.status === 'armed') put(s, 'travelReleasePolicy', request.id, { ...releasePolicy, status: 'closed', version: releasePolicy.version + 1, closedAt: at });
     put(s, 'request', request.id, { ...request, travel: { ...request.travel, closedAt: at, expenseReport: id } });
-    audit(s, a, 'travel-expense-return', request.id, { revision: request.revision, report: id, externalId: report.id, attachment, sha256, actualMinor: report.totalMinor, releasedMinor: expense.releasedMinor, ...(earlierRelease ? { earlierRelease: expense.earlierRelease, remainingEstimateMinor: expense.remainingEstimateMinor } : {}), reason: expense.reason });
+    audit(s, a, 'travel-expense-return', request.id, { revision: request.revision, report: id, externalId: report.id, provider: source.provider, reportFingerprint, confirmed: true, closed: true, attachment, sha256, actualMinor: report.totalMinor, releasedMinor: expense.releasedMinor, ...(earlierRelease ? { earlierRelease: expense.earlierRelease, remainingEstimateMinor: expense.remainingEstimateMinor } : {}), reason: expense.reason });
     return expense;
 }
 export function travelActualMinor(s: State, policy: string, currency?: string) {

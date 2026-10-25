@@ -4,7 +4,7 @@ import { harness } from './purse-harness.mjs';
 export async function travelFixture() {
     const h = await harness();
     try {
-        await h.command('business', { name: 'synthetic-purse-1', currencies: ['USD'], locations: ['synthetic-purse-2'], costCentres: ['synthetic-purse-3'], projects: ['synthetic-purse-4'] });
+        await h.command('business', { name: 'synthetic-purse-1', timezone: 'America/New_York', currencies: ['USD'], locations: ['synthetic-purse-2'], costCentres: ['synthetic-purse-3'], projects: ['synthetic-purse-4'] });
         const requester = await h.member('synthetic-purse-6@example.test', ['requester']);
         const manager = await h.member('synthetic-purse-7@example.test', ['approver']);
         const finance = await h.member('synthetic-purse-8@example.test', ['approver', 'ap-clerk']);
@@ -52,7 +52,7 @@ export async function assertTravelSettlement(fixture, request, original, sourceU
     const body = { id: request.id, revision: request.revision, original, sourceUrl, confirmed: true, closed: true, reason: 'synthetic-purse-22' };
     await travel('expense-return', body, requester, 403);
     await travel('expense-return', body, stranger, 403);
-    await travel('expense-return', body, finance, 403);
+
     const settled = await travel('expense-return', body, h.owner);
     assert.equal(settled.totalMinor, 215000); assert.equal(settled.releasedMinor, 55000);
     assert.equal(await balance(request.id), 0);
