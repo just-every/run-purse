@@ -4096,7 +4096,7 @@
       "executable": false
     },
     "src/ui/email-intake.tsx": {
-      "sha256": "9e917cac9deb8a4103270e8ce8c9eb3e25b30236e3a74762432a4f10230a26a3",
+      "sha256": "180702a681dacaf4606e23d13fdf9aa1fca8a9b7aa581e847358a0dc2aced1c8",
       "executable": false
     },
     "src/ui/erasure-history.tsx": {
