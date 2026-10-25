@@ -27,6 +27,8 @@ rer dev
 
 Copy the archive into the new checkout's `exports/` folder before `rer import`.
 
+When this archive is the newest one, add `--journal exports/installation.rer` so Purse can refuse anything erased after it. Without a journal the restore is held until the current owner acknowledges, in Settings of the empty installation, that erasure history is unverified: supply your latest archive as the journal. The restored Purse then shows that label.
+
 Purse checks the whole archive before it writes anything: the file's integrity, every link between records, every amount and every uploaded file. If anything is wrong it changes nothing and says why. A Purse that already has records refuses the import.
 
 ## Across upgrades

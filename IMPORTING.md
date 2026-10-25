@@ -62,12 +62,28 @@ Keep the newest completed `.rer` archive as the erasure journal. When restoring
 an older backup into a fresh installation, supply that archive with
 `rer import --input older.rer --journal newest.rer --yes`: Base refuses an older
 redaction epoch before applying business records. A fresh offline installation
-cannot discover a later erasure without its journal. Existing exports and
+cannot discover a later erasure without its journal, so a restore with no
+journal is held until the current native owner acknowledges, in Settings of the
+empty installation and with fresh native reauthentication, the sentence
+“erasure history unverified: supply your latest archive as the journal”. The
+restore then succeeds and Settings shows that label, the archive time, the
+acknowledgment and that no journal was supplied. A restore that supplies the
+journal needs no acknowledgment. Existing exports and
 external provider copies are outside the installation's deletion scope and
 remain under the owner's custody. Post-erasure archives retain anonymized
 financial chronology and the sealed field journal; they reject restored erased
 values or source objects. A protected include must match the same erasure
 checkpoint, preventing older encrypted metadata from restoring identity.
+
+Owners set a retention period in whole years (default 7, minimum 1; below 7
+shows an IRS Pub. 583 warning to acknowledge) in Settings. It counts from each
+supplier's latest supported payable, the newest invoice date entered against one
+of its orders. Settings then lists expired TIN and bank values and W-9 originals
+under Ready to erase. Nothing is removed until the owner confirms the selected
+values with consent and fresh native reauthentication. Invoices, totals,
+evidence hashes and attestations stay, and an invoice whose bank binding lost
+its source value says so. A supplier with no payable has no clock yet. This
+states a retention default, not legal advice.
 
 ## Reviewed open-PO adoption (IMPORT-003 native door)
 
