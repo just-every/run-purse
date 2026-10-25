@@ -18,6 +18,7 @@ export async function spendQuestionFixture(){
   'How much was reserved for department Operations from 2026-10-01 through 2026-12-31',
   'Show actual spend by supplier all recorded dates',
  ];
- return {h,cmd,requester,colleague,approver,finance,supplier,request,other,hidden,order,invoice,questions,close:()=>h.close()};
+ const expected=[{metric:'committed',filters:{groupBy:'department',from:'2026-10-01',through:'2026-12-31'},amountMinor:100000},{metric:'reserved',filters:{groupBy:'supplier',from:'2026-10-01',through:'2026-12-31',department:'Operations'},amountMinor:40000},{metric:'actual',filters:{groupBy:'supplier'},amountMinor:20000}];
+ return {expected,h,cmd,requester,colleague,approver,finance,supplier,request,other,hidden,order,invoice,questions,close:()=>h.close()};
  }catch(e){await h.close();throw e;}
 }

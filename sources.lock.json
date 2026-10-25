@@ -4632,7 +4632,7 @@
       "executable": false
     },
     "tests/browser-spend-questions.mjs": {
-      "sha256": "883746666892814df2f0314369f4e3e2853dbd8e440620166fa0f74ad5b60cdb",
+      "sha256": "7dad72ca54d23ff3130e726767c998b1138f587049d80d7dbdecbceab98dccd9",
       "executable": false
     },
     "tests/browser-spend-report.mjs": {
@@ -4900,11 +4900,11 @@
       "executable": false
     },
     "tests/spend-question-fixture.mjs": {
-      "sha256": "6ad96a65633540c6f8e01fc9616034ef29141d41205cf11063c9aeb790da9d00",
+      "sha256": "689be8df2ee0f75db2f349d1ce8afdbdba5aa324ddf91bd5f16c351ceb28a2bb",
       "executable": false
     },
     "tests/spend-report.test.mjs": {
-      "sha256": "ac3174c453776fd9b4fd6b7111818753e2d74ae8dc81e7e8091257f630e6ff73",
+      "sha256": "5eb04793553e0585fc717904f4a7af06bbdc1e831f6c59a4b2907a3aa817cf20",
       "executable": false
     },
     "tests/stockroom.test.mjs": {
