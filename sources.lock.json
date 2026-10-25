@@ -4616,7 +4616,7 @@
       "executable": false
     },
     "tests/browser-spend-questions.mjs": {
-      "sha256": "0cc7ee39129b866eba1ec853b553bc3b1c391824c0715782b1339deb59d7eba4",
+      "sha256": "fcc6356fcb7306703e3c5724b8836e834fe9bcd0a0fc562bd402b7b8bcd4a007",
       "executable": false
     },
     "tests/browser-spend-report.mjs": {
