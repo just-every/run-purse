@@ -181,6 +181,16 @@ try {
         assert.equal(rowsFor(data, 'commitment', request).filter(row => row.kind === 'travel-timed-release').length, 1);
         assert.equal(data.travelRelease.find(row => row.request === request.id).ruleVersion, rearmed.version);
     }
+    const overridden = await businessRule.approve(await travel('request', { ...businessRule.input, title: 'synthetic-purse-78' }));
+    let overridePolicy = (await h.state()).data.travelReleasePolicy.find(row => row.request === overridden.id);
+    await travel('release-policy', { id: overridden.id, revision: overridden.revision, version: overridePolicy.version, enabled: false, reason: 'synthetic-purse-79' }, h.owner);
+    await tick(h, '2026-10-28T12:00:00Z');
+    assert.equal(await businessRule.balance(overridden.id), 240000, 'An explicit trip OFF override prevents the business rule release');
+    overridePolicy = (await h.state()).data.travelReleasePolicy.find(row => row.request === overridden.id);
+    await travel('release-policy', { ...enable(overridden, overridePolicy.version), days: 6, timezone: 'America/Chicago' }, h.owner);
+    await tick(h, '2026-10-28T12:00:00Z');
+    assert.equal(await businessRule.balance(overridden.id), 0);
+    assert.equal((await h.state()).data.travelRelease.find(row => row.request === overridden.id).source, 'override');
     const archive = join(evidence, 'synthetic-purse-business-rule.rer');
     await exportArchive(await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability }), archive, []);
     const restored = await harness();
@@ -189,9 +199,9 @@ try {
         await tick(restored, '2026-10-28T12:00:00Z');
         const retained = (await restored.state()).data;
         assert.equal(retained.travelReleaseRule[0].status, 'paused');
-        assert.equal(retained.travelRelease.length, 2);
+        assert.equal(retained.travelRelease.length, 3);
     } finally { await restored.close(); }
-    result.businessRule = { trips: 2, inheritedAmendment: true, changedRulePaused: true, explicitReconsent: true, missingTimezoneRefused: true, days: 5, calendar: 'America/Chicago', staggeredReturns: true, once: true };
+    result.businessRule = { trips: 2, inheritedAmendment: true, changedRulePaused: true, explicitReconsent: true, missingTimezoneRefused: true, days: 5, calendar: 'America/Chicago', staggeredReturns: true, tripOverride: true, once: true };
 } finally { await businessRule.h.close(); }
 await writeFile(join(evidence, 'travel-release-result.json'), JSON.stringify({ outcome: 'passed', ...result }, null, 2) + '\n');
 console.log(JSON.stringify({ outcome: 'passed', ...result }));
