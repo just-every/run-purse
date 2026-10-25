@@ -50,7 +50,7 @@ try{for(const width of widths){const h=await harness({protectedKey:createHash('s
  // A fresh destination holds a journal-less restore until the native owner acknowledges, then labels the history.
  const archive=join(h.dir,'synthetic-purse-browser.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
  const fresh=await harness({empty:true});contexts.push({close:()=>fresh.close()});const boot=await fresh.send('/auth/bootstrap',{token:'synthetic-local-test-bootstrap-token-0123456789',displayName:'Owner'});assert.equal(boot.status,303);
- const operatorAck=process.env.PURSE_RESTORE_ACKNOWLEDGE;delete process.env.PURSE_RESTORE_ACKNOWLEDGE;const target=await createPortability({db:fresh.db,buckets:{ORIGINALS:fresh.originals},policy:portability});
+ const signal=process.env.PURSE_RESTORE_JOURNAL;process.env.PURSE_RESTORE_JOURNAL='none';const target=await createPortability({db:fresh.db,buckets:{ORIGINALS:fresh.originals},policy:portability});
  try{
   await assert.rejects(importArchive(target,archive,[]),/erasure_history_unacknowledged/);
   const freshContext=await nativeWebContext(browser,fresh,width,bundle.outputFiles[0].text,boot.cookie);contexts.push(freshContext);const fp=await freshContext.newPage();fp.on('pageerror',e=>errors.push(e.message));await fp.goto(fresh.origin+'/app?tab=Settings');
@@ -58,6 +58,6 @@ try{for(const width of widths){const h=await harness({protectedKey:createHash('s
   const stepUp=async()=>{await hold.getByRole('button',{name:'Request native reauthentication',exact:true}).click();await fp.getByRole('status').filter({hasText:'Confirm the native sign-in email'}).waitFor();const mail=[...fresh.messages].reverse().find(m=>m.to.includes('owner@example.test'));assert.equal((await fresh.send('/auth/confirm',{token:new URL(mail.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0]).searchParams.get('token')},boot.cookie)).status,303)};
   await stepUp();await hold.getByRole('button',{name:/Acknowledge: erasure history unverified/}).click();await hold.getByRole('status').filter({hasText:/Acknowledged .* restore may now proceed/}).waitFor();
   await importArchive(target,archive,[]);await fp.reload();const label=fp.locator('[aria-label="Erasure history"]');await label.getByRole('heading',{name:'Erasure history unverified',exact:true}).waitFor();assert.ok((await label.innerText()).includes(unverifiedHistory));assert.equal(await fp.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'restored overflow');await label.screenshot({path:join(evidence,`ERASURE-001-restored-label-${width}.png`)});
- }finally{if(operatorAck!==undefined)process.env.PURSE_RESTORE_ACKNOWLEDGE=operatorAck}
+ }finally{process.env.PURSE_RESTORE_JOURNAL=signal}
  const buyerPage=await open(buyer);await buyerPage.goto(h.origin+'/app?tab=Settings');assert.equal(await buyerPage.getByRole('region',{name:'Personal data erasure',exact:true}).count(),0);assert.deepEqual(errors,[]);console.log('Native erasure web passed at '+width);
  }finally{for(const context of contexts)await context.close();await h.close();}}}finally{await browser.close();}

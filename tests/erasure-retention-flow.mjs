@@ -92,7 +92,7 @@ export async function restoreHoldFlow(t){
  const fresh=await harness({empty:true});t.after(()=>fresh.close());
  const boot=await fresh.send('/auth/bootstrap',{token:'synthetic-local-test-bootstrap-token-0123456789',displayName:'Owner'});assert.equal(boot.status,303);const owner=boot.cookie;
  const target=await createPortability({db:fresh.db,buckets:{ORIGINALS:fresh.originals},policy:portability}),rows=async()=>(await fresh.db.prepare('SELECT COUNT(*) AS n FROM p_records').first()).n;
- const operator=process.env.PURSE_RESTORE_ACKNOWLEDGE;delete process.env.PURSE_RESTORE_ACKNOWLEDGE;t.after(()=>{process.env.PURSE_RESTORE_ACKNOWLEDGE=operator});
+ const signal=process.env.PURSE_RESTORE_JOURNAL;process.env.PURSE_RESTORE_JOURNAL='none';t.after(()=>{process.env.PURSE_RESTORE_JOURNAL=signal});
  // Held: no later journal and no acknowledgment, so nothing is restored.
  await assert.rejects(importArchive(target,archive,[]),/erasure_history_unacknowledged/);assert.equal(await rows(),0);
  // The current native owner acknowledges the exact limit with fresh proof; a buyer-grade or unproven attempt cannot.
@@ -107,7 +107,7 @@ export async function restoreHoldFlow(t){
  meta=(await fresh.send('/api/purse/erasure',undefined,owner)).value;
  assert.equal(meta.history.state,'unverified');assert.equal(meta.history.label,unverified);assert.equal(meta.history.journalSupplied,false);assert.equal(meta.history.acknowledgedBy,'owner@example.test');assert.ok(Date.parse(meta.history.archiveAt)<=Date.parse(meta.history.restoredAt));
  // A restore that supplies the latest archive as its journal needs no acknowledgment and says so.
- const journalled=await harness({empty:true});t.after(()=>journalled.close());process.env.PURSE_RESTORE_JOURNAL='supplied';t.after(()=>{delete process.env.PURSE_RESTORE_JOURNAL});
+ const journalled=await harness({empty:true});t.after(()=>journalled.close());process.env.PURSE_RESTORE_JOURNAL='supplied';
  await importArchive(await createPortability({db:journalled.db,buckets:{ORIGINALS:journalled.originals},policy:portability}),archive,[],archive);
  const row=await journalled.db.prepare("SELECT journal_supplied,acknowledged_at FROM p_restore_history WHERE id='main'").first();assert.deepEqual({...row},{journal_supplied:1,acknowledged_at:null});
  // The report stays inside this installation: the next archive excludes the table and carries none of its rows.

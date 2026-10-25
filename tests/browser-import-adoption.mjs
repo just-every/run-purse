@@ -27,7 +27,7 @@ try {
  restoredRoot=await fresh();await command(restoredRoot,['install']);const restoredPort=await freePort();
  await command(restoredRoot,['setup','--owner-email','restored-owner@example.test','--port',String(restoredPort)]);
  await mkdir(join(restoredRoot,'exports'),{recursive:true});await copyFile(archive,join(restoredRoot,'exports/adopted.rer'));
- await command(restoredRoot,['import','--input','exports/adopted.rer','--yes']);
+ await command(restoredRoot,['import','--input','exports/adopted.rer','--journal','exports/adopted.rer','--yes']);
  await command(restoredRoot,['export','--output','exports/restored.rer']);
  const source=rows(await records(archive)),restored=rows(await records(join(restoredRoot,'exports/restored.rer')));
  for(const kind of ['orderAdoption','request','revision','order','receipt','invoice','deposit','budget','commitment','payable']) {

@@ -18,7 +18,7 @@ const portability = { ...localArchive, async import(context) {
   if (!context.journal) context.store.report(`${unverifiedHistory}. Erasures made after this backup may be unknown; the restore report with its acknowledgment and archive time is in Settings.`);
   return receipt;
  } catch (error) {
-  if (/erasure_history_unacknowledged/.test(error?.message ?? '')) error.message = `Restore held (erasure_history_unacknowledged): ${unverifiedHistory}. Supply the latest archive with --journal, or have the native owner acknowledge this limit in Settings (or set PURSE_RESTORE_ACKNOWLEDGE to that exact sentence for this command), then run the import again. Nothing was restored.`;
+  if (/erasure_history_unacknowledged/.test(error?.message ?? '')) error.message = `Restore held (erasure_history_unacknowledged): ${unverifiedHistory}. Supply the latest archive of the source installation with --journal, or have the current native owner acknowledge this limit in Settings of this empty installation, then run the import again. Nothing was restored.`;
   throw error;
  }
 } };
