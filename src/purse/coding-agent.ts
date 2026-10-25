@@ -53,7 +53,19 @@ function permittedReference(s: State, a: Actor, ref: Data): boolean {
 }
 export function codingAgentRunVisible(s: State, a: Actor, run: Data): boolean {
     if (run.agent !== 'AGENT-008') return false;
-    try { return canRead(s, a, target(s, run.targetKind, run.target)) && run.references.every((ref: Data) => permittedReference(s, a, ref)); }
+    try {
+        const subject = target(s, run.targetKind, run.target);
+        return canRead(s, a, subject) && run.references.every((ref: Data) => {
+            if (ref.kind !== 'policy') return permittedReference(s, a, ref);
+            // A split cites only its applicable limit, not the owner's whole policy.
+            const source = run.sources.find((row: Data) => row.kind === 'policy' && row.id === ref.id);
+            return Boolean(s.has('policy:' + ref.id) && source && source.version === ref.version
+                && Object.keys(source.value).length === 2 && Object.keys(source.value).every(field => ['limitMinor', 'currency'].includes(field))
+                && run.flags.some((flag: Data) => flag.code === 'possible-split-purchase' && flag.requests.includes(run.request)
+                    && flag.sources.some((known: Data) => known.kind === 'policy' && known.id === ref.id))
+                && allowed(s, a, 'request.read', subject.request));
+        });
+    }
     catch { return false; }
 }
 

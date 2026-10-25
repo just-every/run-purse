@@ -9,6 +9,7 @@ export async function codingAgentFixture(t) {
  const requester = await h.member('coding-requester@example.test', ['requester']), buyer = await h.member('coding-buyer@example.test', ['buyer']);
  const approver = await h.member('coding-approver@example.test', ['approver']), receiver = await h.member('coding-receiver@example.test', ['receiver']);
  const scoped = await h.member('coding-scoped@example.test', ['buyer']);
+ await cmd('member', { email: 'coding-approver@example.test', name: 'Scoped approver', active: true, grants: [{ role: 'approver', scope: { departments: ['Operations'] } }] });
  await cmd('member', { email: 'coding-scoped@example.test', name: 'Scoped buyer', active: true, grants: [{ role: 'buyer', scope: { departments: ['Finance'] } }] });
  const supplier = await cmd('supplier', { name: 'Coding supplies', status: 'active', reason: 'Approved supplier', contacts: [{ name: 'Sales', email: 'coding-sales@example.test' }] }, buyer);
  const policy = await cmd('policy', { name: 'Site purchase threshold', currency: 'USD', category: 'Equipment', project: 'Site', approver: 'coding-approver@example.test', limitMinor: 100000, budgetMinor: 5000000 });

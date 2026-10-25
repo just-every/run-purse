@@ -34,6 +34,7 @@ export function validateCodingAgent(all, get, check) {
   for (const source of run.sources) {
    check(sourceKinds.has(source.kind) && source.value && run.references.some(ref => ref.kind === source.kind && ref.id === source.id && ref.version === source.version), 'coding_agent_source');
    get(source.kind, source.id);
+   if (source.kind === 'policy') check(Object.keys(source.value).length === 2 && Object.keys(source.value).every(field => ['limitMinor','currency'].includes(field)) && Number.isSafeInteger(source.value.limitMinor) && source.value.limitMinor > 0 && typeof source.value.currency === 'string', 'coding_agent_safe_policy');
    if (source.kind === 'supplier') check(Object.keys(source.value).every(field => field === 'status'), 'coding_agent_safe_supplier');
    if (source.kind === 'invoice') check(source.value.kind === 'invoice' && source.value.id === source.id && !Object.hasOwn(source.value, 'source')
     && !Object.hasOwn(source.value, 'document') && safeCoding(source.value.coding), 'coding_agent_safe_invoice');

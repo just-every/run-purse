@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "41aad0f7d0052d80f6cfc71af7fc8ec7a4889fe4d4eb34ed75d21475bb134838",
+      "sha256": "0f3b139cd44378d27e34ccfad595829cee360fbde206a8f2a43a17d2d478c719",
       "executable": false
     },
     "DEMO.md": {
@@ -884,7 +884,7 @@
       "executable": false
     },
     "scripts/installer/restore-coding-agent.mjs": {
-      "sha256": "0abbe69cfa6b2ebca93ebce550f5b313423afb822b99d4b73e977c85393bc80e",
+      "sha256": "c91794b260c44807e737ab97259ebc375f7329afbb527ebf501644e2e294c99e",
       "executable": false
     },
     "scripts/installer/restore-conversion-variance.mjs": {
@@ -2996,7 +2996,7 @@
       "executable": false
     },
     "src/purse/coding-agent.ts": {
-      "sha256": "250a7026fededfdd651c8172181e576ea79450168a8f0a745e4449ed90fa786a",
+      "sha256": "0236db989887eac71c425177c1f9cfb9051ea743440b1c1ecd65c86164ca3061",
       "executable": false
     },
     "src/purse/command-projection.ts": {
@@ -4672,7 +4672,7 @@
       "executable": false
     },
     "tests/coding-agent-fixture.mjs": {
-      "sha256": "023163b86ce3fd570f50b80a662f81966d1c2d0c06b97efb52b642e0c9481d55",
+      "sha256": "25535c687e407c1792741d2ace5bccc81f37c6f50178f71dca7db711ef4346e7",
       "executable": false
     },
     "tests/coding-agent.test.mjs": {
