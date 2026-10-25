@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "af203d7c0338ef57d146098dcb4f7faa24037df601c3e403c628e06247d42876",
+      "sha256": "32c623479963a3bea2fb33bab1c7badae52f5319ac3257b7bc3175c026b786af",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -104,7 +104,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "834ce19c6f9bb7140292599f9c2d766ff45ac6aee21733a56e04a7064f7bf0ca",
+      "sha256": "e61b34c23f3e8e0304a0ffcab91335e5fac8de76f7fe7bad847019054ee95c63",
       "executable": false
     },
     "base-copies.json": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "0f3b139cd44378d27e34ccfad595829cee360fbde206a8f2a43a17d2d478c719",
+      "sha256": "b307e2f791751ab638995664f1151c20cad46e317df89bc65fef37016ce66998",
       "executable": false
     },
     "DEMO.md": {
@@ -184,7 +184,7 @@
       "executable": false
     },
     "IMPORTING.md": {
-      "sha256": "3d142b8c826c179878829902c06aa93d79596cd606b2a4fc5db90e30507a73b1",
+      "sha256": "7b969880877a2cd3701d4aa3dd8d157ad62bdbd5fea5dddff1afa5f82a85f327",
       "executable": false
     },
     "LICENSE": {
@@ -3744,7 +3744,7 @@
       "executable": false
     },
     "src/purse/travel.ts": {
-      "sha256": "922f6d92eceb62ccf4300d5b17c28aab2ba549417e160dfd06539b7a1129c92d",
+      "sha256": "59fa1771a787e63d11bc47f902d4780f16ac4be49b841bd2ba620e0edc6fb04e",
       "executable": false
     },
     "src/purse/types.ts": {
@@ -4960,7 +4960,7 @@
       "executable": false
     },
     "tests/travel-browser-exports.mjs": {
-      "sha256": "60c3a189dbac6828589165a4df23a38673e877f0cc459e4c5b33857105bacdfb",
+      "sha256": "3f4ee2ede1e8e2f39542f76cc95bac4ef062f850e6d2434c5fdfa4c5afc1395d",
       "executable": false
     },
     "tests/travel-browser-policy.mjs": {
@@ -4968,7 +4968,7 @@
       "executable": false
     },
     "tests/travel-browser-release.mjs": {
-      "sha256": "f17ec5c66bbb4c1b8e7bc8c1a1c4c9fc540cac6f466094339e803de51960c8c2",
+      "sha256": "95a69167fead643bd3f873743c0c39bd0ea0f461d212143ee3b33ffce6606130",
       "executable": false
     },
     "tests/travel-browser.mjs": {

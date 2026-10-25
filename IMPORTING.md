@@ -150,3 +150,21 @@ and currency. Changed source balances require a fresh disposition proposal. Chas
 Original import undo retains adopted targets and their downstream source links;
 complete archive restore preserves adoption, opening balances, originals and
 reviews without restoring historical authority.
+
+
+## Trip expense exports
+
+On an approved trip, open **Return final expense report**. Select Coaster for its native claim-detail JSON, or Expensify, Navan, Ramp or Brex for a complete independently approved UTF-8 CSV export. Configure the provider export template to include a distinct expense ID, expense date, amount, currency, traveler email, Purse approval reference and description. Preserve the original file. Choose the exact column headers in the form; its defaults are editable starting selections, not a claim that every provider has a fixed export schema.
+
+| Source | Starting headers, in the order above |
+|---|---|
+| Expensify | Expense ID; Date; Amount; Currency; Submitter Email; Purse Reference; Description |
+| Navan | Transaction ID; Transaction Date; Amount; Currency; Employee Email; Purse Reference; Description |
+| Ramp | External ID; Transaction Date; Original Currency Amount; Original Currency Code; User Email; Accounting Purse Reference; Merchant Name |
+| Brex | Expense ID; Date; Amount; Currency; Employee Email; Purse Reference; Memo |
+
+Review the complete final report in the source system and enter its workspace or account, report ID, title, total, approved status, independent approver and approval date. The source approver must differ from the traveler. Purse labels this as manually reviewed source metadata; it does not independently authenticate the provider. Each original row must already carry the exact Purse reference. Exports without it are refused. Dates use YYYY-MM-DD and amounts are unsigned decimal values with no currency symbol or thousands separators. A file has one currency, a unique header, and 1–500 unique expense rows, up to 1 MB. Quoted fields, commas, embedded newlines, UTF-8 BOM and CRLF are supported without rewriting the retained bytes.
+
+Expensify provides [custom export templates](https://integrations.expensify.com/Integration-Server/doc/export_report_template.html); Ramp documents its [CSV accounting export fields](https://support.ramp.com/exporting-your-data-to-csv/). Brex documents [customizable accounting exports](https://www.brex.com/support/brex-dashboard-accounting-page). Navan and Brex header labels depend on the selected report template, so review the original header before confirmation.
+
+The current native owner or scoped finance with payable approval may confirm the return. Only the current native owner downloads its retained original. Repeating the same source cannot repeat actual spend or reservation release. An over-estimate report requires renewed trip approval. Import never fetches a URL or performs booking or payment.

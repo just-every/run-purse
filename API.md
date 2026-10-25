@@ -653,7 +653,7 @@ No automatic outbound action is added to date editing.
 
 ## Travel pre-approvals and returned Coaster reports
 
-The private native travel mutations also have `command/travel-*` equivalents:
+The private native travel mutations also have command equivalents named with the `travel-` prefix:
 
 - `POST /api/purse/travel/per-diem`: `{destination:{city,state,country},departureDate,returnDate}`.
 - `POST /api/purse/travel/request`: ordinary `title,currency,location,costCentre,project`
@@ -676,15 +676,12 @@ The private native travel mutations also have `command/travel-*` equivalents:
 - `POST /api/purse/travel/amend`: the current `{id,revision,reason}` and full new
   travel request fields. Date/estimate changes release old reservation authority
   and need fresh approval; generic purchase/date-edit doors refuse travel.
-- `GET /api/purse/travel/references`: the active signed-in traveler's references,
-  revisions and statuses only, including assistant-created trips. This grants no
-  itinerary, request, policy, budget or original-document access.
-- `POST /api/purse/travel/release-policy`: `{id,revision,version,enabled,days,confirmed,acceptLateActual,reason}`.
+- `GET /api/purse/travel/references`: the active signed-in traveler's approved destinations, dates, category caps, currency, references, revisions and statuses, including assistant-created trips. This grants no request, policy, budget, approval or original-document access.
+- `POST /api/purse/travel/release-policy`: `{id,revision,version,enabled,days,timezone,confirmed,acceptLateActual,reason}`.
   Default OFF. The current native owner explicitly consents to one approved trip
   revision and 1–3650 business-calendar days after return, acknowledging that a
   late report may consume budget after funds were freed. The real Cron releases
-  once at or after the due date in the current business timezone; owner/version,
-  trip revision or timezone changes pause it for renewed consent.
+  once at or after the due date in the explicitly consented timezone; owner, rule version, trip revision or timezone changes pause it for renewed consent.
 - `POST /api/purse/travel/expense-return`: `{id,revision,original,sourceUrl,confirmed:true,closed:true,reason}`.
   `original` is the exact JSON from an authenticated local Coaster
   `GET /api/coaster/claims/:id`, with its current frozen revision/items/decisions.
@@ -693,8 +690,7 @@ The private native travel mutations also have `command/travel-*` equivalents:
   trip. `sourceUrl` is provenance, never automatically fetched. Purse parses the
   supplied report and retains its bytes; it does not independently attest Coaster.
 
-Default ADOPTED pending ct: only the current native owner may review and confirm
-that source and explicitly close the final report. It moves reported spend to
+Under the ct 23 October ruling, the current native owner or finance with scoped request-read and payable-approval permissions may review the source and explicitly close its final report. It moves reported spend to
 recorded actual, releases the remainder and links the current approved report on
 the request; only the native owner can read the retained original. A report after
 a timed release records actual without a second reservation release, retaining
@@ -703,8 +699,7 @@ approval evidence allows later financial facts after an approver's departure; it
 does not restore that person's purchase authority.
 An exact replay cannot repeat either movement; conflicting or wrong-reference
 reports refuse. Archives preserve the financial/source links and custody audit,
-without restoring another principal’s authority. Timed-release consent and narrow
-traveler reference access share this conservative default pending ct. No automatic
+without restoring another principal’s authority. Timed-release consent and approved traveler booking terms follow the ct 23 October boundary. No automatic
 report fetch, settlement or
 outbound booking/payment is performed. INTAKE-002/003, API-001 and IMPORT-001
 inherit these rules when adding travel doors; ERASURE-001 inherits the new
@@ -760,3 +755,12 @@ The owner enables **Coding and policy** for each purchase type in Settings. Open
 `coding-agent-review` takes `{id:runId,proposal:proposalId,coding:{glAccount?,class?,costCentre?,project?},reason}`. It rechecks current target and source access, purchase-type enablement, governance and source revisions, the exact unexecuted proposal, configured departments and projects, and current authority for the chosen coding. Review retains an immutable `codingExample` and `codingReview`, and an `invoiceCoding` projection for an invoice. It records a choice separately from original invoice evidence; it never submits, approves, sends, posts or changes financial terms. Request changes continue through ordinary editing and approval. Reviewed erasure anonymizes these records while retaining original digests and a sealed journal attestation of the anonymized run.
 
 Split flags use recorded submission times in the configured business timezone (America/New_York when none is set), exact requester, supplier and currency, and applicable native policy limits. Multiple same-day requests each at 80% to below a limit whose sum exceeds it are flagged for approver review; intent is never inferred. Preferred alternatives require accessible approved catalog items in the same category and currency from a preferred supplier; a person checks suitability. All current invoices are PO-backed, so repeated non-PO detection is explicitly unavailable until INVOICE-004 supplies those sources and inherits its blanket-PO suggestion duty. CODING-001, CODING-002 and future posting doors inherit the reviewed coding and source boundaries.
+
+
+## Travel rules and configurable expense exports
+
+`POST /api/purse/travel/release-rule` and command `travel-release-rule` accept `{version,enabled,days,timezone,reason,consent,confirmed,acceptLateActual}`. The current native owner alone may configure it. Saving configuration pauses unreleased policies. Explicit `consent:true`, `confirmed:true` and `acceptLateActual:true` consent to that business rule for approved revisions. A trip override continues through `travel-release-policy` and names its timezone. Consent without a zone returns 409 when the business has no timezone. A business timezone edit pauses immediately, including a change subsequently reverted. A native owner change is fenced before scheduled release. A configured rule never grants booking or payment authority.
+
+`travel-expense-return` accepts Coaster JSON as before, or `provider` set to `expensify`, `navan`, `ramp` or `brex`, `originalBase64` for exact UTF-8 CSV bytes, `sourceName`, `columns` and `sourceReview`. Native `request.read` and `payable.approve` must cover the exact request. `columns` maps `id`, `date`, `amount`, `currency`, `traveler`, `reference` and `description` to seven distinct original headers. `sourceReview` carries `sourceAccount`, `reportId`, `title`, `totalAmount`, `approvedBy`, `approvedAt`, `status`, `final:true` and `approvalReviewed:true`. The caller also supplies the exact trip id and revision, `confirmed:true`, `closed:true` and a reason. Source approval must be independent of the traveler. Status is approved, reimbursed or paid; its approval date is YYYY-MM-DD. These are explicit reviewed declarations, not a provider identity attestation.
+
+Every expense row must contain the exact traveler email and approval reference. One currency, distinct expense IDs, valid ISO dates and unsigned decimal amounts with at most two fractional digits are required. Items must add exactly to the reviewed total, within the approved estimate. No missing reference is filled in. Identical file and metadata replay is a no-op; changed bytes or metadata for the same source report are refused. Originals remain current-native-owner-only; finance and requester reads receive the permitted normalized summary. No URL is fetched. Coaster API-001 must supply a machine-readable frozen final report and its approval evidence before automatic fetching by reference can ship.

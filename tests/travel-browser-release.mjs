@@ -12,7 +12,7 @@ export async function travelReferenceAndReleaseJourney({ fixture, open, mutation
     await terms.getByText('Austin, TX, US', { exact: true }).waitFor();
     await terms.getByText('Departure 2026-10-19 · return 2026-10-21', { exact: true }).waitFor();
     for (const [category, cap] of [['Airfare', '$1,300.00'], ['Lodging', '$800.00'], ['Ground transport', '$200.00'], ['Meals and incidentals', '$200.00'], ['Registration fees', '$200.00'], ['Other', '$0.00']]) {
-        await terms.getByRole('row').filter({ has: terms.getByText(category, { exact: true }) }).getByText(cap, { exact: true }).waitFor();
+        await terms.getByRole('row').filter({ hasText: category }).getByText(cap, { exact: true }).waitFor();
     }
     for (const name of ['Travel pre-approval', 'Travel approval route', 'Current financial budget position', 'Travel reservation release', 'Business travel release rule', 'Linked travel expense report']) {
         assert.equal(await travelerTab.getByRole('region', { name, exact: true }).count(), 0);

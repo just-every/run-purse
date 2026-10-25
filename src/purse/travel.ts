@@ -82,6 +82,6 @@ export function visibleTravel(s: State, a: Actor, requestIds?: Set<string>) {
     return { travelReference: activeTraveler(s, a) ? travelerReferences(s, a) : [],
         travelReleaseRule: a.owner ? all(s, 'travelReleaseRule') : [],
         travelReleasePolicy: all(s, 'travelReleasePolicy').filter(policy => visible(policy.request)).map(policy => a.owner ? policy : Object.fromEntries(['id', 'request', 'revision', 'version', 'status', 'days', 'dueDate', 'timezone', 'pauseReason', 'releasedAt', 'source', 'ruleVersion'].map(field => [field, policy[field]]))),
-        travelRelease: all(s, 'travelRelease').filter(event => visible(event.request)).map(event => Object.fromEntries(['id', 'request', 'revision', 'amountMinor', 'currency', 'at', 'dueDate', 'timezone'].map(field => [field, event[field]]))),
+        travelRelease: all(s, 'travelRelease').filter(event => visible(event.request)).map(event => Object.fromEntries(['id', 'request', 'revision', 'amountMinor', 'currency', 'at', 'dueDate', 'timezone', 'source', 'ruleVersion'].map(field => [field, event[field]]))),
         travelExpense: all(s, 'travelExpense').filter(expense => visible(expense.request)).map(expense=>a.owner?expense:Object.fromEntries(['id','request','revision','provider','approvalReference','currency','totalMinor','releasedMinor','externalId','externalRevision','externalNumber','title','items','at','sourceBasis','earlierRelease','remainingEstimateMinor','erasure','originalStatus','originalSourceVerified'].map(field=>[field,expense[field]]))) };
 }
