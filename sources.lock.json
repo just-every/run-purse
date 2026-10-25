@@ -4376,11 +4376,11 @@
       "executable": false
     },
     "src/ui/travel-expense.tsx": {
-      "sha256": "6ba2196fcb6414857767fc08864666f38305d7fa6cf04d073807d3c94b736cff",
+      "sha256": "9eb5c5321142107e7660826be5f4dd3f0029197795c902e2b0fdfd261510b3de",
       "executable": false
     },
     "src/ui/travel-form.tsx": {
-      "sha256": "de0f7e83e6a19894d17dd0cc91a1d38fafe587d89da35a752d8ebc32fe40c41e",
+      "sha256": "8d03ba40bc1f970d438c00aa6dd9f41bae7ec7fd50b0df46e7b254f2d77d7733",
       "executable": false
     },
     "src/ui/travel-record.tsx": {
@@ -4392,11 +4392,11 @@
       "executable": false
     },
     "src/ui/travel-release-rule.tsx": {
-      "sha256": "6d47d2bc1fbd3147ffab12bdabec597de02f846c53ba5a67431192c2ed162210",
+      "sha256": "48ab2179923817dbf4a7877e191d42f72cbda5b2a578bdb0d4b969864c001c23",
       "executable": false
     },
     "src/ui/travel-release.tsx": {
-      "sha256": "803cef9bfed0c57701504754185c0dbfe9a834f6d7ca9c14e6d69049ad588aa8",
+      "sha256": "363e13a5ea1b29499d6c66eeaf120791a99dfb99123ad4e6b5c14c3123ef94f0",
       "executable": false
     },
     "src/ui/use-record.ts": {

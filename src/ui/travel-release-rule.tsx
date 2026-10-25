@@ -5,7 +5,7 @@ export function TravelReleaseRule({ data, mutate }: { data: D; mutate: (op: stri
     return <section aria-label="Business travel release rule"><h3>Travel reservation release</h3>
         <p>Timed release is {rule?.status ?? 'off'}{rule ? ` · rule v${rule.version}` : ''}. {rule?.status === 'armed' ? `${rule.days} calendar days after return in ${rule.timezone}, for each approved trip revision unless it has a trip override.` : 'Reservations remain until final expense closure or explicit release consent.'}</p>
         {rule?.pauseReason && <p>{rule.pauseReason}</p>}
-        <Details label="Configure business travel release rule"><Form key={rule?.version ?? 0} label="Save travel release rule" onSubmit={input => mutate('travel-release-rule', {
+        <Details label="Configure business travel release rule"><Form key={rule?.version ?? 0} label="Save travel release rule" tooltip="Release rule" onSubmit={input => mutate('travel-release-rule', {
             version: rule?.version ?? 0, enabled: input.enabled === 'enabled', days: Number(input.days), timezone: input.timezone,
             consent: input.action === 'consent', confirmed: input.confirmed === 'on', acceptLateActual: input.acceptLateActual === 'on', reason: input.reason
         })}>

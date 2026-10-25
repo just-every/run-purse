@@ -6,7 +6,7 @@ const providerLabels: Record<string, string> = { coaster: 'Coaster', expensify: 
 export const providerLabel = (provider?: string) => providerLabels[provider || 'coaster'] || provider;
 export function TravelExpenseForm({ current, timedRelease, mutate }: { current: D; timedRelease: boolean; mutate: (op: string, input: D) => Promise<any> }) {
     const [provider, setProvider] = useState('coaster'), csv = provider !== 'coaster';
-    return <Details label="Return final expense report"><Form label="Reconcile final travel expense report" initial={{ id: current.id, revision: current.revision }} onSubmit={async input => {
+    return <Details label="Return final expense report"><Form label="Reconcile final travel expense report" tooltip="Reconcile expenses" initial={{ id: current.id, revision: current.revision }} onSubmit={async input => {
         const file = input.reportFile as File, bytes = new Uint8Array(await file.arrayBuffer());
         if (!bytes.length || bytes.length > 1000000) throw new Error('Upload a report original of up to 1 MB');
         let raw = ''; for (const byte of bytes) raw += String.fromCharCode(byte);
