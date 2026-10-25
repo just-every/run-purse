@@ -8,6 +8,7 @@ import portability from '../scripts/installer/portability.mjs';
 import {records,rows} from './browser-archive.mjs';
 import {harness} from './purse-harness.mjs';
 import {pantryFixture} from './pantry-fixture.mjs';
+import {reauthenticateErasure} from './erasure-flow.mjs';
 const f=await pantryFixture();let restored;
 try {
  const {h,ready,call,input,invoice,payable}=f;
@@ -42,6 +43,12 @@ try {
  const replacement=await f.command('rotate');await call('/connection',{...connection,token:replacement.token,generation:1});assert.equal((await call('/sync',body)).sync.externalId,first.externalId);assert.equal((await f.command('snapshot')).bills.length,1,'Rotated credential adopts retained external ID');
  const events=(await h.send('/api/purse/audit',undefined,h.owner)).value.events;assert.ok(events.some(e=>e.action==='pantry-sync-attempt'&&e.record===invoice.id&&e.actor));assert.ok(events.some(e=>e.action==='pantry-sync-result'&&e.externalId===first.externalId&&e.paymentStatus==='paid'&&e.generation));
  const csv=(await h.send('/api/purse/audit.csv',undefined,h.owner)).value;assert.match(csv,/pantry-sync-result/);assert.ok(!csv.includes(ready.token));assert.ok(!csv.includes(replacement.token));
+ // A sole proprietor's name is a contact value Purse holds in the synced bill source: erasure scrubs it, keeps the bill, and the archive still restores.
+ const soleProprietor='Canyon Safety Equipment',contactEmail='synthetic-purse-731@example.test';
+ await h.command('supplier',{...f.supplier,contacts:[{name:soleProprietor,email:contactEmail}]});
+ await reauthenticateErasure(h);const erasureMeta=await h.send('/api/purse/erasure',undefined,h.owner),erasurePreview=await h.send('/api/purse/erasure/preview',{kind:'contact',id:f.supplier.id,email:contactEmail,revision:erasureMeta.value.revision},h.owner);assert.equal(erasurePreview.status,200,JSON.stringify(erasurePreview.value));assert.ok(erasurePreview.value.coverage.find(entry=>/Pantry/.test(entry.store)).fields>0);
+ const contactErased=await h.send('/api/purse/erasure/execute',{...erasurePreview.value.subject,revision:erasurePreview.value.revision,review:erasurePreview.value.review,fingerprint:erasurePreview.value.fingerprint,consent:true},h.owner);assert.equal(contactErased.status,200,JSON.stringify(contactErased.value));
+ const pantryRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(!JSON.stringify(pantryRows).includes(soleProprietor)&&!JSON.stringify(pantryRows).includes(contactEmail),'No Pantry-held contact value remains');assert.equal(JSON.parse(pantryRows.find(row=>row.kind==='pantrySync'&&row.id===invoice.id).value).returned.externalId,first.externalId,'The synced bill identity stays');
  const evidence=resolve(process.env.PURSE_EVIDENCE||'.cache/pantry');await mkdir(evidence,{recursive:true});const archive=join(evidence,'pantry.rer');
  await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
  const archived=rows(await records(archive));assert.ok(!archived.some(row=>row.table==='p_pantry_credentials'));for(const secret of [ready.token,replacement.token])assert.ok(!JSON.stringify(archived).includes(secret));

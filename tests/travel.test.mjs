@@ -98,6 +98,7 @@ test('INTAKE-006 native report import rejects wrong authority and sources, trans
     const meta = await h.send('/api/purse/erasure', undefined, h.owner);
     const preview = await h.send('/api/purse/erasure/preview', { kind: 'member', id: 'synthetic-purse-6@example.test', revision: meta.value.revision }, h.owner);
     assert.equal(preview.status, 200, JSON.stringify(preview.value));
+    assert.ok(preview.value.coverage.find(entry => /Traveler/.test(entry.store)).fields > 0, 'Traveler and assistant identities are in the reviewed inventory');
     const erased = await h.send('/api/purse/erasure/execute', { ...preview.value.subject, revision: preview.value.revision, review: preview.value.review, fingerprint: preview.value.fingerprint, consent: true }, h.owner);
     assert.equal(erased.status, 200, JSON.stringify(erased.value));
     const archive = join(h.dir, 'synthetic-purse-travel-erased.rer');

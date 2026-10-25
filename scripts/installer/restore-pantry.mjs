@@ -1,11 +1,13 @@
 import { createHash } from 'node:crypto';
+import { erasedField } from '../../src/purse/erasure-journal.mjs';
 export function validatePantry(all,get,check) {
  for(const config of all('pantryConfig'))check(config.id==='main'&&/^https?:\/\//.test(config.origin)&&/^[A-Z]{3}$/.test(config.currency),'pantry_config');
  for(const sync of all('pantrySync')) {
   const invoice=get('invoice',sync.invoice),order=get('order',sync.order);get('supplier',sync.supplier);
   check(sync.id===invoice.id&&invoice.order===order.id&&sync.supplier===order.supplier&&sync.currency===invoice.currency&&['attempting','held','synced'].includes(sync.status),'pantry_source');
   const source=Object.fromEntries(['invoice','order','supplier','supplierName','currency','payableVersion','term','discountDate','discountPercent','origin','vendorId','accountId','payload'].map(key=>[key,sync[key]]));
-  check(createHash('sha256').update(JSON.stringify(source)).digest('hex')===sync.fingerprint,'pantry_source_digest');
+  // A contact value erased from the bill source cannot be hashed again; the sealed receipt vouches for exactly that leaf, as for other erased sources.
+  check(erasedField(all,'pantrySync',sync.id,['supplierName'],sync.supplierName)||createHash('sha256').update(JSON.stringify(source)).digest('hex')===sync.fingerprint,'pantry_source_digest');
   check(sync.payload.lines.reduce((sum,line)=>sum+Math.round(Number(line.amount)*100),0)===invoice.totalMinor,'pantry_source_total');
   if(sync.returned){const returned=sync.returned;
    check(sync.externalId===returned.externalId&&sync.externalVendorId===returned.vendorId&&returned.reference===invoice.reference&&returned.totalMinor===invoice.totalMinor,'pantry_return_identity');
