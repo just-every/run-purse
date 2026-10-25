@@ -1,56 +1,13 @@
+/* Purse's page font, own tokens and shared page rules. The faces and literal
+   theme tokens are in /rer-theme.css. Base links this file with the theme, and
+   rer's hosted demo gate inlines both paths. */
 /* Outfit (SIL Open Font License 1.1), self-hosted from public/fonts/outfit. The page makes no third-party request. */
-@font-face {
-  font-family: Outfit;
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/outfit/outfit-latin-wght-normal.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: Outfit;
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/outfit/outfit-latin-ext-wght-normal.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
 /* Match Outfit's sampled advance widths and its 1000/-260/0 vertical metrics.
    Divide each vertical override by size-adjust, which scales it again. */
-@font-face {
-  font-family: 'Outfit Fallback';
-  font-style: normal;
-  font-weight: 100 450;
-  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('LiberationSans');
-  size-adjust: 99.4503%;
-  ascent-override: 100.5527%;
-  descent-override: 26.1437%;
-  line-gap-override: 0%;
-}
 /* Match Outfit's sampled advance widths and its 1000/-260/0 vertical metrics.
    Divide each vertical override by size-adjust, which scales it again. */
-@font-face {
-  font-family: 'Outfit Fallback';
-  font-style: normal;
-  font-weight: 451 549;
-  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('LiberationSans');
-  size-adjust: 99.8319%;
-  ascent-override: 100.1684%;
-  descent-override: 26.0438%;
-  line-gap-override: 0%;
-}
 /* Match Outfit's sampled advance widths and its 1000/-260/0 vertical metrics.
    Divide each vertical override by size-adjust, which scales it again. */
-@font-face {
-  font-family: 'Outfit Fallback';
-  font-style: normal;
-  font-weight: 550 900;
-  src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('LiberationSans-Bold');
-  size-adjust: 98.8729%;
-  ascent-override: 101.1399%;
-  descent-override: 26.2964%;
-  line-gap-override: 0%;
-}
 
 :root {
   --font-body: Outfit, 'Outfit Fallback', Arial, sans-serif;
@@ -59,29 +16,91 @@
 button, input, select, textarea { font-family: inherit; }
 /* The run site's faces, each SIL Open Font License 1.1 (LICENSE.txt beside each file), from Fontsource:
    Bitter Black (a heavy bracketed slab) for headings and the wordmark, Figtree for text and figures, Caveat for hand notes. */
-@font-face {
-  font-family: Bitter;
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/bitter/bitter-latin-wght-normal.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: Figtree;
-  font-style: normal;
-  font-weight: 300 900;
-  font-display: swap;
-  src: url('/fonts/figtree/figtree-latin-wght-normal.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: Caveat;
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('/fonts/caveat/caveat-latin-600-normal.woff2') format('woff2');
-}
 /* Metric-matched local stand-ins while the faces load, so headings and text keep their lines. */
-@font-face { font-family: 'Bitter Fallback'; src: local('Georgia Bold'), local('Georgia-Bold'), local('Georgia'); font-weight: 900; size-adjust: 96%; ascent-override: 98%; descent-override: 26%; }
-@font-face { font-family: 'Figtree Fallback'; src: local('Arial'), local('ArialMT'), local('Liberation Sans'); size-adjust: 98%; ascent-override: 97%; descent-override: 26%; }
+
+/* Purse's tokens, defined once: the app (/purse.css), sign-in, /setup, the Lobby and the
+   run site all read them. The look is the approved hero's: crisp white, ink line work,
+   Purse blue for actions, tangelo for the second heading line and pending, kelly green
+   only for done, cerise only on the one exception a screen has. Bitter Black is the slab
+   for headings and the wordmark; Figtree, with tabular figures, carries everything else. */
+
+:root {
+  --purse-paper: #ffffff;
+  --purse-sheet: #ffffff;
+  --purse-ink: #101519;
+  --purse-text: #23282d;
+  --purse-muted: #5a6168;
+  --purse-faint: #6b7178;
+  --purse-rule: #e3e6ea;
+  --purse-field: #c9d0da;
+  --purse-bubble: #eef1f6;
+  --purse-blue: #0067db;
+  --purse-blue-deep: #0052b0;
+  --purse-blue-wash: #eaf3fd;
+  --purse-blue-line: #b7d3f5;
+  --purse-tangelo: #fd6008;
+  --purse-tangelo-ink: #c44300;
+  --purse-tangelo-pale: #fed3b7;
+  --purse-tangelo-wash: #fff2e8;
+  --purse-green: #13803a;
+  --purse-green-wash: #e5f7e8;
+  --purse-cerise: #e0005e;
+  --purse-cerise-wash: #fde8f1;
+  --purse-shadow: 0 1px 2px rgb(16 21 25 / 0.05), 0 4px 12px rgb(16 21 25 / 0.05);
+  --purse-radius: 10px;
+  --purse-slab: Bitter, 'Bitter Fallback', Georgia, serif;
+  --purse-font: Figtree, 'Figtree Fallback', 'Helvetica Neue', Arial, sans-serif;
+  --purse-figures: tabular-nums lining-nums;
+  --rer-button-radius: var(--purse-radius);
+  --rer-wordmark-weight: 900;
+
+  /* The run site's drawings on main (src/site/landing/drawings, docs) still read these;
+     the approved homepage on br/page replaces them. Nothing in the app uses them. */
+  --purse-rose: #b03058;
+  --purse-rose-deep: #9a2a4e;
+  --purse-rose-wash: #f6e9eb;
+  --purse-rose-line: #e3c9ce;
+  --purse-dup-pink: #ecd0d4;
+  --purse-dup-cream: #f0e4d0;
+}
+
+/* Sign-in (operator-auth), first-run /setup and the other Base frames wear the theme
+   through these rules: the app's white card with a hairline and soft shadow, the slab
+   heading, thin quiet fields with a blue focus ring, and the blue action. */
+html.rer-themed body { background: var(--purse-paper); color: var(--purse-text); font-family: var(--purse-font); }
+html.rer-themed body main { width: 100%; max-width: 560px; padding: 44px 48px 48px; background: var(--purse-sheet); border: 1px solid var(--purse-rule); border-radius: 14px; box-shadow: var(--purse-shadow); }
+html.rer-themed body h1 { font: 900 40px/1.05 var(--purse-slab); letter-spacing: -0.015em; margin: 0 0 16px; color: var(--purse-ink); }
+html.rer-themed body p { color: var(--purse-muted); font-size: 17px; line-height: 1.5; }
+html.rer-themed body .brand,
+html.rer-themed body .rer-brand { gap: 10px; margin: 0 0 28px; color: var(--purse-ink); font: 900 28px/1 var(--purse-slab); letter-spacing: -0.02em; }
+html.rer-themed body .brand::before,
+html.rer-themed body .rer-brand::before { width: 36px; height: 36px; }
+html.rer-themed body label { color: var(--purse-ink); font-size: 15px; font-weight: 600; }
+html.rer-themed body input:not([type=checkbox]):not([type=hidden]) { min-height: 46px; font-size: 16px; border: 1px solid var(--purse-field); border-radius: 8px; background: #fff; color: var(--purse-ink); }
+html.rer-themed body input:not([type=checkbox]):not([type=hidden]):focus-visible { outline: 3px solid color-mix(in srgb, var(--purse-blue) 30%, transparent); outline-offset: 0; border-color: var(--purse-blue); }
+html.rer-themed body input[type=checkbox] { accent-color: var(--purse-blue); width: 24px; height: 24px; flex: none; }
+html.rer-themed body button,
+html.rer-themed body .action { min-height: 48px; border: 1px solid var(--purse-blue); border-radius: var(--purse-radius); background: var(--purse-blue); color: #fff; font: 700 16px/1.2 var(--purse-font); }
+html.rer-themed body button:hover,
+html.rer-themed body .action:hover { background: var(--purse-blue-deep); border-color: var(--purse-blue-deep); box-shadow: none; }
+html.rer-themed body button.secondary { background: #fff; color: var(--purse-blue); border-color: var(--purse-blue); }
+html.rer-themed body .notice { border-left: 3px solid var(--purse-blue); color: var(--purse-ink); }
+html.rer-themed body .secondary-link a { color: var(--purse-blue); }
+html.rer-themed body :focus-visible { outline: 3px solid var(--purse-blue); outline-offset: 3px; }
+/* /setup: the owner as a two-row ruled list (the <dl>), then the checkbox row. */
+html.rer-themed body dl { grid-template-columns: 140px minmax(0, 1fr); gap: 0; margin: 0 0 12px; border: 1px solid var(--purse-rule); border-radius: var(--purse-radius); overflow: hidden; }
+html.rer-themed body dt,
+html.rer-themed body dd { padding: 14px 18px; font-size: 16px; overflow-wrap: anywhere; }
+html.rer-themed body dt { background: #f7f8fa; color: var(--purse-muted); border-right: 1px solid var(--purse-rule); }
+html.rer-themed body dt:not(:first-of-type),
+html.rer-themed body dt:not(:first-of-type) + dd { border-top: 1px solid var(--purse-rule); }
+html.rer-themed body form label:has(input[type=checkbox]) { align-items: center; padding: 14px 18px; border: 1px solid var(--purse-rule); border-radius: var(--purse-radius); font-size: 15px; font-weight: 500; }
+@media (max-width: 600px) {
+  html.rer-themed body { padding: 24px 16px; }
+  html.rer-themed body main { padding: 28px 20px 32px; }
+  html.rer-themed body h1 { font-size: 32px; }
+  html.rer-themed body p { font-size: 16px; }
+  html.rer-themed body dl { grid-template-columns: 92px minmax(0, 1fr); }
+  html.rer-themed body dt,
+  html.rer-themed body dd { padding: 12px 14px; font-size: 15px; }
+}

@@ -108,7 +108,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "22a2921f635b57d75ebe996df6ceeac8964f560d877c90e1c2dbb38f8ebe26ed",
+      "sha256": "4332df65720f4f5d8f190d9e58c85c8fa64baa2c452f3e2dc12429d1241e5c3d",
       "executable": false
     },
     "CLAUDE.md": {
@@ -432,7 +432,7 @@
       "executable": false
     },
     "public/fonts/fonts.css": {
-      "sha256": "71ca2466f515624a28ef5b69fc95f3a0b2b61f1b40c4eae3dc4c162ff744733a",
+      "sha256": "cff617663d8de0aafd99fac619dcff4976f7953532c0d61be661691d3b44fda4",
       "executable": false
     },
     "public/fonts/outfit/LICENSE.txt": {
@@ -448,7 +448,7 @@
       "executable": false
     },
     "public/fonts/README.md": {
-      "sha256": "f89bdce214a6b69aa9cf8d9a49059abd95c5f4124a1e6924085eff9e07f654fa",
+      "sha256": "ec7cd449b1118c0c701505172814a2ece8f5f11b4804c66d4b652e8248afe72c",
       "executable": false
     },
     "public/purse.css": {
@@ -456,7 +456,7 @@
       "executable": false
     },
     "public/rer-theme.css": {
-      "sha256": "5300e16301645ea2b7c524f4d14a6af01e6122008ffe8f1360bb2ad623fa2637",
+      "sha256": "d3ba69a82e3b8df5ef2bf51bea133d282f74b7a8a8a3e2013a8c3b306392adff",
       "executable": false
     },
     "public/site/check-white.svg": {
@@ -3752,7 +3752,7 @@
       "executable": false
     },
     "src/server.dev.ts": {
-      "sha256": "fcf151960b9bc8246fdcbf6c9b9d03d9b6cb2ca8d0da929d5c42343b0b27e021",
+      "sha256": "56a5646acde0c5dbbef6c3b4a0c6428c3aae2c72ae4aacfb7f36a5e46b424368",
       "executable": false
     },
     "src/server.ts": {
@@ -3944,7 +3944,7 @@
       "executable": false
     },
     "src/site/pages.tsx": {
-      "sha256": "472681f0bac95eb51715af393df978c3fa570d64b83a04fb596ce84c1f76a09d",
+      "sha256": "6b843e6e8ef890937545fb2c621d5f5409f2b3b1215da3e6f96683ad5301850f",
       "executable": false
     },
     "src/site/run.ts": {

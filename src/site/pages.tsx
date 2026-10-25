@@ -31,6 +31,7 @@ export function sitePages({ styles, contract }: SiteContext): SiteBuild {
         <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
         <link rel="preload" href="/fonts/figtree/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/bitter/bitter-latin-wght-normal.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="stylesheet" href="/fonts/fonts.css" />
         <link rel="stylesheet" href={identity.theme} />
         {styles.map(href => <link key={href} rel="stylesheet" href={href} />)}
       </head>

@@ -266,17 +266,6 @@
       }
     },
     {
-      "path": "public/fonts/README.md",
-      "originPath": "default-seed/public/fonts/README.md",
-      "revision": "11f94fec479228d71ba6d7dd6ea7796c0d42c544",
-      "files": {
-        "public/fonts/README.md": "f89bdce214a6b69aa9cf8d9a49059abd95c5f4124a1e6924085eff9e07f654fa"
-      },
-      "modes": {
-        "public/fonts/README.md": "100644"
-      }
-    },
-    {
       "path": "scripts/delivery/base/artifact.mjs",
       "originPath": "modules/delivery-producer/artifact.mjs",
       "revision": "11f94fec479228d71ba6d7dd6ea7796c0d42c544",
