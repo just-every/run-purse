@@ -6,7 +6,7 @@ export function validateErasure(rows,check) {
  const records=rows.map(row=>({...row,data:JSON.parse(row.value)})),all=kind=>records.filter(r=>r.kind===kind).map(r=>r.data);
  const secret=all('invoiceEvidenceKey').find(k=>k.id==='main')?.secret,receipts=all('erasureReceipt'),latest=new Map();
  for(const receipt of [...receipts].sort((a,b)=>a.at.localeCompare(b.at))) {
-  check(['member','contact'].includes(receipt.subject)&&receipt.anonymousReference==='erased-'+receipt.id&&Number.isFinite(Date.parse(receipt.at))&&typeof receipt.actor==='string'&&['blobs','complete'].includes(receipt.phase)&&Array.isArray(receipt.fields)&&Array.isArray(receipt.originals)&&Array.isArray(receipt.invoices),'erasure_receipt');
+  check(['member','contact','retention'].includes(receipt.subject)&&receipt.anonymousReference==='erased-'+receipt.id&&Number.isFinite(Date.parse(receipt.at))&&typeof receipt.actor==='string'&&['blobs','complete'].includes(receipt.phase)&&Array.isArray(receipt.fields)&&Array.isArray(receipt.originals)&&Array.isArray(receipt.invoices),'erasure_receipt');
   check(secret&&receipt.seal===erasureSeal(secret,receiptPayload(receipt)),'erasure_seal');
   check(all('audit').some(e=>e.action==='personal-data-erasure'&&e.record===receipt.id&&e.actor===receipt.actor&&e.consent===true),'erasure_audit');
   for(const field of receipt.fields) {
@@ -14,6 +14,7 @@ export function validateErasure(rows,check) {
    latest.set(JSON.stringify([field.kind,field.id,field.path]),field);
   }
  }
+ for(const row of records.filter(r=>r.kind==='erasureRetention'))check(row.id==='main'&&Number.isSafeInteger(row.data.years)&&row.data.years>=1&&row.data.years<=99&&row.data.warningAcknowledged===(row.data.years<7),'erasure_retention');
  // Enforce erased leaves even on mutable purchasing records. A later legitimate
  // edit must not put erased identity back; a later erasure supersedes its leaf.
  for(const field of latest.values()) {

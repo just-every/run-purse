@@ -1,3 +1,4 @@
+import { agentErasureAction, ErasureAgentFault } from './erasure-refusal';
 import { rejectProtectedInput } from './protected-input';
 import { cleanupProtectedContext, executablePreparationAction, preparationActions } from './protected-context';
 import { recordScope } from './documents';
@@ -36,6 +37,7 @@ export function preparation(s: State, a: Actor, op: string, b: Data): Data | und
         requireThat(run.mode === 'human-preparation','Generated reports use their own source-bound review doors',409);
         requireThat(run.actor === a.id || a.owner, 'Preparation outside your scope', 403);
         rejectProtectedInput(run);
+        if (agentErasureAction(b.action)) throw new ErasureAgentFault();
         requireThat(preparationActions.includes(b.action), 'Unsupported action');
         requireThat(b.input && typeof b.input === 'object', 'Action input required');
         const id = uid();

@@ -5,9 +5,23 @@ import { selectLocalState } from '@runeditrun/rer/local/state';
 import { commandAdapter as createCommandAdapter } from '@runeditrun/rer/adapter';
 import { ownerDeploy } from '@runeditrun/rer/deploy';
 import { localPortability } from '@runeditrun/rer/portability';
+import { journalSignal, unverifiedHistory } from './restore-history.mjs';
 import * as model from './ui/seed.mjs';
 
 export { selectLocalState };
+const localArchive = localPortability({ database: 'foundation', buckets: { ORIGINALS: 'ORIGINALS' }, policyModule: 'scripts/installer/portability.mjs', transient: ['local runtime caches and logs'] });
+// The archive policy runs in rer's own child process: say here whether a later journal was supplied, and say plainly what a held or journal-less restore means.
+const portability = { ...localArchive, async import(context) {
+ process.env[journalSignal] = context.journal ? 'supplied' : 'none';
+ try {
+  const receipt = await localArchive.import(context);
+  if (!context.journal) context.store.report(`${unverifiedHistory}. Erasures made after this backup may be unknown; the restore report with its acknowledgment and archive time is in Settings.`);
+  return receipt;
+ } catch (error) {
+  if (/erasure_history_unacknowledged/.test(error?.message ?? '')) error.message = `Restore held (erasure_history_unacknowledged): ${unverifiedHistory}. Supply the latest archive with --journal, or have the native owner acknowledge this limit in Settings (or set PURSE_RESTORE_ACKNOWLEDGE to that exact sentence for this command), then run the import again. Nothing was restored.`;
+  throw error;
+ }
+} };
 const lifecycle = operatorInstaller({
  database: 'foundation', features: model.features,
  async prepare({ root, input, store }) {
@@ -21,7 +35,7 @@ export const adapter = lifecycle;
 export const { install } = lifecycle;
 export const commandAdapter = createCommandAdapter(lifecycle, {
  dev: developmentTarget, preview: previewTarget, verify: ['pnpm', ['run', 'verify:app']], deploy: ownerDeploy('deploy.json', lifecycle),
- portability: localPortability({ database: 'foundation', buckets: { ORIGINALS: 'ORIGINALS' }, policyModule: 'scripts/installer/portability.mjs', transient: ['local runtime caches and logs'] }),
+ portability,
  setup: { manifestFile: 'rer-setup.json' }, browserModule: 'scripts/installer/ui/seed.mjs',
  // The run site (run-purse.com): the approved homepage, /run and the docs, static; `rer build --site` writes it.
  site: { entry: 'src/site/pages.tsx', output: 'dist/site', declaration: 'deploy-site.json', config: 'vite.site.config.ts' },

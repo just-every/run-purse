@@ -6,6 +6,7 @@ import { createPortability } from '@runeditrun/rer/modules/portability';
 import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
 import { harness } from './purse-harness.mjs';
+import { reauthenticateErasure } from './erasure-flow.mjs';
 import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 
 async function fixture(t) {
@@ -189,4 +190,12 @@ test('Recurring consolidation scenarios recompute from native sources, require i
  await h.command('recurring-scenario-approve',{...consent,id:stale.id,hash:stale.hash,role:'finance'},h.owner,409);
  assert.ok((await h.send('/api/purse/audit',undefined,h.owner)).value.events.some(row=>row.action==='recurring-scenario-draft'&&row.hash===scenario.hash));
  assert.ok(!(await h.send('/api/purse/audit.csv',undefined,h.owner)).value.includes('synthetic-purse-905'));
+ // A departed finance member's scenario consents are personal fields of the reviewed inventory: actor and email go, the exact hash, role and time stay.
+ const finance={id:financeId,email:'synthetic-purse-903@example.test'},financeMember=(await h.state()).data.member.find(m=>m.email===finance.email),consentsBefore=(await h.state()).data.recurringScenarioConsent.map(c=>({id:c.id.replace(finance.id,'x'),hash:c.hash,role:c.role,at:c.at}));assert.ok(consentsBefore.length>0);
+ await h.command('member',{email:financeMember.email,name:financeMember.name,roles:financeMember.roles,grants:financeMember.grants,active:false});await reauthenticateErasure(h);
+ const meta=await h.send('/api/purse/erasure',undefined,h.owner),preview=await h.send('/api/purse/erasure/preview',{kind:'member',id:financeMember.id,revision:meta.value.revision},h.owner);assert.equal(preview.status,200,JSON.stringify(preview.value));assert.ok(preview.value.coverage.find(entry=>/Scenario/.test(entry.store)).fields>0);
+ assert.equal((await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner)).status,200);
+ const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;for(const personal of [finance.email,finance.id])assert.ok(!JSON.stringify(erasedRows).includes(personal),'No scenario consent actor or email remains: '+personal);
+ assert.deepEqual((await h.state()).data.recurringScenarioConsent.map(c=>({id:c.id.replace(/erased-[a-f0-9-]+/,'x'),hash:c.hash,role:c.role,at:c.at})),consentsBefore.map(c=>({...c,id:c.id.replace(/erased-[a-f0-9-]+/,'x')})));
+ assert.equal(validatePurchasingArchive(erasedRows),true,'Erased consent lineage still validates');
 });

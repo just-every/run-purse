@@ -1,3 +1,6 @@
+import {unverifiedHistory} from '../src/purse/erasure-history-text.mjs'
+// In-process restores of other flows acknowledge the journal-less limit as the import operator; the erasure flows clear it to prove the hold.
+process.env.PURSE_RESTORE_ACKNOWLEDGE??=unverifiedHistory
 import {documentProfileFixture} from './document-profile-fixture.mjs'
 import {nativeHttpProxy,nativeWorkerClient} from './native-http-proxy.mjs'
 import {unstable_splitSqlQuery} from 'wrangler'

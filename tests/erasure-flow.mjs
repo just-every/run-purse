@@ -9,11 +9,11 @@ import portability from '../scripts/installer/portability.mjs';
 import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
 import {harness} from './purse-harness.mjs';
 import {createEmailIntakeEdge,signedInbound} from './email-intake-fixture.mjs';
-export async function reauthenticateErasure(h){
- assert.equal((await h.send('/auth/step-up',{action:'export'},h.owner)).status,202);
+export async function reauthenticateErasure(h,cookie=h.owner){
+ assert.equal((await h.send('/auth/step-up',{action:'export'},cookie)).status,202);
  const message=[...h.messages].reverse().find(m=>m.to.includes('owner@example.test'));
  const token=new URL(message.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0]).searchParams.get('token');
- assert.equal((await h.send('/auth/confirm',{token},h.owner)).status,303);
+ assert.equal((await h.send('/auth/confirm',{token},cookie)).status,303);
 }
 export async function erasureFlow(t){
  const edge=await createEmailIntakeEdge(),h=await harness({mailRequest:edge.mailRequest,protectedKey:createHash('sha256').update('synthetic-purse-601').digest('hex')});t.after(()=>h.close());const cmd=h.command;

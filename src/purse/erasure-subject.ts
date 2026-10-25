@@ -22,6 +22,13 @@ export async function erasureSubject(db:D1Database,state:State,input:Data):Promi
   if(row.kind==='rfq')contacts.push(...v.suppliers.filter((c:Data)=>c.id===supplier.id&&c.email.toLowerCase()===input.email.toLowerCase()).map((c:Data)=>({email:c.email,name:c.contactName,phone:c.phone,address:c.address})));
  }
  requireThat(contacts.length&&!input.email.endsWith('@erased.invalid'),'Supplier contact not found',404);
+ // A link holder's stated name is not the register name: names stated on a
+ // send to this recipient belong to the same reviewed inventory.
+ const sends=new Set([...state.values()].filter(row=>row.kind==='orderSend'&&row.value.supplier===supplier.id&&row.value.recipient?.toLowerCase()===input.email.toLowerCase()&&!row.value.erasure).map(row=>row.id));
+ for(const row of state.values()) {
+  if(row.kind==='orderSend'&&sends.has(row.id))contacts.push({name:row.value.acknowledgment?.name,email:row.value.recipient});
+  if(['orderAcknowledgment','orderSupplierResponse'].includes(row.kind)&&sends.has(row.value.send))contacts.push({name:row.value.name});
+ }
  return {kind:'contact',id:supplier.id,supplier:supplier.id,email:input.email.toLowerCase(),values:[...new Set(contacts.flatMap((c:Data)=>[c.email,c.name,c.contactName,c.phone,c.address]).filter((v:unknown)=>typeof v==='string'&&v.length))] as string[]};
 }
 export function erasureChoices(state:State) {

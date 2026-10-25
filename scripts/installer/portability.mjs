@@ -4,10 +4,11 @@ import { migrateInvoiceArchive } from './migrate-invoice-archive.mjs';
 import { hasUnsafeProtectedContext } from '../../src/purse/protected-context-fields.mjs';
 import { validateSearchProjection } from './restore-search.mjs';
 import { check, validatePurchasingArchive } from './restore-validation.mjs';
+import { recordRestoreHistory } from './restore-history.mjs';
 export default {
  product: 'just-every/procurement-purse',
  replaceableTables: ['p_meta'],
- excludeTables: ['p_order_thread_routes','p_pantry_credentials', 'p_order_send_links', 'p_scim_links', 'p_scim_authority', 'p_supplier_protected', 'p_search_fts', 'p_search_fts_data', 'p_search_fts_idx', 'p_search_fts_docsize', 'p_search_fts_config', 'p_search_fold', 'p_search_drop', 'p_integration_tokens', 'p_integration_requests', 'p_import_custody', 'p_supplier_document_links', 'p_rfq_links'],
+ excludeTables: ['p_restore_history','p_order_thread_routes','p_pantry_credentials', 'p_order_send_links', 'p_scim_links', 'p_scim_authority', 'p_supplier_protected', 'p_search_fts', 'p_search_fts_data', 'p_search_fts_idx', 'p_search_fts_docsize', 'p_search_fts_config', 'p_search_fold', 'p_search_drop', 'p_integration_tokens', 'p_integration_requests', 'p_import_custody', 'p_supplier_document_links', 'p_rfq_links'],
  exportRow(table,row) {
   if(table!=='p_records')return row;
   const value=JSON.parse(row.value);
@@ -47,6 +48,7 @@ export default {
    const intake = JSON.parse(row.value);
    check(receipts.some(receipt => receipt.provider === intake.provider && receipt.email_id === intake.providerEmailId && receipt.intake_id === intake.id && receipt.status === 'stored'), 'email_intake_receipt');
   }
+  await recordRestoreHistory({db,manifest,check});
   return true;
  },
 };

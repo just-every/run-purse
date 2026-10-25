@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { all, get, key, put, requireThat, type Data, type State } from './types';
 import { erasureDigest, erasedText } from './erasure-journal.mjs';
+import { diffValue } from './erasure-diff';
 import type { ErasureSubject } from './erasure-subject';
 
 const structural = /^(?:sha256|evidenceHash|retainedDigest|attestation|bankBinding|secret|fingerprint|sourceFingerprint|mediaType|action|status|event|kind|provider|providerSenderLabel|senderVerified|currency|representation|state|method|code|comparison|authentication|at|.*At|.*Date|.*Version)$/;
@@ -53,12 +54,6 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   }
   return value;
  };
- const difference=(a:any,b:any,path:(string|number)[],kind:string,rowId:string)=>{
-  if(JSON.stringify(a)===JSON.stringify(b))return;
-  if(a&&b&&typeof a==='object'&&typeof b==='object'&&Array.isArray(a)===Array.isArray(b)&&Object.keys(a).every(field=>Object.hasOwn(b,field))){
-   for(const field of new Set([...Object.keys(a),...Object.keys(b)]))difference(a[field],b[field],[...path,Array.isArray(b)?Number(field):field],kind,rowId);
-  }else fields.push({kind,id:rowId,path,before:erasureDigest(a??null),after:erasureDigest(b??null)});
- };
  for(const [oldKey,row]of before) {
   if(row.kind==='erasureReceipt'&&row.value.actor===subject.operator){const value={...row.value,actor:alias};state.set(oldKey,{...row,value});fields.push({kind:row.kind,id:row.id,path:['actor'],before:erasureDigest(row.value.actor),after:erasureDigest(alias)});continue;}
   if(['supplierMatchingKey','invoiceEvidenceKey','erasureReceipt'].includes(row.kind))continue;
@@ -76,7 +71,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   value.id=newId;
   if(JSON.stringify(value)===JSON.stringify(row.value)&&newId===row.id)continue;
   state.delete(oldKey);state.set(key(row.kind,newId),{...row,id:newId,value});
-  difference(row.value,value,[],row.kind,newId);
+  diffValue(row.value,value,[],row.kind,newId,fields);
  }
  const affected=[...new Map(fields.map(f=>[key(f.kind,f.id),{kind:f.kind,id:f.id}])).values()];
  const fingerprint=erasureDigest({revision,id,subject:subject.kind,values:subject.values,fields,blobs:[...blobs].sort()});

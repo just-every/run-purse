@@ -30,4 +30,7 @@ test('AUDIT-001 owner filters a PO history and exports exact decision policy, re
 });
 
 import {erasureFlow} from './erasure-flow.mjs';
+import {restoreHoldFlow,retentionFlow} from './erasure-retention-flow.mjs';
 test('ERASURE-001 native reviewed owner erasure anonymizes financial audit, RFQ and email originals, retains encrypted tax/evidence and fences archive resurrection',erasureFlow);
+test('ERASURE-001 retention clock lists expired TIN, bank and W-9 values, erases them only on confirmation, and refuses buyer, auditor, token and agent at every door',retentionFlow);
+test('ERASURE-001 a journal-less fresh restore is held until the native owner acknowledges, then restores labelled erasure history unverified',restoreHoldFlow);

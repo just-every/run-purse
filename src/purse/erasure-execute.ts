@@ -11,12 +11,13 @@ import { erasureCheckpoint } from './erasure-checkpoint.mjs';
 import { eraseNativeCopies } from './erasure-native';
 import { all, audit, get, put, requireThat, type Actor, type Data, type State } from './types';
 import type { ErasurePlan } from './erasure-plan';
+import { erasureCoverage } from './erasure-coverage';
 const sql=(sql:string,...params:any[]):D1Sql=>({sql,params});
 export const erasureRetention='Purchasing, payable and tax history retained with anonymous references; no automatic destruction. TIN and bank values remain encrypted and owner reveal restricted.';
 export async function executeErasure(env:Bindings,a:Actor,before:State,revision:number,plan:ErasurePlan,since:number) {
  const secret=evidenceKey(plan.state),native=await eraseNativeCopies(env,plan,a),auth=authority(a,true),at=new Date().toISOString();
  for(const row of plan.state.values())if(row.kind==='erasureReceipt'&&row.value.actor!==before.get('erasureReceipt:'+row.id)?.value.actor)row.value.seal=erasureSeal(secret,receiptPayload(row.value));
- const receipt:Data={id:plan.id,subject:plan.subject.kind,anonymousReference:plan.alias,actor:a.id,at,fields:plan.fields,affected:plan.affected,originals:plan.blobs,protectedMetadata:native.protectedMetadata,installationFields:native.installationFields,retained:erasureRetention,consent:'Owner explicitly reviewed this exact field inventory and withdrawal of related originals',phase:plan.blobs.length?'blobs':'complete'};
+ const receipt:Data={id:plan.id,subject:plan.subject.kind,anonymousReference:plan.alias,actor:a.id,at,fields:plan.fields,affected:plan.affected,originals:plan.blobs,coverage:erasureCoverage(plan.fields),protectedMetadata:native.protectedMetadata,installationFields:native.installationFields,retained:erasureRetention,consent:'Owner explicitly reviewed this exact field inventory and withdrawal of related originals',phase:plan.blobs.length?'blobs':'complete'};
  receipt.sourceFacts=[];
  for(const row of plan.state.values()){
   if(row.kind==='valueSeatImport'&&plan.state.get('attachment:'+row.value.attachment)?.value.erasure)receipt.sourceFacts.push({kind:row.kind,id:row.id,digest:erasureDigest(row.value)});
