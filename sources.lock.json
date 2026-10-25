@@ -4968,7 +4968,7 @@
       "executable": false
     },
     "tests/travel-browser-release.mjs": {
-      "sha256": "95a69167fead643bd3f873743c0c39bd0ea0f461d212143ee3b33ffce6606130",
+      "sha256": "0df7fb8c54ee303379688315e643a0b4be3c0d9f9e61c951605f8557200f4c81",
       "executable": false
     },
     "tests/travel-browser.mjs": {
@@ -4992,7 +4992,7 @@
       "executable": false
     },
     "tests/travel-release-flow.mjs": {
-      "sha256": "2be34cda813277159a13707e1c88b9155fd03edac5a3c48ba6b12004e3974c4f",
+      "sha256": "6fb42d52dde1b984ea64392a20f7f5d91aedb6e9e9d1e524aef457fcf8a580ac",
       "executable": false
     },
     "tests/travel-routing.test.mjs": {

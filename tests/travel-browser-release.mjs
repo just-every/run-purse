@@ -63,7 +63,10 @@ export async function travelReferenceAndReleaseJourney({ fixture, open, mutation
 export async function businessTravelReleaseRuleJourney({ fixture, open, mutation, capture }) {
     const { h, travel, input } = fixture;
     const first = await fixture.approve(await travel('request', { ...input, title: 'synthetic-purse-84' }));
+    const business = (await h.state()).data.business[0];
+    await h.command('business', { ...business, timezone: '' });
     const settings = await open(h.owner); await settings.goto(h.origin + '/app?tab=Settings');
+    assert.equal(await settings.getByLabel('Installation timezone', { exact: true }).inputValue(), '');
     const section = settings.getByRole('region', { name: 'Business travel release rule', exact: true });
     await section.getByText('Configure business travel release rule', { exact: true }).click();
     const form = () => section.locator('form');
@@ -77,6 +80,12 @@ export async function businessTravelReleaseRuleJourney({ fixture, open, mutation
         await form().getByLabel('A late final expense report can consume budget after these funds have been freed, even if they have since been used.', { exact: true }).check();
     };
     const save = () => mutation(settings, 'travel-release-rule', () => form().getByRole('button', { name: 'Save travel release rule', exact: true }).click());
+    await fill('consent', 3, '');
+    const refused = settings.waitForResponse(response => response.url().endsWith('/command/travel-release-rule'));
+    await form().getByRole('button', { name: 'Save travel release rule', exact: true }).click();
+    assert.equal((await refused).status(), 409);
+    await form().getByRole('alert').filter({ hasText: 'Choose a release timezone because the business has none' }).waitFor();
+    await capture(settings, 'business-release-rule-missing-zone', section);
     await fill('consent', 3, 'America/New_York');
     const consent = await save(); assert.equal(consent.status, 'armed');
     await capture(settings, 'business-release-rule-consent', section);
