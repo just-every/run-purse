@@ -232,6 +232,12 @@
       "name": "0037_order_thread.sql",
       "sha256": "477b40ca16873a01f1f4e8952df98c3a5895e1008724ee57212e1cf8bae0e203",
       "sql": "CREATE TABLE IF NOT EXISTS p_order_thread_routes (hash TEXT PRIMARY KEY, thread TEXT NOT NULL, order_id TEXT NOT NULL, expires_at INTEGER NOT NULL);\nCREATE TABLE IF NOT EXISTS p_order_thread_receipts (provider TEXT NOT NULL, email_id TEXT NOT NULL, message TEXT NOT NULL, thread TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('claimed','stored','uncertain')), created_at TEXT NOT NULL, PRIMARY KEY(provider,email_id));\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0038_restore_history.sql",
+      "sha256": "fdf35888513e6de5042f1799c697bf6faa733ad213acb42da2c82c7f731eca27",
+      "sql": "-- Installation-local report of how erasure history was established for a restore;\n-- excluded from portable archives, so it never travels to another installation.\nCREATE TABLE p_restore_history (\n id TEXT PRIMARY KEY CHECK(id = 'main'),\n acknowledged_by TEXT,\n acknowledged_at TEXT,\n acknowledgment TEXT,\n journal_supplied INTEGER CHECK(journal_supplied IN (0, 1)),\n archive_at TEXT,\n source_identity TEXT,\n restored_at TEXT\n);\n"
     }
   ],
   "compatibilityDate": "2026-09-08",
