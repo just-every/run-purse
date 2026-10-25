@@ -28,7 +28,7 @@ export function stripProtectedInput(value) {
 }
 
 export const preparationActions = ['submit', 'decision', 'convert', 'issue', 'receipt'];
-export const executablePreparationAction = action => preparationActions.includes(action) || action === 'value-confirm' || action === 'late-order-record' || action === 'quote-agent-review';
+export const executablePreparationAction = action => preparationActions.includes(action) || action === 'value-confirm' || action === 'late-order-record' || action === 'quote-agent-review' || action === 'coding-agent-review';
 export const unavailableProtectedTarget = (kind, record) => kind === 'proposedAction'
     && !executablePreparationAction(record.action)
     && !(record.action === 'unavailable' && record.protectedContextCleanup?.status === 'cleaned');

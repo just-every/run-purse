@@ -80,7 +80,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "5fd38fc21d3e9c33bf8c30743f4c3a402c46e5b66f1fe6518bca3c3131c6f1eb",
+      "sha256": "7b6ce37558d13ddd3a0c2a53e5f0220f764503688306bf0f1cd43de9e0d925f3",
       "executable": false
     },
     ".gitignore": {
@@ -360,7 +360,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "38a2b2cc54990241f6210d8d9e4d1e6c239173193d918057690bd22ee4656088",
+      "sha256": "ea4bc4a3144d481ba77470d347ae579a33e24c3f79a0f697e9e37a502cb09fef",
       "executable": false
     },
     "packaging.json": {
@@ -860,7 +860,7 @@
       "executable": false
     },
     "scripts/installer/restore-agent-governance.mjs": {
-      "sha256": "85fb650104ddc7d91d6fd3b614665fe7084621bd6c34be8de9233831eebd04b5",
+      "sha256": "2150e13711cc3f122d41bd1185d1ac15190c2ce818228be2edafe67a96a66568",
       "executable": false
     },
     "scripts/installer/restore-agent-value.mjs": {
@@ -1012,7 +1012,7 @@
       "executable": false
     },
     "scripts/installer/restore-validation.mjs": {
-      "sha256": "e92e8972ddbbf932bcd9493887ddb8c27e3fb7aa5b29011bc57dad3a4a54d3cd",
+      "sha256": "84b589b300d4bf41d3ec14b3335ea7bd1b68176e8b4d1a73be1b3c34a76873c9",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -2856,7 +2856,7 @@
       "executable": false
     },
     "src/purse/access-records.ts": {
-      "sha256": "36bfd65f3dd2f02d48c8402f25a8a0cb3d7e205556f07cbd6c9396f4877de698",
+      "sha256": "7a8abf55d9fe4f2997ad1bfb4eb9ec93ab190cf0ced4b2a9fd9ad3813a724884",
       "executable": false
     },
     "src/purse/access-zero.ts": {
@@ -2884,7 +2884,7 @@
       "executable": false
     },
     "src/purse/agent-governance.ts": {
-      "sha256": "a52860f33dfdbda898028a09747fe77591dc49db4e83d34ed74f00ce996cb1e4",
+      "sha256": "9de9d4c5ac7ab6eff2f45af952393202447a012ad684fa301a95718da4d6bc7f",
       "executable": false
     },
     "src/purse/agent-value-checkins.ts": {
@@ -2924,7 +2924,7 @@
       "executable": false
     },
     "src/purse/api.ts": {
-      "sha256": "ddafdb2dd780e9314b80fc9aacbf676def64458b34163ef1e516d400f186604b",
+      "sha256": "14daf3d33f05ae5d84a982e2f60f0f45841c7b6d5338a7e21df67484f2796eac",
       "executable": false
     },
     "src/purse/approval-chain-authority.ts": {
@@ -2992,7 +2992,7 @@
       "executable": false
     },
     "src/purse/command-projection.ts": {
-      "sha256": "432121ea039ca83b7d41e989f6ebef52af8628d89cb19cd1d3623883d42ab29a",
+      "sha256": "e27909722d3e7571eafc813cb905cc6371b6c4d130f59888b7a8555c4e8b691c",
       "executable": false
     },
     "src/purse/conversion-revision.ts": {
@@ -3008,7 +3008,7 @@
       "executable": false
     },
     "src/purse/documents.ts": {
-      "sha256": "c81b28b8305bc0fa92e35e56f175bb317c07ddb2f21c3e4a67a8fdba4745a404",
+      "sha256": "378a40cd43cefc3c48f137a51ecc4360732e4a5def550f77cccc7151eb0afc4a",
       "executable": false
     },
     "src/purse/email-intake-api.ts": {
@@ -3396,7 +3396,7 @@
       "executable": false
     },
     "src/purse/protected-context-fields.mjs": {
-      "sha256": "38e3da94154821fb5bbe62d4802399cf2aa303dc8480e07eeb56bec337854ff2",
+      "sha256": "dc51eda236842430f9b2e8a7e8bee2624bc590ecd5efffa092cdf5153302102e",
       "executable": false
     },
     "src/purse/protected-context.ts": {
@@ -3980,7 +3980,7 @@
       "executable": false
     },
     "src/ui/agent-governance.tsx": {
-      "sha256": "bcb817f438d3822b6a3b1f0ccd365a9c8b847bcda72d7ded033390eb7e9e6d23",
+      "sha256": "fd454ce85c7265b3c7b2915e01bcd4e8e54e88956e1e854e514787a408f3052a",
       "executable": false
     },
     "src/ui/agent-records.tsx": {
@@ -4152,7 +4152,7 @@
       "executable": false
     },
     "src/ui/orders.tsx": {
-      "sha256": "1aa3e9c64745b9af9ac6f5cf79e1bb7d4d441a943dbb52fd42e5ef421b07ea80",
+      "sha256": "1ddec7e2ff10665d65eedaa4c852cd761d5d5397db6b47931398848bf1e93ac0",
       "executable": false
     },
     "src/ui/overview.tsx": {
@@ -4228,7 +4228,7 @@
       "executable": false
     },
     "src/ui/request-record.tsx": {
-      "sha256": "d506c47dfb505db70bf6b2799bebe2fff5db3bf8a745502845f2f497e0ab1357",
+      "sha256": "12a6ec4aee206ec8238b33b3daa6d91ebe77efbabbf97f42ecab2f637d7514e8",
       "executable": false
     },
     "src/ui/requests.tsx": {

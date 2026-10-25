@@ -1,3 +1,4 @@
+import { visibleCodingAgent } from './coding-agent';
 import {poGenerationQueue} from './po-generation';
 import { visibleRecurringScenarios } from './recurring-scenarios';
 import { visibleTravel } from './travel';
@@ -97,6 +98,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.cashExpectation = all(s, 'cashExpectation').filter(expectation => orderIds.has(expectation.order)
         && ['cash.read', 'payable.terms'].some(permission => allowed(s, a, permission, get(s, 'order', expectation.order))));
     data.cashRequirements = cashView(s, a, orderIds, invoiceIds);
+    Object.assign(data, visibleCodingAgent(s,a));
     data.agentPolicy = a.owner ? all(s, 'agentPolicy') : [];
     data.orderChasePolicy = all(s, 'orderChasePolicy').filter(record => orderIds.has(record.order)
         && allowed(s, a, 'procurement.manage', get(s, 'order', record.order)));

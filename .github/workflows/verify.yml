@@ -109,7 +109,7 @@ jobs:
       fail-fast: false
       matrix:
         width: [1440, 390]
-        journey: [spend-questions, request-again, protected-web, access, identity, scim, erasure, intake, order-send, evidence-history, integration-tokens, recurring-scenarios, agent-governance, order-thread, supplier-invoice, po-generation]
+        journey: [coding-agent, spend-questions, request-again, protected-web, access, identity, scim, erasure, intake, order-send, evidence-history, integration-tokens, recurring-scenarios, agent-governance, order-thread, supplier-invoice, po-generation]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

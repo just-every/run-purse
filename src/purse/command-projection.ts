@@ -7,7 +7,7 @@ export function projectCommandResult(s: State, a: Actor, result: Data): Data {
     let projected = projectApprovalEdit(s, a, result);
     if (projected.policySnapshot && !mayReadPolicySnapshot(s, a, projected.policySnapshot))
         projected = { ...projected, policySnapshot: null, snapshotBasis: 'Whole-policy snapshot outside your purchase scope' };
-    if (projected.inputs?.sources) projected = projectValueRecord(s, a, projected);
+    if (projected.inputs?.sources && projected.agent !== 'AGENT-008') projected = projectValueRecord(s, a, projected);
     for (const field of ['request', 'order', 'result']) if (projected[field] && typeof projected[field] === 'object' && !Array.isArray(projected[field]))
         projected = { ...projected, [field]: projectCommandResult(s, a, projected[field]) };
     return projected;

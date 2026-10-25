@@ -1,3 +1,4 @@
+import { codingAgentRunVisible } from './coding-agent';
 import { accessGrants, allowed, grantAllows, resolvedPermissions } from './access';
 import { all, get, requireThat, type Actor, type Data, type State } from './types';
 import { performanceAgreementSources } from './access-agreement-sources';
@@ -57,6 +58,7 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
         return Boolean(order&&request&&(allowed(s,a,'procurement.manage',order)||request.requester===a.id&&allowed(s,a,'po.read',order)));
     }
     if (kind === 'agentRun') {
+        if (record.agent === 'AGENT-008') return codingAgentRunVisible(s,a,record);
         if (a.owner) return true;
         if (record.agent === 'AGENT-011' && !allowed(s,a,'report.read')) return false;
         if (record.workflow === 'value-realization') {
