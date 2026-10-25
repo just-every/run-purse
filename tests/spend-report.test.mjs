@@ -118,3 +118,17 @@ test('BUDGET-001 dated department exposure reserves pending, commits buyer chang
  assert.equal((await position(combined.id)).actualMinor,30000);
 
 });
+
+test('Spend questions recompute exact finance figures and department sources, refuse unknown facts and obey owner pause and current scope',async t=>{
+ const {spendQuestionFixture}=await import('./spend-question-fixture.mjs');const f=await spendQuestionFixture();t.after(()=>f.close());const {h,cmd}=f;
+ const ask=(question,cookie=f.finance)=>cmd('spend-question',{question},cookie);
+ for(const question of f.questions){const answer=await ask(question);assert.equal(answer.status,'answered',JSON.stringify(answer));const report=await h.send(answer.reportUrl,undefined,f.finance);assert.equal(report.status,200);assert.deepEqual(answer.report,report.value);assert.deepEqual(answer.figures,report.value.totals.map(total=>({currency:total.currency,amountMinor:total[answer.metric+'Minor'],metric:answer.metric})));assert.ok(answer.report.rows.length);assert.equal(answer.model,'none');assert.equal(answer.provider,'none');assert.ok(answer.references.every(ref=>ref.version));}
+ const scoped=await ask('Show reserved spend by department all recorded dates',f.requester);assert.equal(scoped.status,'answered');assert.ok(scoped.report.rows.some(row=>row.request===f.other.id),'Department grant includes the colleague');assert.ok(scoped.report.rows.every(row=>row.department==='Operations'));assert.ok(!JSON.stringify(scoped).includes(f.hidden.id));assert.deepEqual(scoped.report,(await h.send(scoped.reportUrl,undefined,f.requester)).value);
+ const actual=await ask(f.questions[2]);assert.ok(actual.report.rows.some(row=>row.invoice===f.invoice.id&&row.order===f.order.id));assert.equal((await h.send('/api/purse/download/order/'+f.order.id,undefined,f.finance)).status,200);
+ for(const question of ['Which suppliers did we pay over $50,000 last year without a PO?','Show committed spend over $500 all recorded dates','Show committed spend for department Research all recorded dates']){const answer=await ask(question,f.requester);assert.equal(answer.status,'declined');assert.ok(answer.reason);assert.equal(answer.report,undefined);}
+ assert.equal((await h.send('/api/purse/command/spend-question',{question:f.questions[0]},'')).status,401);
+ await cmd('spend-question',{question:f.questions[0],bankAccount:'synthetic-purse-3105'},f.finance,400);
+ const run=(await ask(f.questions[0],f.requester)).id;await cmd('member',{email:'synthetic-purse-3101@example.test',name:'Research scope changed',active:true,grants:[{role:'requester',scope:{departments:['Research']},departmentRead:true}]});assert.equal((await h.send('/api/purse/download/agentRun/'+run,undefined,f.requester)).status,403);
+ await cmd('agent-pause',{agent:'AGENT-011',reason:'Pause native spend questions'});await cmd('spend-question',{question:f.questions[0]},f.finance,409);
+ const records=(await h.state()).data.agentRun.filter(run=>run.agent==='AGENT-011');assert.ok(records.some(run=>run.status==='declined'));assert.ok(records.every(run=>run.messages.length===0&&run.proposals.length===0));
+});

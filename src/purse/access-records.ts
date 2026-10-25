@@ -58,6 +58,7 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
     }
     if (kind === 'agentRun') {
         if (a.owner) return true;
+        if (record.agent === 'AGENT-011' && !allowed(s,a,'report.read')) return false;
         if (record.workflow === 'value-realization') {
             const request = s.get('request:' + record.request)?.value;
             return Boolean(request && allowed(s, a, 'request.read', request));
@@ -67,7 +68,7 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
             // Generated quote records contain curated governance snapshots, not
             // the owner's private control rows. Their purchasing references below
             // still require the author's current RFQ/request source scope.
-            if(record.agent==='AGENT-002'&&reference.kind==='agentPolicy')return s.get('agentPolicy:'+reference.id)?.value.agent===record.agent;
+            if(['AGENT-002','AGENT-011'].includes(record.agent)&&reference.kind==='agentPolicy')return s.get('agentPolicy:'+reference.id)?.value.agent===record.agent;
             if(record.agent==='AGENT-002'&&reference.kind==='quoteAgentConsent'){const consent=s.get('quoteAgentConsent:'+reference.id)?.value;const rfq=s.get('rfq:'+record.rfq)?.value;return Boolean(consent?.request===record.request&&rfq&&allowed(s,a,'rfq.read',rfq));}
             const source = s.get(reference.kind + ':' + reference.id)?.value;
             return source && canReadRecord(s, a, reference.kind, source, new Set(visited));

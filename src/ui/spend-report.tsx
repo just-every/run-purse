@@ -1,3 +1,4 @@
+import { SpendQuestions } from './spend-questions';
 import { BudgetScope } from './budget-scope';
 import { useEffect, useState } from 'react';
 import { call, Form, Field, Table, money, type D } from './shared';
@@ -13,6 +14,7 @@ export function SpendReport({ data }: { data: D }) {
     return <section><h1 className="page-title">Spend and commitments</h1>
         <p className="quiet">Current outstanding authority is reserved before PO issuance and committed after issuance. Actual is recorded invoice evidence, including exceptions; it is not a payment or matching confirmation. Currencies stay separate.</p>
         <p className="quiet">Inclusive period: need dates for outstanding authority; UTC entry dates for invoices. Policy budgets fund outstanding authority; actual is shown separately. Budget and available figures cover your visible records for the whole policy, while the three activity columns follow the filters.</p>
+        <SpendQuestions data={data}/>
         <PeriodBudgets data={data}/>
         {error && <p role="alert">{error}</p>}
         {report && <><Form label="Filter spend" onSubmit={load}>
@@ -39,7 +41,7 @@ export function SpendReport({ data }: { data: D }) {
         </section>}
     </section>;
 }
-function ReportSource({ data, row }: { data: D; row: D }) {
+export function ReportSource({ data, row }: { data: D; row: D }) {
     const deposit = (data.deposit ?? []).find((deposit: D) => deposit.id === row.deposit);
     const request = data.request.find((r: D) => r.id === row.request), order = data.order.find((o: D) => o.id === row.order), invoice = data.invoice.find((i: D) => i.id === row.invoice);
     return <>{deposit && <p>Imported prepaid deposit {deposit.reference} · {money(deposit.amountMinor, row.currency)} · {deposit.evidence}. Source payment evidence is unverified.</p>}<p>Request revision {request?.revision} · {request?.status}</p>{order && <p>{order.number} · revision {order.revision} · {order.status}</p>}{invoice && <p>Invoice {invoice.reference} · {invoice.source} · {money(invoice.totalMinor, invoice.currency)}</p>}

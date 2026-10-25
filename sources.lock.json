@@ -80,7 +80,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "bf860f3f41871b91ff2e521ad2a533fe49588cdef7ae905bd828bf0316d06960",
+      "sha256": "5fd38fc21d3e9c33bf8c30743f4c3a402c46e5b66f1fe6518bca3c3131c6f1eb",
       "executable": false
     },
     ".gitignore": {
@@ -860,7 +860,7 @@
       "executable": false
     },
     "scripts/installer/restore-agent-governance.mjs": {
-      "sha256": "a9db207c4a5d1531311f8d22bca91a637dfc8e1691af5e4e9392413fe3a5f39f",
+      "sha256": "85fb650104ddc7d91d6fd3b614665fe7084621bd6c34be8de9233831eebd04b5",
       "executable": false
     },
     "scripts/installer/restore-agent-value.mjs": {
@@ -2856,7 +2856,7 @@
       "executable": false
     },
     "src/purse/access-records.ts": {
-      "sha256": "87b8bb0edc4d73ae9e426d8fa411107b279cf5e603935daf0b36b1986f173180",
+      "sha256": "36bfd65f3dd2f02d48c8402f25a8a0cb3d7e205556f07cbd6c9396f4877de698",
       "executable": false
     },
     "src/purse/access-zero.ts": {
@@ -2884,7 +2884,7 @@
       "executable": false
     },
     "src/purse/agent-governance.ts": {
-      "sha256": "e322da91ea97e2a91e072e2cb58bd8f782ef5c84532708e1e5483d91ca069955",
+      "sha256": "a52860f33dfdbda898028a09747fe77591dc49db4e83d34ed74f00ce996cb1e4",
       "executable": false
     },
     "src/purse/agent-value-checkins.ts": {
@@ -2924,7 +2924,7 @@
       "executable": false
     },
     "src/purse/api.ts": {
-      "sha256": "99949fe745d66bf3134a6477f27019260d92c3ac8a9228a0ccba2752dd548b06",
+      "sha256": "ddafdb2dd780e9314b80fc9aacbf676def64458b34163ef1e516d400f186604b",
       "executable": false
     },
     "src/purse/approval-chain-authority.ts": {
@@ -3607,6 +3607,14 @@
       "sha256": "f67de8a308dbb02d52d3376edf2a07395aadb63d6973569a64ef24533fc2e0e6",
       "executable": false
     },
+    "src/purse/spend-question-parser.ts": {
+      "sha256": "465484acdea01e608867c5866b688b40ec41272644badeff28686c42edd67c8c",
+      "executable": false
+    },
+    "src/purse/spend-questions.ts": {
+      "sha256": "30fc9a149e5e2270f442589d56af59206dd3112bd58bfa8a85c5da6e4b567e52",
+      "executable": false
+    },
     "src/purse/spend-report.ts": {
       "sha256": "404054a58d27594de1500dd3a7ddccb9059e8898892610e596a5d41a0d78d8f4",
       "executable": false
@@ -3972,7 +3980,7 @@
       "executable": false
     },
     "src/ui/agent-governance.tsx": {
-      "sha256": "ec1e183654353d04a5ee7d0a5181006ea6e3a898ce4ecd74b9142f5256d77991",
+      "sha256": "bcb817f438d3822b6a3b1f0ccd365a9c8b847bcda72d7ded033390eb7e9e6d23",
       "executable": false
     },
     "src/ui/agent-records.tsx": {
@@ -4275,8 +4283,12 @@
       "sha256": "b19654119aedfddcc835157c53df26505545bcae6f4bd0cedd469d61f349b42b",
       "executable": false
     },
+    "src/ui/spend-questions.tsx": {
+      "sha256": "a441c5bffa1188543d6234feb2cf19e12aef411c69ee2fb39f12badb7933f0c1",
+      "executable": false
+    },
     "src/ui/spend-report.tsx": {
-      "sha256": "1c58291a146b73f5546ab6108e347e98230a4ee27cfac54da91fd81405888a24",
+      "sha256": "0565f40f90808c3901fd08ab84be00e37b927f53e2daecce04b42e1e175abad4",
       "executable": false
     },
     "src/ui/stockroom.tsx": {
@@ -4603,6 +4615,10 @@
       "sha256": "bf954f40b4c76d1b4715f5e92c561c3bc8c3fa83bf46264fef4ec8b13e95c912",
       "executable": false
     },
+    "tests/browser-spend-questions.mjs": {
+      "sha256": "0cc7ee39129b866eba1ec853b553bc3b1c391824c0715782b1339deb59d7eba4",
+      "executable": false
+    },
     "tests/browser-spend-report.mjs": {
       "sha256": "159b6491608ca09cfd8de386d6fde1495e3829b8967c512790228625b0e18266",
       "executable": false
@@ -4859,8 +4875,12 @@
       "sha256": "b54283da63f8b04b9adcc3e5e7c1ccdf7012258b627f261b825d9f06ee4b1842",
       "executable": false
     },
+    "tests/spend-question-fixture.mjs": {
+      "sha256": "6ad96a65633540c6f8e01fc9616034ef29141d41205cf11063c9aeb790da9d00",
+      "executable": false
+    },
     "tests/spend-report.test.mjs": {
-      "sha256": "4ab091e323c99d2c685e36403bc9b922adb114ed23d01a7a964f52d5ce1bbd4b",
+      "sha256": "ac3174c453776fd9b4fd6b7111818753e2d74ae8dc81e7e8091257f630e6ff73",
       "executable": false
     },
     "tests/stockroom.test.mjs": {
