@@ -17,7 +17,7 @@ const tick = async (h, at) => {
     assert.equal(response.status, 200, await response.text());
 };
 const due = '2026-10-24T04:00:00.000Z', beforeDue = '2026-10-24T03:59:59.999Z'; // Midnight in the native business's America/New_York calendar.
-const enable = (request, version = 0) => ({ id: request.id, revision: request.revision, version, enabled: true, days: 3, confirmed: true, acceptLateActual: true, reason: 'synthetic-purse-70' });
+const enable = (request, version = 0) => ({ id: request.id, revision: request.revision, version, enabled: true, days: 3, timezone: 'America/New_York', confirmed: true, acceptLateActual: true, reason: 'synthetic-purse-70' });
 const rowsFor = (data, kind, request) => data[kind].filter(row => row.request === request.id);
 const result = {};
 
@@ -130,5 +130,68 @@ try {
     assert.equal(data.commitment.filter(event => event.request === first.id).reduce((sum, event) => sum + event.amountMinor, 0), 240000);
     result.staleConsent = { revision: true, calendar: true, nativeOwner: true, noRelease: true };
 } finally { await stale.h.close(); }
+const businessRule = await travelFixture();
+try {
+    const { h, travel } = businessRule;
+    const first = await businessRule.approve(await travel('request', businessRule.input));
+    const business = (await h.state()).data.business[0];
+    await h.command('business', { ...business, timezone: '' });
+    const ruleInput = { version: 0, enabled: true, days: 3, timezone: 'America/New_York', consent: true, confirmed: true, acceptLateActual: true, reason: 'synthetic-purse-75' };
+    await travel('release-rule', { ...ruleInput, timezone: '' }, h.owner, 409);
+    await travel('release-policy', { ...enable(first), timezone: '' }, h.owner, 409);
+    for (const cookie of [businessRule.requester, businessRule.manager, businessRule.finance, businessRule.stranger]) {
+        await travel('release-rule', ruleInput, cookie, 403);
+        await h.command('travel-release-rule', ruleInput, cookie, 403);
+    }
+    assert.equal((await h.send('/api/purse/travel/release-rule', ruleInput)).status, 401);
+    const crossOrigin = await fetch(h.origin + '/api/purse/travel/release-rule', { method: 'POST', headers: { origin: 'https://example.test', cookie: h.owner, 'content-type': 'application/json' }, body: JSON.stringify(ruleInput) });
+    assert.equal(crossOrigin.status, 403);
+    await travel('release-rule', { ...ruleInput, acceptLateActual: false }, h.owner, 400);
+    const rule = await h.command('travel-release-rule', ruleInput);
+    assert.equal(rule.status, 'armed');
+    await travel('release-rule', ruleInput, h.owner, 409);
+    const secondInput = { ...businessRule.input, title: 'synthetic-purse-76', travel: { ...businessRule.input.travel, returnDate: '2026-10-22', costs: { ...businessRule.input.travel.costs, mealsIncidentalsMinor: 20000 } } };
+    let second = await businessRule.approve(await travel('request', secondInput));
+    await tick(h, beforeDue);
+    let data = (await h.state()).data;
+    for (const request of [first, second]) {
+        const policy = data.travelReleasePolicy.find(row => row.request === request.id);
+        assert.equal(policy.status, 'armed'); assert.equal(policy.source, 'rule'); assert.equal(policy.ruleVersion, rule.version);
+        assert.equal(await businessRule.balance(request.id), 240000);
+    }
+    assert.equal(((await h.state(businessRule.requester)).data.travelReleaseRule ?? []).length, 0);
+    const configured = await travel('release-rule', { ...ruleInput, version: rule.version, consent: false, days: 5, timezone: 'America/Chicago' }, h.owner);
+    await tick(h, due); data = (await h.state()).data;
+    assert.equal(configured.status, 'paused'); assert.equal(data.travelRelease.length, 0);
+    assert.ok([first, second].every(request => data.travelReleasePolicy.find(row => row.request === request.id).status === 'paused'));
+    const rearmed = await travel('release-rule', { ...ruleInput, version: configured.version, days: 5, timezone: 'America/Chicago' }, h.owner);
+    second = await businessRule.approve(await travel('amend', { ...secondInput, id: second.id, revision: second.revision, reason: 'synthetic-purse-77' }));
+    await tick(h, '2026-10-26T04:59:59.999Z');
+    for (const request of [first, second]) assert.equal(await businessRule.balance(request.id), 240000, 'Chosen release timezone governs even when the business has no timezone');
+    await Promise.all([tick(h, '2026-10-26T05:00:00.000Z'), tick(h, '2026-10-26T05:00:00.000Z')]);
+    assert.equal(await businessRule.balance(first.id), 0);
+    assert.equal(await businessRule.balance(second.id), 240000, 'Each trip keeps its reservation until its own return date plus five calendar days');
+    await tick(h, '2026-10-27T04:59:59.999Z'); assert.equal(await businessRule.balance(second.id), 240000);
+    await Promise.all([tick(h, '2026-10-27T05:00:00.000Z'), tick(h, '2026-10-27T05:00:00.000Z')]);
+    await tick(h, '2026-10-28T12:00:00Z');
+    data = (await h.state()).data;
+    for (const request of [first, second]) {
+        assert.equal(await businessRule.balance(request.id), 0);
+        assert.equal(rowsFor(data, 'travelRelease', request).length, 1);
+        assert.equal(rowsFor(data, 'commitment', request).filter(row => row.kind === 'travel-timed-release').length, 1);
+        assert.equal(data.travelRelease.find(row => row.request === request.id).ruleVersion, rearmed.version);
+    }
+    const archive = join(evidence, 'synthetic-purse-business-rule.rer');
+    await exportArchive(await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability }), archive, []);
+    const restored = await harness();
+    try {
+        await importArchive(await createPortability({ db: restored.db, buckets: { ORIGINALS: restored.originals }, policy: portability }), archive, []);
+        await tick(restored, '2026-10-28T12:00:00Z');
+        const retained = (await restored.state()).data;
+        assert.equal(retained.travelReleaseRule[0].status, 'paused');
+        assert.equal(retained.travelRelease.length, 2);
+    } finally { await restored.close(); }
+    result.businessRule = { trips: 2, inheritedAmendment: true, changedRulePaused: true, explicitReconsent: true, missingTimezoneRefused: true, days: 5, calendar: 'America/Chicago', staggeredReturns: true, once: true };
+} finally { await businessRule.h.close(); }
 await writeFile(join(evidence, 'travel-release-result.json'), JSON.stringify({ outcome: 'passed', ...result }, null, 2) + '\n');
 console.log(JSON.stringify({ outcome: 'passed', ...result }));

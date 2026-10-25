@@ -1,5 +1,6 @@
+import { travelExportsBrowserJourney } from './travel-browser-exports.mjs';
 import assert from 'node:assert/strict';
-import { travelReferenceAndReleaseJourney, travelWithdrawnOriginalJourney } from './travel-browser-release.mjs';
+import { travelReferenceAndReleaseJourney, businessTravelReleaseRuleJourney, travelWithdrawnOriginalJourney } from './travel-browser-release.mjs';
 import { internationalTravelPolicyJourney } from './travel-browser-policy.mjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -98,7 +99,7 @@ try {
             assert.equal(await fixture.balance(draft.id), 270000);
             const source = await coasterTravelReport({ checkout: process.env.COASTER_CHECKOUT, reference: request.travel.approvalReference, traveler: request.travel.travelerEmail, date: '2026-10-20' });
             const ownerTab = await open(h.owner, draft.id);
-            await ownerTab.getByText('Return final Coaster expense report', { exact: true }).click();
+            await ownerTab.getByText('Return final expense report', { exact: true }).click();
             const returning = ownerTab.locator('form').filter({ has: ownerTab.getByRole('button', { name: 'Reconcile final travel expense report', exact: true }) });
             await returning.getByLabel('Native Coaster report JSON', { exact: true }).setInputFiles({ name: 'synthetic-purse-23.json', mimeType: 'application/json', buffer: Buffer.from(source.bytes) });
             await returning.getByLabel('Coaster report source URL', { exact: true }).fill(source.source.origin + source.source.route);
@@ -117,10 +118,12 @@ try {
             const linked = await ownerTab.context().request.get(h.origin + '/api/purse/download/attachment/' + expense.attachment);
             assert.equal(await linked.text(), source.bytes);
             const timedRelease = await travelReferenceAndReleaseJourney({ fixture, open, mutation, capture });
+            const businessRule = await businessTravelReleaseRuleJourney({ fixture, open, mutation, capture });
             const internationalPolicy = await internationalTravelPolicyJourney({ fixture, open, mutation, capture });
+            const exportReports = await travelExportsBrowserJourney({ fixture, open, mutation, capture });
             const erasedTravel = await travelWithdrawnOriginalJourney({fixture,open,capture,trip:timedRelease});
             assert.deepEqual(errors, []);
-            results.push({ width, timedRelease, internationalPolicy, erasedTravel, request: draft.id, actualMinor: expense.totalMinor, releasedMinor: expense.releasedMinor, sha256: expense.sha256, coaster: source.source });
+            results.push({ width, timedRelease, businessRule, internationalPolicy, exportReports, erasedTravel, request: draft.id, actualMinor: expense.totalMinor, releasedMinor: expense.releasedMinor, sha256: expense.sha256, coaster: source.source });
         } catch (error) {
             await page?.screenshot({ path: join(evidence, `INTAKE-006-failure-${width}.png`), fullPage: true }).catch(() => {}); throw error;
         } finally { for (const active of contexts) await active.close(); await h.close(); }
