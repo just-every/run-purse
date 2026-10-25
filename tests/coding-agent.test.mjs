@@ -56,9 +56,18 @@ test('AGENT-008 source-backed split review and two human GL corrections govern t
  await enable(false); await cmd('coding-agent-run', { kind: 'invoice', id: bills[2].id }, buyer, 409);
  await cmd('coding-agent-review', { id: third.id, proposal: third.proposals[0].id, coding: { glAccount: '6200' }, reason: 'Paused' }, buyer, 409);
  await enable(true); await cmd('coding-agent-review', { id: third.id, proposal: third.proposals[0].id, coding: { glAccount: '6200' }, reason: 'Old policy version' }, buyer, 409);
+ const followup=await makeRequest('New request from reviewed supplier history');const requestRun=await cmd('coding-agent-run',{kind:'request',id:followup.id});assert.equal(requestRun.suggestions.find(row=>row.field==='glAccount').value,'6200');const accepted=await cmd('coding-agent-review',{id:requestRun.id,proposal:requestRun.proposals[0].id,coding:requestRun.proposals[0].input.coding,reason:'Accept source-backed request coding examples'});assert.equal(accepted.outcome,'accepted');assert.deepEqual((await h.state()).data.request.find(row=>row.id===followup.id).lines,followup.lines,'Recording a learning example never bypasses ordinary request editing and approval');
  const records = (await h.db.prepare('SELECT * FROM p_records').all()).results; assert.equal(validatePurchasingArchive(records), true);
  const tampered = structuredClone(records), row = tampered.find(row => row.kind === 'agentRun' && row.id === third.id), value = JSON.parse(row.value); value.suggestions[0].value = 'forged'; row.value = JSON.stringify(value);
  assert.throws(() => validatePurchasingArchive(tampered), /coding_agent_digest/);
+ await cmd('member',{email:'coding-requester@example.test',name:'coding-requester@example.test',roles:['requester'],active:false});
+ const {reauthenticateErasure}=await import('./erasure-flow.mjs');await reauthenticateErasure(h);
+ const erasureMeta=await h.send('/api/purse/erasure',undefined,h.owner);const review=await h.send('/api/purse/erasure/preview',{kind:'member',id:'coding-requester@example.test',revision:erasureMeta.value.revision},h.owner);assert.equal(review.status,200,JSON.stringify(review.value));
+ const erased=await h.send('/api/purse/erasure/execute',{...review.value.subject,revision:review.value.revision,review:review.value.review,fingerprint:review.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
+ const anonymized=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(anonymized),true,'Reviewed erasure preserves coding history and valid archive continuation');
+ const anonymizedRun=JSON.parse(anonymized.find(row=>row.kind==='agentRun'&&row.id===third.id).value);assert.ok(anonymizedRun.sourceValuesErased);assert.ok(!JSON.stringify(anonymized).includes('coding-requester@example.test'));
+ const altered=structuredClone(anonymized),alteredRow=altered.find(row=>row.kind==='agentRun'&&row.id===third.id),alteredRun=JSON.parse(alteredRow.value);alteredRun.suggestions[0].value='forged-after-erasure';alteredRow.value=JSON.stringify(alteredRun);assert.throws(()=>validatePurchasingArchive(altered),/coding_agent_digest/);
+
 });
 
 test('AGENT-008 flags preferred supplier sources and separates day, requester, currency and current source scope', async t => {

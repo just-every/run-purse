@@ -1,3 +1,4 @@
+import { erasedSourceFact } from '../../src/purse/erasure-journal.mjs';
 import { createHash } from 'node:crypto';
 import { containsProtectedInput } from '../../src/purse/protected-context-fields.mjs';
 
@@ -24,7 +25,7 @@ export function validateCodingAgent(all, get, check) {
   const target = subject(run);
   check(run.workflow === 'coding-policy' && run.mode === 'deterministic v1' && run.model === 'none' && run.provider === 'none' && run.version === 1
    && run.algorithm === 'native-coding-policy-v1' && Number.isFinite(Date.parse(run.at)) && !containsProtectedInput(run), 'coding_agent_execution');
-  check(run.inputDigest === digest(run.inputs) && run.outputDigest === digest({ suggestions: run.suggestions, flags: run.flags, outcomes: run.outcomes }), 'coding_agent_digest');
+  check(run.sourceValuesErased ? erasedSourceFact(all,'agentRun',run.id,run) : run.inputDigest === digest(run.inputs) && run.outputDigest === digest({ suggestions: run.suggestions, flags: run.flags, outcomes: run.outcomes }), 'coding_agent_digest');
   check(run.inputs.target.kind === run.targetKind && run.inputs.target.id === run.target && run.inputs.target.request === run.request
    && run.inputs.target.revision === run.revision && run.inputs.target.supplier === (target.order?.supplier ?? target.revision.supplier)
    && run.inputs.target.currency === (target.order ? target.value.currency : target.revision.currency) && safeCoding(run.inputs.target.coding), 'coding_agent_inputs');

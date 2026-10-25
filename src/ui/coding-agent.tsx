@@ -32,7 +32,7 @@ export function CodingAgent({ data, current, kind = 'request', mutate }: {
             const review = (data.codingReview ?? []).find((row: D) => row.run === run.id);
             const proposal = run.proposals[0], defaults = proposal?.input?.coding ?? {};
             return <article key={run.id} aria-label="Coding agent result">
-                <h4>Coding analysis · {when(run.at)}</h4><p>{run.mode} · model: {run.model} · provider: {run.provider}</p>
+                <h4>Coding analysis · {when(run.at)}</h4>{run.sourceValuesErased&&<p>Source identities since erased. Original execution digests retained; the owner erasure journal attests the anonymized record.</p>}<p>{run.mode} · model: {run.model} · provider: {run.provider}</p>
                 {run.flags.map((flag: D, index: number) => <section key={index} aria-label="Policy review flag">
                     <h4>{flag.code === 'possible-split-purchase' ? 'Possible split purchase · approver review' : 'Preferred supplier available · review'}</h4>
                     <p>{flag.reason}</p>

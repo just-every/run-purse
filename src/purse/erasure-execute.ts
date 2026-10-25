@@ -20,6 +20,7 @@ export async function executeErasure(env:Bindings,a:Actor,before:State,revision:
  const receipt:Data={id:plan.id,subject:plan.subject.kind,anonymousReference:plan.alias,actor:a.id,at,fields:plan.fields,affected:plan.affected,originals:plan.blobs,coverage:erasureCoverage(plan.fields),protectedMetadata:native.protectedMetadata,installationFields:native.installationFields,retained:erasureRetention,consent:'Owner explicitly reviewed this exact field inventory and withdrawal of related originals',phase:plan.blobs.length?'blobs':'complete'};
  receipt.sourceFacts=[];
  for(const row of plan.state.values()){
+  if(row.kind==='agentRun'&&row.value.agent==='AGENT-008'&&row.value.sourceValuesErased===plan.id)receipt.sourceFacts.push({kind:row.kind,id:row.id,digest:erasureDigest(row.value)});
   if(row.kind==='valueSeatImport'&&plan.state.get('attachment:'+row.value.attachment)?.value.erasure)receipt.sourceFacts.push({kind:row.kind,id:row.id,digest:erasureDigest(row.value)});
   const snapshots=(v:any):void=>{if(!v||typeof v!=='object')return;if(v.fingerprint&&v.sources&&v.assessment)receipt.sourceFacts.push({kind:'valueSnapshot',id:v.fingerprint,digest:erasureDigest(Object.fromEntries(['request','revision','requester','promise','sources','assessment','mode','model','provider'].map(k=>[k,v[k]])))});for(const child of Object.values(v))snapshots(child);};
   if(['agentRun','valueConfirmation','valueCheckin'].includes(row.kind))snapshots(row.value);
