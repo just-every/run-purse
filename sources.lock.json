@@ -80,7 +80,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "7b6ce37558d13ddd3a0c2a53e5f0220f764503688306bf0f1cd43de9e0d925f3",
+      "sha256": "2ef2d066be4426457a9a1fcc569f02cde3b8c384d0dd7f0308f1ae56f74f5a7a",
       "executable": false
     },
     ".gitignore": {
@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "32c623479963a3bea2fb33bab1c7badae52f5319ac3257b7bc3175c026b786af",
+      "sha256": "cdb47dbf75ead87505ef8bfeae297081dc67ca2b5a0a7ea77b71c8c17167ce26",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -104,7 +104,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "6c9631592a126848c8e016097f10cf7b6063262c4cd6cf7a3d7228707f30116d",
+      "sha256": "756d8accb72731a93cec8069826e5ecb0d345dd01288a491a9660abe829580ca",
       "executable": false
     },
     "base-copies.json": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "eea49f0fc4968152e5e7d3efbe5b9f2c6d52b4bd1536c6db7950da41187ec53c",
+      "sha256": "ed3684b4f0ac3741d636f21c8f14dd53b565988b78243f9431d071651647fefd",
       "executable": false
     },
     "DEMO.md": {
