@@ -29,6 +29,8 @@ async function nativeCoasterTravelReport({ checkout, reference, traveler = 'synt
             return { bytes, value: JSON.parse(bytes) };
         };
         await request('settings/business', { name: 'synthetic-purse-6', currency: 'USD', timezone: 'America/Chicago', receiptThreshold: '', preapprovalThreshold: '' });
+        // Coaster's US contract configures rates per mile by effective date.
+        await request('settings/mileage-rates', { effectiveFrom: '2026-01-01', rate: '0.725' });
         const { value: category } = await request('settings/categories', { name: 'Conference registration', accountCode: '6100', taxCode: 'None' });
         const managerEmail = 'synthetic-purse-7@example.test';
         const manager = await worker.person(managerEmail, { employee: true, manager: true });
