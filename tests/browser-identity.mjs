@@ -102,7 +102,8 @@ try {
                 assert.equal((await requester.context.request.get(settingsPath)).status(), 403);
                 const forged = await requester.context.request.post(h.origin + '/api/purse/command/member', { headers: { origin: h.origin }, data: { email: 'forged-owner@example.test', name: 'Forbidden provider claim', roles: ['owner'] } });
                 assert.equal(forged.status(), 403);
-                await snap(requester.page, 'native-requester-workspace');
+                const newRequest=requester.page.getByRole('button',{name:'New purchase request',exact:true});await newRequest.hover();await requester.page.getByRole('tooltip',{name:'New request',exact:true}).waitFor();await newRequest.focus();await requester.page.getByRole('tooltip',{name:'New request',exact:true}).waitFor();
+            await snap(requester.page, 'native-requester-workspace');
             }
             async function refusedWorkspace(name) {
                 assert.equal((await requester.context.request.get(h.origin + '/auth/session')).status(), 401);
