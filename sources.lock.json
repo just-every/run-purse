@@ -104,7 +104,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "2720d7c8c369cb8f140606fb6a4e870ef58ffd9ced03900e2f5f204968a80c36",
+      "sha256": "6c9631592a126848c8e016097f10cf7b6063262c4cd6cf7a3d7228707f30116d",
       "executable": false
     },
     "base-copies.json": {
@@ -2932,7 +2932,7 @@
       "executable": false
     },
     "src/purse/agreement-reminders.ts": {
-      "sha256": "31d1107c86867ffcc0178f695240d8f1f823e76b890f0f5e04d459c31f1e5db6",
+      "sha256": "6dfc4e84d5c785e874ebaaeb048412079fb85cd1233f4fec2c91895f9c7fbbac",
       "executable": false
     },
     "src/purse/agreements.ts": {
@@ -4476,7 +4476,7 @@
       "executable": false
     },
     "tests/agreements.test.mjs": {
-      "sha256": "0348d9ce9a8408cb3e329e23294828a90b190048edec7d31c3ea89740bb4a07e",
+      "sha256": "849237d5e2ad9577feea6e6d98ebe8eaa9d50a0709f7bc1375bfb484cc95b737",
       "executable": false
     },
     "tests/audit-log.test.mjs": {
