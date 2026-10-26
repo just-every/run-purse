@@ -40,7 +40,8 @@ export function scimIdentityAdmission(auth: OperatorAuth, db: D1Database): Opera
             if (principal.associatedEmail !== undefined && principal.associatedEmail !== user.userName) throw new AuthError('scim_identity_mismatch', 403);
             const native = await db.prepare('SELECT id,version FROM oa_operators WHERE id=? AND email=?').bind(user.id, user.userName).first<{id: string; version: number}>();
             if (!native) throw new AuthError('scim_identity_mismatch', 403);
-            expected = native;
+            if (expected && (native.id !== expected.id || native.version !== expected.version)) throw new AuthError('scim_link_changed', 403);
+            expected ??= native;
             principal = {...principal, associatedEmail: user.userName};
         }
         return admit(request, principal, input);

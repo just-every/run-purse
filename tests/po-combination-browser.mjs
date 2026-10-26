@@ -28,7 +28,8 @@ export async function combinedProcureJourney({h,page,width,evidence}) {
     await panel.screenshot({path:join(evidence,`PO-008-combined-allocated-${width}.png`)});
     for(const [request,cookie]of [[a,requester],[b,other]]) {
         const [name,value]=cookie.split('=');await page.context().addCookies([{name,value,url:h.origin}]);await page.goto(h.origin+'/app?request='+encodeURIComponent(request.id));const sources=page.getByRole('region',{name:'Source purchase orders',exact:true});await sources.getByText(order.number,{exact:true}).waitFor();assert.equal(await sources.getByRole('link').count(),0);
-        await sources.screenshot({path:join(evidence,`PO-008-shared-source-${request.id===a.id?'IT':'Operations'}-${width}.png`)});
+        await page.getByRole('region',{name:'Buyer conversion source changes',exact:true}).waitFor();
+        await page.locator('.record').screenshot({path:join(evidence,`PO-008-shared-source-${request.id===a.id?'IT':'Operations'}-${width}.png`)});
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     }
     const [ownerName,ownerValue]=h.owner.split('=');await page.context().addCookies([{name:ownerName,value:ownerValue,url:h.origin}]);

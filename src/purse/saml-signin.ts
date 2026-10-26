@@ -23,7 +23,7 @@ export function samlIdentityProviders(auth: OperatorAuth, env: SamlBindings & { 
             const pins = (await env.DB.prepare("SELECT provider_id,status FROM oa_identity_providers WHERE preset='saml'").all<{provider_id: string; status: string}>()).results;
             return [...existing, ...configured.filter(provider => !pins.some(pin => pin.provider_id === 'saml-' + provider.id && pin.status !== 'linked')).map(provider => ({
                 id: 'saml-' + provider.id, label: provider.label, preset: 'okta' as const, startPath: samlPath(provider, 'start'), visible: true,
-                linked: pins.some(pin => pin.provider_id === 'saml-' + provider.id), pendingRelink: false, authorizationOrigins: [],
+                linked: pins.some(pin => pin.provider_id === 'saml-' + provider.id), pendingRelink: false, authorizationOrigins: [new URL(provider.entryPoint).origin],
             }))];
         },
         async links() {

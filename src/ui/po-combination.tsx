@@ -26,15 +26,15 @@ export function PoCombination({data,mutate}:Props) {
             setSelection([]);return result;
         }}>
             <p>{chosen.length} selected lines · {first.supplierSnapshot?.name}. Each source keeps its approval and coding.</p>
-            <Details label="Correct selected lines and add charges">
-                {chosen.map(({request,line,key}:D)=><fieldset className="wide" key={key} style={{minWidth:0}}><legend>{request.title} · {line.description}</legend>
+            <div className="field-wide"><Details label="Correct selected lines and add charges"><div className="record-form">
+                {chosen.map(({request,line,key}:D)=><fieldset className="wide" key={key} style={{minWidth:0}}><legend>{request.title} · {line.description}</legend><div className="line">
                     <Field label={'Unit price '+line.description} name={'price:'+key} required={false}/><Field label={'Quantity '+line.description} name={'quantity:'+key} required={false}/><Field label={'Unit '+line.description} name={'unit:'+key} required={false}/><Field label={'SKU '+line.description} name={'sku:'+key} required={false}/>
-                    <p>Approved {line.quantity} {line.unit} at {money(line.unitMinor,request.currency)} each.</p>
+                    </div><p>Approved {line.quantity} {line.unit} at {money(line.unitMinor,request.currency)} each.</p>
                 </fieldset>)}
                 <Field label="Combined supplier" name="supplier" defaultValue={first.supplier} options={options(data.supplier??[])}/>
                 <Field label="Additional freight" name="freight" required={false}/><Field label="Additional supplied tax" name="tax" required={false}/><Field label="Additional other charge" name="other" required={false}/><Field label="Other charge description" name="chargeDescription" required={false}/>
                 <Field label="Combined correction reason" name="reason" required={false}/>
-            </Details>
+            </div></Details></div>
         </Form>}
     </Details>;
 }
