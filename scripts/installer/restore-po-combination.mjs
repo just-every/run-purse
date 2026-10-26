@@ -6,7 +6,7 @@ export function validateCombinedOrder(order,{get,all}) {
     const selected=new Set();
     for(const source of order.sources) {
         const revision=get('revision',source.request+':'+source.revision);
-        check(!revision.imported&&revision.currency===order.currency&&revision.supplier===order.supplier&&(revision.entity??'main')===(order.entity??'main')&&revision.terms===order.terms,'combination_source_identity');
+        check(!revision.imported&&revision.currency===order.currency&&revision.supplier===order.supplier&&(revision.entity??'main')===(order.entity??'main')&&source.terms===revision.terms&&source.needDate===revision.needDate,'combination_source_identity');
         get('policy',source.policy);
         check(source.location===revision.location&&source.costCentre===revision.costCentre,'combination_scope');
         check(Array.isArray(source.lines)&&source.lines.length>0&&new Set(source.lines).size===source.lines.length,'combination_source_lines');
@@ -22,6 +22,7 @@ export function validateCombinedOrder(order,{get,all}) {
         if(source.approvalProofs)for(const [index,proof]of source.approvalProofs.entries())check(all('decision').some(decision=>decision.request===source.request&&decision.revision===source.revision&&decision.chainStep===revision.approvalRoute?.[index]?.id&&decision.actor===proof.actor&&decision.operatorVersion===proof.version&&decision.decision==='approved'),'combination_chain_proof');
         if(source.conversionVariance){const {approvalRenewed,...variance}=source.conversionVariance;check(same(variance,revision.buyerConversion)&&approvalRenewed===(variance.routing!=='carried'),'combination_conversion_source');}
     }
+    check(order.terms===(order.sources.every(source=>source.terms===order.sources[0].terms)?order.sources[0].terms:'Per-source approved terms'),'combination_header_terms');
     check(selected.size===order.lines.length&&['freightMinor','taxMinor','otherChargesMinor','totalMinor'].every(field=>order[field]===order.sources.reduce((sum,source)=>sum+source[field],0)),'combination_total');
     check(all('audit').some(event=>event.action==='po-combine'&&event.record===order.id&&same(event.sources,order.sources)),'combination_audit');
     if(order.issuedAt)check(all('audit').some(event=>event.action==='issue'&&event.record===order.id&&event.revision===order.revision&&event.actor===order.issuedBy),'combination_issue_audit');

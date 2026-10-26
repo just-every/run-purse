@@ -37,6 +37,6 @@ export async function identityFixture({providerFactory,samlFactory,samlOnly=fals
    const response=await request(transaction.path,{cookie:transaction.cookie});assert.equal(response.status,status,await response.clone().text());return {response,cookie:cookies(response).find(value=>value.startsWith('operator_session_local_'))};
   };
   const signIn=async()=>complete(await begin());
-  return {idp,saml,origin,db,mf,messages,owner,request,send,command,settings,begin,complete,signIn,transactionSecret,sessionSecret,async close(){await mf.dispose();await idp.close();await rm(dir,{recursive:true,force:true})}};
- }catch(error){await mf?.dispose();await idp.close();await rm(dir,{recursive:true,force:true});throw error}
+  return {idp,saml,origin,db,mf,messages,owner,request,send,command,settings,begin,complete,signIn,transactionSecret,sessionSecret,async close(){await mf.dispose();await saml?.close?.();await idp.close();await rm(dir,{recursive:true,force:true})}};
+ }catch(error){await mf?.dispose();await saml?.close?.();await idp.close();await rm(dir,{recursive:true,force:true});throw error}
 }

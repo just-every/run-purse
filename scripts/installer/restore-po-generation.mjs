@@ -26,7 +26,7 @@ export function validatePoGeneration(all,get,check) {
     }
     for(const daily of all('poGenerationDaily')) {
         const policy=get('poGenerationPolicy',daily.policy),authority=policy.history[daily.policyVersion-1],order=get('order',daily.order);
-        check(authority?.combineDaily && daily.id===JSON.stringify([policy.id,daily.policyVersion,order.supplier,order.currency,daily.day]) && /^\d{4}-\d{2}-\d{2}$/.test(daily.day) && instant(daily.at) && order.generation?.policy===policy.id && order.generation.policyVersion===daily.policyVersion,'po_generation_daily');
+        check(authority?.combineDaily && daily.id===JSON.stringify([policy.id,daily.policyVersion,order.supplier,order.entity??'main',order.currency,daily.day]) && /^\d{4}-\d{2}-\d{2}$/.test(daily.day) && instant(daily.at) && order.generation?.policy===policy.id && order.generation.policyVersion===daily.policyVersion,'po_generation_daily');
     }
     for(const order of all('order').filter(o=>o.generation))check(get('poGenerationEvent',order.generation.event).order===order.id,'po_generation_order_link');
 }

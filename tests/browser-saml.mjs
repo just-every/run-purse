@@ -5,7 +5,7 @@ import {samlIdp} from './saml-idp.mjs'
 import {nativeWebContext} from './native-web-fixture.mjs'
 
 export async function samlBrowserJourney({browser,width,evidence,shippedApp}){
- const h=await identityFixture({samlFactory:samlIdp,samlOnly:true}),contexts=[],pages=[]
+ const h=await identityFixture({samlFactory:origin=>samlIdp(origin,{listen:true}),samlOnly:true}),contexts=[],pages=[]
  try{
   await h.command('business',{name:'Purse SAML',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety']})
   await h.send('/auth/step-up',{action:'export'},h.owner,202)
@@ -27,11 +27,6 @@ export async function samlBrowserJourney({browser,width,evidence,shippedApp}){
   assert.equal((await ownerContext.request.get(h.origin+'/auth/saml/company-saml/metadata')).status(),200)
   await owner.getByRole('button',{name:'Enable provider sign-in',exact:true}).click();await owner.getByRole('button',{name:'Disable provider sign-in',exact:true}).waitFor();await snap(owner,'saml-owner-enabled')
   await member.goto(h.origin+'/signin');await member.getByRole('button',{name:'Continue with Purse SAML',exact:true}).waitFor();await snap(member,'saml-sign-in')
-  await memberContext.route(h.saml.provider.entryPoint+'?**',async route=>{
-   const encoded=new URLSearchParams(h.saml.response(route.request().url())),escape=value=>value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
-   // The IdP network edge returns its signed response; the native callback settles the session.
-   await route.fulfill({contentType:'text/html',body:`<!doctype html><html lang="en"><body><form method="post" action="${h.origin}/auth/saml/company-saml/callback">${[...encoded].map(([name,value])=>`<input type="hidden" name="${name}" value="${escape(value)}">`).join('')}<button>Continue to Purse</button></form></body></html>`})
-  })
   const started=member.waitForResponse(response=>new URL(response.url()).pathname==='/auth/saml/company-saml/start')
   await member.getByRole('button',{name:'Continue with Purse SAML',exact:true}).click()
   const startResponse=await started;console.log('Native SAML browser start:',startResponse.status());assert.equal(startResponse.status(),303,startResponse.status()===303?'':await startResponse.text())

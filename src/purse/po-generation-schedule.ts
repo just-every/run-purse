@@ -16,7 +16,7 @@ export async function runPoGeneration(original: Bindings,now=Date.now()): Promis
         if (!request || request.status !== 'approved' || request.imported) continue;
         const policy=generationRule(before,request);
         if (!policy?.enabled || Date.parse(policy.at)>now) continue;
-        const day=new Date(now).toISOString().slice(0,10),dailyId=JSON.stringify([policy.id,policy.version,request.supplier,request.currency,day]);
+        const day=new Date(now).toISOString().slice(0,10),dailyId=JSON.stringify([policy.id,policy.version,request.supplier,request.entity??'main',request.currency,day]);
         if (policy.combineDaily && before.has('poGenerationDaily:'+dailyId)) continue;
         const id=request.id+':'+request.revision;
         if (before.get('poGenerationEvent:'+id)?.value.status === 'generated') continue;

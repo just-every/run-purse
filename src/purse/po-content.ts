@@ -23,7 +23,7 @@ export function poContent(s: State, order: Data): PoPdfContent {
     for(const source of order.sources??[]) {
         const profile=source.documentProfile;
         sections.push({heading:'Source request '+source.request+' · revision '+source.revision,lines:[
-            'Source lines: '+source.lines.join(', '),'Location: '+value(source.location),'Department: '+value(source.costCentre),
+            'Source lines: '+source.lines.join(', '),'Payment terms: '+value(source.terms),'Need date: '+value(source.needDate),'Location: '+value(source.location),'Department: '+value(source.costCentre),
             'Legal entity: '+value(profile?.legalName),'Bill to: '+address(profile?.billTo).join(', '),'Ship to: '+address(profile?.shipTo).join(', '),
             'Shipping terms: '+value(profile?.shippingTerms),'Purchase terms: '+value(profile?.standardTerms),
         ]});
