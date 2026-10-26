@@ -1,3 +1,4 @@
+import {reauthenticateErasure} from './erasure-flow.mjs';
 import assert from 'node:assert/strict';
 import {nativeWebContext} from './native-web-fixture.mjs';
 
@@ -78,7 +79,13 @@ export async function recurringScenarioRider({browser,f,page,panel,bundle,width,
   await save(page,'receipt',receiving.getByRole('button',{name:'Record receiving event',exact:true}));
   const after=(await f.h.state()).data;assert.equal(after.order.find(r=>r.id===order.id).positions[0].cancelled,50000);assert.equal(after.recurringSeries.find(r=>r.order===order.id).status,'ended');
   await snap('separate-po-cancellation',page.locator('main'),page);
-  await page.goto(f.h.origin+'/app?tab=Preparation');
+  const memberRecord=(await f.h.state()).data.member.find(r=>r.email==='synthetic-purse-901@example.test');
+  await f.h.command('member',{...memberRecord,active:false});await reauthenticateErasure(f.h);
+  const meta=await f.h.send('/api/purse/erasure',undefined,f.h.owner),review=await f.h.send('/api/purse/erasure/preview',{kind:'member',id:memberRecord.id,revision:meta.value.revision},f.h.owner);assert.equal(review.status,200);
+  const erased=await f.h.send('/api/purse/erasure/execute',{...review.value.subject,revision:review.value.revision,review:review.value.review,fingerprint:review.value.fingerprint,consent:true},f.h.owner);assert.equal(erased.status,200);
+  await page.goto(f.h.origin+'/app?tab=Preparation');const historical=panel.getByRole('region',{name:'Scenario '+scenario.id,exact:true});
+  await historical.getByRole('status').waitFor();assert.equal(await historical.getByRole('button',{name:'Send exact approved notice',exact:true}).count(),0);assert.equal(await historical.getByRole('button',{name:'Draft nonbinding brief',exact:true}).count(),0);
+  await snap('erased-owner-history',historical,page);
   return scenario;
  }finally{for(const context of contexts)await context.close();}
 }

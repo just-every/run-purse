@@ -7,6 +7,7 @@ export async function agreementDisposition(s:State,a:Actor,op:string,b:Data,env?
     if(op!=='agreement-disposition')return;
     requireThat(a.owner,'Current native owner required to record an agreement decision',403);
     const agreement=get(s,'agreement',b.agreement),scenario=get(s,'recurringScenario',b.scenario);
+    requireThat(!scenario.sourceValuesErased,'Scenario source values were erased; obtain fresh approvals',409);
     requireThat(b.confirmed===true,'Explicit agreement decision approval is required');
     requireThat(b.version===agreement.version&&b.hash===scenario.hash&&scenario.choices.agreementIds.includes(agreement.id),'Use the exact reviewed agreement and scenario',409);
     requireThat(scenario.choices.kind==='cancel','An approved cancellation scenario is required for an agreement disposition',409);

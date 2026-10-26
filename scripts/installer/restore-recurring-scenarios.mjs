@@ -1,3 +1,4 @@
+import {erasedSourceFact} from '../../src/purse/erasure-journal.mjs';
 import { createHash } from 'node:crypto';
 import { recordedRenewalForecast, recurringDraftText } from '../../src/purse/recurring-forecast.mjs';
 import { validateRecurringNotices } from './restore-recurring-notices.mjs';
@@ -42,7 +43,7 @@ export function validateRecurringScenarios(all, get, check, rows = []) {
  const audit = (action, predicate) => all('audit').some(row => row.action === action && predicate(row));
  const weekday = value => { const d = new Date(value + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7); return d.toISOString().slice(0, 10); };
  for (const scenario of all('recurringScenario')) {
-  shape(scenario, 'id,choices,snapshot,hash,mode,model,provider,label,preparedBy,at,status', 'record');
+  shape(scenario, 'id,choices,snapshot,hash,mode,model,provider,label,preparedBy,at,status,sourceValuesErased', 'record');
   fail(!containsProtectedInput(scenario), 'protected_context');
   fail(str(scenario.id, 200) && /^[a-f0-9]{64}$/.test(scenario.hash) && scenario.mode === 'deterministic v1' && scenario.model === 'none' && scenario.provider === 'none' && scenario.status === 'proposed' && str(scenario.preparedBy, 200) && instant(scenario.at), 'identity');
   const c = object(scenario.choices, 'choices'), s = object(scenario.snapshot, 'snapshot');
@@ -222,7 +223,7 @@ export function validateRecurringScenarios(all, get, check, rows = []) {
    }
    fail(equal(s.budgetOwners,expectedBudgetOwners.sort((a,b)=>a.policy.localeCompare(b.policy)||a.order.localeCompare(b.order))),'budget_owner_coverage');
   }
-  fail(scenario.hash===createHash('sha256').update(canonical({choices:c,snapshot:s})).digest('hex'),'hash');
+  fail(scenario.sourceValuesErased?erasedSourceFact(all,'recurringScenario',scenario.id,scenario):scenario.hash===createHash('sha256').update(canonical({choices:c,snapshot:s})).digest('hex'),'hash');
   fail(audit('recurring-scenario-prepare',a=>a.record===scenario.id&&a.hash===scenario.hash&&a.actor===scenario.preparedBy&&equal(a.agreements,c.agreementIds)),'prepare_audit');
  }
  for(const consent of all('recurringScenarioConsent')) {
@@ -238,7 +239,7 @@ export function validateRecurringScenarios(all, get, check, rows = []) {
   fail(audit('recurring-scenario-approve',a=>a.record===scenario.id&&a.hash===scenario.hash&&a.consent===consent.id&&a.actor===consent.actor&&a.role===consent.role&&a.agreement===consent.agreement&&(a.policy??null)===(consent.policy??null)),'consent_audit');
  }
  for(const draft of all('recurringScenarioDraft')) {
-  shape(draft,'id,scenario,hash,kind,binding,sent,actor,at,authorityProofs,text,draftHash','draft');fail(!containsProtectedInput(draft),'draft_protected');
+  shape(draft,'id,scenario,hash,kind,binding,sent,actor,at,authorityProofs,text,draftHash,sourceValuesErased','draft');fail(!containsProtectedInput(draft),'draft_protected');
   const scenario=get('recurringScenario',draft.scenario),c=scenario.choices,s=scenario.snapshot;
   fail(draft.id===scenario.id&&draft.hash===scenario.hash&&draft.binding===false&&draft.sent===false&&str(draft.text,1000000)&&str(draft.actor,200)&&instant(draft.at)&&draft.kind===(c.kind==='cancel'?'cancellation-brief':'negotiation-brief'),'draft_identity');
   const consents=all('recurringScenarioConsent').filter(r=>r.scenario===scenario.id&&r.hash===scenario.hash);
@@ -250,7 +251,7 @@ export function validateRecurringScenarios(all, get, check, rows = []) {
   const absolute=BigInt(Math.abs(s.effect.cashMinor)),cashText=`${s.currency} ${s.effect.cashMinor<0?'-':''}${absolute/100n}.${String(absolute%100n).padStart(2,'0')}`;
   const body=['NONBINDING DRAFT — human review and separate sending required.',`Scenario ${scenario.hash}`,`Action: ${c.kind}`,...s.agreements.map(r=>`${agreementLabel(r.id)}: notice deadline ${r.noticeDeadline}.`),`Assumption reason: ${c.reason}`,`Operational risk: ${c.operationalRisk}`,`Hypothetical cash change: ${cashText}. Unknown forecasts: ${s.unknownForecastAgreements.map(agreementLabel).join(', ')||'none'}.`,'No commitment, forecast, agreement, purchase order, supplier communication or cancellation has been changed.'].join('\n');
   const recorded=Object.hasOwn(s,'recordedForecast');
-  fail(recorded?draft.draftHash===createHash('sha256').update(draft.text).digest('hex'):draft.draftHash===undefined,'draft_hash');
+  fail(draft.sourceValuesErased?erasedSourceFact(all,'recurringScenarioDraft',draft.id,draft):recorded?draft.draftHash===createHash('sha256').update(draft.text).digest('hex'):draft.draftHash===undefined,'draft_hash');
   fail(draft.text===(recorded?recurringDraftText(scenario):body)&&audit('recurring-scenario-draft',a=>a.record===scenario.id&&a.hash===scenario.hash&&a.kind===draft.kind&&a.actor===draft.actor),'draft_body_audit');
  }
  validateRecurringNotices(all,get,check);

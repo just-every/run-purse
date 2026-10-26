@@ -980,7 +980,7 @@
       "executable": false
     },
     "scripts/installer/restore-recurring-discovery.mjs": {
-      "sha256": "aa76a34764f6eac58bf36700a2b5ae89c9f41a41279045acffb9ac59b24ee6de",
+      "sha256": "047d6f811151eb0c1bf30b9036856390c2c90b5adf4bda9a22e2126846f4ae6d",
       "executable": false
     },
     "scripts/installer/restore-recurring-notices.mjs": {
@@ -988,7 +988,7 @@
       "executable": false
     },
     "scripts/installer/restore-recurring-scenarios.mjs": {
-      "sha256": "94b3b9b3ea00c5dfcd33a140878bec5e0cd6fec81d95d22553209f7eae6f91f6",
+      "sha256": "71c55b041cf071ebf787af896da41541932ef1a6b23f5510956b96bf80807d1b",
       "executable": false
     },
     "scripts/installer/restore-rfq.mjs": {
@@ -2920,7 +2920,7 @@
       "executable": false
     },
     "src/purse/agreement-disposition.ts": {
-      "sha256": "ef118bb207269d3f96bd0326ebfec429cc40ccf76b83b398e398f1814f07c21c",
+      "sha256": "3c6296c8f53db3e8a5b06b6fe5b0a4731ee7e2153e60bff2a23df27e200b9676",
       "executable": false
     },
     "src/purse/agreement-reading-fields.ts": {
@@ -3060,7 +3060,7 @@
       "executable": false
     },
     "src/purse/erasure-execute.ts": {
-      "sha256": "6b0b1ccf5dd080fb1bdb57c8c86463cfe23bcd5f9bd8094e106f4567be083d9f",
+      "sha256": "66fda9687fd4c146d83df2f1ffd329c6325d485b644a8450105f7e60188af65c",
       "executable": false
     },
     "src/purse/erasure-history-text.d.mts": {
@@ -3088,7 +3088,7 @@
       "executable": false
     },
     "src/purse/erasure-plan.ts": {
-      "sha256": "adfe36156205f356268587536c81eb8cfbeaeccb2ac0f212c6679031f5ae35ac",
+      "sha256": "34e52183b1096bf53dff20606ad70078d72fd1a6c84055606d74be7d63d591d1",
       "executable": false
     },
     "src/purse/erasure-refusal.ts": {
@@ -3520,7 +3520,7 @@
       "executable": false
     },
     "src/purse/recurring-scenarios.ts": {
-      "sha256": "eb326bc4e7bb0c5e43f221773b6a9fcc8ad3871edb5c4a8b462fd25bef1ff9bb",
+      "sha256": "e31801ce05a1213a6a180b1a06f2b956905ba7d9d12113ed6db91e7f59e50f1c",
       "executable": false
     },
     "src/purse/recurring-schedule.ts": {
@@ -4268,7 +4268,7 @@
       "executable": false
     },
     "src/ui/recurring-notices.tsx": {
-      "sha256": "7450f2fc3f93a9b50a81ba0b90b6002c49f83de9cfd7c6c1f9afb5035f491e29",
+      "sha256": "5d134ad88807929705e2196e976e1957dacc98796193b24d7ebd15ed4a57a68b",
       "executable": false
     },
     "src/ui/recurring-opportunities.tsx": {
@@ -4280,7 +4280,7 @@
       "executable": false
     },
     "src/ui/recurring-scenarios.tsx": {
-      "sha256": "bfdf2c8b100aac75bb0cd696a226043c699903105c7271b3ab9730bc5410df36",
+      "sha256": "2326cc2c200285e62575a7bce14aae39c6a88dd3ad56244c167e5ae25a4ef532",
       "executable": false
     },
     "src/ui/request-again.tsx": {
@@ -4464,7 +4464,7 @@
       "executable": false
     },
     "tests/agent-value.test.mjs": {
-      "sha256": "04a2fc194f3b5679d8eb53e479b4c9491dca7898431e6848e942ac594fcc6b06",
+      "sha256": "65366e4ac51223704ae6e4c1ab238ff4fd4df84f6aca71e4c39cf2d8f14f3e3b",
       "executable": false
     },
     "tests/agreement-reading.test.mjs": {
@@ -4928,7 +4928,7 @@
       "executable": false
     },
     "tests/recurring-scenario-web-rider.mjs": {
-      "sha256": "70d38b9d6cb47391e2891369a5888bc312a1c05dfc162c064bc1c77f3615227c",
+      "sha256": "e4aad799485151c5441693ec4b8d4c5d726443a80fad112d94a43f842e195daf",
       "executable": false
     },
     "tests/restore-po-documents.mjs": {

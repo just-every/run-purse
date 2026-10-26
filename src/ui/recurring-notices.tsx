@@ -49,7 +49,7 @@ export function RecurringNotices({ scenario, draft, data, owner, mutate }: { sce
                 <label><input type="checkbox" name="consent" value="yes" required/> I authorize sending this exact approved draft to the recipient above.</label>
             </Form>}
         </Details>
-        {owner && scenario.choices.kind === 'cancel' && attempts.some(send=>['accepted','suppressed'].includes(send.status)) && <Details label="Record agreement disposition">
+        {owner && !scenario.sourceValuesErased && scenario.choices.kind === 'cancel' && attempts.some(send=>['accepted','suppressed'].includes(send.status)) && <Details label="Record agreement disposition">
             <p>Record the approved agreement decision separately after checking the required notice method. Manage recurring series and approved PO cancellation in the linked order controls.</p>
             {dispositionAgreements.map((agreement: D) => <Form key={agreement.id + ':' + agreement.version} label={'Record disposition for ' + agreement.name} onSubmit={input => mutate('agreement-disposition', {agreement: agreement.id, version: agreement.version, scenario: scenario.id, hash: scenario.hash, disposition: input.disposition, confirmed: input.confirmed === 'yes', reason: input.reason})}>
                 <Field label={'Agreement decision for ' + agreement.name} name="disposition" options={[{value: 'non-renewal', label: 'Non-renewal'}, {value: 'cancellation', label: 'Cancellation'}]}/>

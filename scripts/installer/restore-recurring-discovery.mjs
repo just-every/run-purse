@@ -1,3 +1,4 @@
+import {erasedSourceFact} from '../../src/purse/erasure-journal.mjs';
 import {recordedRenewalForecast} from '../../src/purse/recurring-forecast.mjs';
 import {createHash} from 'node:crypto';
 import {containsProtectedInput} from '../../src/purse/protected-context-fields.mjs';
@@ -18,7 +19,7 @@ export function validateRecurringDiscovery(all,get,check) {
    const {id,...candidate}=proposal;
    const recorded=Object.hasOwn(proposal.baseline??{},'recordedForecast');
    check(['consolidate','renegotiate','cancellation-review'].includes(proposal.kind)&&proposal.conditional===true&&proposal.reviewRequired===true&&Array.isArray(proposal.agreementIds)&&proposal.agreementIds.length&&proposal.agreementIds.every(id=>get('agreement',id))&&Array.isArray(proposal.sources)&&proposal.sources.length<=2000&&(proposal.baseline?.recordedForecast?['unknown','recorded-terms'].includes(proposal.baseline.futureForecast):proposal.baseline?.futureForecast==='unknown'),'discovery_proposal');
-   check(id===createHash('sha256').update(canonical({from:run.from,to:run.to,...candidate})).digest('hex'),'discovery_digest');
+   check(run.sourceValuesErased?erasedSourceFact(all,'agentRun',run.id,run):id===createHash('sha256').update(canonical({from:run.from,to:run.to,...candidate})).digest('hex'),'discovery_digest');
    for(const source of proposal.sources) {
     check(['agreement','supplier','recurringSeries','agreementAward','order','request','valueSeatImport','supplierIssue'].includes(source.kind)&&typeof source.revision==='string'&&source.revision.length&&source.value&&get(source.kind,source.id),'discovery_source');
     if(recorded&&source.kind==='agreement'){
@@ -50,12 +51,12 @@ export function validateRecurringDiscovery(all,get,check) {
   }
  }
  for(const notice of all('recurringDiscoveryNotice')){
-  check(!containsProtectedInput(notice)&&Object.keys(notice).every(key=>['id','run','proposal','preparedBy','preparerVersion','recipient','recipientEmail','recipientVersion','role','agreementIds','sourceHash','from','to','noticeWindow','noticeDeadlines','at','mode','model','provider','status'].includes(key)),'discovery_notice_fields');
+  check(!containsProtectedInput(notice)&&Object.keys(notice).every(key=>['id','run','proposal','preparedBy','preparerVersion','recipient','recipientEmail','recipientVersion','role','agreementIds','sourceHash','from','to','noticeWindow','noticeDeadlines','at','mode','model','provider','status','sourceValuesErased'].includes(key)),'discovery_notice_fields');
   const run=get('agentRun',notice.run),proposal=run.proposals?.find(row=>row.id===notice.proposal);
   check(run.workflow==='recurring-discovery'&&run.scheduled===true&&proposal&&notice.sourceHash===proposal.id&&notice.from===run.from&&notice.to===run.to&&Number.isFinite(Date.parse(notice.at))&&Date.parse(notice.at)>=Date.parse(run.at)&&equal(notice.noticeWindow,run.noticeWindow)&&equal(notice.noticeDeadlines,proposal.baseline.noticeDeadlines),'discovery_notice_source');
   check(text(notice.preparedBy)&&positive(notice.preparerVersion)&&all('audit').some(row=>row.action==='recurring-discovery-notice'&&row.record===notice.id&&row.run===run.id&&row.actor===notice.preparedBy&&row.recipient===notice.recipient&&row.at===notice.at),'discovery_notice_authority_custody');
   check(text(notice.recipient)&&text(notice.recipientEmail)&&notice.recipientEmail===notice.recipientEmail.toLowerCase()&&positive(notice.recipientVersion)&&['owner','finance'].includes(notice.role)&&notice.mode==='deterministic v1'&&notice.model==='none'&&notice.provider==='none'&&notice.status==='proposed','discovery_notice_custody');
-  check(notice.id===digest({window:run.noticeWindow,sourceHash:proposal.id,recipient:notice.recipient,role:notice.role}),'discovery_notice_identity');
+  check(notice.sourceValuesErased?erasedSourceFact(all,'recurringDiscoveryNotice',notice.id,notice):notice.id===digest({window:run.noticeWindow,sourceHash:proposal.id,recipient:notice.recipient,role:notice.role}),'discovery_notice_identity');
   const owned=proposal.sources.filter(source=>source.kind==='agreement'&&source.value.owner===notice.recipient).map(source=>source.id).sort();
   check(Array.isArray(notice.agreementIds)&&equal(notice.agreementIds,notice.role==='owner'?owned:proposal.agreementIds)&&(notice.role==='owner'?owned.length>0:owned.length===0),'discovery_notice_recipient');
  }

@@ -204,6 +204,7 @@ export async function recurringScenarios(s: State, a: Actor, op: string, b: Data
         return { id, ...row };
     }
     const scenario = get(s, 'recurringScenario', b.id);
+    requireThat(!scenario.sourceValuesErased,'Scenario source values were erased; prepare a new scenario',409);
     requireThat(b.hash === scenario.hash, 'Approve the exact scenario hash', 409);
     if(op==='recurring-scenario-approve')scenarioConsentAuthority(s,a,scenario,b.role,b.agreement,b.policy);
     else requireThat(a.owner,'Current native owner required to draft a nonbinding brief',403);
@@ -233,6 +234,7 @@ export async function recurringScenarios(s: State, a: Actor, op: string, b: Data
 export async function currentRecurringScenario(s:State,a:Actor,b:Data) {
     requireThat(a.owner,'Current native owner required',403);
     const scenario=get(s,'recurringScenario',b.id);
+    requireThat(!scenario.sourceValuesErased,'Scenario source values were erased; prepare a new scenario',409);
     requireThat(b.hash===scenario.hash,'Use the exact scenario hash',409);
     const fresh=snapshot(s,a,scenario.choices);
     requireThat(await valueDigest(canonicalValue({choices:scenario.choices,snapshot:fresh}))===scenario.hash,'Scenario sources changed; prepare a new scenario',409);
@@ -256,9 +258,9 @@ export function projectRecurringScenario(s: State, a: Actor, scenario: Data): Da
         requireThat(canonicalValue(fresh)===canonicalValue(stored.snapshot),'Scenario sources changed; prepare a new scenario',409);
     }
     const canConsent=(role:string,agreement?:string,policy?:string)=>{try{scenarioConsentAuthority(s,a,stored,role,agreement,policy);return true;}catch{return false;}};
-    return {...pick(stored,'id,choices,snapshot,hash,mode,model,provider,label,preparedBy,at,status'),
-        mayApproveFinance:canConsent('finance'),mayApproveAgreements:stored.choices.agreementIds.filter((id:string)=>canConsent('owner',id)),
-        mayApproveBudgets:[...new Set<string>((stored.snapshot.budgetOwners??[]).filter((r:Data)=>canConsent('budget',undefined,r.policy)).map((r:Data)=>r.policy))],mayDraft:a.owner,maySend:a.owner};
+    return {...pick(stored,'id,choices,snapshot,hash,mode,model,provider,label,preparedBy,at,status,sourceValuesErased'),
+        mayApproveFinance:!stored.sourceValuesErased&&canConsent('finance'),mayApproveAgreements:stored.sourceValuesErased?[]:stored.choices.agreementIds.filter((id:string)=>canConsent('owner',id)),
+        mayApproveBudgets:stored.sourceValuesErased?[]:[...new Set<string>((stored.snapshot.budgetOwners??[]).filter((r:Data)=>canConsent('budget',undefined,r.policy)).map((r:Data)=>r.policy))],mayDraft:a.owner&&!stored.sourceValuesErased,maySend:a.owner&&!stored.sourceValuesErased};
 
 }
 
