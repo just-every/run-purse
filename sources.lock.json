@@ -4796,7 +4796,7 @@
       "executable": false
     },
     "tests/native-web-fixture.mjs": {
-      "sha256": "ccdde6f8feda3ae69e9a93d1fbddf07544535ff3f2b82114e1ee0a87c90d68f7",
+      "sha256": "f1c39bae7cf631a5ece2558349fb4ef3c7920aa24e085d96b93125b1a3539861",
       "executable": false
     },
     "tests/order-adoption-fixture.mjs": {
