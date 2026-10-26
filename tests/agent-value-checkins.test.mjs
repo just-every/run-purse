@@ -152,6 +152,8 @@ test('AGENT-006 public Cron proposes in the recorded notice window once per sour
  const configure=async enabled=>{const policy=(await read()).agentPolicy.find(row=>row.agent==='AGENT-006'&&row.purchaseType==='software');return h.command('agent-policy',{...policy,enabled,reason:enabled?'Enable scheduled recurring research':'Pause scheduled recurring research'})}
  const start=Date.parse(f.agreements[0].noticeDeadline+'T12:00:00Z')-7*day
  const before=await read(),mailBefore=h.messages.length
+ const financialRows=async()=>(await h.db.prepare("SELECT kind,id,revision,value FROM p_records WHERE business='main' AND kind IN ('order','commitment','decision','recurringScenario','recurringScenarioConsent','recurringScenarioDraft') ORDER BY kind,id").all()).results
+ const purchasingBefore=await financialRows()
  await tick(start-day)
  assert.equal((await rows('recurringDiscoveryNotice')).length,0,'No proposal notice precedes the recorded lead days')
  await configure(false);await tick(start)
@@ -203,6 +205,7 @@ test('AGENT-006 public Cron proposes in the recorded notice window once per sour
  assert.deepEqual((await rows('recurringDiscoveryNotice')).map(notice=>notice.id).sort(),currentIds,'A changed source outside the notice window cannot notify')
  assert.equal(h.messages.length,mailBefore,'Research never sends supplier or finance mail')
  const after=await read()
- for(const kind of ['order','commitment','decision','recurringScenario','recurringScenarioConsent','recurringScenarioDraft'])assert.deepEqual(after[kind],before[kind],'Scheduled research cannot execute '+kind)
+ assert.deepEqual(await financialRows(),purchasingBefore,'Scheduled research changes no durable purchasing field or revision')
+ for(const kind of ['commitment','decision','recurringScenario','recurringScenarioConsent','recurringScenarioDraft'])assert.deepEqual(after[kind],before[kind],'Scheduled research cannot execute '+kind)
  assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true,'Scheduled proposal and later-recipient custody restore without authority')
 })

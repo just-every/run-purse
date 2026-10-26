@@ -4460,7 +4460,7 @@
       "executable": false
     },
     "tests/agent-value-checkins.test.mjs": {
-      "sha256": "11266dcdcc4eff6208fbd5338b994fcd76f1729fb86bb981e91837c021f147af",
+      "sha256": "91057a4ce9eb7403443d974719ada52402ea7f0d99512b39f4bda69979c39e24",
       "executable": false
     },
     "tests/agent-value.test.mjs": {
