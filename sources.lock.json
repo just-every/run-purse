@@ -4464,7 +4464,7 @@
       "executable": false
     },
     "tests/agent-value.test.mjs": {
-      "sha256": "139b34c442bff28bec51b4dca34837022aea98cad96cd23321cb8e4f1eb2631c",
+      "sha256": "04a2fc194f3b5679d8eb53e479b4c9491dca7898431e6848e942ac594fcc6b06",
       "executable": false
     },
     "tests/agreement-reading.test.mjs": {
@@ -4928,7 +4928,7 @@
       "executable": false
     },
     "tests/recurring-scenario-web-rider.mjs": {
-      "sha256": "ab9890b5aa6e907af975e2e4451e7351a187d0f23c290eea7f6c412af94d3793",
+      "sha256": "70d38b9d6cb47391e2891369a5888bc312a1c05dfc162c064bc1c77f3615227c",
       "executable": false
     },
     "tests/restore-po-documents.mjs": {
