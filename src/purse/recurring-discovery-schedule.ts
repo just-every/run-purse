@@ -47,6 +47,8 @@ async function claim(env: Bindings, preparer: Native, anchor: Data, proposal: Da
         return row && governed(state, { ...row, id }, preparer);
     }) || !canReadRecurringDiscoveryProposal(state, actor(preparer), proposal) ||
         !proposal.sources.every((source: Data) => state.get(source.kind + ':' + source.id)?.revision === source.revision)) return;
+    const anchors=proposal.agreementIds.flatMap((id:string)=>{const row=state.get('agreement:'+id)?.value;const candidate=row&&window(state,{...row,id},now);return candidate&&candidate.from===noticeWindow.from&&candidate.to===noticeWindow.to?[id]:[];}).sort();
+    if(anchors[0]!==anchor.id)return;
     const natives = (await env.DB.prepare("SELECT id,email,role,version FROM oa_operators WHERE status='active'").all<Native>()).results;
     if (!natives.some(native => native.id === preparer.id && native.version === preparer.version && native.role === 'owner')) return;
     const targets = recipients(state, natives, proposal);

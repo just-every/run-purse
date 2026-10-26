@@ -163,6 +163,7 @@ test('AGENT-006 public Cron proposes in the recorded notice window once per sour
  await Promise.all([tick(start),tick(start)])
  let notices=await rows('recurringDiscoveryNotice'),runs=(await rows('agentRun')).filter(row=>row.scheduled&&row.workflow==='recurring-discovery')
  assert.ok(notices.length);assert.ok(runs.length)
+ assert.equal(new Set(runs.map(run=>run.proposals[0].id)).size,runs.length,'Agreements sharing a notice window notify each exact source proposal once')
  assert.ok(notices.every(notice=>notice.role==='owner'),'Finance read access alone cannot receive an approval proposal')
  assert.ok(runs.every(run=>run.proposals.every(proposal=>!proposal.agreementIds.includes(f.agreements[1].id))),'An enabled Software type cannot research a Hardware commitment')
  for(const run of runs){

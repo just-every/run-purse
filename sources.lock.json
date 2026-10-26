@@ -3488,7 +3488,7 @@
       "executable": false
     },
     "src/purse/recurring-discovery-schedule.ts": {
-      "sha256": "5ea6c57566e546b35fb769d00c7db625df903d1560d3210f4863ac6641a842be",
+      "sha256": "1b4bfff48e124fdec2f35a0fcfc1a0506c1a17849e1d9abdbeff84f791eb4779",
       "executable": false
     },
     "src/purse/recurring-forecast.d.mts": {
@@ -4460,7 +4460,7 @@
       "executable": false
     },
     "tests/agent-value-checkins.test.mjs": {
-      "sha256": "91057a4ce9eb7403443d974719ada52402ea7f0d99512b39f4bda69979c39e24",
+      "sha256": "655e106ee2d73a903348b3269a40609b5f83b99c3a833cfb6bfa1c8f18b2425d",
       "executable": false
     },
     "tests/agent-value.test.mjs": {
