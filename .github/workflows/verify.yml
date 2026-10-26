@@ -38,7 +38,7 @@ jobs:
         # (tests/browser.mjs and tests/browser-shard.mjs), so neither needs its own job.
         journey: [supplier-performance, catalogue, order-chasing, supplier-documents, supplier-duplicates, payables, audit-log, spend-report, po-documents, performance-report, invoice-risk, receipt-routing, quote-reading, rfq, invoice-inbox, email-intake, search, agreements, integration-tokens, agent-value, quote-agent, order-adoption, protected-storage, protected-preparation]
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ matrix.width == 1440 && 25 || 15 }}
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Reclaim unused hosted-runner SDKs
