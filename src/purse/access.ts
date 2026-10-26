@@ -37,6 +37,7 @@ function recordContext(s: State, record: Data, visited = new Set<Data>()): Conte
         for (const allocation of line.allocations ?? []) { add('departments', allocation.costCentre ?? allocation.department); add('projects', allocation.project); add('locations', allocation.location); }
     }
     const references: [string, unknown][] = [['request', record.request ?? record.requestId], ['order', record.order ?? record.orderId], ['invoice', record.invoice ?? record.invoiceId], ['rfq', record.rfq], ['emailIntake', record.intake ?? record.emailIntake], ['invoiceReading', record.reading]];
+    for(const source of record.sources??[])references.push(['request',source.request]);
     if (typeof record.record === 'string') {
         const candidates = record.kind ? [s.get(record.kind + ':' + record.record)] : [...s.values()].filter(row => row.id === record.record && row.value !== record);
         if (candidates.filter(Boolean).length === 1) {
@@ -63,6 +64,7 @@ function grantMatches(s: State, a: Actor, grant: AccessGrant, record: Data, perm
     const context = recordContext(s, record);
     if (!scopeMatches(grant.scope, context) || grant.roleScope && !scopeMatches(grant.roleScope, context)) return false;
     if (grant.role !== 'requester' || permission === 'request.create') return true;
+    if(record.sources&&permission==='po.read')return record.sources.every((source:Data)=>{const request=s.get('request:'+source.request)?.value;return request&&(request.requester===a.id||request.requesterEmail?.toLowerCase()===a.email.toLowerCase()||grant.departmentRead===true&&Boolean(grant.scope.departments?.length));});
     if (context.requester === a.id || context.requesterEmail?.toLowerCase() === a.email.toLowerCase()) return true;
     return permission !== 'request.edit' && grant.departmentRead === true && Boolean(grant.scope.departments?.length) && context.dimensions.departments.length > 0;
 }

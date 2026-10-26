@@ -16,10 +16,18 @@ export function poContent(s: State, order: Data): PoPdfContent {
         { heading: p?.shipTo.label || 'Ship to', lines: address(p?.shipTo) },
         { heading: labels.supplier, lines: [value(supplier?.name), 'Supplier ID: ' + order.supplier, value(supplier?.address), labels.remitTo + ': ' + value(supplier?.remitTo)] },
         { heading: 'Order terms', lines: [labels.paymentTerms + ': ' + value(order.terms), labels.shippingTerms + ': ' + value(p?.shippingTerms), 'Deposit / prepayment terms: ' + value(order.poDetails?.depositTerms), labels.needDate + ': ' + value(order.needDate), labels.promisedDate + ': ' + value(promised), 'Buyer contact: ' + value(p?.buyerContact), labels.notes + ': ' + value(p?.notes || order.poDetails?.notes)] },
-        { heading: 'Order lines', lines: order.lines.map((l: Data, i: number) => `${i + 1}. ${labels.description}: ${l.description}\n${labels.partNumber}: ${value(l.partNumber)} · ${labels.quantity}: ${l.quantity} · ${labels.unit}: ${value(l.unit)} · ${labels.unitPrice}: ${money(l.unitMinor, order.currency)}\n${labels.lineTax}: ${l.lineTaxMinor == null ? unknown : money(l.lineTaxMinor, order.currency)} · ${labels.lineTotal}: ${money(l.totalMinor + (l.lineTaxMinor || 0), order.currency)}\n${p?.shipTo.label || 'Ship to'}: ${l.shipTo || address(p?.shipTo).join(', ')}${l.needDate?'\nNeed date: '+l.needDate:''}${l.notes?'\nNotes to supplier: '+l.notes:''}${l.supplierSnapshot?'\nLine supplier: '+l.supplierSnapshot.name:''}`) },
+        { heading: 'Order lines', lines: order.lines.map((l: Data, i: number) => `${i + 1}. ${labels.description}: ${l.description}\n${labels.partNumber}: ${value(l.partNumber)} · ${labels.quantity}: ${l.quantity} · ${labels.unit}: ${value(l.unit)} · ${labels.unitPrice}: ${money(l.unitMinor, order.currency)}\n${labels.lineTax}: ${l.lineTaxMinor == null ? unknown : money(l.lineTaxMinor, order.currency)} · ${labels.lineTotal}: ${money(l.totalMinor + (l.lineTaxMinor || 0), order.currency)}\n${l.documentProfile?.shipTo?.label || p?.shipTo.label || 'Ship to'}: ${l.shipTo || address(l.documentProfile?.shipTo??p?.shipTo).join(', ')}${l.needDate?'\nNeed date: '+l.needDate:''}${l.notes?'\nNotes to supplier: '+l.notes:''}${l.supplierSnapshot?'\nLine supplier: '+l.supplierSnapshot.name:''}`) },
         { heading: 'Totals', lines: [labels.freight + ': ' + money(order.freightMinor, order.currency), labels.tax + ': ' + money(order.taxMinor, order.currency), ...(order.otherChargesMinor ? ['Other charges: '+money(order.otherChargesMinor,order.currency)] : []), labels.total + ': ' + money(order.totalMinor, order.currency)] },
         { heading: 'Purchase terms and conditions', lines: [value(p?.standardTerms)] },
     ];
+    for(const source of order.sources??[]) {
+        const profile=source.documentProfile;
+        sections.push({heading:'Source request '+source.request+' · revision '+source.revision,lines:[
+            'Source lines: '+source.lines.join(', '),'Location: '+value(source.location),'Department: '+value(source.costCentre),
+            'Legal entity: '+value(profile?.legalName),'Bill to: '+address(profile?.billTo).join(', '),'Ship to: '+address(profile?.shipTo).join(', '),
+            'Shipping terms: '+value(profile?.shippingTerms),'Purchase terms: '+value(profile?.standardTerms),
+        ]});
+    }
     if(order.charges?.length)sections.splice(4,0,{heading:'Charge lines',lines:order.charges.map((charge:Data,index:number)=>`${index+1}. ${charge.kind}: ${charge.description} · ${money(charge.amountMinor,order.currency)}`)});
     if(order.poDetails?.blanket) sections.unshift({heading:'Blanket purchase order',lines:['Approved cap: '+money(order.totalMinor,order.currency),'Valid from: '+order.poDetails.blanket.validFrom,'Valid through (inclusive): '+order.poDetails.blanket.validThrough,'Draw-down basis: recorded invoice evidence; not a supplier send or payment']});
     for (const line of order.lines.filter((l: Data) => l.service)) sections.push({ heading: 'Service receiving: ' + line.description, lines: ['Basis: ' + line.service.mode, ...(line.service.milestones ?? []).map((m: Data) => m.name + ': ' + money(m.valueMinor, order.currency))] });
@@ -48,7 +56,7 @@ export function poContent(s: State, order: Data): PoPdfContent {
         sections.unshift({ heading: 'Change order ' + sequence, lines: ['Change order revision: ' + sequence, 'Prior PO: ' + prior.number, 'Approved request/PO revision: ' + order.revision, ...changes] });
     }
     return { title: `${p?.legalName || 'Legal entity: Not recorded'} · ${order.number}`, subtitle: `${order.status.toUpperCase()} · Revision ${order.revision} · Issued ${order.issuedAt || 'Not issued'}${p ? '' : ' · Legacy document fields not recorded'}\nSource request ${order.request} · Generated ${order.generatedAt || 'Not recorded'}`,
-        ...(p?.logo ? { logo: p.logo } : {}), sections, attachments: [p?.termsFile, p?.certificate].filter(file=>file&&!file.erasure) };
+        ...(p?.logo ? { logo: p.logo } : {}), sections, attachments: [...new Map([p,...(order.sources??[]).map((source:Data)=>source.documentProfile)].flatMap(profile=>[profile?.termsFile,profile?.certificate]).filter(file=>file&&!file.erasure).map(file=>[file.sha256??file.base64,file])).values()] };
 }
 export function poHtml(content: PoPdfContent) {
     const escape = (v: string) => v.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));

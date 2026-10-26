@@ -1,3 +1,4 @@
+import { orderSourceFace, sourceLineIdentity } from './po-combination-sources';
 import { all, audit, extended, get, minor, put, qty, requireThat, text, uid, type Actor, type Data, type State } from './types';
 import { moneyInput } from './money';
 import { mayReceive, receiptVersion } from './receipt-routing';
@@ -56,24 +57,25 @@ export function serviceReceipt(s: State, a: Actor, b: Data) {
     requireThat(valueMinor > 0 && valueMinor <= (event === 'return' ? position.acceptedMinor : position.outstandingMinor), 'Service value exceeds accepted or outstanding value, or does not advance completion', 409);
     // Quantities support existing receiving displays; valueMinor is the matching authority.
     const q = Math.max(1, Number((BigInt(valueMinor) * BigInt(line.q) + BigInt(line.totalMinor) / 2n) / BigInt(line.totalMinor)));
+    const sourceFace=o.sources?orderSourceFace(o,line.sourceRequest):undefined,sourceBefore=sourceFace?remainingValue(s,sourceFace):0;
     const id = uid(), record = { order: o.id, line: line.id, event, q, quantity: qty(q), valueMinor: minor(valueMinor), mode, serviceSequence: all(s, 'receipt').filter(e => e.order === o.id && e.line === line.id).length + 1, ...(percentage ? { percentage } : {}), ...(milestone ? { milestone } : {}), reason: text(b.reason, 'Service acceptance evidence'), actor: a.id, at: new Date().toISOString() };
     put(s, 'receipt', id, record);
-    const request = get(s, 'request', o.request), delta = remainingValue(s, o) - commitment(s, request);
+    const request = get(s,'request',line.sourceRequest??o.request),delta=sourceFace?remainingValue(s,sourceFace)-sourceBefore:remainingValue(s,o)-commitment(s,request);
     if (delta > 0 && !reservationAvailable(s, request, delta)) {
         put(s, 'order', o.id, { ...o, replenishmentStatus: 'held', replenishmentMinor: delta, replenishmentReason: 'Returned service value needs renewed budget authority' });
         put(s, 'receipt', id, { ...record, replenishmentStatus: 'held', replenishmentMinor: delta, replenishmentReason: 'Returned service value needs renewed budget authority' });
-    } else if (delta) ledger(s, a, request, delta, event === 'return' ? 'return-reservation' : 'service-receipt-release');
+    } else if (delta) ledger(s,a,sourceFace?{...request,lines:[line]}:request,delta, event === 'return' ? 'return-reservation' : 'service-receipt-release');
     audit(s, a, 'service-receipt', o.id, { receipt: id, line: line.id, valueMinor, mode, event, ownerOverride: a.owner });
     return get(s, 'receipt', id);
 }
 
 /** First fitting evidence consumes received value. An oversized exception cannot block a smaller valid bill. */
 export function serviceInvoiceMatches(s: State, current: Data, line: Data) {
-    const lineage = new Set(all(s, 'order').filter(o => o.request === current.request && o.issuedAt).map(o => o.id));
+    const lineage = new Set(all(s, 'order').filter(o => o.issuedAt&&o.lines.some((candidate:Data)=>sourceLineIdentity(o,candidate)===sourceLineIdentity(current,line))).map(o => o.id));
     const invoices = all(s, 'invoice').filter(i => lineage.has(i.order)).sort((a, b) => (a.entrySequence ?? 0) - (b.entrySequence ?? 0) || a.at.localeCompare(b.at) || a.id.localeCompare(b.id));
     let available = servicePosition(s, current, line).acceptedMinor;
     const matched = new Set<string>();
-    for (const i of invoices) for (const allocation of i.allocations.filter((x: Data) => x.line === line.id)) {
+    for (const i of invoices) for (const allocation of i.allocations.filter((allocation:Data)=>{const order=get(s,'order',i.order),candidate=order.lines.find((candidate:Data)=>candidate.id===allocation.line);return candidate&&sourceLineIdentity(order,candidate)===sourceLineIdentity(current,line);})) {
         if (allocation.amountMinor <= available) { available -= allocation.amountMinor; matched.add(i.id); }
     }
     return matched;

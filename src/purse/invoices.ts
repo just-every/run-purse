@@ -1,3 +1,4 @@
+import { requireCurrentCombination, sourceLineIdentity } from './po-combination-sources';
 import { adoptionDeposits, operationalOrder } from './adoption-position';
 import { publicInvoice } from './invoice-status';
 import { invoiceEvidence, storeInvoiceOriginal } from './invoice-evidence';
@@ -40,6 +41,7 @@ export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: 
         const request = get(s, 'request', o.request);
         requireThat(event && event.order === o.id && event.supplier === o.supplier && event.revision === o.revision && event.acknowledgment?.revision === o.revision && !event.erasure && !event.revokedAt && Date.parse(event.expiresAt) > Date.now() && o.status === 'issued' && o.issuedAt && !o.imported && !o.adoption && request.status === 'approved' && request.revision === o.revision && !o.poDetails?.blanket && !confirmation, 'Current acknowledged exact native order link required', 409);
     }
+    if(!a&&o.sources)requireCurrentCombination(s,o);
     const actorId = a?.id ?? 'supplier-link';
     const result = (value: Data) => a ? scopedInvoice(s, a, value) : value;
     const recordAudit = (action: string, record: string, detail: Data = {}) => {
@@ -62,7 +64,7 @@ export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: 
         requireThat(l && !seen.has(l.id), 'Use each PO line once');
         seen.add(l.id);
         const q = quantity(x.quantity);
-        return { line: l.id, quantity: x.quantity, q, amountMinor: moneyInput(x, 'amount', 'amountMinor', 'Invoice amount'),
+        return { line: l.id, ...(l.sourceRequest?{sourceRequest:l.sourceRequest,sourceRevision:l.sourceRevision,sourceLine:l.sourceLine}:{}), quantity: x.quantity, q, amountMinor: moneyInput(x, 'amount', 'amountMinor', 'Invoice amount'),
             orderedMinor: extended(q, l.unitMinor), receivedQ: linePosition(s, o.id, l).accepted };
     });
     const candidate: Data = { ...(b.release ? { release: text(b.release, 'Blanket release') } : {}), order: o.id, supplier: o.supplier, reference, source, currency: o.currency, allocations, totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total') };
@@ -104,7 +106,7 @@ export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: 
     requireThat(['issued', 'adopted', 'closed', 'cancelled'].includes(o.status), 'Issued PO required for new invoice evidence', 409);
     const closedBalance = allocations.some((x: Data) => {
         const l = o.lines.find((l: Data) => l.id === x.line);
-        const billed = all(s, 'invoice').filter(i => get(s, 'order', i.order).request === o.request).flatMap(i => i.allocations).filter((z: Data) => z.line === l.id).reduce((n: number, z: Data) => n + z.q, 0);
+        const billed = all(s,'invoice').flatMap(invoice=>invoice.allocations.filter((allocation:Data)=>{const parent=get(s,'order',invoice.order);const line=parent.lines.find((z:Data)=>z.id===allocation.line);return line&&sourceLineIdentity(parent,line)===sourceLineIdentity(o,l);})).reduce((n: number, z: Data) => n + z.q, 0);
         return linePosition(s, o.id, l).closed > 0 && billed + x.q > l.q - linePosition(s, o.id, l).closed;
     });
     const id = uid();

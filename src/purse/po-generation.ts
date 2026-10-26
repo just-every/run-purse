@@ -1,3 +1,4 @@
+import {orderHasRequest} from './po-combination-sources';
 import {purchaseTypes} from './agent-governance';
 import { currentDecision } from './approval';
 import { currentPrice } from './catalogue';
@@ -19,8 +20,11 @@ export function generationRule(s: State, request: Data): Data | undefined {
 }
 export function generationReadiness(s: State, request: Data, policy = generationRule(s,request)): Data {
     requireThat(request.status === 'approved' && !request.imported,'Exact native approved request required',409);
-    const existing = all(s,'order').find(o => o.request === request.id && o.revision === request.revision);
-    if (existing) return {status:'generated',order:existing.id,reason:'Buyer consent required to send this exact PO and supplier contact'};
+    const existing = all(s,'order').find(o => orderHasRequest(o,request.id) && (o.sources?.find((source:Data)=>source.request===request.id)?.revision??o.revision) === request.revision);
+    if (existing) {
+        const sent=all(s,'orderSend').find(event=>event.order===existing.id);
+        return {status:'generated',order:existing.id,reason:sent?'Supplier send outcome: '+sent.status:existing.generation?.policyVersion === policy?.version && policy?.enabled && policy?.automaticSending?'Awaiting the standing-rule send; a current primary supplier contact and native mail sender are required':'Buyer consent required to send this exact PO and supplier contact'};
+    }
     if (!policy?.enabled) return {status:'manual-review',reason:'Automatic generation is not enabled for this purchase type, supplier and currency'};
     if (request.totalMinor > policy.maxMinor) return {status:'manual-review',reason:'Amount exceeds the owner’s automatic generation limit'};
     const supplier = get(s,'supplier',request.supplier);
@@ -55,6 +59,17 @@ export function poGeneration(s: State,a: Actor,op: string,b: Data): Data | undef
         requireThat(b.revision === request.revision,'Request changed; reload',409);
         return orders(s,a,'convert',{id:request.id,revision:request.revision,issue:true,...(b.conversionEdits ? {conversionEdits:b.conversionEdits} : {})});
     }
+    if (op === 'po-generation-resume') {
+        requireThat(a.owner,'Current native owner must authorize automatic purchasing',403);
+        const policy=get(s,'poGenerationPolicy',text(b.id,'Generation rule',1000));
+        requireThat(policy.version === b.version,'Generation policy changed; reload',409);
+        requireThat(b.consent === true && (!policy.automaticSending || b.sendConsent === true),'Explicit owner consent to the standing rule and contact on file is required');
+        const {history,...prior}=policy;
+        const entry:Data={...prior,version:policy.version+1,enabled:true,actor:a.id,email:a.email,operatorVersion:a.version,at:new Date().toISOString(),reason:text(b.reason,'Generation authority reason')};
+        put(s,'poGenerationPolicy',policy.id,{...entry,history:[...history,entry]});
+        audit(s,a,op,policy.id,{version:entry.version,automaticSending:entry.automaticSending,reason:entry.reason});
+        return get(s,'poGenerationPolicy',policy.id);
+    }
     if (op !== 'po-generation-policy') return;
     requireThat(a.owner,'Current native owner must authorize automatic purchasing',403);
     const purchaseType=text(b.purchaseType,'Purchase type',200).toLowerCase(), supplier=text(b.supplier,'Supplier or *',200), currency=text(b.currency,'Currency',3);
@@ -64,9 +79,9 @@ export function poGeneration(s: State,a: Actor,op: string,b: Data): Data | undef
     requireThat(b.version === (previous?.version ?? 0),'Generation policy changed; reload',409);
     requireThat(typeof b.enabled === 'boolean','Choose automatic generation or manual review');
     requireThat(!b.enabled || b.consent === true,'Explicit owner consent to internal automatic PO generation is required');
-    requireThat(b.combineDaily !== true,'Daily combined POs require source-allocation support and remain unavailable',409);
-    const entry={id,purchaseType,supplier,currency,maxMinor:moneyInput(b,'maxAmount','maxMinor','Automatic generation limit'),enabled:b.enabled,version:(previous?.version??0)+1,
-        actor:a.id,email:a.email,operatorVersion:a.version,at:new Date().toISOString(),reason:text(b.reason,'Generation authority reason'),outbound:'buyer-consent-required'};
+    requireThat(b.automaticSending !== true || b.sendConsent === true,'Explicit standing-rule consent to send to the supplier contact on file is required');
+    const entry={id,purchaseType,supplier,currency,maxMinor:moneyInput(b,'maxAmount','maxMinor','Automatic generation limit'),enabled:previous?false:b.enabled,automaticSending:b.automaticSending===true,combineDaily:b.combineDaily===true,version:(previous?.version??0)+1,
+        actor:a.id,email:a.email,operatorVersion:a.version,at:new Date().toISOString(),reason:text(b.reason,'Generation authority reason'),outbound:b.automaticSending===true?'standing-rule-contact-on-file':'buyer-consent-required'};
     put(s,'poGenerationPolicy',id,{...entry,history:[...(previous?.history??[]),entry]});
     audit(s,a,op,id,{version:entry.version,enabled:entry.enabled,reason:entry.reason,outbound:entry.outbound});
     return get(s,'poGenerationPolicy',id);

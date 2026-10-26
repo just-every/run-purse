@@ -26,16 +26,22 @@ export function scimIdentityAdmission(auth: OperatorAuth, db: D1Database): Opera
         const binding = await db.prepare('SELECT operator_id FROM oa_external_identities WHERE issuer=? AND subject=?')
             .bind(principal.issuer, principal.subject).first<{operator_id: string}>();
         const email = principal.associatedEmail ?? principal.email;
-        const source = binding
+        const exactSource = await db.prepare("SELECT value FROM p_records WHERE business='main' AND kind='scimUser' AND json_extract(value,'$.issuer')=? AND json_extract(value,'$.externalId')=?").bind(principal.issuer, principal.subject).first<{value: string}>();
+        const source = exactSource ?? (binding
             ? await db.prepare("SELECT value FROM p_records WHERE business='main' AND kind='scimUser' AND id=?").bind(binding.operator_id).first<{value: string}>()
             : typeof email === 'string'
                 ? await db.prepare("SELECT value FROM p_records WHERE business='main' AND kind='scimUser' AND json_extract(value,'$.userName')=?")
                     .bind(email.trim().toLowerCase()).first<{value: string}>()
-                : null;
+                : null);
         if (source) {
             const user = JSON.parse(source.value);
             if (user.issuer !== principal.issuer || user.externalId !== principal.subject)
                 throw new AuthError('scim_identity_mismatch', 403);
+            if (principal.associatedEmail !== undefined && principal.associatedEmail !== user.userName) throw new AuthError('scim_identity_mismatch', 403);
+            const native = await db.prepare('SELECT id,version FROM oa_operators WHERE id=? AND email=?').bind(user.id, user.userName).first<{id: string; version: number}>();
+            if (!native) throw new AuthError('scim_identity_mismatch', 403);
+            expected = native;
+            principal = {...principal, associatedEmail: user.userName};
         }
         return admit(request, principal, input);
     };

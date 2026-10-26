@@ -4,7 +4,7 @@ permissions:
   contents: read
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
         # Every shard runs the complete archive checks and invoice-reading journey
         # (tests/browser.mjs and tests/browser-shard.mjs), so neither needs its own job.
         journey: [supplier-performance, catalogue, order-chasing, supplier-documents, supplier-duplicates, payables, audit-log, spend-report, po-documents, performance-report, invoice-risk, receipt-routing, quote-reading, rfq, invoice-inbox, email-intake, search, agreements, integration-tokens, agent-value, quote-agent, order-adoption, protected-storage, protected-preparation]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: ${{ matrix.width == 1440 && 25 || 15 }}
     steps:
       - uses: actions/checkout@v4
@@ -71,7 +71,7 @@ jobs:
           name: purse-browser-and-archive-proof-${{ matrix.journey }}-${{ matrix.width }}
           path: ${{ runner.temp }}/purse-proof
   purchase-kinds:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -110,7 +110,7 @@ jobs:
       matrix:
         width: [1440, 390]
         journey: [coding-agent, spend-questions, request-again, protected-web, access, identity, scim, erasure, intake, order-send, evidence-history, integration-tokens, recurring-scenarios, agent-governance, order-thread, supplier-invoice, po-generation]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -144,7 +144,7 @@ jobs:
           name: purse-native-browser-proof-${{ matrix.journey }}-${{ matrix.width }}
           path: ${{ runner.temp }}/purse-proof
   search-scale:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -178,7 +178,7 @@ jobs:
           name: purse-search-scale-proof
           path: ${{ runner.temp }}/purse-proof
   pantry:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4

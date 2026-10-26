@@ -1,3 +1,4 @@
+import { orderHasRequest, orderSourceFace } from './po-combination-sources';
 import { budgetCoding, budgetScopeMatches, selectBudgetPolicy } from './budget-dimensions';
 import { budgetApportion } from './budget-allocations';
 import { date, requireThat, type Data } from './types';
@@ -46,19 +47,21 @@ export function spendReport(data: Data, filters: Data = {}) {
         if (b.amount <= 0) continue;
         const request = requestById.get(b.request);
         if (!request || request.imported) continue;
-        const order = data.order.filter((o: Data) => o.request === b.request && (o.issuedAt || o.adoption) && ['issued', 'adopted', 'amendment-pending', 'closed'].includes(o.status)).sort((a: Data, b: Data) => b.revision - a.revision)[0];
-        // Receipt/cancellation/closure events have already released ledger authority.
-        const committed = order && order.currency === b.currency && order.policy === b.policy ? Math.min(b.amount, outstanding(order)) : 0;
-        for (const [kind, amount, terms] of [['committed', committed, order], ['reserved', b.amount - committed, request]] as const) {
-            if (!amount) continue;
-            const revision = data.revision.find((r: Data) => r.request === request.id && r.revision === terms.revision) || request;
-            const eligible = kind === 'committed' && !order.poDetails?.blanket ? terms.lines.filter((l: Data) => order.positions.find((p: Data) => p.line === l.id)?.outstanding > 0) : terms.lines;
-            const weights = kind === 'committed' && !order.poDetails?.blanket ? eligible.map((l: Data) => ({ ...l, totalMinor: Number((BigInt(Math.max(0, order.positions.find((p: Data) => p.line === l.id)?.outstanding ?? 0)) * BigInt(l.unitMinor) + 500n) / 1000n) })) : eligible;
-            const values = distribute(amount, weights);
-            eligible.forEach((l: Data, i: number) => {
-                if (values[i]) rows.push({ ...source(revision, l), kind, amountMinor: values[i], policy: b.policy, currency: b.currency,
-                    date: terms.needDate, order: kind === 'committed' ? order.id : null, number: kind === 'committed' ? order.number : null });
-            });
+        const candidates=data.order.filter((order:Data)=>orderHasRequest(order,b.request)&&(order.issuedAt||order.adoption)&&['issued','adopted','amendment-pending','closed'].includes(order.status)).sort((a:Data,b:Data)=>b.revision-a.revision);
+        const faces=candidates.some((order:Data)=>order.sources)?candidates.map((order:Data)=>orderSourceFace(order,b.request)!):candidates.slice(0,1);
+        let remaining=b.amount;
+        const portions:Data[]=[];
+        for(const order of faces) {
+            const amount=order.currency===b.currency&&order.policy===b.policy?Math.min(remaining,outstanding(order)):0;
+            if(amount){portions.push({kind:'committed',amount,terms:order,order});remaining-=amount;}
+        }
+        if(remaining)portions.push({kind:'reserved',amount:remaining,terms:request,order:null});
+        for(const {kind,amount,terms,order} of portions) {
+            const revision=data.revision.find((r:Data)=>r.request===request.id&&r.revision===terms.revision)||request;
+            const eligible=kind==='committed'&&!order.poDetails?.blanket?terms.lines.filter((line:Data)=>order.positions.find((position:Data)=>position.line===line.id)?.outstanding>0):terms.lines;
+            const weights=kind==='committed'&&!order.poDetails?.blanket?eligible.map((line:Data)=>({...line,totalMinor:Number((BigInt(Math.max(0,order.positions.find((position:Data)=>position.line===line.id)?.outstanding??0))*BigInt(line.unitMinor)+500n)/1000n)})):eligible;
+            const values=distribute(amount,weights);
+            eligible.forEach((line:Data,index:number)=>{if(values[index])rows.push({...source(revision,line),kind,amountMinor:values[index],policy:b.policy,currency:b.currency,date:terms.needDate,order:order?.id??null,number:order?.number??null});});
         }
     }
     for (const invoice of data.invoice) {
@@ -67,8 +70,9 @@ export function spendReport(data: Data, filters: Data = {}) {
         const revision = data.revision.find((r: Data) => r.request === request.id && r.revision === order.revision) || request;
         for (const allocation of invoice.allocations) {
             const line = order.lines.find((l: Data) => l.id === allocation.line);
-            if (line) rows.push({ ...source(revision, line), kind: 'actual', amountMinor: allocation.amountMinor - (invoice.depositAppliedMinor ? distribute(invoice.depositAppliedMinor, invoice.allocations.map((a: Data) => ({ totalMinor: a.amountMinor })))[invoice.allocations.indexOf(allocation)] : 0), date: (invoice.imported ? invoice.invoiceDate || invoice.at?.slice(0, 10) || order.adoptedAt?.slice(0, 10) : invoice.at.slice(0, 10)), sourceBasis: invoice.imported ? 'Imported invoice evidence; source approval is historical' : 'Recorded invoice evidence',
-                currency: invoice.currency, policy: order.policy, order: order.id, number: order.number, invoice: invoice.id, reference: invoice.reference,
+            const sourceRevision=line?.sourceRequest?data.revision.find((record:Data)=>record.request===line.sourceRequest&&record.revision===line.sourceRevision)??requestById.get(line.sourceRequest):revision;
+            if (line) rows.push({ ...source(sourceRevision, line), kind: 'actual', amountMinor: allocation.amountMinor - (invoice.depositAppliedMinor ? distribute(invoice.depositAppliedMinor, invoice.allocations.map((a: Data) => ({ totalMinor: a.amountMinor })))[invoice.allocations.indexOf(allocation)] : 0), date: (invoice.imported ? invoice.invoiceDate || invoice.at?.slice(0, 10) || order.adoptedAt?.slice(0, 10) : invoice.at.slice(0, 10)), sourceBasis: invoice.imported ? 'Imported invoice evidence; source approval is historical' : 'Recorded invoice evidence',
+                currency: invoice.currency, policy: order.sources?.find((source:Data)=>source.request===line.sourceRequest)?.policy??order.policy, order: order.id, number: order.number, invoice: invoice.id, reference: invoice.reference,
                 exception: data.discrepancies.some((d: Data) => d.invoiceId === invoice.id && (d.priceMismatch || d.quantityMismatch || d.receiptShortfall || d.closedBalance)) });
         }
     }

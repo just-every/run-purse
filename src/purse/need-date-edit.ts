@@ -1,3 +1,4 @@
+import { orderHasRequest } from './po-combination-sources';
 import { carryApprovalDecisions } from './approval-chain';
 import { currentDecision } from './approval';
 import { policies } from './requests';
@@ -9,6 +10,7 @@ import { all, allowed, audit, date, get, put, requireThat, text, uid, type Actor
  * native document generation never implies supplier mail acceptance. */
 export function changeNeedDate(s: State, a: Actor, input: Data) {
     const previous=get(s,'request',input.id);
+    requireThat(!all(s,'order').some(order=>order.sources&&orderHasRequest(order,previous.id)),'Combined source dates require a coordinated combined change order',409);
     requireThat(previous.status==='approved'&&previous.revision===input.revision&&!previous.imported,'Exact approved request revision required',409);
     const own=previous.requester===a.id||previous.requesterEmail===a.email;
     requireThat(a.owner || own&&allowed(s,a,'request.edit',previous) || allowed(s,a,'request.approve',previous),'Only this requester or a scoped approver may correct the need date',403);

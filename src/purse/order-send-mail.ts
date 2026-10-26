@@ -3,7 +3,7 @@ import type { Bindings } from '../auth.server';
 import { orderBytes } from './order-send-document';
 import type { Data } from './types';
 
-/** Only the explicit native buyer send door calls this adapter. An exception
+/** Native buyer consent or an owner-consented standing rule calls this adapter. An exception
  * after a claimed effect is uncertain; neither a cron nor a replay retries it. */
 export async function deliverOrderChange(env: Bindings, event: Data, url: string) {
     const sender = operatorMail(env);

@@ -1,3 +1,5 @@
+import { allocatedSourceLine, sourceLineIdentity } from './po-combination-sources';
+import { issueCombinedOrder } from './po-combination';
 import { checkAdoptedDisposition, settleAdoptedDisposition } from './adoption-amendments';
 import { operationalOrder } from './adoption-position';
 import { servicePosition, serviceInvoiceMatches, serviceReceipt } from './service-orders';
@@ -25,13 +27,14 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         let r = get(s, 'request', b.id);
         requirePermission(s, a, 'po.convert', r);
         requireThat(r.revision === b.revision && r.status === 'approved' && !r.imported, 'Exact current revision must have native approval', 409);
+        requireThat(!r.amends||!get(s,'order',r.amends).sources,'Recombine every approved source of this combined amendment together',409);
         supplier(s, r.supplier);
         documentHold(s, r.supplier);
         requireThat(r.supplierSnapshot?.id === r.supplier, 'Supplier identity missing; amend the request and renew approval', 409);
         currentDecision(s, r);
         for(const line of r.lines)if(line.supplier){supplier(s,line.supplier);documentHold(s,line.supplier);}
         checkAdoptedDisposition(s, r);
-        requireThat(!all(s, 'order').some(o => o.request === r.id && o.revision === r.revision), 'Approved lines already allocated to a PO', 409);
+        requireThat(!r.lines.some((line:Data)=>allocatedSourceLine(s,r.id,line.id)), 'Approved lines already allocated to a PO', 409);
         requireThat(all(s, 'decision').some(d => d.request === r.id && d.revision === r.revision && d.decision === 'approved'), 'Approval decision missing', 409);
         const edit = conversionEdits(s, a, r, b.conversionEdits);
         if(edit) {
@@ -57,7 +60,9 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         return o;
     }
     if (op === 'issue') {
-        const o = get(s, 'order', b.id), r = get(s, 'request', o.request);
+        const o = get(s, 'order', b.id);
+        if(o.sources)return issueCombinedOrder(s,a,b);
+        const r = get(s, 'request', o.request);
         requirePermission(s, a, 'po.issue', r); requirePermission(s, a, 'po.issue', o);
         supplier(s, o.supplier);
         documentHold(s, o.supplier);
@@ -99,12 +104,12 @@ export function discrepancies(s: State) {
     const invoices = all(s, 'invoice'), orders = all(s, 'order');
     return invoices.flatMap(i => i.allocations.map((x: Data) => {
         const o = get(s, 'order', i.order), l = o.lines.find((l: Data) => l.id === x.line);
-        const lineage = orders.filter(p => p.request === o.request && operationalOrder(s, p) && p.lines.some((z: Data) => z.id === l.id));
-        const current = lineage.reduce((latest, p) => p.revision > latest.revision ? p : latest, o);
-        const currentLine = current.lines.find((z: Data) => z.id === l.id);
+        const lineage = orders.filter(p => operationalOrder(s,p) && p.lines.some((z:Data)=>sourceLineIdentity(p,z)===sourceLineIdentity(o,l)));
+        const current = lineage.reduce((latest, p) => (p.lines.find((z:Data)=>sourceLineIdentity(p,z)===sourceLineIdentity(o,l))?.sourceRevision??p.revision) > (latest.lines.find((z:Data)=>sourceLineIdentity(latest,z)===sourceLineIdentity(o,l))?.sourceRevision??latest.revision) ? p : latest, o);
+        const currentLine = current.lines.find((z:Data)=>sourceLineIdentity(current,z)===sourceLineIdentity(o,l));
         const orderIds = new Set(lineage.map(p => p.id));
         const service = Boolean(currentLine.service), valueMatch = service ? serviceInvoiceMatches(s, current, currentLine).has(i.id) : false;
-        const totalInvoiced = invoices.filter(z => orderIds.has(z.order)).flatMap(z => z.allocations).filter((z: Data) => z.line === l.id).reduce((n: number, z: Data) => n + z.q, 0);
+        const totalInvoiced = invoices.filter(z=>orderIds.has(z.order)).flatMap(invoice=>invoice.allocations.filter((allocation:Data)=>{const parent=get(s,'order',invoice.order);const line=parent.lines.find((z:Data)=>z.id===allocation.line);return line&&sourceLineIdentity(parent,line)===sourceLineIdentity(o,l);})).reduce((n: number, z: Data) => n + z.q, 0);
         return { invoiceId: i.id, orderId: o.id, lineId: l.id, invoice: i.reference, exception: i.exception ?? (openInvoiceFlags(i).length ? 'Unresolved invoice risk flags' : service && !valueMatch ? 'Invoice exceeds received service value' : null), order: o.number, line: l.description, currency: i.currency, invoiceMinor: x.amountMinor, expectedMinor: x.orderedMinor, priceMismatch: service ? false : x.amountMinor !== x.orderedMinor, closedBalance: linePosition(s, current.id, currentLine).closed > 0 && totalInvoiced > currentLine.q - linePosition(s, current.id, currentLine).closed, quantityMismatch: service ? false : totalInvoiced > currentLine.q, receiptShortfall: service ? !valueMatch : totalInvoiced > linePosition(s, current.id, currentLine).accepted };
     }));
 }

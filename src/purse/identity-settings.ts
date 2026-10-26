@@ -1,4 +1,5 @@
 import { AuthError, securityHeaders, type OperatorAuth } from '../modules/operator-auth/index.mjs';
+import { samlPath, samlProviders } from './saml-config';
 import { identityProviderSummaries, type IdentityBindings } from './identity-config';
 
 export const identitySettingsPath = '/auth/purse/identity';
@@ -33,24 +34,26 @@ export async function identitySettingsResponse(request: Request, env: IdentityBi
         if (request.method === 'POST') {
             const action = await actionInput(request, env.AUTH_ORIGIN);
             if (action !== 'enable' && action !== 'disable') throw new AuthError('invalid_input');
-            if (action === 'enable' && !identityProviderSummaries(env, env.AUTH_ORIGIN).length) throw new AuthError('provider_configuration_required', 409);
+            if (action === 'enable' && !identityProviderSummaries(env, env.AUTH_ORIGIN).length && !samlProviders(env).length) throw new AuthError('provider_configuration_required', 409);
             await auth.setIdentitySettings(request, { idpSignIn: action === 'enable' });
             return new Response(null, { status: 303, headers: { ...securityHeaders(), location: identitySettingsPath } });
         }
         if (!['GET', 'HEAD'].includes(request.method)) throw new AuthError('method_not_allowed', 405);
         const links = await auth.listProviders(request);
         const providers = identityProviderSummaries(env, env.AUTH_ORIGIN);
+        const saml = samlProviders(env);
         const entries = providers.map(provider => {
             const pin = links.find(link => link.id === provider.id);
             return `<section><h2>${escape(provider.label)}</h2><p>${escape(provider.preset)} · ${escape(pin?.status ?? 'Not linked yet')}</p>`
                 + `<dl><dt>Issuer</dt><dd>${escape(provider.issuer)}</dd><dt>Client ID</dt><dd>${escape(provider.clientId)}</dd>`
                 + `<dt>Callback URL</dt><dd>${escape(provider.callback)}</dd><dt>Credential</dt><dd>${provider.credential}</dd></dl>`
                 + `<p>${provider.associations} explicit subject associations. ${pin?.pendingAt ? 'A changed registration cannot replace this pinned provider. Provider re-linking is unavailable.' : 'The first verified connection pins the issuer and endpoints.'}</p></section>`;
-        }).join('');
+        }).join('') + saml.map(provider => `<section><h2>${escape(provider.label)}</h2><p>SAML 2.0</p><dl><dt>Issuer</dt><dd>${escape(provider.issuer)}</dd><dt>Service entity</dt><dd>${escape(provider.entityId)}</dd><dt>Callback URL</dt><dd>${escape(env.AUTH_ORIGIN + samlPath(provider, 'callback'))}</dd></dl><p><a href="${samlPath(provider, 'metadata')}">Service provider metadata</a></p></section>`).join('');
         const body = '<h1>Single sign-on</h1><p>Only invited or active native accounts can sign in. Provider claims do not assign purchasing roles or native owner authority.</p>'
             + `<p>Provider sign-in is ${settings.idpSignIn ? 'enabled' : 'disabled'}. Disabling it ends existing provider sessions; native owner email sign-in remains available.</p>`
-            + (providers.length ? form(settings.idpSignIn ? 'disable' : 'enable', settings.idpSignIn ? 'Disable provider sign-in' : 'Enable provider sign-in') : '<p>No provider is configured. Add the private deployment bindings below before enabling sign-in.</p>')
+            + (providers.length || saml.length ? form(settings.idpSignIn ? 'disable' : 'enable', settings.idpSignIn ? 'Disable provider sign-in' : 'Enable provider sign-in') : '<p>No provider is configured. Add the private deployment bindings below before enabling sign-in.</p>')
             + entries
+            + '<h2>SAML configuration</h2><p>Supply SAML_PROVIDERS as a deployment JSON array with id, label, issuer, entryPoint, entityId, idpCert and subjectEmails. Use the exact provider signing certificate and stable subject associations, or SCIM provisioning under the same issuer and external ID. Responses and assertions must both use RSA SHA-256 signatures. Sign-in starts here and expires after five minutes; unsolicited responses are refused. The first connection pins this registration. Changed registrations require disabling provider sign-in and a separately reviewed migration.</p>'
             + '<h2>Configure the installation</h2><p>Register this installation as an OIDC web client with Auth, Google Workspace, Microsoft Entra ID or Okta. Copy its callback URL shown above into the provider. JumpCloud may use the Okta subject-association preset with its exact issuer.</p>'
             + '<p>Supply OIDC_PROVIDERS as a JSON array of public metadata: id, preset, clientId, label and issuer (Auth or Okta) or tenant (Microsoft). Optional tokenAuthMethod selects private_key_jwt, client_secret_basic or client_secret_post where the provider supports it. Auth requires private_key_jwt. Microsoft and Okta require explicit subjectEmails associations from the provider subject to an existing native account email.</p>'
             + '<p>Supply OIDC_CREDENTIALS privately as a JSON object keyed by provider id. Each entry contains either clientSecret or privateKey, never both. A privateKey is the private ES256 or RS256 JWK with kid; register only its public half with the provider. Keep credentials out of OIDC_PROVIDERS.</p>'

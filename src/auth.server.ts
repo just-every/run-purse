@@ -6,6 +6,9 @@ import { createOperatorAuth, createAuthHandler, createSignInHandler, devNotFound
 import { operatorMail } from './mail.server.mjs'
 import { createOwnerClaimHandler } from './modules/owner-claim/index.mjs'
 import branding from './branding.json'
+import { samlProviders } from './purse/saml-config'
+import { samlIdentityProviders } from './purse/saml-signin'
+import { samlResponse } from './purse/saml'
 import { scimIdentityAdmission } from './purse/identity-scim'
 import { identityProviderConfiguration, type IdentityBindings } from './purse/identity-config'
 import { identitySettingsPath, identitySettingsResponse } from './purse/identity-settings'
@@ -50,9 +53,9 @@ export interface Bindings extends IdentityBindings {
 }
 
 export const runtimeBindings = (env: Bindings): Bindings => env.RER_DEV_ORIGIN && env.AUTH_LOCAL === 'true' ? { ...env, AUTH_ORIGIN: env.RER_DEV_ORIGIN } : env
-export const authConfig = (env: Bindings): AuthConfig => ({ origin: env.AUTH_ORIGIN, local: env.AUTH_LOCAL === 'true', OWNER_EMAIL: env.OWNER_EMAIL, SESSION_SECRET: env.SESSION_SECRET, SETUP_TOKEN: env.SETUP_TOKEN, MAIL_FROM: env.MAIL_FROM, ...identityProviderConfiguration(env), branding: { productName: branding.name, accentColor: branding.primaryColor, signInPath: '/signin', theme: theme.href } })
+export const authConfig = (env: Bindings): AuthConfig => ({ origin: env.AUTH_ORIGIN, local: env.AUTH_LOCAL === 'true', OWNER_EMAIL: env.OWNER_EMAIL, SESSION_SECRET: env.SESSION_SECRET, SETUP_TOKEN: env.SETUP_TOKEN, MAIL_FROM: env.MAIL_FROM, ...identityProviderConfiguration(env), externalIssuers: samlProviders(env).map(provider => provider.entryPoint), branding: { productName: branding.name, accentColor: branding.primaryColor, signInPath: '/signin', theme: theme.href } })
 export function operatorAuth(env: Bindings) {
- return scimIdentityAdmission(createOperatorAuth({ db: env.DB, config: authConfig(env), mailSender: operatorMail(env), clientIp: request => request.headers.get('CF-Connecting-IP') ?? '' }), env.DB)
+ return samlIdentityProviders(scimIdentityAdmission(createOperatorAuth({ db: env.DB, config: authConfig(env), mailSender: operatorMail(env), clientIp: request => request.headers.get('CF-Connecting-IP') ?? '' }), env.DB), env)
 }
 
 const privateHeaders = { 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex, nofollow' }
@@ -65,10 +68,11 @@ async function html(body: string) {
 export async function authResponse(request: Request, original: Bindings): Promise<Response | null> {
  const env = runtimeBindings(original), url = new URL(request.url)
  if (url.pathname.startsWith('/__dev/')) return devNotFound()
+ if (url.pathname.startsWith('/auth/saml/')) return samlResponse(request, env, operatorAuth(env))
  if (url.pathname === identitySettingsPath) return identitySettingsResponse(request, env, operatorAuth(env), html)
  // Base pin replacement has no edition transaction fence yet. Keep these
  // existing direct transports closed as well as omitting their page controls.
- if (['/auth/providers/relink', '/auth/providers/unlink'].includes(url.pathname) && identityProviderConfiguration(env).providers?.length) {
+ if (['/auth/providers/relink', '/auth/providers/unlink'].includes(url.pathname) && (identityProviderConfiguration(env).providers?.length || samlProviders(env).length)) {
   const session = await operatorAuth(env).getSession(request)
   return Response.json({ error: session ? 'provider_management_unavailable' : 'unauthenticated' }, { status: session ? 403 : 401, headers: securityHeaders() })
  }

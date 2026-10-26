@@ -1,8 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import {samlFlow} from './saml-flow.mjs'
 import {identityFixture} from './identity-fixture.mjs'
 
-test('SCIM provisions a scoped member who signs in through a real local IdP; sign-out, disable, revocation and SCIM deactivation end native OIDC sessions',async t=>{
+test('SCIM provisions scoped members for OIDC and signed SAML; sign-out, disable, revocation and deactivation end native sessions',async t=>{
  const h=await identityFixture();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Canyon SSO',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety']});
  await h.send('/auth/step-up',{action:'export'},h.owner,202);
@@ -84,4 +85,5 @@ test('SCIM provisions a scoped member who signs in through a real local IdP; sig
  const records=(await h.db.prepare('SELECT * FROM p_records').all()).results,stored=JSON.stringify(records);
  for(const action of ['scim-user-create','scim-user-deactivate'])assert.ok(records.some(record=>record.kind==='audit'&&JSON.parse(record.value).action===action&&JSON.parse(record.value).record===provisioned.id),'Native audit records the SCIM identity lifecycle');
  for(const secret of [h.idp.privateKey.d,h.transactionSecret,h.sessionSecret,credential.token])assert.ok(!stored.includes(secret),'Purchasing records never retain identity credentials');
+ await samlFlow();
 });

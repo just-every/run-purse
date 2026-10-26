@@ -1,3 +1,4 @@
+import { validateCombinedOrder } from './restore-po-combination.mjs';
 import { check, same, integer, money, quantity, amount, purchasing } from './restore-validation.mjs';
 import { validateConversionVariance } from './restore-conversion-variance.mjs';
 
@@ -15,6 +16,7 @@ export function validateOrderLinks({get,all}) {
  for (const o of orders) {
   const request = get('request',o.request);
   if (o.imported) { check((o.adoption ? request.adoption === o.adoption : request.imported) && !Object.hasOwn(o,'conversionVariance'),'import_order_link'); continue; }
+  if(o.sources){validateCombinedOrder(o,{get,all});for(const line of o.lines){const p=position(o,line);check(integer(p.accepted)&&integer(p.cancelled)&&p.accepted+p.cancelled<=line.q,'receipt_position');}continue;}
   const revision = get('revision',o.request + ':' + o.revision);
   const clean = {...o,lines:o.lines.map(({sourceLine,...l}) => l)};
   check(o.lines.every(l => l.sourceLine === l.id),'order_revision');
@@ -46,7 +48,7 @@ export function validateOrderLinks({get,all}) {
   check(typeof i.reference === 'string' && i.reference.trim() === i.reference && i.reference.length && i.supplier === o.supplier && !identities.has(identity),'invoice_identity');
   identities.add(identity);
   check(Array.isArray(i.allocations) && i.allocations.length > 0 && new Set(i.allocations.map(a=>a.line)).size===i.allocations.length,'invoice_allocations');
-  for (const a of i.allocations) { const l=o.lines.find(l=>l.id===a.line); check(l && quantity(a.quantity)===a.q && money(a.amountMinor) && a.orderedMinor===amount(a.q,l.unitMinor),'invoice_line'); }
+  for (const a of i.allocations) { const l=o.lines.find(l=>l.id===a.line); check(l && (!o.sources||a.sourceRequest===l.sourceRequest&&a.sourceRevision===l.sourceRevision&&a.sourceLine===l.sourceLine) && quantity(a.quantity)===a.q && money(a.amountMinor) && a.orderedMinor===amount(a.q,l.unitMinor),'invoice_line'); }
   const gross = i.allocations.reduce((n,a)=>n+a.amountMinor,0), credit = i.depositAppliedMinor ?? 0;
   check(money(credit) && credit <= gross && i.totalMinor === gross - credit && (!credit || i.grossMinor === gross),'invoice_total');
  }

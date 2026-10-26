@@ -123,13 +123,13 @@ export function invoiceRisk(s: State, order: Data, candidate: Data, input: Data)
 
     // Amendments replace the issued face value, while earlier invoice evidence
     // continues to consume the same request's balance. Currencies stay separate.
-    const orders = all(s, 'order').filter(o => o.request === order.request && o.currency === candidate.currency);
+    const orders = all(s, 'order').filter(o => (order.sources ? o.sources&&(o.combinationRoot??o.id)===(order.combinationRoot??order.id) : !o.sources && o.request===order.request) && o.currency === candidate.currency);
     const orderIds = new Set(orders.map(o => o.id));
     const currentIssued = orders.filter(o => currentOperationalOrder(s, o));
     const faceMinor = currentIssued.length ? Math.max(...currentIssued.map(o => { if (!o.cancelledByApproval) return o.totalMinor; const base = o.lines.reduce((sum: number,line: Data)=>sum+line.totalMinor,0); const active = o.lines.reduce((sum: number,line: Data)=>sum+Number((BigInt(Math.max(0,line.q-linePosition(s,o.id,line).cancelled))*BigInt(line.unitMinor)+500n)/1000n),0); return base ? Number((BigInt(o.totalMinor)*BigInt(active)+BigInt(base)/2n)/BigInt(base)) : 0; })) : null;
     const deposits = adoptionDeposits(s, order);
     const billedMinor = deposits.amountMinor + invoices.filter(i => orderIds.has(i.order) && i.currency === candidate.currency).reduce((n, i) => n + i.totalMinor, 0);
-    result.balance = { basis: 'current-issued-po-face-across-request-amendments', currency: candidate.currency, faceMinor, billedMinor, candidateMinor: candidate.totalMinor,
+    result.balance = { basis: order.sources?'current-issued-combined-po-face':'current-issued-po-face-across-request-amendments', currency: candidate.currency, faceMinor, billedMinor, candidateMinor: candidate.totalMinor,
         remainingMinor: faceMinor === null ? null : Math.max(0, faceMinor - billedMinor), depositAccounting: deposits.sources.length ? 'imported-prepaid-balance-and-once-only-credit' : 'not-implemented', unappliedDepositMinor: deposits.unappliedMinor };
     if (faceMinor !== null && billedMinor + candidate.totalMinor > faceMinor) {
         flags.push({ code: 'po-balance', reason: 'Invoice plus prior invoice evidence exceeds the current issued PO face total across request amendments' });

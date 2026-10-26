@@ -10,7 +10,7 @@ function profile(p){
 }
 export function validatePoDocuments(all,get){
  for(const p of all('poProfile'))profile(p);
- for(const o of all('order'))if(o.documentProfile){profile(o.documentProfile);const p=get('poProfile',o.documentProfile.id);check(p.version>=o.documentProfile.version,'po_profile_version');}
+ for(const o of all('order').flatMap(order=>order.sources?[order,...order.sources]:[order]))if(o.documentProfile){profile(o.documentProfile);const p=get('poProfile',o.documentProfile.id);check(p.version>=o.documentProfile.version,'po_profile_version');}
  for(const kind of ['request','revision','order'])for(const r of all(kind)){
   if(r.poDetails?.blanket!=null){const b=r.poDetails.blanket;const valid=d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&Number.isFinite(Date.parse(d))&&new Date(d).toISOString().slice(0,10)===d;check(valid(b.validFrom)&&valid(b.validThrough)&&b.validFrom<=b.validThrough,'blanket_validity');}
   if(r.poDetails?.depositTerms!==undefined)check(typeof r.poDetails.depositTerms==='string','po_deposit_terms');

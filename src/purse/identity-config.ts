@@ -1,7 +1,8 @@
+import type { SamlBindings } from './saml-config';
 import { AuthError, type AuthConfig, type IdentityProviderConfig } from '../modules/operator-auth/index.mjs';
 
 /** Deployment bindings only. Credentials never enter purchasing records or a public projection. */
-export interface IdentityBindings {
+export interface IdentityBindings extends SamlBindings {
     OIDC_PROVIDERS?: string;
     OIDC_CREDENTIALS?: string;
     OIDC_TRANSACTION_SECRET?: string;

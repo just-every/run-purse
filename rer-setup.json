@@ -85,6 +85,15 @@
       "group": "identity"
     },
     {
+      "name": "SAML_PROVIDERS",
+      "label": "SAML provider configuration (private JSON)",
+      "help": "Optional array with id, label, issuer, entryPoint, entityId, idpCert and explicit subjectEmails associations. Only signed SP-initiated responses are accepted. Enable the provider as the current native owner in identity settings. Keep installation associations private.",
+      "kind": "secret",
+      "required": false,
+      "ownerVisible": false,
+      "group": "identity"
+    },
+    {
       "name": "OIDC_CREDENTIALS",
       "label": "OIDC provider credentials (private JSON)",
       "help": "Required when OIDC_PROVIDERS contains a provider. Object keyed by provider id; each entry contains clientSecret or privateKey (private JWK with kid). Supply privately, never through command arguments or archives.",

@@ -1,3 +1,4 @@
+import { orderHasRequest, orderSourceFace } from './po-combination-sources';
 import { normalizePurchaseCharges } from './purchase-charges';
 import { eventBudgetPortion, requestBudgetShares } from './budget-allocations';
 import { budgetRoom } from './budget-position';
@@ -69,7 +70,8 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         requireThat(business.locations.includes(r.location) && business.costCentres.includes(r.costCentre) && r.lines.every(l => business.projects.includes(l.project)), 'Use configured location, cost centre and project');
         requireThat(new Set(r.lines.map(l => l.id)).size === r.lines.length, 'Line IDs must be unique');
         requirePermission(s, a, old ? 'request.edit' : 'request.create', r);
-        if (old) requireThat(!all(s, 'orderClosure').some(c => c.active && get(s, 'order', c.order).request === old!.id), 'Reopen closed balances before amending this request', 409);
+        if(old)for(const order of all(s,'order').filter(order=>order.sources&&orderHasRequest(order,old.id)&&!order.amendedBy)){const source=order.sources.find((source:Data)=>source.request===old.id);requireThat(old.lines.length===source.lines.length&&old.lines.every((line:Data)=>source.lines.includes(line.id)),'Partially allocated combined requests require a reviewed remaining-line disposition before amendment',409);}
+        if (old) requireThat(!all(s, 'orderClosure').some(c => c.active && orderHasRequest(get(s,'order',c.order),old!.id)), 'Reopen closed balances before amending this request', 409);
         if (old)
             requireThat(r.lines.every(l => !b.lines.find((x: Data) => x.id === l.id) || old!.lines.some((x: Data) => x.id === l.id)), 'Line ID is outside this request');
         for (const l of r.lines) {
@@ -79,7 +81,9 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             }
         }
         r.totalMinor = requestTotal(r);
-        const issued = all(s, 'order').find(o => o.request === id && (o.status === 'issued' || o.status === 'adopted' || o.status === 'amendment-pending'));
+        const issuedParent = all(s, 'order').find(o => orderHasRequest(o,id) && (o.status === 'issued' || o.status === 'adopted' || o.status === 'amendment-pending'));
+        const sourceFace=issuedParent?orderSourceFace(issuedParent,id):undefined;
+        const issued=sourceFace?.sources?{...sourceFace,lines:sourceFace.lines.map((line:Data)=>({...line,id:line.sourceLine,poLine:line.id}))}:sourceFace;
         if (issued) {
             if (old?.adoption) { requireThat(r.currency === issued.currency, 'Use the reviewed replacement-remainder disposition to change an adopted currency', 409); requireThat(r.supplier === issued.supplier, 'Use the reviewed replacement-remainder disposition to change an adopted supplier', 409); }
             requireThat(Boolean(issued.poDetails?.blanket) === Boolean((r as Data).poDetails.blanket), 'An issued PO retains its blanket or ordinary basis; create a separate request for another basis', 409);
@@ -90,13 +94,13 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
                 requireThat(!prior || Boolean(prior.service) === Boolean(l.service), 'Issued lines retain their quantity or service receiving basis', 409);
                 if (prior?.service) {
                     requireThat(prior.service.mode === l.service?.mode, 'An issued service line retains its receiving basis',409);
-                    const value = servicePosition(s, issued, prior);
+                    const value = servicePosition(s,issuedParent!,issuedParent!.lines.find((line:Data)=>line.id===(prior.poLine??prior.id)));
                     requireThat(l.totalMinor >= value.acceptedMinor + value.cancelledMinor, 'Amendment cannot erase received service value', 409);
-                    const completed = [...(prior.carriedMilestones ?? []), ...all(s, 'receipt').filter(e => e.order === issued.id && e.line === prior.id && e.milestone).map(e => e.milestone)];
+                    const completed = [...(prior.carriedMilestones ?? []), ...all(s, 'receipt').filter(e => e.order === issued.id && e.line === (prior.poLine??prior.id) && e.milestone).map(e => e.milestone)];
                     if (prior.service.mode === 'milestone') requireThat(completed.every(mid => { const before = prior.service.milestones.find((m: Data) => m.id === mid), after = l.service?.milestones.find((m: Data) => m.id === mid); return before && after && before.valueMinor === after.valueMinor && before.name === after.name; }), 'Accepted named milestones retain their approved identity and value',409);
-                    Object.assign(l, { carriedAcceptedMinor: value.acceptedMinor, carriedCancelledMinor: value.cancelledMinor, carriedMilestones: [...(prior.carriedMilestones ?? []), ...all(s, 'receipt').filter(e => e.order === issued.id && e.line === prior.id && e.milestone).map(e => e.milestone)] });
+                    Object.assign(l, { carriedAcceptedMinor: value.acceptedMinor, carriedCancelledMinor: value.cancelledMinor, carriedMilestones: [...(prior.carriedMilestones ?? []), ...all(s, 'receipt').filter(e => e.order === issued.id && e.line === (prior.poLine??prior.id) && e.milestone).map(e => e.milestone)] });
                 }
-                const events = all(s, 'receipt').filter(e => e.order === issued.id && e.line === l.id);
+                const events = all(s, 'receipt').filter(e => e.order === issued.id && e.line === (prior?.poLine??l.id));
                 const accepted = (prior?.carriedAccepted ?? 0) + events.reduce((n, e) => n + (e.event === 'receive' ? e.q : e.event === 'return' ? -e.q : 0), 0);
                 const cancelled = (prior?.carriedCancelled ?? 0) + events.filter(e => e.event === 'cancel').reduce((n, e) => n + e.q, 0);
                 requireThat(l.q >= accepted + cancelled, 'Amended quantity cannot erase received or cancelled quantities');
@@ -109,7 +113,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             const groups=new Map<string,Data>();for(const e of all(s,'commitment').filter(e=>e.request===id)){const k=e.policy+':'+e.currency;const g=groups.get(k)??{policy:e.policy,currency:e.currency,amount:0};g.amount+=e.amountMinor;groups.set(k,g)}
             // A draft can release authority, never grant unapproved replenishment.
             for(const g of groups.values()){const target=g.policy===issued.policy&&g.currency===issued.currency?Math.min(originalLiability,g.amount):0;if(g.amount!==target)ledger(s,a,{...old,policy:g.policy,currency:g.currency},target-g.amount,'unissued-amendment-release')}
-            put(s, 'order', issued.id, { ...issued, status: 'amendment-pending' });
+            put(s,'order',issued.id,{...issuedParent,status:'amendment-pending'});
         }
         else if (old?.status === 'approved' || old?.approvalRoute) {
             const current = all(s, 'commitment').filter(e => e.request === id).reduce((n, e) => n + e.amountMinor, 0);
