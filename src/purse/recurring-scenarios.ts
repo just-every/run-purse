@@ -10,7 +10,7 @@ import { unrestrictedPermission } from './access-records';
 import { performanceAgreementSources } from './access-agreement-sources';
 import { linePosition } from './orders';
 import { orderAdoption } from './adoption-position';
-import { accessGrants, allowed, all, audit, date, get, minor, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
+import { allowed, all, audit, date, get, minor, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
 const ops = ['recurring-scenario-prepare', 'recurring-scenario-approve', 'recurring-scenario-draft'];
 const evidenceFields: Record<string, string> = {
@@ -210,7 +210,6 @@ export async function recurringScenarios(s: State, a: Actor, op: string, b: Data
     const fresh = snapshot(s, a, scenario.choices, op!=='recurring-scenario-approve'||b.role==='finance');
     requireThat(await valueDigest(canonicalValue({ choices: scenario.choices, snapshot: fresh })) === scenario.hash, 'Scenario sources changed; prepare a new scenario', 409);
     if (op === 'recurring-scenario-approve') {
-        scenarioConsentAuthority(s, a, scenario, b.role, b.agreement,b.policy);
         requireThat(b.confirmed === true, 'Explicit approval of this scenario is required');
         const agreement = b.role === 'owner' ? b.agreement : null, policy=b.role==='budget'?b.policy:null;
         const id = scenario.id + ':' + b.role + ':' + (agreement ?? policy ?? 'finance');
@@ -242,7 +241,7 @@ export async function currentRecurringScenario(s:State,a:Actor,b:Data) {
 }
 
 /** Finance reads the exact immutable scenario only while every cited source is
- * still current and readable. Consent reasons and private owner drafts stay out.
+ * still current and readable. Private consent reasons stay out.
  */
 export function projectRecurringScenario(s: State, a: Actor, scenario: Data): Data {
     requireThat(s.has('recurringScenario:' + scenario.id), 'Scenario not found', 404);

@@ -988,7 +988,7 @@
       "executable": false
     },
     "scripts/installer/restore-recurring-scenarios.mjs": {
-      "sha256": "df03616336e2f5dd9c2f564ba9a5e4b0f61450f3c5081ce2eaffbcaa35c76ef0",
+      "sha256": "94b3b9b3ea00c5dfcd33a140878bec5e0cd6fec81d95d22553209f7eae6f91f6",
       "executable": false
     },
     "scripts/installer/restore-rfq.mjs": {
@@ -3520,7 +3520,7 @@
       "executable": false
     },
     "src/purse/recurring-scenarios.ts": {
-      "sha256": "cdf3f583868d08ce143a6b55d85ebff070db5b03437acc6256e05a6eec1a72ac",
+      "sha256": "eb326bc4e7bb0c5e43f221773b6a9fcc8ad3871edb5c4a8b462fd25bef1ff9bb",
       "executable": false
     },
     "src/purse/recurring-schedule.ts": {
@@ -4460,7 +4460,7 @@
       "executable": false
     },
     "tests/agent-value-checkins.test.mjs": {
-      "sha256": "15e2c0865cc317e505ecf3e755a105ac5975286dbc42011fc0301e8dde33c121",
+      "sha256": "11266dcdcc4eff6208fbd5338b994fcd76f1729fb86bb981e91837c021f147af",
       "executable": false
     },
     "tests/agent-value.test.mjs": {

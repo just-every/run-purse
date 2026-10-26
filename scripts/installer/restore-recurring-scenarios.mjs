@@ -218,7 +218,7 @@ export function validateRecurringScenarios(all, get, check, rows = []) {
     const byPolicy=new Map();
     for(const ref of s.sources.filter(r=>r.kind==='commitment'&&r.value.request===order.request))for(const share of ref.value.budgetAllocations??[{policy:ref.value.policy??cited('request',order.request).policy,amountMinor:ref.value.amountMinor}])byPolicy.set(share.policy,(byPolicy.get(share.policy)??0)+share.amountMinor);
     const ids=[...byPolicy].filter(([,amount])=>amount>0).map(([id])=>id);
-    for(const id of ids){const policy=cited('policy',id);expectedBudgetOwners.push({policy:id,order:order.id,ownerEmail:policy.budgetOwner??policy.approver,name:policy.name});}
+    for(const id of ids){const policy=cited('policy',id);expectedBudgetOwners.push({policy:id,order:assumption.order,ownerEmail:policy.budgetOwner??policy.approver,name:policy.name});}
    }
    fail(equal(s.budgetOwners,expectedBudgetOwners.sort((a,b)=>a.policy.localeCompare(b.policy)||a.order.localeCompare(b.order))),'budget_owner_coverage');
   }
