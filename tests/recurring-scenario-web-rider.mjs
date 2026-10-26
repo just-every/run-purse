@@ -41,7 +41,7 @@ export async function recurringScenarioRider({browser,f,page,panel,bundle,width,
   await panel.getByLabel('Proposed date for '+order.number,{exact:true}).fill('2026-12-01');
   const scenario=await save(page,'recurring-scenario-prepare',panel.getByRole('button',{name:'Prepare recurring scenario',exact:true}));
   const card=panel.getByRole('region',{name:'Scenario '+scenario.id,exact:true});
-  await card.getByText('forecast from recorded terms; not issued, not realized',{exact:true}).waitFor();
+  await card.getByText('forecast from recorded terms; not issued, not realized',{exact:true}).first().waitFor();
   assert.equal(scenario.snapshot.recordedForecast.totalMinor,1200000);assert.equal(scenario.snapshot.recordedForecast.proposedTotalMinor,0);
   assert.equal(await card.getByRole('button',{name:'Approve owner scenario for '+agreement.name,exact:true}).count(),0);
   await snap('recorded-renewal-forecast',card,page);

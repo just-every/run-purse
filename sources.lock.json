@@ -4928,7 +4928,7 @@
       "executable": false
     },
     "tests/recurring-scenario-web-rider.mjs": {
-      "sha256": "e6ab0ff048d5db56ffca8b6c72f09470f723d5dbdc7113d0c217f4901fd1fc89",
+      "sha256": "8a38bb7c875af81486ae0712e1b3b0924ad64fd6560b7710f010a212b7c81825",
       "executable": false
     },
     "tests/restore-po-documents.mjs": {
