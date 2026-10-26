@@ -7,7 +7,7 @@ import portability from '../scripts/installer/portability.mjs'
 import {createPortability} from '@runeditrun/rer/modules/portability'
 import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs'
 
-test('CONTRACT-001 round A owner-confirmed agreement history, exact invoice attribution, CLM/signature references, scheduled notice claims/outcomes and complete restore through public doors',async t=>{
+test('CONTRACT-001 owner-confirmed agreement history, active member assignment, recorded renewal terms, exact invoice attribution, notice claims and complete restore through public doors',async t=>{
  let fail=false;
  const h=await harness({mail:()=>fail?new Response('mail edge unavailable',{status:503}):Response.json({id:crypto.randomUUID()})});t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Canyon Services',currencies:['USD','CAD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety'],timezone:'America/Los_Angeles'});
@@ -18,7 +18,7 @@ test('CONTRACT-001 round A owner-confirmed agreement history, exact invoice attr
  await cmd('agreement',{...base,confirmed:false},h.owner,400);
  for(const cookie of [requester,buyer,approver,receiver])await cmd('agreement',base,cookie,403);
  await cmd('agreement',base,'',401);
- for(const invalid of [{endDate:'2026-02-30'},{startDate:'2027-02-01'},{noticeDays:-1},{noticeDays:0.5},{reminderDays:[0]},{reminderDays:[]},{clm:{...base.clm,url:'javascript:alert(1)'}},{signature:{...base.signature,status:'verified'}},{valueMinor:-1}])await cmd('agreement',{...base,...invalid},h.owner,400);
+ for(const invalid of [{endDate:'2026-02-30'},{startDate:'2027-02-01'},{noticeDays:-1},{noticeDays:0.5},{reminderDays:[0]},{reminderDays:[]},{clm:{...base.clm,url:'javascript:alert(1)'}},{signature:{...base.signature,status:'verified'}},{valueMinor:-1},{renewalTermMonths:0},{renewalTermMonths:1.5},{renewalTermMonths:'12'},{renewalTermMonths:1201},{renewalIncreaseCapBps:-1},{renewalIncreaseCapBps:1.5},{renewalIncreaseCapBps:100001}])await cmd('agreement',{...base,...invalid},h.owner,400);
  assert.deepEqual((await h.state()).data.agreement,before.agreement);
  const cross=await h.mf.dispatchFetch(h.origin+'/api/purse/command/agreement',{method:'POST',headers:{origin:'https://outside.test',cookie:h.owner,'content-type':'application/json'},body:JSON.stringify(base)});assert.equal(cross.status,403);
  let agreement=await cmd('agreement',base);assert.equal(agreement.noticeDeadline,'2026-12-01');assert.equal(agreement.history.length,1);assert.equal(agreement.signature.provenance,'owner-recorded; not provider-verified');assert.equal(agreement.owner,(await h.state()).actor.id);
@@ -56,9 +56,26 @@ test('CONTRACT-001 round A owner-confirmed agreement history, exact invoice attr
  // An unrelated edit does not replay a consumed interval.
  agreement=await cmd('agreement',{...base,id:agreement.id,version:4,name:'Annual corrected maintenance',reason:'Correct title'});await tick('2026-11-26T12:00:00Z');assert.equal(count(),attempted);
  let restoreProbe=await cmd('agreement',{...base,reference:'RESTORE-AUTHORITY-42',endDate:'2027-02-28',autoRenew:false});const off=count();await tick('2026-11-30T12:00:00Z');assert.equal(count(),off,'Disabled auto-renewal sends nothing');assert.ok(!(await h.state()).data.agreementReminder.some(e=>e.agreement===restoreProbe.id));restoreProbe=await cmd('agreement',{...base,id:restoreProbe.id,version:1,reference:'RESTORE-AUTHORITY-42',endDate:'2027-02-28',reason:'Enable unclaimed reminder before export'});
+ const assignee=await h.member('synthetic-purse-914@example.test',['requester']),assignedActor=(await h.state(assignee)).actor;
+ const assignedTerms={...base,name:'synthetic-purse-914',reference:'synthetic-purse-914',ownerMember:assignedActor.email,renewalTermMonths:12,renewalIncreaseCapBps:300,valueMinor:120000};
+ await cmd('member',{email:'synthetic-purse-915@example.test',name:'synthetic-purse-915',roles:['requester'],active:true});
+ await cmd('agreement',{...assignedTerms,ownerMember:'synthetic-purse-915@example.test'},h.owner,409);
+ await cmd('member',{email:assignedActor.email,name:'synthetic-purse-914',roles:['requester'],active:false});
+ await cmd('agreement',assignedTerms,h.owner,409);
+ await cmd('member',{email:assignedActor.email,name:'synthetic-purse-914',roles:['requester'],active:true});
+ await cmd('agreement',assignedTerms,assignee,403);
+ let assigned=await cmd('agreement',assignedTerms);assert.equal(assigned.owner,assignedActor.id);assert.equal(assigned.ownerEmail,assignedActor.email);assert.equal(assigned.confirmedBy,(await h.state()).actor.id);assert.notEqual(assigned.owner,assigned.confirmedBy);
+ assert.equal(assigned.renewalTermMonths,12);assert.equal(assigned.renewalIncreaseCapBps,300);assert.equal(assigned.ownerProof.actor,assignedActor.id);assert.ok(Number.isSafeInteger(assigned.ownerProof.operatorVersion));
+ const ownTerms=(await h.state(assignee)).data.agreement;assert.equal(ownTerms.length,1);assert.equal(ownTerms[0].id,assigned.id);assert.equal(ownTerms[0].renewalTermMonths,12);assert.equal(ownTerms[0].renewalIncreaseCapBps,300);assert.equal(ownTerms[0].termsOnly,true);for(const field of ['history','spend','clm','signature','reading','searchText'])assert.equal(ownTerms[0][field],undefined,'Assigned member receives safe current terms only');assert.equal((await h.state(requester)).data.agreement.length,0);
+ assigned=await cmd('agreement',{...base,id:assigned.id,version:assigned.version,name:'synthetic-purse-914 corrected',reference:assignedTerms.reference,owner:(await h.state()).actor.id,ownerEmail:'synthetic-purse-915@example.test',reason:'synthetic-purse-914 preserve assigned member'});
+ assert.equal(assigned.owner,assignedActor.id,'Unselected ownership survives correction and forged owner fields');assert.equal(assigned.renewalTermMonths,12);assert.equal(assigned.renewalIncreaseCapBps,300);assert.equal(assigned.history[0].owner,assignedActor.id);
+ await cmd('agreement',{...assignedTerms,id:assigned.id,version:1},h.owner,409);
+ assigned=await cmd('agreement',{...base,id:assigned.id,version:assigned.version,reference:assignedTerms.reference,ownerMember:(await h.state()).actor.email,renewalTermMonths:null,renewalIncreaseCapBps:0,reason:'synthetic-purse-914 explicit owner reassignment'});
+ assert.equal(assigned.owner,(await h.state()).actor.id);assert.equal(assigned.renewalTermMonths,null);assert.equal(assigned.renewalIncreaseCapBps,0);assert.equal(assigned.history[0].renewalTermMonths,12);assert.equal(assigned.history[1].owner,assignedActor.id);assert.equal((await h.state(assignee)).data.agreement.length,0,'Previous assignment grants no current agreement visibility');
  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
  for(const mutate of [r=>{r.find(x=>x.kind==='agreementInvoice').value=JSON.stringify({...link,amountMinor:1})},r=>{const e=r.find(x=>x.kind==='agreementReminder');const v=JSON.parse(e.value);v.spend.totals[0].amountMinor++;e.value=JSON.stringify(v)},r=>{const a=r.find(x=>x.kind==='agreement');const v=JSON.parse(a.value);v.noticeDays=1;a.value=JSON.stringify(v)}]){const corrupt=structuredClone(rows);mutate(corrupt);assert.throws(()=>validatePurchasingArchive(corrupt),/purse_agreement/)}
- const audit=await h.send('/api/purse/audit.csv',undefined,h.owner);assert.match(audit.value,/agreement-reminder/);assert.match(audit.value,/Corrected original notice term/);
+ const audit=await h.send('/api/purse/audit.csv',undefined,h.owner);assert.match(audit.value,/agreement-reminder/);assert.match(audit.value,/Corrected original notice term/);assert.match(audit.value,/synthetic-purse-914 explicit owner reassignment/);
+ const assignmentAudit=(await h.state()).data.audit.find(row=>row.action==='agreement'&&row.record===assigned.id&&row.version===assigned.version);assert.equal(assignmentAudit.before.owner,assignedActor.id);assert.equal(assignmentAudit.after.owner,assigned.owner);assert.equal(assignmentAudit.after.renewalIncreaseCapBps,0);
  const archive=join(h.dir,'agreements.rer');const service=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});await exportArchive(service,archive,[]);
  let restoredMails=0;const restored=await harness({empty:true,mail:()=>{restoredMails++;return Response.json({id:crypto.randomUUID()})}});t.after(()=>restored.close());const target=await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability});await importArchive(target,archive,[]);
  const boot=await restored.send('/auth/bootstrap',{token:'synthetic-local-test-bootstrap-token-0123456789',displayName:'Restored owner'});assert.equal(boot.status,303);const after=(await restored.send('/api/purse/state',undefined,boot.cookie)).value.data;

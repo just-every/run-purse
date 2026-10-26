@@ -1,3 +1,4 @@
+import {sendRecurringNotice} from './recurring-notice-send';
 import {orderInvoiceConsent} from './order-invoice-consent';
 import { Hono } from 'hono';
 import { runtimeBindings, type Bindings } from '../auth.server';
@@ -9,6 +10,10 @@ import { adoptOrderResponse } from './order-response';
 import { supplierOrderChange } from './order-send-public';
 
 export const orderSendApi = new Hono<{ Bindings: Bindings }>();
+orderSendApi.post('/api/purse/order-send/recurring-notice',async c=>{
+    requireThat(Number(c.req.header('content-length')??0)<=8192,'Send request too large',413);
+    return c.json(await sendRecurringNotice(runtimeBindings(c.env),await actor(c.req.raw,c.env),await c.req.json()));
+});
 orderSendApi.post('/api/purse/order-send', async c => {
     const a = await actor(c.req.raw, c.env);
     requireThat(Number(c.req.header('content-length') ?? 0) <= 8192, 'Send request too large', 413);

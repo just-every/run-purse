@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { recordedRenewalForecast, recurringDraftText } from '../../src/purse/recurring-forecast.mjs';
+import { validateRecurringNotices } from './restore-recurring-notices.mjs';
 import { containsProtectedInput } from '../../src/purse/protected-context-fields.mjs';
 
 const canonical = value => Array.isArray(value) ? '[' + value.map(canonical).join(',') + ']'
@@ -12,11 +14,11 @@ const day = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && Numbe
 const instant = v => typeof v === 'string' && Number.isFinite(Date.parse(v));
 const pick = (v, fields) => Object.fromEntries(fields.split(',').filter(k => v[k] !== undefined).map(k => [k, v[k]]));
 const fields = {
- agreement: 'version,name,reference,supplier,currency,valueMinor,firstOfferMinor,startDate,endDate,autoRenew,noticeDays,noticeDeadline,owner,priceHistory',
- supplier: 'name,mergedInto', recurringSeries: 'order,request,agreement,status,version,nextDate,endDate,maxOrders,generatedCount',
- order: 'number,request,revision,status,currency,totalMinor,issuedAt,needDate,supplier,amendedBy,lines', request: 'title,revision,status,valuePromise',
+ agreement: 'ownerEmail,renewalTermMonths,renewalIncreaseCapBps,paymentTerms,version,name,reference,supplier,currency,valueMinor,firstOfferMinor,startDate,endDate,autoRenew,noticeDays,noticeDeadline,owner,priceHistory',
+ policy: 'name,approver,budgetOwner,active', supplier: 'name,mergedInto', recurringSeries: 'order,request,agreement,status,version,nextDate,endDate,maxOrders,generatedCount',
+ order: 'number,request,revision,status,currency,totalMinor,issuedAt,needDate,supplier,amendedBy,lines', request: 'title,revision,status,valuePromise,policy',
  orderClosure: 'order,active,lines', cashExpectation: 'order,version,expectedDate',
- commitment: 'request,revision,currency,amountMinor,event,at', invoice: 'reference,order,currency,totalMinor,hasSourcePayment,flags,riskReviews,allocations,pantry', payable: 'invoice,version,approvedAt,approvedMinor,invoiceDate,term,dueDate,discountDate,discountPercent',
+ commitment: 'request,revision,currency,amountMinor,event,at,policy,budgetAllocations', invoice: 'reference,order,currency,totalMinor,hasSourcePayment,flags,riskReviews,allocations,pantry', payable: 'invoice,version,approvedAt,approvedMinor,invoiceDate,term,dueDate,discountDate,discountPercent',
  valueSeatImport: 'request,revision,provider,periodStart,periodEnd,activeRule,sha256,seatCount,activeSeats,provenance',
  valueConfirmation: 'request,revision,usefulness,at,run,runVersion', supplierIssue: 'supplier,order,category,status,at',
  supplierOrderEvidence: 'order,supplier,version,promisedDate,acknowledgedAt', receipt: 'order,line,event,q,quantity,at,valueMinor,mode,percentage,milestone',
@@ -30,7 +32,8 @@ const priceLineFields = 'description,quantity,q,unit,partNumber,firstUnitMinor,a
  * Forecast rows and receipt positions are recomputed from captured primitives,
  * never from today's changed books or a fabricated annual renewal assumption.
  */
-export function validateRecurringScenarios(all, get, check) {
+export function validateRecurringScenarios(all, get, check, rows = []) {
+ const revisions=new Map(rows.map(row=>[row.kind+':'+row.id,row.revision]));
  const fail = (ok, label) => check(ok, 'recurring_scenario_' + label);
  const object = (v, label) => { fail(v && typeof v === 'object' && !Array.isArray(v), label); return v; };
  const shape = (v, allowed, label) => { object(v, label); fail(Object.keys(v).every(k => allowed.split(',').includes(k)), label + '_fields'); };
@@ -43,7 +46,7 @@ export function validateRecurringScenarios(all, get, check) {
   fail(!containsProtectedInput(scenario), 'protected_context');
   fail(str(scenario.id, 200) && /^[a-f0-9]{64}$/.test(scenario.hash) && scenario.mode === 'deterministic v1' && scenario.model === 'none' && scenario.provider === 'none' && scenario.status === 'proposed' && str(scenario.preparedBy, 200) && instant(scenario.at), 'identity');
   const c = object(scenario.choices, 'choices'), s = object(scenario.snapshot, 'snapshot');
-  shape(c, 'kind,agreementIds,from,to,reason,operationalRisk,assumptions,evidence', 'choices');
+  shape(c, 'kind,agreementIds,from,to,reason,operationalRisk,assumptions,evidence,renewalAssumptions', 'choices');
   fail(['consolidate', 'renegotiate', 'cancel'].includes(c.kind) && day(c.from) && day(c.to) && c.from <= c.to && str(c.reason) && str(c.operationalRisk), 'choice_terms');
   array(c.agreementIds, 20, 'agreements'); fail(c.agreementIds.length > 0 && c.agreementIds.every(id => str(id, 200)) && new Set(c.agreementIds).size === c.agreementIds.length && equal(c.agreementIds, [...c.agreementIds].sort()), 'agreement_ids');
   fail(c.kind !== 'consolidate' || c.agreementIds.length > 1, 'consolidation');
@@ -60,7 +63,14 @@ export function validateRecurringScenarios(all, get, check) {
   array(c.evidence, 100, 'evidence');
   for (const ref of c.evidence) { shape(ref, 'kind,id', 'evidence'); fail(evidenceKinds.includes(ref.kind) && str(ref.id, 200), 'evidence_kind'); }
   fail(new Set(c.evidence.map(r => r.kind + ':' + r.id)).size === c.evidence.length && equal(c.evidence, [...c.evidence].sort((a,b) => a.kind.localeCompare(b.kind) || a.id.localeCompare(b.id))), 'evidence_order');
-  shape(s, 'currency,sources,overlaps,agreements,baseline,proposed,effect,unknownForecastAgreements,basis', 'snapshot');
+  const recorded = Object.hasOwn(s, 'recordedForecast');
+  fail(recorded === Object.hasOwn(c, 'renewalAssumptions') && recorded === Object.hasOwn(s, 'budgetOwners'), 'format');
+  if(recorded){
+   array(c.renewalAssumptions,20,'renewal_assumptions');
+   for(const row of c.renewalAssumptions){shape(row,'agreement,proposedMinor,reason','renewal_assumption');fail(c.agreementIds.includes(row.agreement)&&inputMoney(row.proposedMinor)&&str(row.reason),'renewal_assumption_value');}
+   fail(new Set(c.renewalAssumptions.map(row=>row.agreement)).size===c.renewalAssumptions.length&&equal(c.renewalAssumptions,[...c.renewalAssumptions].sort((a,b)=>a.agreement.localeCompare(b.agreement))),'renewal_assumption_order');
+  }
+  shape(s, 'currency,sources,overlaps,agreements,baseline,proposed,effect,unknownForecastAgreements,basis,recordedForecast,budgetOwners', 'snapshot');
   fail(str(s.currency, 20) && str(s.basis) && get('business', 'main').currencies.includes(s.currency), 'currency');
   array(s.sources, 100000, 'sources');
   const byKey = new Map();
@@ -69,17 +79,27 @@ export function validateRecurringScenarios(all, get, check) {
    fail(Object.hasOwn(fields, ref.kind) && str(ref.id, 200) && str(ref.revision, 200), 'source_reference');
    const key = ref.kind + ':' + ref.id; fail(!byKey.has(key), 'source_duplicate'); byKey.set(key, ref);
    const original = get(ref.kind, ref.id); fail(!original.imported, 'native_source');
-   shape(ref.value, fields[ref.kind], 'source_' + ref.kind);
+   const sourceFields=!recorded?fields[ref.kind].split(',').filter(k=>!(ref.kind==='agreement'?['ownerEmail','renewalTermMonths','renewalIncreaseCapBps','paymentTerms']:ref.kind==='commitment'?['policy','budgetAllocations']:ref.kind==='request'?['policy']:[]).includes(k)).join(','):fields[ref.kind];
+   shape(ref.value, sourceFields, 'source_' + ref.kind);
+   if(ref.kind==='policy'){
+    fail(recorded&&str(ref.value.name)&&str(ref.value.approver,254)&&ref.value.active===true,'policy_source');
+    if(revisions.get(key)===ref.revision)fail(equal(ref.value,pick(original,sourceFields)),'policy_source_exact');
+   }
+   if(recorded&&ref.kind==='request')fail(str(ref.value.policy,200)&&s.sources.some(row=>row.kind==='order'&&row.value.request===ref.id&&row.value.revision===ref.value.revision&&get('order',row.id).policy===ref.value.policy),'request_policy');
    if(ref.kind==='order')fail(str(ref.value.number,200),'order_number');
    if(ref.kind==='request')fail(str(ref.value.title),'request_title');
    if(ref.kind==='invoice')fail(str(ref.value.reference),'invoice_reference');
-   const nested = ref.kind === 'agreement' ? ['priceHistory'] : ['order','orderClosure'].includes(ref.kind) ? ['lines'] : ref.kind === 'request' ? ['valuePromise'] : ref.kind === 'invoice' ? ['flags','riskReviews','allocations','pantry'] : [];
+   const nested = ref.kind === 'agreement' ? ['priceHistory'] : ['order','orderClosure'].includes(ref.kind) ? ['lines'] : ref.kind === 'request' ? ['valuePromise'] : ref.kind === 'invoice' ? ['flags','riskReviews','allocations','pantry'] : ref.kind==='commitment'?['budgetAllocations']:[];
    fail(Object.entries(ref.value).every(([k,v]) => nested.includes(k) || v === null || ['string','number','boolean'].includes(typeof v)), 'source_scalars');
    if (ref.kind === 'order') for (const line of array(ref.value.lines, 100, 'order_lines')) {
     shape(line, 'id,q,unitMinor,totalMinor,carriedAccepted,carriedCancelled,carriedAcceptedMinor,carriedCancelledMinor,service,position', 'order_line'); fail(str(line.id, 200) && integer(line.q) && line.q > 0 && money(line.unitMinor) && money(line.totalMinor), 'order_line_value');
     for(const field of ['carriedAccepted','carriedCancelled','carriedAcceptedMinor','carriedCancelledMinor'])fail(line[field]===undefined||money(line[field]),'carried_position');
     if(line.service){shape(line.service,'mode','service');fail(['amount','percentage','milestone'].includes(line.service.mode),'service_mode');}
     shape(line.position,'accepted,cancelled,closed,outstanding,acceptedMinor,cancelledMinor,closedMinor,outstandingMinor','line_position');fail(Object.values(line.position).every(integer),'position_values');
+   }
+   if(ref.kind==='commitment'&&recorded){
+    fail(ref.value.policy===undefined||str(ref.value.policy,200),'commitment_policy');
+    if(ref.value.budgetAllocations!==undefined){array(ref.value.budgetAllocations,1000,'commitment_allocations');for(const row of ref.value.budgetAllocations){shape(row,'policy,amountMinor','commitment_allocation');fail(str(row.policy,200)&&integer(row.amountMinor),'commitment_allocation_value');}fail(sum(ref.value.budgetAllocations.map(row=>row.amountMinor))===ref.value.amountMinor,'commitment_allocation_total');}
    }
    if(ref.kind==='orderClosure'){fail(typeof ref.value.active==='boolean','closure_active');for(const line of array(ref.value.lines,100,'closure_lines')){shape(line,'line,q','closure_line');fail(str(line.line,200)&&money(line.q),'closure_value');}}
    if(ref.kind==='cashExpectation')fail(day(ref.value.expectedDate),'expectation_date');
@@ -96,17 +116,18 @@ export function validateRecurringScenarios(all, get, check) {
     fail(p.kind === 'seats' && integer(p.seats) && p.seats > 0 || p.kind === 'need-date' && day(p.needDate) || p.kind === 'quoted-saving' && inputMoney(p.amountMinor) && p.currency === s.currency, 'promise_value');
    }
    if (ref.kind === 'agreement') {
+    if(recorded){fail(str(ref.value.ownerEmail,254)&&str(ref.value.paymentTerms),'recorded_agreement_terms');for(const [key,min,max]of [['renewalTermMonths',1,1200],['renewalIncreaseCapBps',0,100000]])fail(ref.value[key]===undefined||ref.value[key]===null||integer(ref.value[key])&&ref.value[key]>=min&&ref.value[key]<=max,'recorded_renewal_terms');}
     const v = ref.value, history = array(v.priceHistory, 1000000, 'price_history');
     fail(integer(v.version) && v.version > 0 && history.length === v.version && v.currency === s.currency && c.agreementIds.includes(ref.id), 'agreement_version');
     const retained = original.history?.find(h => h.version === v.version); fail(retained, 'retained_agreement_version');
-    fail(equal(pick(v, fields.agreement.replace(',priceHistory','')), pick(retained, fields.agreement.replace(',priceHistory',''))), 'agreement_retained_terms');
+    fail(equal(pick(v, sourceFields.replace(',priceHistory','')), pick(retained, sourceFields.replace(',priceHistory',''))), 'agreement_retained_terms');
     for (const [index, h] of history.entries()) {
      shape(h, priceFields, 'price_history'); fail(h.version === index + 1 && day(h.startDate) && day(h.endDate) && day(h.noticeDeadline) && instant(h.at), 'price_history_terms');
      for (const line of array(h.priceLines, 100, 'price_lines')) { shape(line, priceLineFields, 'price_line'); fail(str(line.description) && str(line.unit) && typeof line.quantity === 'string' && integer(line.q) && line.q > 0 && inputMoney(line.firstUnitMinor) && inputMoney(line.awardedUnitMinor) && (line.partNumber == null || str(line.partNumber)), 'price_line_value'); }
      const actual = original.history[index]; fail(actual && equal(h, { ...pick(actual, priceFields.replace(',priceLines','')), priceLines: (actual.priceLines ?? []).map(l => pick(l, priceLineFields)) }), 'price_history_retained');
     }
    }
-   if (['commitment','receipt','valueSeatImport','valueConfirmation'].includes(ref.kind)) fail(equal(ref.value, pick(original, fields[ref.kind])), 'immutable_source_value');
+   if (['commitment','receipt','valueSeatImport','valueConfirmation'].includes(ref.kind)) fail(equal(ref.value, pick(original, sourceFields)), 'immutable_source_value');
   }
   fail(equal(s.sources, [...s.sources].sort((a,b) => a.kind.localeCompare(b.kind) || a.id.localeCompare(b.id))), 'source_order');
   const cited = (kind,id) => { const ref = byKey.get(kind + ':' + id); fail(ref, 'cited_' + kind); return ref.value; };
@@ -116,6 +137,7 @@ export function validateRecurringScenarios(all, get, check) {
   const requestIds = new Set(linked.map(a => cited('order', a.order).request)); fail(requestIds.size === linked.length, 'request_lineage');
   const orders = s.sources.filter(r => r.kind === 'order'), orderIds = new Set(orders.map(r => r.id));
   for (const ref of orders) { fail(requestIds.has(ref.value.request) && cited('request',ref.value.request) && ref.value.currency === s.currency, 'order_graph'); const actual = get('order',ref.id); fail(actual.request === ref.value.request && actual.revision === ref.value.revision && !all('orderAdoption').some(a=>a.order===ref.id||a.request===actual.request), 'retained_order_identity'); }
+  if(recorded)for(const event of all('commitment').filter(row=>requestIds.has(row.request)&&Date.parse(row.at)<=Date.parse(scenario.at)))cited('commitment',event.id);
   for(const receipt of all('receipt').filter(r=>orderIds.has(r.order)&&Date.parse(r.at)<=Date.parse(scenario.at)))cited('receipt',receipt.id);
   for(const closure of all('orderClosure').filter(r=>orderIds.has(r.order)&&Date.parse(r.at)<=Date.parse(scenario.at)))cited('orderClosure',closure.id);
   for (const a of linked) {
@@ -143,7 +165,9 @@ export function validateRecurringScenarios(all, get, check) {
    const a=agreements[l],b=agreements[r],from=[a.startDate,b.startDate,c.from].sort().at(-1),to=[a.endDate,b.endDate,c.to].sort()[0];
    if(from<=to)overlaps.push({agreements:[a.id,b.id],from,to,sameSupplierFamily:family(a.supplier)===family(b.supplier),basis:'Calendar overlap only; functional overlap is the human scenario assumption'});
   }
-  fail(equal(s.overlaps,overlaps) && equal(s.unknownForecastAgreements,unknown.map(a=>a.agreement)), 'overlap_unknown');
+  let recordedForecast;
+  if(recorded){try{recordedForecast=recordedRenewalForecast(agreements,c.from,c.to,c.renewalAssumptions);}catch{fail(false,'recorded_forecast_inputs');}fail(equal(s.recordedForecast,recordedForecast)&&!c.renewalAssumptions.some(row=>recordedForecast.unknownAgreementIds.includes(row.agreement)),'recorded_forecast');}
+  fail(equal(s.overlaps,overlaps) && equal(s.unknownForecastAgreements,recorded?recordedForecast.unknownAgreementIds:unknown.map(a=>a.agreement)), 'overlap_unknown');
   const baseline = s.baseline, proposed = s.proposed;
   shape(baseline, 'bills,forecast,commitmentRows,billsMinor,forecastMinor,commitmentsMinor,cashMinor', 'baseline');
   shape(proposed, 'billsMinor,forecastMinor,commitmentsMinor,cashMinor', 'proposed'); shape(s.effect,'cashMinor,commitmentsMinor','effect');
@@ -182,31 +206,52 @@ export function validateRecurringScenarios(all, get, check) {
   fail(equal(pick(baseline,'billsMinor,forecastMinor,commitmentsMinor,cashMinor'),{billsMinor,forecastMinor,commitmentsMinor,cashMinor:sum([billsMinor,forecastMinor])}),'baseline_arithmetic');
   const proposedForecast=sum(linked.map(a=>a.proposedMinor)),proposedCommitment=sum(linked.map(a=>a.proposedCommitmentMinor));
   fail(equal(proposed,{billsMinor,forecastMinor:proposedForecast,commitmentsMinor:proposedCommitment,cashMinor:sum([billsMinor,proposedForecast])})&&equal(s.effect,{cashMinor:proposedForecast-forecastMinor,commitmentsMinor:proposedCommitment-commitmentsMinor}),'proposed_arithmetic');
+  if(recorded){
+   array(s.budgetOwners,1000,'budget_owners');
+   for(const row of s.budgetOwners){shape(row,'policy,order,ownerEmail,name','budget_owner');const policy=cited('policy',row.policy),assumption=linked.find(a=>a.order===row.order),order=cited('order',row.order);fail(assumption&&commitmentRows.find(r=>r.request===order.request)?.amountMinor!==assumption.proposedCommitmentMinor&&row.ownerEmail===(policy.budgetOwner??policy.approver)&&row.name===policy.name,'budget_owner_source');}
+   fail(new Set(s.budgetOwners.map(r=>r.policy+':'+r.order)).size===s.budgetOwners.length&&equal(s.budgetOwners,[...s.budgetOwners].sort((a,b)=>a.policy.localeCompare(b.policy)||a.order.localeCompare(b.order))),'budget_owner_order');
+   fail(s.sources.filter(r=>r.kind==='policy').every(r=>s.budgetOwners.some(b=>b.policy===r.id)),'budget_policy_graph');
+   const expectedBudgetOwners=[];
+   for(const assumption of linked){
+    const order=cited('order',assumption.order),baseline=commitmentRows.find(row=>row.request===order.request)?.amountMinor??0;
+    if(baseline===assumption.proposedCommitmentMinor)continue;
+    const byPolicy=new Map();
+    for(const ref of s.sources.filter(r=>r.kind==='commitment'&&r.value.request===order.request))for(const share of ref.value.budgetAllocations??[{policy:ref.value.policy??cited('request',order.request).policy,amountMinor:ref.value.amountMinor}])byPolicy.set(share.policy,(byPolicy.get(share.policy)??0)+share.amountMinor);
+    const ids=[...byPolicy].filter(([,amount])=>amount>0).map(([id])=>id);
+    for(const id of ids){const policy=cited('policy',id);expectedBudgetOwners.push({policy:id,order:order.id,ownerEmail:policy.budgetOwner??policy.approver,name:policy.name});}
+   }
+   fail(equal(s.budgetOwners,expectedBudgetOwners.sort((a,b)=>a.policy.localeCompare(b.policy)||a.order.localeCompare(b.order))),'budget_owner_coverage');
+  }
   fail(scenario.hash===createHash('sha256').update(canonical({choices:c,snapshot:s})).digest('hex'),'hash');
   fail(audit('recurring-scenario-prepare',a=>a.record===scenario.id&&a.hash===scenario.hash&&a.actor===scenario.preparedBy&&equal(a.agreements,c.agreementIds)),'prepare_audit');
  }
  for(const consent of all('recurringScenarioConsent')) {
-  shape(consent,'id,scenario,hash,role,agreement,actor,email,nativeOwner,operatorVersion,reason,at','consent');
+  shape(consent,'id,scenario,hash,role,agreement,policy,actor,email,nativeOwner,operatorVersion,reason,at','consent');
   fail(!containsProtectedInput(consent),'consent_protected');
   const scenario=get('recurringScenario',consent.scenario);
-  fail(consent.hash===scenario.hash&&['finance','owner'].includes(consent.role)&&str(consent.actor,200)&&str(consent.email,254)&&typeof consent.nativeOwner==='boolean'&&integer(consent.operatorVersion)&&consent.operatorVersion>0&&str(consent.reason)&&instant(consent.at)&&Date.parse(consent.at)>=Date.parse(scenario.at),'consent_signature');
-  fail(consent.id===scenario.id+':'+consent.role+':'+(consent.agreement??'finance'),'consent_identity');
-  if(consent.role==='owner')fail(consent.nativeOwner&&scenario.snapshot.agreements.some(a=>a.id===consent.agreement&&a.owner===consent.actor),'owner_signature');
-  else fail(consent.agreement===null&&!scenario.snapshot.agreements.some(a=>a.owner===consent.actor),'independent_finance');
-  fail(audit('recurring-scenario-approve',a=>a.record===scenario.id&&a.hash===scenario.hash&&a.consent===consent.id&&a.actor===consent.actor&&a.role===consent.role&&a.agreement===consent.agreement),'consent_audit');
+  fail(consent.hash===scenario.hash&&['finance','owner','budget'].includes(consent.role)&&str(consent.actor,200)&&str(consent.email,254)&&typeof consent.nativeOwner==='boolean'&&integer(consent.operatorVersion)&&consent.operatorVersion>0&&str(consent.reason)&&instant(consent.at)&&Date.parse(consent.at)>=Date.parse(scenario.at),'consent_signature');
+  fail(consent.id===scenario.id+':'+consent.role+':'+(consent.role==='budget'?consent.policy:(consent.agreement??'finance')),'consent_identity');
+  const recorded=Object.hasOwn(scenario.snapshot,'recordedForecast');
+  if(consent.role==='owner')fail((recorded||consent.nativeOwner)&&consent.policy==null&&scenario.snapshot.agreements.some(a=>a.id===consent.agreement&&a.owner===consent.actor)&&( !recorded||scenario.snapshot.sources.some(r=>r.kind==='agreement'&&r.id===consent.agreement&&r.value.ownerEmail.toLowerCase()===consent.email.toLowerCase())),'owner_signature');
+  else if(consent.role==='budget')fail(recorded&&consent.agreement===null&&(scenario.snapshot.budgetOwners??[]).some(row=>row.policy===consent.policy&&row.ownerEmail.toLowerCase()===consent.email.toLowerCase()),'budget_signature');
+  else fail(consent.agreement===null&&consent.policy==null&&!scenario.snapshot.agreements.some(a=>a.owner===consent.actor)&&!(scenario.snapshot.budgetOwners??[]).some(row=>row.ownerEmail.toLowerCase()===consent.email.toLowerCase()),'independent_finance');
+  fail(audit('recurring-scenario-approve',a=>a.record===scenario.id&&a.hash===scenario.hash&&a.consent===consent.id&&a.actor===consent.actor&&a.role===consent.role&&a.agreement===consent.agreement&&(a.policy??null)===(consent.policy??null)),'consent_audit');
  }
  for(const draft of all('recurringScenarioDraft')) {
-  shape(draft,'id,scenario,hash,kind,binding,sent,actor,at,authorityProofs,text','draft');fail(!containsProtectedInput(draft),'draft_protected');
+  shape(draft,'id,scenario,hash,kind,binding,sent,actor,at,authorityProofs,text,draftHash','draft');fail(!containsProtectedInput(draft),'draft_protected');
   const scenario=get('recurringScenario',draft.scenario),c=scenario.choices,s=scenario.snapshot;
-  fail(draft.id===scenario.id&&draft.hash===scenario.hash&&draft.binding===false&&draft.sent===false&&str(draft.actor,200)&&instant(draft.at)&&draft.kind===(c.kind==='cancel'?'cancellation-brief':'negotiation-brief'),'draft_identity');
+  fail(draft.id===scenario.id&&draft.hash===scenario.hash&&draft.binding===false&&draft.sent===false&&str(draft.text,1000000)&&str(draft.actor,200)&&instant(draft.at)&&draft.kind===(c.kind==='cancel'?'cancellation-brief':'negotiation-brief'),'draft_identity');
   const consents=all('recurringScenarioConsent').filter(r=>r.scenario===scenario.id&&r.hash===scenario.hash);
-  fail(consents.some(r=>r.role==='finance')&&c.agreementIds.every(id=>consents.some(r=>r.role==='owner'&&r.agreement===id))&&consents.every(r=>Date.parse(r.at)<=Date.parse(draft.at)),'draft_consents');
-  array(draft.authorityProofs,21,'draft_signatures');for(const p of draft.authorityProofs)shape(p,'actor,operatorVersion,owner','draft_signature');
+  fail(consents.some(r=>r.role==='finance')&&c.agreementIds.every(id=>consents.some(r=>r.role==='owner'&&r.agreement===id))&&(s.budgetOwners??[]).every(row=>consents.some(r=>r.role==='budget'&&r.policy===row.policy))&&consents.every(r=>Date.parse(r.at)<=Date.parse(draft.at)),'draft_consents');
+  array(draft.authorityProofs,Object.hasOwn(s,'recordedForecast')?1021:21,'draft_signatures');for(const p of draft.authorityProofs)shape(p,'actor,operatorVersion,owner','draft_signature');
   const signatures=consents.map(r=>({actor:r.actor,operatorVersion:r.operatorVersion,owner:r.nativeOwner}));
   fail(equal([...draft.authorityProofs].sort((a,b)=>canonical(a).localeCompare(canonical(b))),signatures.sort((a,b)=>canonical(a).localeCompare(canonical(b)))),'draft_signatures');
   const agreementLabel=id=>{const terms=s.sources.find(r=>r.kind==='agreement'&&r.id===id).value;return `${terms.name} (${terms.reference})`;};
   const absolute=BigInt(Math.abs(s.effect.cashMinor)),cashText=`${s.currency} ${s.effect.cashMinor<0?'-':''}${absolute/100n}.${String(absolute%100n).padStart(2,'0')}`;
   const body=['NONBINDING DRAFT — human review and separate sending required.',`Scenario ${scenario.hash}`,`Action: ${c.kind}`,...s.agreements.map(r=>`${agreementLabel(r.id)}: notice deadline ${r.noticeDeadline}.`),`Assumption reason: ${c.reason}`,`Operational risk: ${c.operationalRisk}`,`Hypothetical cash change: ${cashText}. Unknown forecasts: ${s.unknownForecastAgreements.map(agreementLabel).join(', ')||'none'}.`,'No commitment, forecast, agreement, purchase order, supplier communication or cancellation has been changed.'].join('\n');
-  fail(draft.text===body&&audit('recurring-scenario-draft',a=>a.record===scenario.id&&a.hash===scenario.hash&&a.kind===draft.kind&&a.actor===draft.actor),'draft_body_audit');
+  const recorded=Object.hasOwn(s,'recordedForecast');
+  fail(recorded?draft.draftHash===createHash('sha256').update(draft.text).digest('hex'):draft.draftHash===undefined,'draft_hash');
+  fail(draft.text===(recorded?recurringDraftText(scenario):body)&&audit('recurring-scenario-draft',a=>a.record===scenario.id&&a.hash===scenario.hash&&a.kind===draft.kind&&a.actor===draft.actor),'draft_body_audit');
  }
+ validateRecurringNotices(all,get,check);
 }

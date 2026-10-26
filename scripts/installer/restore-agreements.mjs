@@ -9,7 +9,15 @@ export function validateAgreements(all,get,check,same) {
   check(int(a.version,1,1000000)&&Array.isArray(a.history)&&a.history.length===a.version&&timestamp(a.createdAt)&&a.createdAt===a.history[0]?.at,'agreement_history');
   for(const [i,h]of a.history.entries()){
    get('supplier',h.supplier);check(get('business','main').currencies.includes(h.currency),'agreement_currency');
-   check(h.version===i+1&&['name','reference','parties','paymentTerms','owner','ownerEmail','reason','confirmedBy'].every(k=>str(h[k]))&&h.owner===h.confirmedBy&&timestamp(h.at),'agreement_terms');
+   check(h.version===i+1&&['name','reference','parties','paymentTerms','owner','ownerEmail','reason','confirmedBy'].every(k=>str(h[k]))&&timestamp(h.at),'agreement_terms');
+   for(const [field,min,max] of [['renewalTermMonths',1,1200],['renewalIncreaseCapBps',0,100000]])check(h[field]===undefined||h[field]===null||int(h[field],min,max),'agreement_recorded_renewal');
+   if(h.ownerMember!==undefined)check(str(h.ownerMember)&&h.ownerMember===h.ownerMember.toLowerCase()&&h.ownerMember===h.ownerEmail.toLowerCase()&&get('member',h.ownerMember).email===h.ownerMember,'agreement_owner_member');
+   if(h.ownerProof!==undefined){const proof=h.ownerProof;check(proof&&Object.keys(proof).every(k=>['actor','operatorVersion','owner'].includes(k))&&proof.actor===h.owner&&int(proof.operatorVersion,1,Number.MAX_SAFE_INTEGER)&&typeof proof.owner==='boolean','agreement_owner_proof');}
+   if(h.owner!==h.confirmedBy){
+    const prior=a.history[i-1],unchanged=prior&&prior.owner===h.owner&&prior.ownerEmail===h.ownerEmail&&prior.ownerMember===h.ownerMember;
+    check(unchanged||str(h.ownerMember)&&h.ownerProof,'agreement_owner_assignment');
+    check(all('audit').some(event=>event.action==='agreement'&&event.record===a.id&&event.actor===h.confirmedBy&&event.version===h.version&&event.reason===h.reason&&same(event.after,h)&&same(event.before,prior??null)),'agreement_owner_assignment_audit');
+   }
    check(day(h.startDate)&&day(h.endDate)&&h.startDate<=h.endDate&&int(h.noticeDays,0,3650),'agreement_term_dates');
    check(h.noticeDeadline===deadline(h.endDate,h.noticeDays)&&typeof h.autoRenew==='boolean'&&typeof h.remindersEnabled==='boolean','agreement_notice');
    check(Array.isArray(h.reminderDays)&&h.reminderDays.length>0&&h.reminderDays.length<=12&&h.reminderDays.every(n=>int(n,1,365))&&new Set(h.reminderDays).size===h.reminderDays.length,'agreement_intervals');

@@ -1,4 +1,5 @@
 import { all, get, requireThat, type Data, type State } from './types';
+function noticeSuppliers(state:State,value:Data):string[]{return (state.get('recurringScenario:'+value.scenario)?.value.snapshot?.sources??[]).filter((r:Data)=>r.kind==='agreement').map((r:Data)=>r.value.supplier);}
 export type ErasureSubject = { kind:'member'|'contact'; id:string; email:string; values:string[]; operator?:string; supplier?:string };
 export async function erasureSubject(db:D1Database,state:State,input:Data):Promise<ErasureSubject> {
  requireThat(['member','contact'].includes(input.kind),'Choose a departed member or supplier contact');
@@ -19,6 +20,7 @@ export async function erasureSubject(db:D1Database,state:State,input:Data):Promi
   const v=row.value;
   if(v.supplierSnapshot?.id===supplier.id)contacts.push(...v.supplierSnapshot.contacts.filter((c:Data)=>c.email.toLowerCase()===input.email.toLowerCase()));
   if(['orderSend','orderThreadMessage'].includes(row.kind)&&v.supplier===supplier.id&&v.recipient?.toLowerCase()===input.email.toLowerCase()&&!v.erasure)contacts.push({email:v.recipient});
+  if(row.kind==='recurringNoticeSend'&&noticeSuppliers(state,v).includes(supplier.id)&&v.recipient?.toLowerCase()===input.email.toLowerCase()&&!v.erasure)contacts.push({email:v.recipient});
   if(row.kind==='rfq')contacts.push(...v.suppliers.filter((c:Data)=>c.id===supplier.id&&c.email.toLowerCase()===input.email.toLowerCase()).map((c:Data)=>({email:c.email,name:c.contactName,phone:c.phone,address:c.address})));
  }
  requireThat(contacts.length&&!input.email.endsWith('@erased.invalid'),'Supplier contact not found',404);
@@ -37,6 +39,7 @@ export function erasureChoices(state:State) {
  for(const row of state.values()) {
   const v=row.value;
   if(['orderSend','orderThreadMessage'].includes(row.kind)&&!v.erasure&&v.recipient&&!v.recipient.endsWith('@erased.invalid')){const supplier=state.get('supplier:'+v.supplier)?.value;if(supplier)contacts.set(v.supplier+':'+v.recipient,{kind:'contact',id:v.supplier,email:v.recipient,label:supplier.name+' · '+v.recipient});}
+  if(row.kind==='recurringNoticeSend'&&!v.erasure&&v.recipient&&!v.recipient.endsWith('@erased.invalid'))for(const id of noticeSuppliers(state,v)){const supplier=state.get('supplier:'+id)?.value;if(supplier)contacts.set(id+':'+v.recipient,{kind:'contact',id,email:v.recipient,label:supplier.name+' · '+v.recipient});}
   const entries=row.kind==='rfq'?v.suppliers:(v.supplierSnapshot?[{...v.supplierSnapshot,contacts:v.supplierSnapshot.contacts}]:[]);
   for(const supplier of entries)for(const contact of supplier.contacts??[supplier])if(contact.email&&!contact.email.endsWith('@erased.invalid')&&!contacts.has(supplier.id+':'+contact.email))contacts.set(supplier.id+':'+contact.email,{kind:'contact',id:supplier.id,email:contact.email,label:supplier.name+' · '+contact.email});
  }

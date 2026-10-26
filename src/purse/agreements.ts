@@ -2,6 +2,7 @@ import { confirmAgreementReading } from './agreement-reading';
 import { moneyInput } from './money';
 import { canonicalSupplier } from './supplier-identity';
 import { currency } from './admin';
+import type { Bindings } from '../auth.server';
 import { all, audit, can, date, get, put, requireThat, text, uid, quantity, extended, minor, type Actor, type Data, type State } from './types';
 
 const integer = (v: unknown, label: string, min: number, max: number) => {
@@ -26,8 +27,21 @@ export const noticeDeadline = (endDate: string, noticeDays: number) => new Date(
 export function agreementDay(s: State, now: number) {
     return new Intl.DateTimeFormat('en-CA', { timeZone: get(s,'business','main').timezone || 'America/New_York' }).format(new Date(now));
 }
+async function agreementOwner(s: State, a: Actor, b: Data, previous: Data | undefined, env?: Bindings): Promise<Data> {
+    if (!Object.hasOwn(b,'ownerMember')) {
+        if (previous) return { owner: previous.owner, ownerEmail: previous.ownerEmail, ...(previous.ownerMember ? { ownerMember: previous.ownerMember } : {}) };
+        return { owner: a.id, ownerEmail: a.email, ownerProof: { actor: a.id, operatorVersion: a.version, owner: false } };
+    }
+    const email = text(b.ownerMember,'Agreement owner member').toLowerCase();
+    if (email === a.email.toLowerCase()) return { owner: a.id, ownerEmail: a.email, ownerProof: { actor: a.id, operatorVersion: a.version, owner: false } };
+    requireThat(all(s,'member').some(member=>member.active && member.email === email),'Choose an active purchasing member as the agreement owner',409);
+    requireThat(env,'Native agreement-owner lookup unavailable',409);
+    const native = await env.DB.prepare("SELECT id,email,version FROM oa_operators WHERE lower(email)=? AND status='active'").bind(email).first<{id:string;email:string;version:number}>();
+    requireThat(native,'Agreement owner must have an active native account',409);
+    return { owner: native.id, ownerEmail: native.email, ownerMember: email, ownerProof: { actor: native.id, operatorVersion: native.version, owner: false } };
+}
 /** Only explicit current-owner confirmation creates a versioned agreement. */
-export function agreements(s: State, a: Actor, op: string, b: Data): Data | undefined {
+export async function agreements(s: State, a: Actor, op: string, b: Data, env?: Bindings): Promise<Data | undefined> {
     if (!['agreement','agreement-invoice'].includes(op)) return;
     can(s,a,'owner');
     if (op === 'agreement-invoice') {
@@ -44,6 +58,13 @@ export function agreements(s: State, a: Actor, op: string, b: Data): Data | unde
     const previous = b.id ? get(s,'agreement',b.id) : undefined;
     requireThat(b.version === (previous?.version ?? 0),'Agreement changed; reload before confirming',409);
     requireThat(b.confirmed === true,'The owner must explicitly confirm these agreement terms');
+    const owner = await agreementOwner(s,a,b,previous,env);
+    const recordedInteger = (field: string,label: string,min: number,max: number) => {
+        const value = Object.hasOwn(b,field) ? b[field] : previous?.[field];
+        return value == null ? null : integer(value,label,min,max);
+    };
+    const renewalTermMonths = recordedInteger('renewalTermMonths','Recorded renewal term in months',1,1200);
+    const renewalIncreaseCapBps = recordedInteger('renewalIncreaseCapBps','Recorded renewal price increase cap in basis points',0,100000);
     const supplier = get(s,'supplier',b.supplier);requireThat(!supplier.mergedInto,'Choose the surviving supplier for a new agreement revision',409);
     currency(s,b.currency);
     requireThat(!previous || !all(s,'agreementInvoice').some(l=>l.agreement===previous.id) || previous.currency===b.currency,'Attributed invoice currency cannot be changed',409);
@@ -65,7 +86,7 @@ export function agreements(s: State, a: Actor, op: string, b: Data): Data | unde
     const id = previous?.id ?? uid(), now = new Date().toISOString();
     const revision = { version: (previous?.version ?? 0)+1, name: text(b.name,'Agreement name',300), reference: text(b.reference,'Agreement reference',300), supplier: supplier.id, currency: b.currency,
         searchText: reading ? get(s,'agreementReading',reading.id).searchText??'' : '', valueMinor, firstOfferMinor, priceLines, firstOfferSource, awardSource, reading, totalMinor:valueMinor, parties: text(b.parties,'Parties'), startDate, endDate, autoRenew: b.autoRenew, noticeDays, noticeDeadline: deadline,
-        paymentTerms: text(b.paymentTerms,'Payment terms'), owner: a.id, ownerEmail: a.email, reminderDays, remindersEnabled: b.remindersEnabled,
+        paymentTerms: text(b.paymentTerms,'Payment terms'), ...owner, renewalTermMonths, renewalIncreaseCapBps, reminderDays, remindersEnabled: b.remindersEnabled,
         clm: reference(b.clm,'CLM'), signature: reference(b.signature,'Signature',true), reason: text(b.reason,'Confirmation or correction reason'), confirmedBy: a.id, at: now };
     const result = { ...revision, id, createdAt: previous?.createdAt ?? now, history: [...(previous?.history ?? []),revision] };
     put(s,'agreement',id,result);audit(s,a,op,id,{ version: revision.version, reason: revision.reason, before: previous?.history.at(-1) ?? null, after: revision });return result;

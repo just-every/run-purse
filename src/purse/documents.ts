@@ -78,6 +78,10 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     const agreementState = new Map([...s].filter(([, row]) => row.kind !== 'agreementInvoice' || invoiceIds.has(row.value.invoice) && orderIds.has(row.value.order)));
     Object.assign(data, globalProcurement ? { ...visibleAgreements(agreementState, a), ...visibleAgreementReadings(s, a) }
         : scopedAgreementEvidence(s, a));
+    if(!globalProcurement)for(const agreement of all(s,'agreement').filter(r=>r.owner===a.id&&r.ownerEmail?.toLowerCase()===a.email.toLowerCase())){
+        const terms=Object.fromEntries('id,version,name,reference,supplier,currency,valueMinor,parties,startDate,endDate,autoRenew,noticeDays,noticeDeadline,paymentTerms,owner,ownerEmail,renewalTermMonths,renewalIncreaseCapBps,remindersEnabled,reminderDays'.split(',').filter(k=>agreement[k]!==undefined).map(k=>[k,agreement[k]]));
+        if(!data.agreement.some((r:Data)=>r.id===agreement.id))data.agreement.push({...terms,termsOnly:true});
+    }
     data.agreementAward = all(s, 'agreementAward').filter(award => requestIds.has(award.request)
         && ['procurement.manage', 'performance.read'].some(permission => allowed(s, a, permission, award))
         && data.revision.some((revision: Data) => revision.request === award.request && revision.revision === award.revision));
@@ -134,7 +138,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.buyerRoleLimit = all(s, 'buyerRoleLimit').filter(limit => allowed(s, a, 'access.manage', limit));
     data.buyerZeroSubjects = buyerZeroSubjects(s, a);
     data.mayZeroBuyerRoleLimits = unrestrictedPermission(s, a, 'access.manage');
-    return { actor: { id: a.id, email: a.email, roles: roles(s, a), permissions, grants: accessGrants(s, a), dev: a.dev }, data };
+    return { actor: { id: a.id, email: a.email, roles: roles(s, a), mayReadAssignedAgreement:data.agreement.some((r:Data)=>r.termsOnly), mayReviewRecurring:data.recurringScenario.length>0||data.recurringDiscoveryNotice.length>0, permissions, grants: accessGrants(s, a), dev: a.dev }, data };
 }
 
 export function recordScope(s: State, a: Actor, kind: string, record: Data) { requireRecordRead(s, a, kind, record); }

@@ -141,3 +141,66 @@ test('AGENT-005 scheduled check-ins reject current revoked/inactive requester au
  assert.equal(h.messages.length,sent+1,'Exact current native owners may check in on their own purchases')
  assert.deepEqual(h.messages.at(-1).to,['owner@example.test'])
 })
+
+test('AGENT-006 public Cron proposes in the recorded notice window once per source, honoring purchase types and current finance grants without sending',async t=>{
+ const {recurringScenarioFixture}=await import('./recurring-scenario-fixture.mjs')
+ const f=await recurringScenarioFixture({mixedTypes:true});t.after(()=>f.close())
+ const {h}=f,read=async()=>(await h.state()).data
+ const valuePolicy=(await read()).valuePolicy.find(row=>row.id==='main');await h.command('value-policy',{version:valuePolicy.version,enabled:false,reason:'Keep this scheduled research flow independent of requester mail'})
+ const rows=async kind=>(await h.db.prepare("SELECT id,value FROM p_records WHERE business='main' AND kind=?").bind(kind).all()).results.map(row=>({id:row.id,...JSON.parse(row.value)}))
+ const tick=async now=>{const response=await h.mf.dispatchFetch(h.origin+'/cdn-cgi/local/scheduled?time='+now);assert.equal(response.status,200,await response.text())}
+ const configure=async enabled=>{const policy=(await read()).agentPolicy.find(row=>row.agent==='AGENT-006'&&row.purchaseType==='software');return h.command('agent-policy',{...policy,enabled,reason:enabled?'Enable scheduled recurring research':'Pause scheduled recurring research'})}
+ const start=Date.parse(f.agreements[0].noticeDeadline+'T12:00:00Z')-7*day
+ const before=await read(),mailBefore=h.messages.length
+ await tick(start-day)
+ assert.equal((await rows('recurringDiscoveryNotice')).length,0,'No proposal notice precedes the recorded lead days')
+ await configure(false);await tick(start)
+ assert.equal((await rows('recurringDiscoveryNotice')).length,0,'Pause prevents scheduled proposals and notices')
+ await configure(true)
+ await h.command('member',{email:'synthetic-purse-903@example.test',name:'Finance reader',roles:['finance-viewer'],active:true})
+ await Promise.all([tick(start),tick(start)])
+ let notices=await rows('recurringDiscoveryNotice'),runs=(await rows('agentRun')).filter(row=>row.scheduled&&row.workflow==='recurring-discovery')
+ assert.ok(notices.length);assert.ok(runs.length)
+ assert.ok(notices.every(notice=>notice.role==='owner'),'Finance read access alone cannot receive an approval proposal')
+ assert.ok(runs.every(run=>run.proposals.every(proposal=>!proposal.agreementIds.includes(f.agreements[1].id))),'An enabled Software type cannot research a Hardware commitment')
+ for(const run of runs){
+  assert.equal(run.model,'none');assert.equal(run.provider,'none');assert.deepEqual(run.actions,[]);assert.deepEqual(run.messages,[])
+  for(const proposal of run.proposals){
+   const {id,...candidate}=proposal
+   const canonical=value=>Array.isArray(value)?'['+value.map(canonical).join(',')+']':value&&typeof value==='object'?'{'+Object.keys(value).filter(key=>value[key]!==undefined).sort().map(key=>JSON.stringify(key)+':'+canonical(value[key])).join(',')+'}':JSON.stringify(value)
+   assert.equal(id,createHash('sha256').update(canonical({from:run.from,to:run.to,...candidate})).digest('hex'),'The exact cited source facts recompute the proposal identity')
+   assert.ok(proposal.conditional&&proposal.reviewRequired)
+   assert.ok(!JSON.stringify(proposal).includes('Ignore prior rules'),'Retained source text cannot become agent instructions')
+  }
+ }
+ const originalIds=notices.map(notice=>notice.id).sort(),runIds=runs.map(run=>run.id).sort()
+ await tick(start+day)
+ assert.deepEqual((await rows('recurringDiscoveryNotice')).map(notice=>notice.id).sort(),originalIds,'Same source within the same window cannot repeat a notice')
+ assert.deepEqual((await rows('agentRun')).filter(row=>row.scheduled).map(run=>run.id).sort(),runIds,'Repeated ticks cannot repeat proposal runs')
+ await h.command('member',{email:'synthetic-purse-903@example.test',name:'Finance approver',roles:['buyer'],active:true})
+ await tick(start+day)
+ const newlyAuthorized=await rows('recurringDiscoveryNotice')
+ assert.ok(newlyAuthorized.some(notice=>notice.role==='finance'&&notice.recipientEmail==='synthetic-purse-903@example.test'),'New current finance capability can receive the existing proposal inside its window')
+ assert.deepEqual(newlyAuthorized.filter(notice=>notice.role==='owner').map(notice=>notice.id).sort(),originalIds,'New finance eligibility cannot repeat owner notices')
+ assert.deepEqual((await rows('agentRun')).filter(row=>row.scheduled).map(run=>run.id).sort(),runIds,'New recipients reuse the same source proposal runs')
+ f.agreements[0]=await h.command('agreement',{...f.agreements[0],confirmed:true,ownerMember:'synthetic-purse-901@example.test',renewalTermMonths:12,reason:'Owner confirms assigned owner and recorded renewal term'})
+ await tick(start+day)
+ notices=await rows('recurringDiscoveryNotice')
+ const added=notices.filter(notice=>!originalIds.includes(notice.id))
+ assert.ok(added.some(notice=>notice.role==='owner'&&notice.recipientEmail==='synthetic-purse-901@example.test'),'An exact active assigned agreement member receives an in-app proposal')
+ assert.ok(added.some(notice=>notice.role==='finance'&&notice.recipientEmail==='synthetic-purse-903@example.test'),'Changed source creates a fresh proposal for currently authorized finance')
+ const beforeRevocation=notices.map(notice=>notice.id)
+ await h.command('member',{email:'synthetic-purse-903@example.test',name:'Scoped finance approver',grants:[{role:'buyer',scope:{departments:['Finance']}}],active:true})
+ f.agreements[0]=await h.command('agreement',{...f.agreements[0],confirmed:true,renewalTermMonths:24,reason:'Owner confirms another recorded renewal term'})
+ await tick(start+day)
+ notices=await rows('recurringDiscoveryNotice')
+ assert.ok(notices.some(notice=>!beforeRevocation.includes(notice.id)))
+ assert.ok(notices.filter(notice=>!beforeRevocation.includes(notice.id)).every(notice=>notice.role==='owner'),'A current out-of-scope finance grant cannot receive new proposal details')
+ const currentIds=notices.map(notice=>notice.id).sort()
+ f.agreements[0]=await h.command('agreement',{...f.agreements[0],confirmed:true,renewalTermMonths:36,reason:'Owner confirms later term outside the notice window'})
+ await tick(start-day)
+ assert.deepEqual((await rows('recurringDiscoveryNotice')).map(notice=>notice.id).sort(),currentIds,'A changed source outside the notice window cannot notify')
+ assert.equal(h.messages.length,mailBefore,'Research never sends supplier or finance mail')
+ const after=await read()
+ for(const kind of ['order','commitment','decision','recurringScenario','recurringScenarioConsent','recurringScenarioDraft'])assert.deepEqual(after[kind],before[kind],'Scheduled research cannot execute '+kind)
+})

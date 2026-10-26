@@ -19,3 +19,13 @@ export async function deliverOrderChange(env: Bindings, event: Data, url: string
         return { delivery, status: delivery.status === 'development' ? 'suppressed' : delivery.status };
     } catch { return { status: 'uncertain', reason: 'provider-outcome-unknown' }; }
 }
+
+/** Same native adapter and uncertain-outcome rule for a person's exact approved notice. */
+export async function deliverNativeNotice(env:Bindings,notice:{deliveryId:string;recipient:string;subject:string;text:string}):Promise<Data> {
+    const sender=operatorMail(env);
+    if(!sender||!env.MAIL_FROM)return {status:'unavailable',reason:'mail-not-configured'};
+    try {
+        const delivery=await sender.send({deliveryId:notice.deliveryId,from:env.MAIL_FROM,to:[notice.recipient],headers:{},html:'',subject:notice.subject,text:notice.text});
+        return {delivery,status:delivery.status==='development'?'suppressed':delivery.status};
+    }catch{return {status:'uncertain',reason:'provider-outcome-unknown'};}
+}

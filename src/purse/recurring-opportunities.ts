@@ -1,9 +1,13 @@
 import { purchaseTypes, requireAgentPolicies } from './agent-governance';
 import { canonicalValue, valueDigest } from './agent-value-evidence';
 import { orderAdoption } from './adoption-position';
+import { unrestrictedPermission } from './access-records';
+import { performanceAgreementSources } from './access-agreement-sources';
+import { assignedAgreementOwner } from './recurring-scenario-authority';
+import { recordedRenewalForecast } from './recurring-forecast.mjs';
 import { rejectProtectedInput } from './protected-input';
 import { canonicalSupplier } from './supplier-identity';
-import { all, audit, date, get, put, requireThat, uid, type Actor, type Data, type State } from './types';
+import { allowed, all, audit, date, get, put, requireThat, uid, type Actor, type Data, type State } from './types';
 
 const pick = (row: Data, fields: string) => Object.fromEntries(fields.split(',').filter(k => row[k] !== undefined).map(k => [k, structuredClone(row[k])]));
 const category = (value: unknown) => typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -17,8 +21,8 @@ function source(s: State, kind: string, id: string, value: Data) {
 }
 
 function agreementSource(s: State, agreement: Data) {
-    return source(s, 'agreement', agreement.id, { ...pick(agreement, 'name,reference,version,supplier,currency,startDate,endDate,noticeDeadline,noticeDays,autoRenew,owner,valueMinor'),
-        priceHistory: (agreement.history ?? []).map((h: Data) => ({ ...pick(h, 'version,currency,valueMinor,startDate,endDate,noticeDeadline,at'),
+    return source(s, 'agreement', agreement.id, { ...pick(agreement, 'name,reference,version,supplier,currency,startDate,endDate,noticeDeadline,noticeDays,autoRenew,owner,ownerEmail,valueMinor,renewalTermMonths,renewalIncreaseCapBps'),
+        priceHistory: (agreement.history ?? []).map((h: Data) => ({ ...pick(h, 'version,currency,valueMinor,startDate,endDate,noticeDeadline,renewalTermMonths,renewalIncreaseCapBps,at'),
             priceLines: (h.priceLines ?? []).map((l: Data) => pick(l, 'description,partNumber,unit,q,awardedUnitMinor')) })) });
 }
 
@@ -48,13 +52,45 @@ function priceIncreases(agreement: Data, from: string, to: string) {
     return result;
 }
 
-/** Discovery is conditional native research. It never invents a replacement
- * price, treats reported activity as verified utility, or executes a proposal.
- */
-export async function recurringOpportunities(s: State, a: Actor, op: string, b: Data): Promise<Data | undefined> {
-    if (op !== 'recurring-scenario-discover') return;
+export function recurringAgreementOrders(s: State, agreement: Data): Data[] {
+    const family = canonicalSupplier(s, agreement.supplier);
+    const series = all(s, 'recurringSeries').filter(row => !row.imported && row.agreement === agreement.id);
+    const awards = all(s, 'agreementAward').filter(row => !row.imported && row.agreement === agreement.id);
+    return all(s, 'order').filter(order => order.issuedAt && !order.imported && !orderAdoption(s, order) && order.currency === agreement.currency &&
+        canonicalSupplier(s, order.supplier) === family && (series.some(row => row.order === order.id || row.request === order.request || row.id === order.recurring?.series) ||
+            awards.some(row => row.request === order.request && row.revision === order.revision)));
+}
+
+function agreementVisible(s: State, a: Actor, agreement: Data, captured?: Data) {
+    if (a.owner || unrestrictedPermission(s, a, 'procurement.manage') || assignedAgreementOwner(s, a, agreement)) return true;
+    const versions = performanceAgreementSources(s, a).versions.get(agreement.id);
+    return Boolean(versions?.has(agreement.version) && (captured?.priceHistory ?? agreement.history ?? []).every((row: Data) => versions.has(row.version)));
+}
+
+function preparing(s: State, a: Actor, record?: Data) {
+    return allowed(s, a, 'procurement.manage', record) || allowed(s, a, 'payable.approve', record) &&
+        allowed(s, a, 'cash.read', record) && allowed(s, a, 'performance.read', record);
+}
+
+/** Recheck each cited purchase and exact agreement price history under current grants. */
+export function canReadRecurringDiscoveryProposal(s: State, a: Actor, proposal: Data) {
+    if (!preparing(s, a)) return false;
+    return proposal.sources.every((source: Data) => {
+        const row = s.get(source.kind + ':' + source.id)?.value;
+        if (!row || row.imported) return false;
+        if (source.kind === 'agreement') return agreementVisible(s, a, row, source.value);
+        if (source.kind === 'supplier') return true;
+        if (source.kind === 'order') return preparing(s, a, row) && ['po.read', 'cash.read', 'performance.read'].every(permission => allowed(s, a, permission, row));
+        const order = source.kind === 'supplierIssue' ? s.get('order:' + row.order)?.value : undefined;
+        const request = row.request ? s.get('request:' + row.request)?.value : source.kind === 'request' ? row : undefined;
+        return order ? preparing(s, a, order) && allowed(s, a, 'performance.read', order) : Boolean(request && preparing(s, a, request) && allowed(s, a, 'request.read', request));
+    });
+}
+
+/** Discovery uses native source facts and leaves execution to human review. */
+export async function buildRecurringDiscovery(s: State, a: Actor, b: Data, selectedAgreementIds?: string[]) {
     rejectProtectedInput(b);
-    requireThat(a.owner, 'Current native owner required to discover recurring opportunities', 403);
+    requireThat(preparing(s, a), 'Current recurring research capability required', 403);
     const from = date(b.from, 'Discovery start'), to = date(b.to, 'Discovery end'), limit = b.limit ?? 100;
     requireThat(from <= to, 'Discovery end must follow its start');
     requireThat(Number.isSafeInteger(limit) && limit >= 1 && limit <= 200, 'Choose an explicit proposal limit from 1 to 200');
@@ -63,16 +99,19 @@ export async function recurringOpportunities(s: State, a: Actor, op: string, b: 
     requireThat(agreements.length <= 1000 && orders.length <= 10000 && usage.length <= 10000 && issues.length <= 10000 &&
         series.length <= 10000 && awards.length <= 10000 && suppliers.length <= 10000,
         'Discovery source limit exceeded; native discovery supports 1,000 agreements and 10,000 records per related type', 409);
-    const relevant = agreements.filter(r => !r.imported && intersects(from, to, r.startDate, r.endDate)).sort((x,y) => x.id.localeCompare(y.id));
+    const relevant = agreements.filter(agreement => {
+        if (agreement.imported || selectedAgreementIds && !selectedAgreementIds.includes(agreement.id) ||
+            !intersects(from, to, agreement.startDate, agreement.endDate) || !agreementVisible(s, a, agreement)) return false;
+        const linked = recurringAgreementOrders(s, agreement);
+        return linked.length ? linked.every(order => preparing(s, a, order) &&
+            ['po.read', 'cash.read', 'performance.read', 'request.read'].every(permission => allowed(s, a, permission, order))) : preparing(s, a, agreement);
+    }).sort((x,y) => x.id.localeCompare(y.id));
     requireThat(relevant.every(r => Array.isArray(r.history) && r.history.length <= 1000), 'Discovery supports up to 1,000 confirmed price revisions per agreement', 409);
     const contexts = relevant.map(agreement => {
         const family = canonicalSupplier(s, agreement.supplier);
         const links = [...series.filter(r => !r.imported && r.agreement === agreement.id).map(r => ({ kind: 'recurringSeries', row: r })),
             ...awards.filter(r => !r.imported && r.agreement === agreement.id).map(r => ({ kind: 'agreementAward', row: r }))];
-        const nativeOrders = orders.filter(order => order.issuedAt && !order.imported && !orderAdoption(s, order) && order.currency === agreement.currency &&
-            canonicalSupplier(s, order.supplier) === family && links.some(link => link.kind === 'recurringSeries'
-                ? link.row.order === order.id || link.row.request === order.request || link.row.id === order.recurring?.series
-                : link.row.request === order.request && link.row.revision === order.revision));
+        const nativeOrders = recurringAgreementOrders(s, agreement);
         requireAgentPolicies(s, 'AGENT-006', nativeOrders.length ? [...new Set(nativeOrders.flatMap(purchaseTypes))] : ['*']);
         const orderIds = new Set(nativeOrders.map(r => r.id));
         const categories = [...new Set(nativeOrders.flatMap(order => order.lines.map((line: Data) => category(line.category))).filter(Boolean))].sort();
@@ -112,12 +151,14 @@ export async function recurringOpportunities(s: State, a: Actor, op: string, b: 
             .sort((x,y) => x.kind.localeCompare(y.kind) || x.id.localeCompare(y.id));
         citedRecords += sources.length;
         requireThat(sources.length <= 2000 && citedRecords <= 10000, 'Discovery evidence limit exceeded; narrow the explicit discovery period', 409);
+        const recordedForecast = recordedRenewalForecast(selected.map(row => row.agreement), from, to);
         candidates.push({ kind, agreementIds: selected.map(r => r.agreement.id).sort(), reason, operationalRisk,
             conditional: true, reviewRequired: true, sources, baseline: { currency: selected[0].agreement.currency,
                 noticeDeadlines: selected.map(r => ({ agreement: r.agreement.id, name: r.agreement.name, reference: r.agreement.reference,
                     date: r.agreement.noticeDeadline, dueInPeriod: r.agreement.noticeDeadline >= from && r.agreement.noticeDeadline <= to,
                     alreadyBeforePeriod: r.agreement.noticeDeadline < from })), ...facts,
-                openServiceIssues: [...new Map(selected.flatMap(r => r.serviceIssues).map(r => [r.id, { id: r.id, ...pick(r, 'order,category,status,at') }])).values()].sort((x,y) => x.id.localeCompare(y.id)), futureForecast: 'unknown',
+                openServiceIssues: [...new Map(selected.flatMap(r => r.serviceIssues).map(r => [r.id, { id: r.id, ...pick(r, 'order,category,status,at') }])).values()].sort((x,y) => x.id.localeCompare(y.id)), recordedForecast,
+                futureForecast: recordedForecast.unknownAgreementIds.length ? 'unknown' : 'recorded-terms',
                 cashEffect: 'Not estimated; a separate owner-entered scenario with reasoned assumptions is required' } });
     };
     for (let left = 0; left < contexts.length; left++) for (let right = left + 1; right < contexts.length; right++) {
@@ -147,10 +188,19 @@ export async function recurringOpportunities(s: State, a: Actor, op: string, b: 
             'Zero reported activity does not establish that a service is useless, unused by other people or safe to cancel. Review integrations, continuity, service issues and contractual notice; a person must separately approve a scenario and send any eventual notice.');
     }
     const proposals: Data[] = await Promise.all(candidates.map(async candidate => ({ id: await valueDigest(canonicalValue({ from, to, ...candidate })), ...candidate })));
-    for (const proposal of proposals) rejectProtectedInput(proposal);
+    for (const proposal of proposals) {
+        requireThat(canReadRecurringDiscoveryProposal(s, a, proposal), 'Current source scope required for recurring research', 403);
+        rejectProtectedInput(proposal);
+    }
     const references = [...new Map<string, Data>(proposals.flatMap(proposal => proposal.sources.map((r: Data) =>
         [r.kind + ':' + r.id, { kind: r.kind, id: r.id, version: r.revision }] as [string, Data]))).values()]
         .sort((x,y) => x.kind.localeCompare(y.kind) || x.id.localeCompare(y.id));
+    return { from, to, limit, proposals, references };
+}
+
+export async function recurringOpportunities(s: State, a: Actor, op: string, b: Data): Promise<Data | undefined> {
+    if (op !== 'recurring-scenario-discover') return;
+    const { from, to, limit, proposals, references } = await buildRecurringDiscovery(s, a, b);
     const id = uid(), run = { workflow: 'recurring-discovery', actor: a.id, from, to, inputs: { from, to, limit },
         missing: [], draft: `${proposals.length} conditional recurring-spend proposals for ${from} through ${to}; owner review and a separately approved scenario are required.`,
         version: 1, at: new Date().toISOString(), actions: [], mode: 'deterministic v1', model: 'none', provider: 'none', proposals, references };
