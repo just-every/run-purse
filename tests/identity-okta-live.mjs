@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import {identityFixture} from './identity-fixture.mjs'
+import {oktaScimConnection} from './okta-scim-provider.mjs'
 import {oktaProvider} from './okta-provider.mjs'
 
 /** Run only with held keys injected by the named environment wrapper. */
@@ -12,6 +13,8 @@ try{
  const settings=async body=>{const state=(await h.send('/api/purse/scim',undefined,h.owner)).value;return(await h.send('/api/purse/scim',{...body,revision:state.revision},h.owner)).value}
  await settings({action:'configure',issuer:h.idp.origin,enabled:true,mappings:[{department:'Operations',grants:[{role:'requester',scope:{departments:['Operations']}},{role:'approver',scope:{departments:['Operations']}}]}],consent:true})
  const credential=await settings({action:'create-token'})
+ const provisioning=await oktaScimConnection(h,credential.token)
+ console.log(JSON.stringify({oktaProvisioning:provisioning}))
  const scim=async(method,path,body,status=200)=>{const response=await h.request('/scim/v2'+path,{method,body,headers:{authorization:'Bearer '+credential.token,'content-type':'application/scim+json'}});assert.equal(response.status,status,await response.clone().text());return response.json()}
  const source=await h.idp.api('/users/'+h.idp.user.id),enterprise='urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'
  const user=await scim('POST','/Users',{schemas:['urn:ietf:params:scim:schemas:core:2.0:User',enterprise],externalId:source.id,userName:source.profile.email,displayName:source.profile.firstName+' '+source.profile.lastName,active:source.status==='ACTIVE',[enterprise]:{department:source.profile.department}},201)
@@ -33,5 +36,5 @@ try{
  const state=(await h.send('/api/purse/state',undefined,h.owner)).value
  assert.ok(state.data.audit.some(event=>event.action==='scim-approval-transfer'&&event.record===request.id&&event.to==='owner@example.test'))
  await cmd('decision',{id:request.id,revision:1,decision:'approved',reason:'Native fallback reviewed actual departed Okta approver'},h.owner)
- console.log(JSON.stringify({provider:'Okta Integrator',org:h.idp.origin,app:h.idp.app.id,user:source.id,oidc:'native session issued from signed Okta authorization code with PKCE and nonce',scim:'actual Okta profile create, department readback and deactivation applied through native SCIM bearer door by the qualification client',sessions:'revoked',approval:'transferred and decided by native owner',gap:'Okta-originated SCIM push to a publicly reachable installation remains unqualified'}))
+ console.log(JSON.stringify({provider:'Okta Integrator',org:h.idp.origin,app:h.idp.app.id,user:source.id,oidc:'native session issued from signed Okta authorization code with PKCE and nonce',scim:'actual Okta profile create, department readback and deactivation applied through native SCIM bearer door by the qualification client',sessions:'revoked',approval:'transferred and decided by native owner',gap:provisioning.gap}))
 }finally{await h.close()}

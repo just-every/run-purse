@@ -18,7 +18,7 @@ async function fixture(t) {
 }
 
 test('Combined approved purchases preserve three source lines, current limits, shared references and exact invoice holds',async t=>{
-    const {h,cmd,requester,other,buyer,fields,approve,entries}=await fixture(t);
+    const {h,cmd,requester,other,approver,buyer,fields,approve,entries}=await fixture(t);
     const splitInput=fields('IT kits','IT',2);splitInput.lines[0].allocations=[{costCentre:'IT',project:'General',basisPoints:6000},{costCentre:'Operations',project:'General',basisPoints:4000}];
     const a=await approve(splitInput),b=await approve(fields('Operations kit','Operations'),other),input={entries:entries([a,b]),issue:true,conversionEdits:{lines:[{request:a.id,id:a.lines[0].id,unitMinor:104000,unit:'box',partNumber:'Revised SKU'}],charges:[{kind:'freight',description:'Delivery',amountMinor:2500}],reason:'Buyer confirmed actual price and delivery'}};
     await cmd('po-combine',input,'',401);await cmd('po-combine',input,requester,403);
@@ -32,6 +32,14 @@ test('Combined approved purchases preserve three source lines, current limits, s
     const duplicate=await cmd('invoice',{...invoice,reference:'synthetic-purse-1808'},buyer);assert.ok(duplicate.flags.some(flag=>flag.code==='near-duplicate'));
     const over=await cmd('invoice',{...invoice,reference:'synthetic-purse-1809',allocations:[{line:order.lines[1].id,quantity:'2.1',amountMinor:210000}]},buyer);assert.ok(over.flags.some(flag=>flag.code==='po-balance'));assert.equal(over.balance.faceMinor,306500);assert.equal(over.balance.billedMinor,104000);
     for(const invoice of [duplicate,over]){const payable=await cmd('payable-terms',{invoice:invoice.id,version:0,invoiceDate:invoice.invoiceDate,term:'Net 30',reason:'Source terms'},buyer);await cmd('approve-payable',{invoice:invoice.id,version:payable.version,reason:'Unresolved source hold'},buyer,409);}
+    const high=await approve(fields('Above buyer limit','IT')),companion=await approve(fields('Companion purchase','Operations'),other);
+    const held=await cmd('po-combine',{entries:entries([high,companion]),issue:true,conversionEdits:{lines:[{request:high.id,id:high.lines[0].id,unitMinor:115000}],reason:'Supplier price exceeds buyer limit'}},buyer);assert.equal(held.conversionRouted,true);assert.ok(!(await h.state()).data.order.some(po=>po.sources?.some(source=>source.request===high.id)));
+    const pending=(await h.state()).data.request.find(request=>request.id===high.id);await cmd('decision',{id:pending.id,revision:pending.revision,decision:'approved',reason:'Independent renewed supplier-price approval'},approver);
+    const renewed=await cmd('po-combine',{entries:entries([pending,companion]),issue:true},buyer);assert.equal(renewed.status,'issued');assert.equal(renewed.totalMinor,215000);assert.equal(renewed.sources[0].conversionVariance.approvalRenewed,true);
+    const alternate=await cmd('supplier',{name:'Northline Manufacturing',status:'active',reason:'Reviewed substitute supplier',contacts:[{name:'Dispatch',email:'synthetic-purse-1813@northline.example.test'}]});
+    const correctionA=await approve(fields('Correctable IT quantity','IT')),correctionB=await approve(fields('Correctable Operations quantity','Operations'),other);
+    const corrected=await cmd('po-combine',{entries:entries([correctionA,correctionB]),issue:true,conversionEdits:{supplier:alternate.id,lines:[{request:correctionA.id,id:correctionA.lines[0].id,quantity:'0.5',unit:'pack',partNumber:'Northline kit'}],reason:'Buyer confirmed reduced quantity and equivalent active supplier'}},buyer);
+    assert.equal(corrected.supplier,alternate.id);assert.equal(corrected.lines[0].quantity,'0.5');assert.equal(corrected.lines[0].unit,'pack');assert.equal(corrected.lines[0].partNumber,'Northline kit');assert.equal(corrected.totalMinor,150000);
     assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
 });
 

@@ -9,7 +9,7 @@ const random = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), byte
 const requireThat = (value: unknown, code: string, status = 400) => { if (!value) throw new AuthError(code, status); };
 const cookieName = (provider: SamlProvider, local: boolean) => (local ? 'purse_saml_' : '__Host-purse_saml_') + provider.id;
 function cookie(provider: SamlProvider, local: boolean, value: string, age: number) {
-    return cookieName(provider, local) + '=' + value + '; Path=/; HttpOnly; Max-Age=' + age + (local ? '; SameSite=Lax' : '; Secure; SameSite=None');
+    return cookieName(provider, local) + '=' + value + '; Path=/; HttpOnly; Max-Age=' + age + '; Secure; SameSite=None';
 }
 async function fields(request: Request) {
     requireThat(request.headers.get('content-type')?.split(';')[0] === 'application/x-www-form-urlencoded', 'saml_invalid_input', 415);

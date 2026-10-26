@@ -21,9 +21,9 @@ export async function oktaProvider(callback){
  try{
   const password=randomBytes(30).toString('base64url')+'aA9!',email='synthetic-purse-'+suffix+'@example.com'
   const user=await api('/users?activate=true',{profile:{firstName:'Synthetic',lastName:'Purse',email,login:email,department:'Operations'},credentials:{password:{value:password}}});owned.users.push(user.id)
-  const app=await api('/apps',{name:'oidc_client',label:'Purse ACCESS-002 '+suffix,signOnMode:'OPENID_CONNECT',credentials:{oauthClient:{token_endpoint_auth_method:'client_secret_basic'}},settings:{oauthClient:{application_type:'web',grant_types:['authorization_code'],response_types:['code'],redirect_uris:[callback],consent_method:'TRUSTED'}}});owned.apps.push(app.id)
+  const app=await api('/apps',{name:'oidc_client',label:'Purse ACCESS-002 '+suffix,signOnMode:'OPENID_CONNECT',credentials:{oauthClient:{token_endpoint_auth_method:'client_secret_post'}},settings:{oauthClient:{application_type:'web',grant_types:['authorization_code'],response_types:['code'],redirect_uris:[callback],consent_method:'TRUSTED'}}});owned.apps.push(app.id)
   const policy=await api('/policies',{type:'ACCESS_POLICY',name:'Purse synthetic app '+suffix,description:'Only the disposable Purse qualification app',status:'ACTIVE'});owned.policies.push(policy.id)
-  await api('/policies/'+policy.id+'/rules',{type:'ACCESS_POLICY',name:'Synthetic Purse password sign-in',priority:1,status:'ACTIVE',conditions:{people:{users:{include:[user.id]}}},actions:{appSignOn:{access:'ALLOW',verificationMethod:{factorMode:'1FA',type:'ASSURANCE',reauthenticateIn:'PT12H',constraints:[{knowledge:{types:['password']}}]}}})
+  await api('/policies/'+policy.id+'/rules',{type:'ACCESS_POLICY',name:'Synthetic Purse password sign-in',priority:1,status:'ACTIVE',conditions:{people:{users:{include:[user.id]}}},actions:{appSignOn:{access:'ALLOW',verificationMethod:{factorMode:'1FA',type:'ASSURANCE',reauthenticateIn:'PT12H',constraints:[{knowledge:{types:['password']}}]}}}})
   await api('/apps/'+app.id+'/policies/'+policy.id,undefined,'PUT')
   await api('/apps/'+app.id+'/users',{id:user.id,scope:'USER',credentials:{userName:email}})
   const client=app.credentials.oauthClient

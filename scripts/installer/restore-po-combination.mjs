@@ -20,7 +20,7 @@ export function validateCombinedOrder(order,{get,all}) {
         check(['freightMinor','taxMinor','otherChargesMinor','totalMinor'].every(field=>money(source[field]))&&source.totalMinor===lines.reduce((sum,line)=>sum+line.totalMinor,0)+source.freightMinor+source.taxMinor+source.otherChargesMinor,'combination_source_total');
         check(all('decision').some(decision=>decision.request===source.request&&decision.revision===source.revision&&decision.decision==='approved'&&decision.policy===source.policy&&decision.actor===source.approvalActor&&decision.operatorVersion===source.approvalVersion),'combination_source_approval');
         if(source.approvalProofs)for(const [index,proof]of source.approvalProofs.entries())check(all('decision').some(decision=>decision.request===source.request&&decision.revision===source.revision&&decision.chainStep===revision.approvalRoute?.[index]?.id&&decision.actor===proof.actor&&decision.operatorVersion===proof.version&&decision.decision==='approved'),'combination_chain_proof');
-        if(source.conversionVariance)check(same(source.conversionVariance,revision.buyerConversion),'combination_conversion_source');
+        if(source.conversionVariance){const {approvalRenewed,...variance}=source.conversionVariance;check(same(variance,revision.buyerConversion)&&approvalRenewed===(variance.routing!=='carried'),'combination_conversion_source');}
     }
     check(selected.size===order.lines.length&&['freightMinor','taxMinor','otherChargesMinor','totalMinor'].every(field=>order[field]===order.sources.reduce((sum,source)=>sum+source[field],0)),'combination_total');
     check(all('audit').some(event=>event.action==='po-combine'&&event.record===order.id&&same(event.sources,order.sources)),'combination_audit');

@@ -6,7 +6,7 @@ export async function combinedProcureJourney({h,page,width,evidence}) {
     await cmd('business',{...current,costCentres:[...new Set([...current.costCentres,'Operations'])]});
     const requester=await h.member('synthetic-purse-1821@example.test',['requester']),other=await h.member('synthetic-purse-1822@example.test',['requester']),approver=await h.member('synthetic-purse-1823@example.test',['approver']),buyer=await h.member('synthetic-purse-1824@example.test',['buyer']);
     await cmd('buyer-role-limit',{role:'buyer',entity:'main',limits:{percent:10,quantityPercent:0}});
-    const supplier=await cmd('supplier',{name:'Combined office supplier',status:'active',reason:'Reviewed source',contacts:[{name:'Contact',email:'synthetic-purse-1825@example.test'}]});
+    const supplier=await cmd('supplier',{name:'Combined office supplier',status:'active',reason:'Reviewed source',contacts:[{name:'Contact',email:'synthetic-purse-1825@office.example.test'}]});
     await cmd('policy',{name:'Combined office authority',currency:'USD',category:'Combined goods',project:'*',approver:'synthetic-purse-1823@example.test',limitMinor:500000,budgetMinor:2000000});
     const make=async(title,department,actor,count)=>{
         const request=await cmd('request',{title,supplier:supplier.id,currency:'USD',location:current.locations[0],costCentre:department,needDate:'2026-12-01',terms:'Net 30',lines:Array.from({length:count},(_,index)=>({description:title+' line '+(index+1),quantity:'1',unitMinor:100000,category:'Combined goods',project:current.projects[0],unit:'kit'}))},actor);

@@ -3,6 +3,7 @@ import { mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { build } from 'esbuild';
 import { nativeWebContext } from './native-web-fixture.mjs';
+import { samlBrowserJourney } from './browser-saml.mjs';
 import { identityFixture } from './identity-fixture.mjs';
 
 const { chromium } = await import(process.env.PURSE_PLAYWRIGHT_MODULE || '@playwright/test');
@@ -144,6 +145,7 @@ try {
         } finally {
             try { await Promise.all(contexts.map(context => context.close())); } finally { await h.close(); }
         }
+        await samlBrowserJourney({browser,width,evidence,shippedApp});
     }
 } finally { await browser.close(); }
-console.log('Native OIDC owner and requester web journeys passed at ' + widths.join('/'));
+console.log('Native OIDC and SAML owner and requester web journeys passed at ' + widths.join('/'));

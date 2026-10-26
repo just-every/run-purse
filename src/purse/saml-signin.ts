@@ -30,7 +30,8 @@ export function samlIdentityProviders(auth: OperatorAuth, env: SamlBindings & { 
             const rows = (await env.DB.prepare(`SELECT provider_id AS id,preset,status,issuer,client_id AS clientId,jwks_uri AS jwks,authorization_endpoint AS authorization,
                 token_endpoint AS token,algorithms,token_auth_method AS tokenAuthMethod,response_iss AS responseIssuer,interface_version AS interfaceVersion,linked_at AS linkedAt,
                 pending_issuer AS pendingIssuer,pending_client_id AS pendingClientId,pending_preset AS pendingPreset,pending_at AS pendingAt FROM oa_identity_providers WHERE preset='saml'`).all<Record<string, unknown>>()).results;
-            return [...(original ? await original.links() : []), ...rows.map(row => ({ ...row, algorithms: JSON.parse(row.algorithms as string), responseIssuer: row.responseIssuer === 1 } as ProviderLink))];
+            const links = [...(original ? await original.links() : []), ...rows.map(row => ({ ...row, algorithms: JSON.parse(row.algorithms as string), responseIssuer: row.responseIssuer === 1 } as ProviderLink))];
+            return [...new Map(links.map(link => [link.id, link])).values()];
         },
         async relink(id) { if (samlIds.includes(id) || !original) throw new AuthError('provider_management_unavailable', 403); return original.relink(id); },
         async unlink(id) { if (samlIds.includes(id) || !original) throw new AuthError('provider_management_unavailable', 403); return original.unlink(id); },
