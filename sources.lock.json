@@ -4684,7 +4684,7 @@
       "executable": false
     },
     "tests/browser-saml.mjs": {
-      "sha256": "50ae9031c96e18d28d8a0b9676a7b253d379fb6d59a0e4865e9223550c2f0c3f",
+      "sha256": "b70b1787cff890dd6ce0d99c67d6a89dc5d3621284f9a5332b1d5f96e1f35b73",
       "executable": false
     },
     "tests/browser-scim.mjs": {

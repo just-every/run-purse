@@ -31,7 +31,7 @@ export async function samlBrowserJourney({browser,width,evidence,shippedApp}){
   await member.getByRole('button',{name:'Continue with Purse SAML',exact:true}).click()
   const startResponse=await started;console.log('Native SAML browser start:',startResponse.status());assert.equal(startResponse.status(),303,startResponse.status()===303?'':await startResponse.text())
   await member.getByRole('button',{name:'Continue to Purse',exact:true}).waitFor()
-  await Promise.all([member.waitForResponse(response=>new URL(response.url()).pathname==='/auth/saml/company-saml/callback').then(async response=>{assert.equal(response.status(),303,await response.text());assert.equal(response.headers().location,'/app')}),member.waitForURL(h.origin+'/app',{waitUntil:'commit'}),member.getByRole('button',{name:'Continue to Purse',exact:true}).click()])
+  await Promise.all([member.waitForResponse(response=>new URL(response.url()).pathname==='/auth/saml/company-saml/callback').then(async response=>{assert.equal(response.status(),303,response.status()===303?'':await response.text());assert.equal(response.headers().location,'/app')}),member.waitForURL(h.origin+'/app',{waitUntil:'commit'}),member.getByRole('button',{name:'Continue to Purse',exact:true}).click()])
   assert.equal((await memberContext.request.get(h.origin+'/auth/session')).status(),200)
   await member.goto(h.origin+'/app');await member.getByRole('region',{name:'Requests',exact:true}).waitFor();await snap(member,'saml-native-member')
   assert.equal((await memberContext.request.get(settingsUrl)).status(),403)
