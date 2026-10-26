@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
+import {ofacCsv} from './purse-harness.mjs'
 import {identityFixture} from './identity-fixture.mjs'
 import {oktaScimConnection} from './okta-scim-provider.mjs'
 import {oktaProvider} from './okta-provider.mjs'
 
 /** Run only with held keys injected by the named environment wrapper. */
-const h=await identityFixture({providerFactory:oktaProvider})
+const h=await identityFixture({providerFactory:oktaProvider,ofac:()=>new Response(ofacCsv,{headers:{'last-modified':'Sun, 18 Oct 2026 12:00:00 GMT'}})})
 try{
  const cmd=h.command
  await cmd('business',{name:'Purse Okta qualification',currencies:['USD'],locations:['Denver'],costCentres:['Operations','Engineering'],projects:['Safety']})

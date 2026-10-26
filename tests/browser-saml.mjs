@@ -29,9 +29,11 @@ export async function samlBrowserJourney({browser,width,evidence,shippedApp}){
   await memberContext.route(h.saml.provider.entryPoint+'?**',async route=>{
    const encoded=new URLSearchParams(h.saml.response(route.request().url())),escape=value=>value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
    // The IdP network edge returns its signed response; the native callback settles the session.
-   await route.fulfill({contentType:'text/html',body:`<!doctype html><html lang="en"><body><form method="post" action="${h.origin}/auth/saml/company-saml/callback">${[...encoded].map(([name,value])=>`<input type="hidden" name="${name}" value="${escape(value)}">`).join('')}<button>Continue</button></form><script>document.forms[0].submit()</script></body></html>`})
+   await route.fulfill({contentType:'text/html',body:`<!doctype html><html lang="en"><body><form method="post" action="${h.origin}/auth/saml/company-saml/callback">${[...encoded].map(([name,value])=>`<input type="hidden" name="${name}" value="${escape(value)}">`).join('')}<button>Continue to Purse</button></form></body></html>`})
   })
-  await Promise.all([member.waitForResponse(response=>new URL(response.url()).pathname==='/auth/saml/company-saml/callback').then(async response=>assert.equal(response.status(),303,await response.text())),member.waitForURL(h.origin+'/app'),member.getByRole('button',{name:'Continue with Purse SAML',exact:true}).click()])
+  await member.getByRole('button',{name:'Continue with Purse SAML',exact:true}).click()
+  await member.getByRole('button',{name:'Continue to Purse',exact:true}).waitFor()
+  await Promise.all([member.waitForResponse(response=>new URL(response.url()).pathname==='/auth/saml/company-saml/callback').then(async response=>{assert.equal(response.status(),303,await response.text());assert.equal(response.headers().location,'/app')}),member.waitForURL(h.origin+'/app',{waitUntil:'commit'}),member.getByRole('button',{name:'Continue to Purse',exact:true}).click()])
   assert.equal((await memberContext.request.get(h.origin+'/auth/session')).status(),200)
   await member.goto(h.origin+'/app');await member.getByRole('region',{name:'Requests',exact:true}).waitFor();await snap(member,'saml-native-member')
   assert.equal((await memberContext.request.get(settingsUrl)).status(),403)
