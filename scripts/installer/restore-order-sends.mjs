@@ -63,6 +63,7 @@ function validateResponses(event, order, all, get, check) {
     const adopted=new Set();
     for(const adoption of event.responseAdoptions??[]) {
         const response=get('orderSupplierResponse',adoption.response), draft=get('revision',adoption.request+':'+adoption.revision);
+        if(order.sources){check(Array.isArray(adoption.sources)&&adoption.sources.length===order.sources.length,'order_response_combined_adoption');for(const source of order.sources){const next=adoption.sources.find(next=>next.request===source.request);check(next&&next.revision>source.revision&&get('revision',next.request+':'+next.revision).amends===order.id,'order_response_combined_source');}}
         check(!adopted.has(response.id) && response.send===event.id && response.decision==='change' && adoption.request===event.request && adoption.revision>event.revision && draft.amends===event.order && nonempty(adoption.actor) && nonempty(adoption.email) && nonempty(adoption.reason) && timestamp(adoption.at) && Date.parse(adoption.at)>=Date.parse(response.at), 'order_response_adoption');adopted.add(response.id);
         check(all('audit').some(audit=>audit.action==='order-response-adopted' && audit.record===event.order && audit.send===event.id && audit.response===response.id && audit.amendmentRevision===adoption.revision && audit.actor===adoption.actor && audit.at===adoption.at), 'order_response_adoption_audit');
     }

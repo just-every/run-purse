@@ -33,7 +33,8 @@ export function requireCurrentCombination(s: State, order: Data) {
 }
 
 export function orderSourceRequests(s: State, order: Data) { return orderSources(order).map(source=>get(s,'request',source.request)); }
+export function orderSourceDecisions(s: State,order: Data) {requireCurrentCombination(s,order);return orderSourceRequests(s,order).map(request=>currentDecision(s,request));}
 export function requireOrderSources(s: State,a: Actor,order: Data,permission='po.issue') {
-    requireCurrentCombination(s,order);
-    return orderSourceRequests(s,order).map(request=>{requirePermission(s,a,permission,request);return currentDecision(s,request);});
+    for(const request of orderSourceRequests(s,order))requirePermission(s,a,permission,request);
+    return orderSourceDecisions(s,order);
 }

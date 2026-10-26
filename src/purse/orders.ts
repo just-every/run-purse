@@ -34,7 +34,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         currentDecision(s, r);
         for(const line of r.lines)if(line.supplier){supplier(s,line.supplier);documentHold(s,line.supplier);}
         checkAdoptedDisposition(s, r);
-        requireThat(!r.lines.some((line:Data)=>allocatedSourceLine(s,r.id,line.id)), 'Approved lines already allocated to a PO', 409);
+        requireThat(r.amends?!all(s,'order').some(order=>order.request===r.id&&order.revision===r.revision):!r.lines.some((line:Data)=>allocatedSourceLine(s,r.id,line.id)), 'Approved lines already allocated to a PO', 409);
         requireThat(all(s, 'decision').some(d => d.request === r.id && d.revision === r.revision && d.decision === 'approved'), 'Approval decision missing', 409);
         const edit = conversionEdits(s, a, r, b.conversionEdits);
         if(edit) {

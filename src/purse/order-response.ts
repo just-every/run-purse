@@ -1,3 +1,4 @@
+import { orderSourceDecisions, orderSourceRequests, requireOrderSources } from './po-combination-sources';
 import type { Bindings } from '../auth.server';
 import { currentDecision } from './approval';
 import { allowed, date, extended, get, qty, quantity, requirePermission, requireThat, text, uid, put, type Actor, type Data, type State } from './types';
@@ -13,8 +14,8 @@ export async function currentOrderSender(env: Bindings, state: State, event: Dat
     const actor: Actor = { id: principal.id, email: principal.email, version: principal.version, owner: principal.role === 'owner', session: '', dev: false };
     const order = get(state, 'order', event.order), request = get(state, 'request', event.request);
     try {
-        const decision = currentDecision(state, request);
-        for (const proof of decision.chainProofs ?? [{ actor: decision.actor, version: decision.operatorVersion }]) if (!await env.DB.prepare("SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active'").bind(proof.actor, proof.version).first()) return false;
+        const decisions=requireOrderSources(state,actor,order);
+        for(const proof of decisions.flatMap(decision=>decision.chainProofs??[{actor:decision.actor,version:decision.operatorVersion}])) if (!await env.DB.prepare("SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active'").bind(proof.actor, proof.version).first()) return false;
     } catch { return false; }
     return allowed(state, actor, 'po.issue', order) && allowed(state, actor, 'po.issue', request);
 }
@@ -45,8 +46,7 @@ export async function recordOrderResponse(env: Bindings, state: State, revision:
     const version = (event.response?.version ?? 0) + 1;
     const response: Data = { id: event.id + ':' + version, send: event.id, order: event.order, request: event.request, revision: event.revision, pdfSha256: event.pdf.sha256, version, ...normalized, actor: 'supplier-link', identityVerified: false, at };
     const acknowledgment = event.acknowledgment ?? { id: event.id, send: event.id, order: event.order, request: event.request, revision: event.revision, changeLabel: event.changeLabel, pdfSha256: event.pdf.sha256, name: response.name, actor: 'supplier-link', identityVerified: false, at };
-    const decision = currentDecision(state, get(state, 'request', event.request));
-    const proofs = decision.chainProofs ?? [{ actor: decision.actor, version: decision.operatorVersion }];
+    const proofs=orderSourceDecisions(state,order).flatMap(decision=>decision.chainProofs??[{actor:decision.actor,version:decision.operatorVersion}]);
     const previous = state.get('supplierOrderEvidence:' + event.order)?.value;
     const entry = { version: (previous?.version ?? 0) + 1, promisedDate: response.promisedDate, acknowledgedAt: at, source: 'Supplier response ' + response.id + ' · approved revision ' + event.revision + ' · stated identity unverified', response: response.id, revision: event.revision, actor: 'supplier-link', at };
     const evidence = { id: order.id, order: order.id, supplier: order.supplier, ...entry, history: [...(previous?.history ?? []), entry] };
@@ -74,15 +74,21 @@ export async function adoptOrderResponse(env: Bindings, actor: Actor, orderId: s
     requireThat(body.adoptDeliveryDate === undefined || typeof body.adoptDeliveryDate === 'boolean', 'Delivery-date adoption must be explicit');
     requireThat(response.lines.length || body.adoptDeliveryDate === true && response.promisedDate !== request.needDate, 'Choose a proposed price, quantity or delivery-date change for the amendment', 409);
     const reason = text(body.reason, 'Amendment reason');
-    const lines = order.lines.map((line: Data) => {
-        const proposed = response.lines.find((input: Data) => input.line === line.id);
-        return { ...line, ...(proposed ? { quantity: proposed.quantity, unitMinor: proposed.unitMinor } : {}) };
+    requireOrderSources(state,actor,order);
+    const drafts=orderSourceRequests(state,order).map(source=>{
+        requirePermission(state,actor,'request.edit',source);
+        const lines=source.lines.map((line:Data)=>{
+            const issued=order.lines.find((candidate:Data)=>(candidate.sourceRequest??order.request)===source.id&&(candidate.sourceLine??candidate.id)===line.id);
+            const proposed=issued&&response.lines.find((input:Data)=>input.line===issued.id);
+            return {...line,...(proposed?{quantity:proposed.quantity,unitMinor:proposed.unitMinor}:{})};
+        });
+        const draft=requests(state,actor,'amend',{...source,lines,reason,needDate:body.adoptDeliveryDate===true?response.promisedDate:source.needDate});
+        requireThat(draft,'Amendment draft was not created',409);return draft;
     });
-    const draft = requests(state, actor, 'amend', { ...request, lines, reason, needDate: body.adoptDeliveryDate === true ? response.promisedDate : request.needDate });
-    requireThat(draft, 'Amendment draft was not created', 409);
-    const adoption = { response: response.id, request: draft.id, revision: draft.revision, actor: actor.id, email: actor.email, reason, at: new Date().toISOString() };
+    const draft=drafts[0];
+    const adoption = { ...(order.sources?{sources:drafts.map(draft=>({request:draft.id,revision:draft.revision}))}:{}), response: response.id, request: draft.id, revision: draft.revision, actor: actor.id, email: actor.email, reason, at: new Date().toISOString() };
     put(state, 'orderSend', event.id, { ...event, responseAdoptions: [...(event.responseAdoptions ?? []), adoption] });
     put(state, 'audit', uid(), { action: 'order-response-adopted', record: order.id, send: event.id, response: response.id, request: draft.id, revision: order.revision, amendmentRevision: draft.revision, actor: actor.id, email: actor.email, reason, at: adoption.at });
     await save(env.DB, actor, before, state, revision);
-    return { draft, adoption, event: orderSendSummary(get(state, 'orderSend', event.id)) };
+    return { draft, ...(order.sources?{drafts}:{}), adoption, event: orderSendSummary(get(state, 'orderSend', event.id)) };
 }

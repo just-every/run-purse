@@ -1,3 +1,4 @@
+import { orderSourceDecisions } from './po-combination-sources';
 import type { Bindings } from '../auth.server';
 import { currentDecision } from './approval';
 import { currentOrderSender } from './order-response';
@@ -32,8 +33,8 @@ async function input(request: Request) {
 }
 
 function operatorProofs(state: State, event: Data) {
-    const decision = currentDecision(state, get(state, 'request', event.request));
-    return [{ actor: event.actor, version: event.operatorVersion }, ...(decision.chainProofs ?? [{ actor: decision.actor, version: decision.operatorVersion }])];
+    const decisions=orderSourceDecisions(state,get(state,'order',event.order));
+    return [{actor:event.actor,version:event.operatorVersion},...decisions.flatMap(decision=>decision.chainProofs??[{actor:decision.actor,version:decision.operatorVersion}])];
 }
 function activeProof() { return "EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active')"; }
 async function live(env: Bindings, state: State, event: Data, hash: string, revision: number) {

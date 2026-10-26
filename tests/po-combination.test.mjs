@@ -37,7 +37,8 @@ test('Combined approved purchases preserve three source lines, current limits, s
 
 test('Combined amendments require every renewed source and retain prior billed balance against only the new issued face',async t=>{
     const {h,cmd,requester,other,approver,buyer,fields,approve,entries}=await fixture(t);
-    const a=await approve(fields('First purchase','IT')),b=await approve(fields('Second purchase','Operations'),other),order=await cmd('po-combine',{entries:entries([a,b]),issue:true},buyer);
+    const a=await approve(fields('First purchase','IT')),b=await approve(fields('Second purchase','Operations'),other);
+    const racing=await Promise.all([h.send('/api/purse/command/po-combine',{entries:entries([a,b]),issue:true},buyer),h.send('/api/purse/command/po-combine',{entries:entries([a,b]),issue:true},buyer)]);assert.deepEqual(racing.map(response=>response.status).sort(),[200,409]);const order=racing.find(response=>response.status===200).value;
     const oldInvoice=await cmd('invoice',{order:order.id,reference:'synthetic-purse-1810',source:'Original combined invoice',invoiceDate:'2026-10-25',allocations:[{line:order.lines[0].id,quantity:'0.5',amountMinor:50000}]},buyer);
     const revised=[];
     for(const [request,actor]of [[a,requester],[b,other]]){
