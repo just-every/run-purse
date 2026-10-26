@@ -4656,7 +4656,7 @@
       "executable": false
     },
     "tests/browser-recurring-scenarios.mjs": {
-      "sha256": "0d7817b8174279e121b5c1d895c9968e4cdf61491ae96546d7c8525f49d252f5",
+      "sha256": "4a5c42590d05bd2b090113f908472788c8cce713bf97039d6ed5ff461589c023",
       "executable": false
     },
     "tests/browser-request-again.mjs": {
@@ -4928,7 +4928,7 @@
       "executable": false
     },
     "tests/recurring-scenario-web-rider.mjs": {
-      "sha256": "8a38bb7c875af81486ae0712e1b3b0924ad64fd6560b7710f010a212b7c81825",
+      "sha256": "ab9890b5aa6e907af975e2e4451e7351a187d0f23c290eea7f6c412af94d3793",
       "executable": false
     },
     "tests/restore-po-documents.mjs": {

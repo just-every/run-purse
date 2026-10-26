@@ -5,7 +5,7 @@ export async function recurringScenarioRider({browser,f,page,panel,bundle,width,
  const contexts=[];
  const session=async cookie=>{const context=await nativeWebContext(browser,f.h,width,bundle,cookie);contexts.push(context);const p=await context.newPage();await p.goto(f.h.origin+'/app?tab=Preparation');return p;};
  const save=async(p,op,button)=>{const response=p.waitForResponse(r=>r.url().endsWith('/'+op));await button.click();const result=await response;assert.equal(result.status(),200,await result.text());return result.json();};
- const approve=async(p,id,role,name)=>{await p.reload();const card=p.getByRole('region',{name:'Scenario '+id,exact:true}),button=card.getByRole('button',{name,exact:true}),form=button.locator('xpath=ancestor::form');await form.getByLabel(role+' approval reason',{exact:true}).fill(role+' reviewed the exact source hash');await form.getByRole('checkbox').check();await snap(role.toLowerCase()+'-consent',card,p);await save(p,'recurring-scenario-approve',button);};
+ const approve=async(p,id,role,name)=>{await p.reload();const card=p.getByRole('region',{name:'Scenario '+id,exact:true}),button=card.getByRole('button',{name,exact:true}),form=button.locator('xpath=ancestor::form');await form.getByLabel(role+' approval reason',{exact:true}).fill(role+' reviewed the exact source hash');await form.getByRole('checkbox').check();await card.getByRole('cell',{name:'$12,000.00',exact:true}).waitFor();await card.getByRole('cell',{name:'−$12,000.00',exact:true}).waitFor();await snap(role.toLowerCase()+'-consent',card,p);await save(p,'recurring-scenario-approve',button);};
  try {
   const agreement=f.agreements[1];
   await page.goto(f.h.origin+'/app?agreement='+agreement.id);
