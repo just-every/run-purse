@@ -203,4 +203,5 @@ test('AGENT-006 public Cron proposes in the recorded notice window once per sour
  assert.equal(h.messages.length,mailBefore,'Research never sends supplier or finance mail')
  const after=await read()
  for(const kind of ['order','commitment','decision','recurringScenario','recurringScenarioConsent','recurringScenarioDraft'])assert.deepEqual(after[kind],before[kind],'Scheduled research cannot execute '+kind)
+ assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true,'Scheduled proposal and later-recipient custody restore without authority')
 })

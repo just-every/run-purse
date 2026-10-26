@@ -2,7 +2,7 @@ import {canReadRecurringDiscoveryProposal} from './recurring-opportunities';
 import {recordedRenewalForecast, recurringDraftText} from './recurring-forecast.mjs';
 import {assignedAgreementOwner,scenarioBudgetOwners,scenarioConsentAuthority,scenarioApprovals} from './recurring-scenario-authority';
 import { purchaseTypes, requireAgentPolicies } from './agent-governance';
-import { cashRequirements } from './cash-requirements';
+import { cashRequirements, cashRequirementsFromRecords } from './cash-requirements';
 import { canonicalValue, valueDigest } from './agent-value-evidence';
 import { canonicalSupplier } from './supplier-identity';
 import { rejectProtectedInput } from './protected-input';
@@ -135,7 +135,7 @@ function snapshot(s: State, a: Actor, input: Data, checkScope=true) {
         if(checkScope)requirePermission(s, a, 'performance.read', get(s, 'request', requestId));
         sources.push(source(s, ref.kind, ref.id, pick(row, evidenceFields[ref.kind])));
     }
-    const cash = cashRequirements(s, checkScope?a:{...a,owner:true});
+    const cash = checkScope?cashRequirements(s,a):cashRequirementsFromRecords(s,record=>lineageIds.has(record.order??record.id));
     const bills = cash.bills.filter((r: Data) => lineageIds.has(r.order) && r.currency === currency && r.dueDate >= input.from && r.dueDate <= input.to)
         .map((r: Data) => pick(r, 'invoice,order,amountMinor,dueDate,week'));
     const forecast = input.assumptions.filter((r: Data) => r.order).map((assumption: Data) => {
@@ -269,7 +269,7 @@ export function visibleRecurringScenarios(s: State, a: Actor): Data {
     });
     const ids=new Set(recurringScenario.map(r=>r.id));
     return { recurringScenario, mayPrepareRecurring:a.owner||allowed(s,a,'procurement.manage')||allowed(s,a,'payable.approve')&&allowed(s,a,'cash.read'),
-        recurringNoticeSend:all(s,'recurringNoticeSend').filter(r=>ids.has(r.scenario)),
+        recurringNoticeSend:all(s,'recurringNoticeSend').filter(r=>ids.has(r.scenario)).map(r=>pick(r,'id,scenario,hash,draftHash,recipient,status,at,outcomeAt,noticeDeadlines,deliveryVisibility,noticeEffectiveness,erasure')),
         agreementDisposition:all(s,'agreementDisposition').filter(r=>ids.has(r.scenario)),
         recurringDiscoveryNotice:all(s,'recurringDiscoveryNotice').filter(r=>r.recipient===a.id&&r.recipientEmail?.toLowerCase()===a.email.toLowerCase()).flatMap(notice=>{
             const proposal=s.get('agentRun:'+notice.run)?.value.proposals?.find((r:Data)=>r.id===notice.proposal);

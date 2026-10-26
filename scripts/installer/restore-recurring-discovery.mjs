@@ -50,9 +50,10 @@ export function validateRecurringDiscovery(all,get,check) {
   }
  }
  for(const notice of all('recurringDiscoveryNotice')){
-  check(!containsProtectedInput(notice)&&Object.keys(notice).every(key=>['id','run','proposal','recipient','recipientEmail','recipientVersion','role','agreementIds','sourceHash','from','to','noticeWindow','noticeDeadlines','at','mode','model','provider','status'].includes(key)),'discovery_notice_fields');
+  check(!containsProtectedInput(notice)&&Object.keys(notice).every(key=>['id','run','proposal','preparedBy','preparerVersion','recipient','recipientEmail','recipientVersion','role','agreementIds','sourceHash','from','to','noticeWindow','noticeDeadlines','at','mode','model','provider','status'].includes(key)),'discovery_notice_fields');
   const run=get('agentRun',notice.run),proposal=run.proposals?.find(row=>row.id===notice.proposal);
-  check(run.workflow==='recurring-discovery'&&run.scheduled===true&&proposal&&notice.sourceHash===proposal.id&&notice.from===run.from&&notice.to===run.to&&notice.at===run.at&&equal(notice.noticeWindow,run.noticeWindow)&&equal(notice.noticeDeadlines,proposal.baseline.noticeDeadlines),'discovery_notice_source');
+  check(run.workflow==='recurring-discovery'&&run.scheduled===true&&proposal&&notice.sourceHash===proposal.id&&notice.from===run.from&&notice.to===run.to&&Number.isFinite(Date.parse(notice.at))&&Date.parse(notice.at)>=Date.parse(run.at)&&equal(notice.noticeWindow,run.noticeWindow)&&equal(notice.noticeDeadlines,proposal.baseline.noticeDeadlines),'discovery_notice_source');
+  check(text(notice.preparedBy)&&positive(notice.preparerVersion)&&all('audit').some(row=>row.action==='recurring-discovery-notice'&&row.record===notice.id&&row.run===run.id&&row.actor===notice.preparedBy&&row.recipient===notice.recipient&&row.at===notice.at),'discovery_notice_authority_custody');
   check(text(notice.recipient)&&text(notice.recipientEmail)&&notice.recipientEmail===notice.recipientEmail.toLowerCase()&&positive(notice.recipientVersion)&&['owner','finance'].includes(notice.role)&&notice.mode==='deterministic v1'&&notice.model==='none'&&notice.provider==='none'&&notice.status==='proposed','discovery_notice_custody');
   check(notice.id===digest({window:run.noticeWindow,sourceHash:proposal.id,recipient:notice.recipient,role:notice.role}),'discovery_notice_identity');
   const owned=proposal.sources.filter(source=>source.kind==='agreement'&&source.value.owner===notice.recipient).map(source=>source.id).sort();

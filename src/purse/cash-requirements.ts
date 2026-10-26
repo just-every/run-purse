@@ -6,7 +6,11 @@ import { weekOf } from './payment-terms';
 import { allowed, requirePermission } from './access';
 export function cashRequirements(s: State, a: Actor) {
     requirePermission(s, a, 'cash.read');
-    const payables = all(s, 'payable').filter(p => allowed(s, a, 'cash.read', get(s, 'invoice', p.invoice)));
+    return cashRequirementsFromRecords(s,record=>allowed(s,a,'cash.read',record));
+}
+/** Arithmetic over an explicitly selected source set; callers authorize that set first. */
+export function cashRequirementsFromRecords(s:State,accepts:(record:Data)=>boolean) {
+    const payables = all(s, 'payable').filter(p => accepts(get(s, 'invoice', p.invoice)));
     const eligibleBills = payables.filter(p => p.approvedAt && !openInvoiceFlags(get(s, 'invoice', p.invoice)).length).map((p): Data => {
         const invoice = get(s, 'invoice', p.invoice), order = get(s, 'order', invoice.order);
         const amountMinor = invoice.pantry?.status === 'posted' ? invoice.pantry.openMinor : p.approvedMinor;
@@ -14,12 +18,12 @@ export function cashRequirements(s: State, a: Actor) {
     }).sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.reference.localeCompare(b.reference));
     const bills = eligibleBills.filter(bill => !get(s, 'invoice', bill.invoice).sourcePayment && bill.amountMinor > 0);
     const orders = all(s, 'order').filter(o => currentOperationalOrder(s, o) && ['issued', 'adopted', 'amendment-pending', 'cancelled'].includes(o.status)
-        && allowed(s, a, 'cash.read', o));
+        && accepts(o));
     const commitments = orders.map(o => {
         const base = o.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0);
         const active = o.lines.reduce((n: number, l: Data) => { const p = linePosition(s, o.id, l); return n + extended(Math.max(0, l.q - p.cancelled - p.closed), l.unitMinor); }, 0);
         const liability = base ? Number((BigInt(o.totalMinor) * BigInt(active) + BigInt(base) / 2n) / BigInt(base)) : 0;
-        const lineage = new Set(all(s, 'order').filter(p => p.request === o.request && operationalOrder(s, p) && allowed(s, a, 'cash.read', p)).map(p => p.id));
+        const lineage = new Set(all(s, 'order').filter(p => p.request === o.request && operationalOrder(s, p) && accepts(p)).map(p => p.id));
         const billed = eligibleBills.filter(p => lineage.has(p.order) && p.currency === o.currency).reduce((n, p) => n + p.approvedMinor, 0);
         const expectedDate = s.get('cashExpectation:' + o.id)?.value.expectedDate ?? o.needDate;
         return { order: o.id, number: o.number, currency: o.currency, expectedDate, week: weekOf(expectedDate), amountMinor: Math.max(0, liability - billed - adoptionDeposits(s, o).amountMinor), basis: s.has('cashExpectation:' + o.id) ? 'Recorded forecast' : 'PO need date' };

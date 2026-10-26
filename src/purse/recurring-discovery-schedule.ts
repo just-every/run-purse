@@ -71,7 +71,7 @@ async function claim(env: Bindings, preparer: Native, anchor: Data, proposal: Da
     const insert = (kind: string, recordId: string, value: Data, update = false) => env.DB.prepare(`INSERT INTO p_records(business,kind,id,revision,value)
         SELECT 'main',?,?,?,? WHERE EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='recurringDiscoveryNotice' AND id=? AND revision=?)
         ON CONFLICT(business,kind,id) DO ${update ? 'UPDATE SET revision=excluded.revision,value=excluded.value' : 'NOTHING'}`)
-        .bind(kind, recordId, uid(), JSON.stringify(value), pending[0].id, claimVersion);
+        .bind(kind, recordId, uid(), JSON.stringify({id:recordId,...value}), pending[0].id, claimVersion);
     // A recipient claim fences domain grants and native identities atomically.
     // New eligible recipients can join an existing run without repeating notices.
     const saved = await env.DB.batch([
