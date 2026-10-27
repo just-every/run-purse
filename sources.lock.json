@@ -80,7 +80,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "2ef2d066be4426457a9a1fcc569f02cde3b8c384d0dd7f0308f1ae56f74f5a7a",
+      "sha256": "42dcea29b38cacd273710d8b775bd5d16838a5edb0b4d2ef2dffebe78f9d0edc",
       "executable": false
     },
     ".gitignore": {
@@ -673,6 +673,22 @@
     },
     "scripts/build-deployment-spec.mjs": {
       "sha256": "8c73eaf902b0c2267c87e41ace55d6ff1bc93c022c8ac38faac9e265ff1a4d18",
+      "executable": false
+    },
+    "scripts/ci/chromium-probe.mjs": {
+      "sha256": "650b5af3d812bd42242999f913c97b61bc1a00bc4a188958b12dd2afc504e1fa",
+      "executable": false
+    },
+    "scripts/ci/reclaim-disk.sh": {
+      "sha256": "3e17b3a9ab6037274e4d18658dcf9dd1c9991f18803d0536e85f198fc7fb3dc0",
+      "executable": false
+    },
+    "scripts/ci/run-shard.mjs": {
+      "sha256": "0a26a13c3f6fa17b65bbc02dd9a151977a9c6775c6ab28d0c82fcb2ed117c13e",
+      "executable": false
+    },
+    "scripts/ci/shards.json": {
+      "sha256": "c22f60bbc53d3dce136837060743112c392bc32b1ec7a8074783e2bc4ba650e6",
       "executable": false
     },
     "scripts/delivery/base/artifact.mjs": {
