@@ -70,8 +70,13 @@ test('SCIM deactivation always ends sessions and transfers approvals through own
  const ownerFallback=await h.command('request',draft(supplier.id),requester);await h.command('submit',{id:ownerFallback.id,revision:1},requester);
  const request=await h.command('request',draft(supplier.id));await h.command('submit',{id:request.id,revision:request.revision})
  const pending=await h.command('request',draft(supplier.id));await h.command('submit',{id:pending.id,revision:pending.revision})
+ await h.command('policy',{name:'Native pool departure',currency:'USD',category:'Pool',project:'Office',approver:'owner@example.test',limitMinor:100000,budgetMinor:1000000,approvalSteps:[{emails:[departed.userName,manager.userName],mode:'any'}]});
+ const poolRequests=[];for(let n=0;n<2;n++){const body=draft(supplier.id);body.lines[0].category='Pool';const r=await h.command('request',body,requester);await h.command('submit',{id:r.id,revision:1},requester);await h.command('decision',{id:r.id,revision:1,decision:'approved',reason:'Independent primary review'});poolRequests.push(r);}
  const deactivate={schemas:[patchSchema],Operations:[{op:'replace',path:'active',value:false}]}
  assert.equal((await scim(h,token,'PATCH','/Users/'+departed.id,deactivate)).status,200,'No manager or delegate never prevents deactivation')
+ assert.equal((await h.state(managerSession)).data.request.find(r=>r.id===poolRequests[0].id).mayApprove,true,'An eligible peer retains the departed member pool step');
+ assert.ok(!(await h.state()).data.scimApprovalTransfer?.some(t=>t.request===poolRequests[0].id));
+ await h.command('decision',{id:poolRequests[0].id,revision:1,chainStep:'step-0',approvalAttempt:(await h.state()).data.request.find(r=>r.id===poolRequests[0].id).approvalAttempt,decision:'approved',reason:'Remaining pool peer reviewed'},managerSession);
  await h.command('decision',{id:ownerFallback.id,revision:1,decision:'approved',reason:'Native owner non-self fallback reviewed'},h.owner);
  const held=(await h.state()).data.request.filter(r=>[request.id,pending.id].includes(r.id));assert.ok(held.every(r=>r.approvalNeedsReassignment && !r.mayApprove),'Owner-requester approvals remain held without decision authority')
  await h.command('decision',{id:request.id,revision:request.revision,decision:'approved',reason:'Self interested owner cannot decide'},h.owner,403)
@@ -91,6 +96,8 @@ test('SCIM deactivation always ends sessions and transfers approvals through own
  const delegateSession=await h.member('synthetic-purse-14@example.test',['approver']),delegate=(await h.db.prepare('SELECT id,email FROM oa_operators WHERE email=?').bind('synthetic-purse-14@example.test').first())
  await settings(h,{...config,delegate:delegate.id})
  assert.equal((await scim(h,token,'PATCH','/Users/'+manager.id,deactivate)).status,200)
+ assert.equal((await h.state(delegateSession)).data.request.find(r=>r.id===poolRequests[1].id).mayApprove,true,'The final departed pool member transfers to the named eligible fallback');
+ await h.command('decision',{id:poolRequests[1].id,revision:1,chainStep:'step-0',approvalAttempt:(await h.state()).data.request.find(r=>r.id===poolRequests[1].id).approvalAttempt,decision:'approved',reason:'Explicit fallback reviewed exhausted pool'},delegateSession);
  assert.equal((await h.send('/api/purse/state',undefined,managerSession)).status,401)
  await h.command('decision',{id:pending.id,revision:pending.revision,decision:'approved',reason:'Former manager cannot decide'},managerSession,401)
  await h.command('decision',{id:pending.id,revision:pending.revision,decision:'approved',reason:'Owner-named delegate reviewed'},delegateSession)

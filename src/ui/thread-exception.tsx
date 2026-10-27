@@ -52,11 +52,11 @@ export function ThreadException({ e, data, actor, mutate }: { e: Exception; data
         <div className="exception-verbs">
             <p className="exception-for"><strong>{approver}</strong> · {p.name} approver</p>
             {can && <div className="verbs">
-                {e.fits.map((r, i) => <button key={r.id} type="button" className={i === 0 ? 'btn-primary' : ''} disabled={busy} onClick={() => run('decision', { id: r.id, revision: r.revision, decision: 'approved', reason: `Approved in the request thread: fits ${p.name} with ${money(e.underIfFitsMinor, currency)} left` })}>Approve {who(r)}'s</button>)}
+                {e.fits.map((r, i) => <button key={r.id} type="button" className={i === 0 ? 'btn-primary' : ''} disabled={busy} onClick={() => run('decision', { id: r.id, revision: r.revision, chainStep:r.approvalStep, approvalAttempt:r.approvalAttempt, decision: 'approved', reason: `Approved in the request thread: fits ${p.name} with ${money(e.underIfFitsMinor, currency)} left` })}>Approve {who(r)}'s</button>)}
                 {e.rest.map(r => <button key={r.id} type="button" disabled={busy} aria-expanded={asking?.id === r.id} onClick={() => setAsking(asking?.id === r.id ? undefined : r)}>Ask {who(r)}</button>)}
             </div>}
         </div>
-        {asking && <AskReply who={who(asking)} busy={busy} onCancel={() => setAsking(undefined)} onSend={question => run('decision', { id: asking.id, revision: asking.revision, decision: 'returned', reason: question })}/>}
+        {asking && <AskReply who={who(asking)} busy={busy} onCancel={() => setAsking(undefined)} onSend={question => run('decision', { id: asking.id, revision: asking.revision, chainStep:asking.approvalStep, approvalAttempt:asking.approvalAttempt, decision: 'returned', reason: question })}/>}
         {error && <p role="alert">{error}</p>}
     </section></Separated>;
 }

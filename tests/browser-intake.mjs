@@ -1,3 +1,4 @@
+import {approvalPoolsJourney} from './browser-approval-pools.mjs';
 import {budgetDimensionsJourney} from './browser-budget-dimensions.mjs';
 import {pendingApprovalJourney,conversionChargeJourney,periodBudgetJourney} from './browser-approver-edits.mjs';
 import assert from 'node:assert/strict';
@@ -17,9 +18,10 @@ const selected=process.argv.find(arg=>arg.startsWith('--width='));
 const widths=selected?[Number(selected.slice(8))]:[1440,390];
 const evidence=resolve(process.env.PURSE_EVIDENCE??'.cache/intake');await mkdir(evidence,{recursive:true});
 const bundle=await build({stdin:{contents:"import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);",resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'esm',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
-const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic'],...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{})});
+const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic',...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?['--no-sandbox']:[])],...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{})});
 try {
  for(const width of widths) {
+  if(process.argv.includes('--journey=approval-pools')) {await approvalPoolsJourney({browser,bundle:bundle.outputFiles[0].text,width,evidence});continue;}
   const edge=await createEmailIntakeEdge(),h=await harness({mailRequest:edge.mailRequest}),contexts=[];let restored;
   try {
    const context=async(cookie,size)=>{const value=await nativeWebContext(browser,h,size,bundle.outputFiles[0].text,cookie);contexts.push(value);return value;};
@@ -33,6 +35,7 @@ try {
    await conversionChargeJourney({h,context,width,evidence});
    await periodBudgetJourney({h,context,width,evidence});
    await budgetDimensionsJourney({h,context,width,evidence});
+   await approvalPoolsJourney({browser,bundle:bundle.outputFiles[0].text,width,evidence});
    const source=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});
    const archive=join(evidence,`INTAKE-001-${width}.rer`);await exportArchive(source,archive,[]);
    restored=await harness();const target=await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability});

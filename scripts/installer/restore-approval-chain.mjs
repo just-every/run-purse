@@ -16,9 +16,11 @@ export function validateApprovalChains(all,get,check,same) {
   check(Array.isArray(policy.approvalSteps)&&policy.approvalSteps.length<=20,'approval_steps');
   for(const step of policy.approvalSteps)check(typeof step.id==='string'&&typeof step.email==='string'&&step.email.includes('@')&&Number.isSafeInteger(step.minMinor)&&step.minMinor>=0&&Array.isArray(step.dependsOn)&&step.dependsOn.every(field=>fields.includes(field)),'approval_step_shape');
  }
+ for(const policy of [...all('policy'),...all('decision').map(decision=>decision.policySnapshot).filter(Boolean)])for(const step of policy.approvalSteps??[])if(step.emails)check(Array.isArray(step.emails)&&step.emails.length>0&&step.emails.length<=30&&new Set(step.emails).size===step.emails.length&&step.emails.every(email=>typeof email==='string'&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))&&['all','any'].includes(step.mode),'approval_pool_shape');
  for(const request of [...all('request'),...all('revision')])if(request.approvalRoute) {
-  check(Array.isArray(request.approvalRoute)&&request.approvalRoute.length>0&&request.approvalRoute.length<=122&&new Set(request.approvalRoute.map(step=>step.id)).size===request.approvalRoute.length&&typeof request.approvalPolicyVersion==='string','approval_route');
+  check(Array.isArray(request.approvalRoute)&&request.approvalRoute.length>0&&request.approvalRoute.length<=702&&new Set(request.approvalRoute.map(step=>step.id)).size===request.approvalRoute.length&&typeof request.approvalPolicyVersion==='string','approval_route');
   for(const step of request.approvalRoute)check(typeof step.email==='string'&&step.email.includes('@')&&Array.isArray(step.dependsOn)&&step.dependsOn.every(field=>fields.includes(field)),'approval_route_step');
+  for(const step of request.approvalRoute)if(step.emails)check(step.mode==='any'&&Array.isArray(step.emails)&&new Set(step.emails).size===step.emails.length&&step.emails.every(email=>typeof email==='string'&&email.includes('@')&&email!==request.requesterEmail),'approval_pool_route');
   const risk=request.approvalRoute.find(step=>step.id==='international-travel-risk');
   if(risk)check(request.purchaseType==='travel'&&request.travel?.destinations?.some(destination=>destination.country!=='US')&&request.approvalRoute.at(-1)===risk,'international_travel_route');
   if(!request.request){const revision=get('revision',request.id+':'+request.revision);check(same(request.approvalRoute,revision.approvalRoute)&&request.approvalPolicyVersion===revision.approvalPolicyVersion,'approval_route_revision');}
@@ -32,12 +34,12 @@ export function validateApprovalChains(all,get,check,same) {
  }
  for(const decision of all('decision'))if(decision.chainStep) {
   const request=get('revision',decision.request+':'+decision.revision),step=request.approvalRoute?.find(step=>step.id===decision.chainStep);
-  check(step&&(step.email===decision.email||decision.delegation||decision.scimTransfer)&&decision.actor!==request.requester&&decision.email!==request.requesterEmail&&decision.policyVersion===request.approvalPolicyVersion,'chain_decision');
+  check(step&&(step.email===decision.email||step.emails?.includes(decision.email)&&decision.authorityEmail===decision.email||decision.delegation||decision.scimTransfer)&&decision.actor!==request.requester&&decision.email!==request.requesterEmail&&decision.policyVersion===request.approvalPolicyVersion,'chain_decision');
   if(decision.policySnapshot?.internationalTravelReviewer!==undefined){
    const risk=request.approvalRoute?.find(step=>step.id==='international-travel-risk'),international=request.purchaseType==='travel'&&request.travel?.destinations?.some(destination=>destination.country!=='US');
    check(international?risk?.email===decision.policySnapshot.internationalTravelReviewer:!risk,'international_travel_policy_snapshot');
   }
-  if(decision.delegation){const delegation=get('delegation',decision.delegation);check(delegation.policy===decision.policy&&delegation.from===step.email&&delegation.delegate===decision.email&&Date.parse(decision.carriedAt??decision.at)<Date.parse(delegation.expires),'chain_delegation');}
+  if(decision.delegation){const delegation=get('delegation',decision.delegation);check(delegation.policy===decision.policy&&delegation.from===(decision.authorityEmail??step.email)&&delegation.delegate===decision.email&&Date.parse(decision.carriedAt??decision.at)<Date.parse(delegation.expires),'chain_delegation');}
   if(decision.carriedFrom){const original=get('decision',decision.carriedFrom);check(original.request===decision.request&&original.revision<decision.revision&&original.decision==='approved'&&decision.decision==='approved'&&['actor','email','at','chainStep','reason'].every(field=>same(original[field],decision[field]))&&[request.approverEdit,request.needDateEdit,request.buyerConversion].some(edit=>edit?.carried?.includes(decision.id)),'carried_decision');}
  }
  for(const order of all('order'))if(order.approvalProofs) {

@@ -51,7 +51,7 @@ export function budgetRoom(s: State, request: Data, policy: Data, delta: number)
   const shortage=share.amountMinor-current-periodBudgetPosition(s,target).availableMinor;
   if(shortage<=0)return true;
   const step=target.id===request.policy?'budget-owner':'budget-owner:'+target.id;
-  return target.overBudget==='owner'&&request.budgetOwnerReview&&all(s,'decision').some(decision=>decision.request===request.id&&decision.revision===request.revision&&decision.decision==='approved'&&decision.chainStep===step&&decision.email===target.budgetOwner&&decision.policyVersion===request.approvalPolicyVersion);
+  return target.overBudget==='owner'&&request.budgetOwnerReview&&all(s,'decision').some(decision=>decision.request===request.id&&decision.revision===request.revision&&(!request.approvalRoute||decision.approvalAttempt===request.approvalAttempt)&&decision.decision==='approved'&&decision.chainStep===step&&decision.email===target.budgetOwner&&decision.policyVersion===request.approvalPolicyVersion);
  });
 }
 export function budgetOwnerSteps(s: State, request: Data, amount: number) {

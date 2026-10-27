@@ -10,7 +10,7 @@ export function retainedTravelApproval(s: State, request: Data) {
         'Retained native approved trip required', 409);
     const events = all(s, 'audit').filter(event => event.record === request.id && event.revision === request.revision);
     requireThat(events.some(event => event.action === 'travel-approved' && event.approvalReference === reference), 'Native travel approval evidence missing', 409);
-    const decisions = all(s, 'decision').filter(decision => decision.request === request.id && decision.revision === request.revision);
+    const decisions = all(s, 'decision').filter(decision => decision.request === request.id && decision.revision === request.revision && (!request.approvalRoute || decision.approvalAttempt === request.approvalAttempt));
     const valid = (decision: Data) => decision.decision === 'approved' && decision.policy === request.policy &&
         decision.actor !== request.requester && decision.email !== request.requesterEmail && decision.email !== request.travel.travelerEmail &&
         Number.isSafeInteger(decision.operatorVersion) && decision.policySnapshot &&

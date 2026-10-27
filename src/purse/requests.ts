@@ -23,7 +23,7 @@ export function lines(s: State, input: unknown, a: Actor) { requireThat(Array.is
 export function requestTotal(r: Data) { const total = r.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0) + r.freightMinor + r.taxMinor + (r.otherChargesMinor ?? 0); return minor(total, 'Request total'); }
 export function policies(s: State, r: Data) { return coveringPolicies(all(s, 'policy'), r); }
 export const reserved = (s: State, policy: string) => all(s, 'commitment').reduce((n, e) => n + eventBudgetPortion(e, policy), 0);
-export function reservationAvailable(s: State, r: Data, amountMinor: number) { const p = policies(s, r).find(p => p.id === r.policy); return Boolean(p && ((!p.budgetPeriod && p.overBudget==='owner' && r.budgetOwnerReview && r.totalMinor===s.get('request:'+r.id)?.value.totalMinor && all(s,'decision').some(decision=>decision.request===r.id&&decision.revision===r.revision&&decision.decision==='approved'&&decision.email===p.budgetOwner&&decision.policyVersion===s.get('policy:'+p.id)?.revision)) || (budgetRoom(s,r,p,amountMinor) ?? reserved(s,p.id)+all(s,'travelExpense').filter(expense=>expense.policy===p.id&&expense.currency===p.currency).reduce((sum,expense)=>sum+expense.totalMinor,0)+amountMinor<=p.budgetMinor))); }
+export function reservationAvailable(s: State, r: Data, amountMinor: number) { const p = policies(s, r).find(p => p.id === r.policy); return Boolean(p && ((!p.budgetPeriod && p.overBudget==='owner' && r.budgetOwnerReview && r.totalMinor===s.get('request:'+r.id)?.value.totalMinor && all(s,'decision').some(decision=>decision.request===r.id&&decision.revision===r.revision&&(!r.approvalRoute||decision.approvalAttempt===r.approvalAttempt)&&decision.decision==='approved'&&decision.email===p.budgetOwner&&decision.policyVersion===s.get('policy:'+p.id)?.revision)) || (budgetRoom(s,r,p,amountMinor) ?? reserved(s,p.id)+all(s,'travelExpense').filter(expense=>expense.policy===p.id&&expense.currency===p.currency).reduce((sum,expense)=>sum+expense.totalMinor,0)+amountMinor<=p.budgetMinor))); }
 export function ledger(s: State, a: Actor, r: Data, amountMinor: number, kind: string) { requireThat(amountMinor <= 0 || reservationAvailable(s, r, amountMinor), 'Current policy or budget does not authorize replenishment; renew approval', 409); const balance=all(s,'commitment').filter(e=>e.currency===r.currency).reduce((n,e)=>n+e.amountMinor,0);requireThat(Number.isSafeInteger(balance+amountMinor),'Commitment exceeds supported integer range',409);const id = uid(); put(s, 'commitment', id, { request: r.id, revision: r.revision, policy: r.policy, currency: r.currency, amountMinor, budgetAllocations: requestBudgetShares(s, r, Math.abs(amountMinor)).map(share => ({...share, amountMinor: amountMinor < 0 ? -share.amountMinor : share.amountMinor})), kind, actor: a.id, at: new Date().toISOString() }); }
 export function authorizedApproval(s: State, a: Actor, r: Data) {
     requirePermission(s, a, 'request.approve', r);
@@ -141,9 +141,11 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             requireThat(p, 'No amount/category/project authority policy covers this request', 409);
             requireThat(!all(s, 'scimUser').some(user => user.userName === p.approver && user.active === false), 'The designated approver was deactivated; the owner must select a current approval policy before submission', 409);
             startChain(s,a,r,p) ?? put(s, 'request', r.id, { ...r, status: 'pending', policy: p.id });
-            audit(s, a, op, r.id, { revision: r.revision });
+            audit(s, a, op, r.id, { revision: get(s,'request',r.id).revision });
             return get(s, 'request', r.id);
         }
+        const priorStep = b.chainStep && all(s,'decision').find(decision => decision.request === r.id && decision.revision === r.revision && decision.chainStep === b.chainStep && decision.approvalAttempt === r.approvalAttempt);
+        requireThat(!priorStep, `Step already decided by ${priorStep?.email ?? ''} at ${priorStep?.at ?? ''}`,409);
         requireThat(r.status === 'pending' && !r.imported, 'Request is not pending native authority', 409);
         const chained=chainDecision(s,a,r,b); if(chained) return chained;
         const { p, delegated, assignment } = authorizedApproval(s, a, r);
