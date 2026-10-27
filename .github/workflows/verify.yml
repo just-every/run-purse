@@ -86,158 +86,67 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        width: [1440, 390]
-        # Every shard runs the complete archive checks and invoice-reading journey
-        # (tests/browser.mjs and tests/browser-shard.mjs), so neither needs its own job.
-        journey: [supplier-performance, catalogue, order-chasing, supplier-documents, supplier-duplicates, payables, audit-log, spend-report, po-documents, performance-report, invoice-risk, receipt-routing, quote-reading, rfq, invoice-inbox, email-intake, search, agreements, integration-tokens, agent-value, quote-agent, order-adoption, protected-storage, protected-preparation]
+        # 357 browser test-minutes cannot fit eight 12-minute jobs. Pack the
+        # unchanged commands using green run 40407704684, allowing 45s setup.
+        include:
+          - group: 1
+          - group: 2
+          - group: 3
+          - group: 4
+          - group: 5
+          - group: 6
+          - group: 7
+          - group: 8
+          - group: 9
+          - group: 10
+          - group: 11
+          - group: 12
+          - group: 13
+          - group: 14
+          - group: 15
+          - group: 16
+          - group: 17
+          - group: 18
+          - group: 19
+          - group: 20
+          - group: 21
+          - group: 22
+          - group: 23
+          - group: 24
+          - group: 25
+          - group: 26
+          - group: 27
+          - group: 28
+          - group: 29
+          - group: 30
+          - group: 31
+          - group: 32
+          - group: 33
+          - group: 34
+          - group: 35
+          - group: 36
+          - group: 37
+          - group: 38
+            pantry: true
+          - group: 39
+          - group: 40
+          - group: 41
+          - group: 42
+          - group: 43
+          - group: 44
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ matrix.width == 1440 && 25 || 15 }}
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - name: Reclaim unused hosted-runner SDKs
         if: runner.os == 'Linux' && runner.environment == 'github-hosted'
-        shell: bash
         run: bash scripts/ci/reclaim-disk.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
       - uses: pnpm/action-setup@v4
-      # Push checks use the locked project runtime. Global CLI qualification
-      # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
-      - name: Install Chromium
-        run: |
-          set -euo pipefail
-          pnpm exec playwright install --only-shell chromium
-          # Hosted ubuntu-24.04 already carries Chromium's libraries. Use apt only when a real launch fails.
-          node scripts/ci/chromium-probe.mjs || {
-            timeout 420 pnpm exec playwright install-deps chromium
-            node scripts/ci/chromium-probe.mjs
-          }
-      - run: node tests/browser.mjs --width=${{ matrix.width }} --journey=${{ matrix.journey }}
-        env:
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: purse-browser-and-archive-proof-${{ matrix.journey }}-${{ matrix.width }}
-          path: ${{ runner.temp }}/purse-proof
-  purchase-kinds:
-    needs: plan
-    if: needs.plan.outputs.skip != 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - name: Reclaim unused hosted-runner SDKs
-        if: runner.os == 'Linux' && runner.environment == 'github-hosted'
-        shell: bash
-        run: bash scripts/ci/reclaim-disk.sh
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.20.0
-      - uses: pnpm/action-setup@v4
-      # Push checks use the locked project runtime. Global CLI qualification
-      # runs in installer.yml on release tags and nightly.
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec rer install
-      - name: Install Chromium
-        run: |
-          set -euo pipefail
-          pnpm exec playwright install --only-shell chromium
-          # Hosted ubuntu-24.04 already carries Chromium's libraries. Use apt only when a real launch fails.
-          node scripts/ci/chromium-probe.mjs || {
-            timeout 420 pnpm exec playwright install-deps chromium
-            node scripts/ci/chromium-probe.mjs
-          }
-      - run: node tests/browser-po-kinds.mjs
-        env:
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-po-kinds
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: purse-po-kinds-and-archive-proof
-          path: ${{ runner.temp }}/purse-po-kinds
-  native-browser:
-    needs: plan
-    if: needs.plan.outputs.skip != 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        width: [1440, 390]
-        journey: [coding-agent, spend-questions, request-again, protected-web, access, identity, scim, erasure, intake, order-send, evidence-history, integration-tokens, recurring-scenarios, agent-governance, order-thread, supplier-invoice, po-generation]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.20.0
-      - uses: pnpm/action-setup@v4
-      # Push checks use the locked project runtime. Global CLI qualification
-      # runs in installer.yml on release tags and nightly.
-      - run: pnpm install --frozen-lockfile
-      - name: Install Chromium
-        run: |
-          set -euo pipefail
-          pnpm exec playwright install --only-shell chromium
-          # Hosted ubuntu-24.04 already carries Chromium's libraries. Use apt only when a real launch fails.
-          node scripts/ci/chromium-probe.mjs || {
-            timeout 420 pnpm exec playwright install-deps chromium
-            node scripts/ci/chromium-probe.mjs
-          }
-      - run: node tests/browser-${{ matrix.journey }}.mjs --width=${{ matrix.width }}
-        env:
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: purse-native-browser-proof-${{ matrix.journey }}-${{ matrix.width }}
-          path: ${{ runner.temp }}/purse-proof
-  search-scale:
-    needs: plan
-    if: needs.plan.outputs.skip != 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.20.0
-      - uses: pnpm/action-setup@v4
-      # Push checks use the locked project runtime. Global CLI qualification
-      # runs in installer.yml on release tags and nightly.
-      - run: pnpm install --frozen-lockfile
-      - name: Install Chromium
-        run: |
-          set -euo pipefail
-          pnpm exec playwright install --only-shell chromium
-          # Hosted ubuntu-24.04 already carries Chromium's libraries. Use apt only when a real launch fails.
-          node scripts/ci/chromium-probe.mjs || {
-            timeout 420 pnpm exec playwright install-deps chromium
-            node scripts/ci/chromium-probe.mjs
-          }
-      - run: node tests/browser-search-scale.mjs
-        env:
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: purse-search-scale-proof
-          path: ${{ runner.temp }}/purse-proof
-  pantry:
-    needs: plan
-    if: needs.plan.outputs.skip != 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.20.0
-      - uses: pnpm/action-setup@v4
-      - run: pnpm install --frozen-lockfile
       - name: Install Chromium
         run: |
           set -euo pipefail
@@ -248,25 +157,23 @@ jobs:
             node scripts/ci/chromium-probe.mjs
           }
       - name: Install the real Pantry integration peer
+        if: matrix.pantry == true
         run: |
           git clone --filter=blob:none https://github.com/just-every/run-pantry.git .cache/native-pantry
           git -C .cache/native-pantry checkout fb080a57b795dede06bfe6be2db7b85cc31a696b
           pnpm --dir .cache/native-pantry install --frozen-lockfile
-      - run: node tests/pantry-flow.mjs
+      - name: Run every command in the group
+        run: node scripts/ci/run-shard.mjs ${{ matrix.group }}
         env:
           PANTRY_CHECKOUT: ${{ github.workspace }}/.cache/native-pantry
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-pantry
-      - run: node tests/browser-pantry.mjs
-        env:
-          PANTRY_CHECKOUT: ${{ github.workspace }}/.cache/native-pantry
-          PURSE_EVIDENCE: ${{ runner.temp }}/purse-pantry
+          PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: purse-pantry-native-and-browser
-          path: ${{ runner.temp }}/purse-pantry
+          name: purse-browser-proof-${{ matrix.group }}
+          path: ${{ runner.temp }}/purse-proof
   verify:
-    needs: [plan, rer-verify, browser, purchase-kinds, native-browser, search-scale, pantry]
+    needs: [plan, rer-verify, browser]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 1
