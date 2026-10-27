@@ -7,7 +7,7 @@ export { carryApprovalDecisions } from './approval-chain-authority';
 import { projectApprovalEdit } from './approval-edit-view';
 import { remainingValue } from './orders';
 import { moneyInput } from './money';
-import { all, audit, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
+import { all, audit, Fault, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 import { ledger, policies, approvalAmount, reservationAvailable } from './requests';
 
 export const headerFields = correctionFields;
@@ -96,8 +96,18 @@ export function actorStep(s: State, a: Actor, request: Data): Data | undefined {
 export function chainHolder(s: State, a: Actor, request: Data) { return Boolean(actorStep(s,a,request)); }
 export function chainHolderEmail(s:State, request:Data) { return currentSteps(s,request).map(step => step.emails && !currentScimAssignment(s,request,step.id) ? step.emails.join(', ') : stepHolderEmail(s,request,step)).join(', '); }
 export function approvalRouteView(s: State, a: Actor, request: Data) {
-    const policy = policies(s,request).find(policy => policy.id === request.policy) ?? policies(s,request)[0];
-    const route = request.approvalRoute ?? (policy ? routeFor(policy,request) : []);
+    let route = request.approvalRoute;
+    if (!route) {
+        try {
+            const candidates = policies(s,request);
+            const policy = candidates.find(policy => policy.id === request.policy) ?? candidates[0];
+            route = policy ? routeFor(policy,request) : [];
+        } catch (error) {
+            // An ambiguous budget blocks submission, while the draft remains readable.
+            if (!(error instanceof Fault && error.status === 409 && error.message.includes('unambiguous policy'))) throw error;
+            route = [];
+        }
+    }
     return {approvalStep: request.status === 'pending' ? actorStep(s,a,request)?.id : undefined,
         approvalPreview: route.map((step: Data) => ({id:step.id, emails:step.emails ?? [step.email], mode:step.mode ?? (step.parallelGroup ? 'all' : 'sequential'),
             reason:step.reason ?? (step.id === 'primary' ? 'Matching amount, category and project policy' : 'Matching policy threshold and department'),

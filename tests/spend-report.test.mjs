@@ -115,6 +115,8 @@ test('BUDGET-001 dated department exposure reserves pending, commits buyer chang
  await cmd('policy',{...combined,id:undefined,name:'synthetic-purse-2233'});
  const ambiguous=await cmd('request',dimensionInput,requester);await cmd('submit',{id:ambiguous.id,revision:1},requester,409);
  assert.equal((await h.state()).data.request.find(request=>request.id===ambiguous.id).budgetReview.complete,false);
+ assert.deepEqual((await h.state()).data.request.find(request=>request.id===ambiguous.id).approvalPreview,[],'Ambiguous funding offers no approval route while the draft remains readable');
+ assert.deepEqual((await h.state()).data.request.find(request=>request.id===combinedRequest.id).approvalPreview.map(step=>step.id),['primary'],'Recorded approval routes remain readable after a conflicting budget is added');
  assert.equal((await position(combined.id)).actualMinor,30000);
 
 });

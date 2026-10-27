@@ -2964,7 +2964,7 @@
       "executable": false
     },
     "src/purse/approval-chain.ts": {
-      "sha256": "117863cd4b67888a23fd8e0fefcf8ed1a14c33d3dc3023439e06d66f48c7a5bd",
+      "sha256": "fb8cfdaf786fa5d0476bd8c245da7bd9ec39894f71f6c98e9cff92cbc34c3802",
       "executable": false
     },
     "src/purse/approval-edit-view.ts": {
@@ -4992,7 +4992,7 @@
       "executable": false
     },
     "tests/spend-report.test.mjs": {
-      "sha256": "5eb04793553e0585fc717904f4a7af06bbdc1e831f6c59a4b2907a3aa817cf20",
+      "sha256": "4e135984ba5ba65945cdc11f5d5aaa462b4aef5d50acd7fe136787fbdc14aa35",
       "executable": false
     },
     "tests/stockroom.test.mjs": {
