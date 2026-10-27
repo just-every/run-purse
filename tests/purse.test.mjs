@@ -280,3 +280,11 @@ test('APPROVAL-004 exact pending header edits carry or renew chain approvals and
  for(const kind of ['request','revision','decision','scimApprovalTransfer']){const records=async db=>(await db.prepare('SELECT * FROM p_records WHERE kind=? ORDER BY id').bind(kind).all()).results;assert.deepEqual(await records(restored.db),await records(h.db),kind+' exact edited history survives a real archive');}
 
 });
+
+test('Conditional native approval pools serialize a first decision, withdraw queues and await every parallel reviewer',async t=>{
+ const h=await harness();t.after(()=>h.close());const {approvalChainFlow}=await import('./approval-chain-flow.mjs');await approvalChainFlow(h);
+ const {createPortability}=await import('@runeditrun/rer/modules/portability'),{exportArchive,importArchive}=await import('@runeditrun/rer/internal/modules/portability/files.mjs'),{default:portability}=await import('../scripts/installer/portability.mjs');
+ const archive=h.dir+'/synthetic-purse-3120.rer';await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
+ const restored=await harness();t.after(()=>restored.close());await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
+ for(const kind of ['request','revision','decision','policy','audit'])assert.deepEqual((await restored.db.prepare('SELECT * FROM p_records WHERE kind=? ORDER BY id').bind(kind).all()).results,(await h.db.prepare('SELECT * FROM p_records WHERE kind=? ORDER BY id').bind(kind).all()).results);
+});

@@ -2,7 +2,7 @@ import { nativeActor } from './scim-storage';
 import { all, allowed, audit, put, uid, type Actor, type Data, type State } from './types';
 
 /** A transfer belongs to one pending request revision and unchanged policy. */
-function pendingChainStep(s:State,request:Data) { return request.approvalRoute?.find((step:Data)=>!all(s,'decision').some(d=>d.request===request.id&&d.revision===request.revision&&d.chainStep===step.id&&d.decision==='approved')); }
+function pendingChainStep(s:State,request:Data) { return request.approvalRoute?.find((step:Data)=>!all(s,'decision').some(d=>d.request===request.id&&d.revision===request.revision&&d.chainStep===step.id&&d.approvalAttempt===request.approvalAttempt&&d.decision==='approved')); }
 export function currentScimAssignment(s: State, request: Data, chainStep?:string): Data | undefined {
     const step=chainStep??pendingChainStep(s,request)?.id;
     return all(s, 'scimApprovalTransfer').filter(t => t.request === request.id && t.requestRevision === request.revision && t.policy === request.policy && (request.approvalRoute ? t.chainStep===step : !t.chainStep) && t.policyVersion === s.get('policy:' + request.policy)?.revision).sort((a, b) => b.sequence - a.sequence)[0];
@@ -16,8 +16,11 @@ export function scimApprovalHolder(s: State, request: Data, chainStep?:string): 
 /** Plan every transfer before any native session, grant or request is written. */
 export function transferScimApprovals(before: State, after: State, user: Data, operators: Data[], config: Data, service: Actor): Data[] {
     const recipients: Data[] = [], target = operators.find(o => o.id === user.id);
-    const pending=all(before,'request').filter(r=>r.status==='pending'&&!r.imported).flatMap(request=>request.approvalRoute?request.approvalRoute.filter((step:Data)=>!all(before,'decision').some(d=>d.request===request.id&&d.revision===request.revision&&d.chainStep===step.id&&d.decision==='approved')).map((step:Data)=>({request,chainStep:step.id})):[{request,chainStep:undefined}]).filter(({request,chainStep})=>scimApprovalHolder(before,request,chainStep)===user.userName);
+    const pending=all(before,'request').filter(r=>r.status==='pending'&&!r.imported).flatMap(request=>request.approvalRoute?request.approvalRoute.filter((step:Data)=>!all(before,'decision').some(d=>d.request===request.id&&d.revision===request.revision&&d.chainStep===step.id&&d.approvalAttempt===request.approvalAttempt&&d.decision==='approved')).map((step:Data)=>({request,chainStep:step.id})):[{request,chainStep:undefined}]).filter(({request,chainStep})=>{const step=request.approvalRoute?.find((step:Data)=>step.id===chainStep);return scimApprovalHolder(before,request,chainStep)===user.userName || !currentScimAssignment(before,request,chainStep) && step?.emails?.includes(user.userName);});
     for (const {request,chainStep} of pending) {
+        const step=request.approvalRoute?.find((step:Data)=>step.id===chainStep);
+        // A departing pool member leaves authority with eligible peers.
+        if(step?.emails && !currentScimAssignment(before,request,chainStep) && operators.some(operator=>operator.email!==user.userName && step.emails.includes(operator.email) && operator.status==='active' && operator.id!==request.requester && operator.email!==request.requesterEmail && allowed(after,nativeActor(operator),'request.approve',request))) continue;
         if (user.active && target && allowed(after, nativeActor(target), 'request.approve', request)) continue;
         const manager = operators.find(o => o.id === user.manager), fallback = operators.find(o => o.id === config.delegate);
         const owner = operators.filter(o => o.role === 'owner' && o.status === 'active').sort((a, b) => a.created_at - b.created_at || a.id.localeCompare(b.id))[0];

@@ -552,12 +552,35 @@ to a private unfinished draft.
 
 The owner or an administrator with the existing policy-management grant configures
 `approvalSteps:[{email,minMinor?,minAmount?,costCentre?,dependsOn?}]` (up to 20
-additional serial steps). The primary remains `approver`. Conditions select steps
-by current total and department. `editRules` maps a purchase type or `*` to
+additional stages). The primary remains `approver`. Conditions select steps
+by current total, department and optional `purchaseType` (the explicit purchase
+type, or the first line category in lowercase for legacy requests). A stage can
+instead name `emails:[email,...]` and `mode:"any"` or `mode:"all"`. Any selects
+one decider from the pool; all opens a separate parallel review for every named
+person and waits for each approval. Subsequent stages wait for the whole stage.
+Pool members who requested the purchase are excluded. Current scope and native
+authority still apply to every decision and to issuance. The existing SCIM
+handoff runs only when no eligible pool peer remains.
+
+State returns `approvalPreview` before submission and the retained route after
+submission, including rule reasons and deciding members. It returns the viewer's
+`approvalStep` and the current `approvalAttempt`. A pool or parallel `decision`
+command must include both as `chainStep` and `approvalAttempt`, alongside the
+exact `id`, `revision`, decision and reason. The first committed decision wins;
+a stale step action reports the deciding member and time, and queues withdraw
+that member's completed work. Resubmission after return or rejection creates a new exact revision and renews
+all decisions, retaining the earlier route and policy evidence; prior submission
+actions cannot decide the renewed pool. Each decision and its route,
+policy version and immutable policy snapshot are available in scoped AUDIT-001
+reads and CSV, and remain portable.
+
+Settings accepts one stage per line in Additional approvers: comma-separated
+emails, followed by `| any or all | amount | purchase type | department`. These conditions
+are optional; a bare email retains the existing additional threshold behavior. `editRules` maps a purchase type or `*` to
 `{allowed:[field],material:[field]}`. Allowed fields are `glAccount`, `costCentre`,
 `location`, `class`, `project`, `needDate`, `shipTo`, `supplier` and `notes`.
 The default material fields are GL account, department, project and supplier.
-APPROVAL-001 retains pools, parallel steps, manager hierarchy and channels.
+APPROVAL-001 retains manager hierarchy, remaining conditional dimensions, per-allocation rules, scheduled escalation and channel qualification.
 
 `approver-edit` takes `{id,revision,changes:{field:value,lines?:[{id,field:value}]},reason}`
 from the current non-self step holder. It creates an attributed exact revision,
