@@ -135,7 +135,8 @@ jobs:
           - group: 43
           - group: 44
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    # Normal body is packed below 12 minutes; allow the bounded apt repair too.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Reclaim unused hosted-runner SDKs
