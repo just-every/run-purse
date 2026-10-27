@@ -70,15 +70,7 @@ jobs:
       - name: Reclaim unused hosted-runner SDKs
         if: runner.os == 'Linux' && runner.environment == 'github-hosted'
         shell: bash
-        run: |
-          echo 'Disk before SDK cleanup (checkout, runner temp, runtime temp):'
-          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
-          # Purse uses Node and Chromium, not the image's Android, .NET or Haskell SDKs.
-          # Exact SDK roots come from actions/runner-images' Ubuntu installation scripts.
-          # Keep Node/Corepack, checkout, system libraries and browser dependencies intact.
-          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /usr/local/.ghcup
-          echo 'Disk after SDK cleanup (checkout, runner temp, runtime temp):'
-          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
+        run: bash scripts/ci/reclaim-disk.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
@@ -105,15 +97,7 @@ jobs:
       - name: Reclaim unused hosted-runner SDKs
         if: runner.os == 'Linux' && runner.environment == 'github-hosted'
         shell: bash
-        run: |
-          echo 'Disk before SDK cleanup (checkout, runner temp, runtime temp):'
-          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
-          # Purse uses Node and Chromium, not the image's Android, .NET or Haskell SDKs.
-          # Exact SDK roots come from actions/runner-images' Ubuntu installation scripts.
-          # Keep Node/Corepack, checkout, system libraries and browser dependencies intact.
-          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /usr/local/.ghcup
-          echo 'Disk after SDK cleanup (checkout, runner temp, runtime temp):'
-          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
+        run: bash scripts/ci/reclaim-disk.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
@@ -149,15 +133,7 @@ jobs:
       - name: Reclaim unused hosted-runner SDKs
         if: runner.os == 'Linux' && runner.environment == 'github-hosted'
         shell: bash
-        run: |
-          echo 'Disk before SDK cleanup (checkout, runner temp, runtime temp):'
-          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
-          # Purse uses Node and Chromium, not the image's Android, .NET or Haskell SDKs.
-          # Exact SDK roots come from actions/runner-images' Ubuntu installation scripts.
-          # Keep Node/Corepack, checkout, system libraries and browser dependencies intact.
-          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /usr/local/.ghcup
-          echo 'Disk after SDK cleanup (checkout, runner temp, runtime temp):'
-          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
+        run: bash scripts/ci/reclaim-disk.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
@@ -195,18 +171,6 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Reclaim unused hosted-runner SDKs
-        if: runner.os == 'Linux' && runner.environment == 'github-hosted'
-        shell: bash
-        run: |
-          echo 'Disk before SDK cleanup (checkout, runner temp, runtime temp):'
-          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
-          # Purse uses Node and Chromium, not the image's Android, .NET or Haskell SDKs.
-          # Exact SDK roots come from actions/runner-images' Ubuntu installation scripts.
-          # Keep Node/Corepack, checkout, system libraries and browser dependencies intact.
-          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /usr/local/.ghcup
-          echo 'Disk after SDK cleanup (checkout, runner temp, runtime temp):'
-          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
@@ -214,7 +178,6 @@ jobs:
       # Push checks use the locked project runtime. Global CLI qualification
       # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec rer install
       - name: Install Chromium
         run: |
           set -euo pipefail
@@ -239,18 +202,6 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Reclaim unused hosted-runner SDKs
-        if: runner.os == 'Linux' && runner.environment == 'github-hosted'
-        shell: bash
-        run: |
-          echo 'Disk before SDK cleanup (checkout, runner temp, runtime temp):'
-          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
-          # Purse uses Node and Chromium, not the image's Android, .NET or Haskell SDKs.
-          # Exact SDK roots come from actions/runner-images' Ubuntu installation scripts.
-          # Keep Node/Corepack, checkout, system libraries and browser dependencies intact.
-          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /usr/local/.ghcup
-          echo 'Disk after SDK cleanup (checkout, runner temp, runtime temp):'
-          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
@@ -258,7 +209,6 @@ jobs:
       # Push checks use the locked project runtime. Global CLI qualification
       # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec rer install
       - name: Install Chromium
         run: |
           set -euo pipefail
