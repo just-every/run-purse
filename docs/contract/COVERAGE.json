@@ -1528,730 +1528,511 @@
       "line": 390,
       "cell": "gap",
       "text": "\u2014",
-      "to": "gap",
-      "ids": [
-        "ACCESS-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 391,
       "cell": "gap",
       "text": "SAML 2.0; Okta, Entra ID, Google Workspace and JumpCloud sandbox journeys. ct 22 October ruling D adopted. Native HTTP/typecheck/first-party and both-width identity, link/unlink and owner queue journeys pass.",
-      "to": "gap",
-      "ids": [
-        "ACCESS-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 392,
       "cell": "gap",
       "text": "Multiple legal entities, per-entity numbering and ledger connections not built",
-      "to": "gap",
-      "ids": [
-        "ACCESS-003"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 394,
       "cell": "gap",
       "text": "Slack app, Slack approvals and thread updates not built",
-      "to": "gap",
-      "ids": [
-        "INTAKE-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 395,
       "cell": "gap",
       "text": "Teams app and Adaptive Card approvals not built",
-      "to": "gap",
-      "ids": [
-        "INTAKE-003"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 397,
       "cell": "gap",
       "text": "Cross-team reviews and Jira, ServiceNow, Linen, OneTrust and Locket links not built",
-      "to": "gap",
-      "ids": [
-        "INTAKE-005"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 398,
       "cell": "gap",
       "text": "The five ct rider changes are implemented: traveler approved booking terms with private financial internals, explicit timezone, versioned business release rule and trip override, scoped finance confirmation, and four configurable expense exports. Automatic fetch by reference remains BLOCKED on Coaster API-001: its public machine door omits the exact frozen report revision and independent approval decisions required by the adopted source boundary; there is no reference lookup. Coaster must expose authorized final-report evidence before this Gap can close. Manual imports never fetch a URL, book or pay.",
-      "to": "gap",
-      "ids": [
-        "INTAKE-006"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 402,
       "cell": "gap",
       "text": "Native iOS and Android apps, push, barcode and offline receiving not built",
-      "to": "gap",
-      "ids": [
-        "MOBILE-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 403,
       "cell": "gap",
       "text": "Supplier onboarding link, W-9 and COI capture not built",
-      "to": "gap",
-      "ids": [
-        "SUPPLIER-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 404,
       "cell": "gap",
       "text": "Bank-detail entry, call-back, second approver, Plaid verification and payment hold not built",
-      "to": "gap",
-      "ids": [
-        "SUPPLIER-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 407,
       "cell": "gap",
       "text": "Receipt-backed on-time/quality measures, distinct invoice exceptions, buyer-evidenced acknowledgment speed, currency-separated PO/invoice figures, PO-linked issues with reasoned resolution and source drill-through",
-      "to": "gap",
-      "ids": [
-        "SUPPLIER-005"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 408,
       "cell": "gap",
       "text": "1099 eligibility, box totals and export to each ledger's 1099 fields not built",
-      "to": "gap",
-      "ids": [
-        "SUPPLIER-006"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 409,
       "cell": "gap",
       "text": "OFAC SDN via public Commerce CSL; native name/address screening, activation holds, versioned source evidence and owner review; imported/legacy activation requires screening",
-      "to": "gap",
-      "ids": [
-        "SUPPLIER-007"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 410,
       "cell": "gap",
       "text": "Requests accept only a register supplier (`src/purse/requests.ts`); new-supplier proposals, pending supplier status, the vendor approval chain and holding POs until activation not built",
-      "to": "gap",
-      "ids": [
-        "SUPPLIER-008"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 414,
       "cell": "gap",
       "text": "Amazon Business cXML PunchOut and OrderRequest not built",
-      "to": "gap",
-      "ids": [
-        "PUNCHOUT-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 415,
       "cell": "gap",
       "text": "Other cXML/OCI PunchOut catalogs and catalog CSV validity not built",
-      "to": "gap",
-      "ids": [
-        "PUNCHOUT-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 417,
       "cell": "gap",
       "text": "Split allocations by percentage, amount, quantity or equally, per-allocation budgets, routing and ledger lines, and split templates not built",
-      "to": "gap",
-      "ids": [
-        "CODING-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 418,
       "cell": "gap",
       "text": "Custom header and line fields, ledger-dimension lists, carry-through to PO and bill lines, and ledger mappings not built",
-      "to": "gap",
-      "ids": [
-        "CODING-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 419,
       "cell": "gap",
       "text": "Additional-step location, project, category, GL account, entity, custom-field, supplier-risk and new-supplier conditions; per-allocation rules and amount basis; manager hierarchy and manager-change re-route; scheduled pool escalation and out-of-office; email, Slack, Teams and native-app messages, actions and withdrawal qualification. A live Slack test workspace is not held. Current native conditions use whole-request amount, department and explicit purchase type, with the first line category as the legacy type fallback.",
-      "to": "gap",
-      "ids": [
-        "APPROVAL-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 420,
       "cell": "gap",
       "text": "Reminders, escalation, out-of-office routing, nudges and pool-wide reminders and escalation not built (scoped delegation is PUR-007)",
-      "to": "gap",
-      "ids": [
-        "APPROVAL-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 421,
       "cell": "gap",
       "text": "Email, Slack, Teams and native approval, and refusal of decided pool steps' messages, absent",
-      "to": "gap",
-      "ids": [
-        "APPROVAL-003"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 422,
       "cell": "gap",
       "text": "Header/line coding, consistent active suppliers, configurable material controls, carry/renew/reservation moves, delegation/SCIM, ruled field-only earlier-approver visibility and explicit exact-revision supplier change send/ack implemented. Different per-line supplier groups and ACCESS-003 entity/accounting qualification remain; distinct authorized ledger sandbox companies/connections are not held",
-      "to": "gap",
-      "ids": [
-        "APPROVAL-004"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 423,
       "cell": "gap",
       "text": "Internal comments, @mentions, mention notifications and scope-safe mentions not built",
-      "to": "gap",
-      "ids": [
-        "COMMENT-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 424,
       "cell": "gap",
       "text": "Dated department/project/location/GL/native-form custom-field combinations, complete ruled budget figures with anonymous hidden-purchase sums, $1,000 to $1,065 and 60/40 reserve/commit/recorded actual, per-share owner routing and exact REPORT-001 sources implemented. Cross-period disposition, fully matched/synced bills/native deposits and CARD-001/002 provider-funded/settled evidence remain; Ramp/Brex partner issuing qualification and authorized ledger connections are not held",
-      "to": "gap",
-      "ids": [
-        "BUDGET-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 425,
       "cell": "gap",
       "text": "Budget import, owners, threshold alerts and Easel, QuickBooks Online, Xero, NetSuite and Sage Intacct budget pulls not built",
-      "to": "gap",
-      "ids": [
-        "BUDGET-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 426,
       "cell": "gap",
       "text": "Real own-sender test inbox receipt, bounce/undelivered and unopened tracking, RER relay/Postmark qualification and automatic issue-time sending remain unproved. Held Resend credential is rejected. ct 23 Oct approved interim floor: explicit exact-revision buyer/contact consent, bounded document/original link, unverified stated identity, no automatic retry or silent commercial edit; buyer adoption creates a fresh approval revision. PO-004/008 inherit this sending boundary.  ct 23 Oct ruling: explicit human re-send/link reissue, adopted-PO re-send, reasoned buyer decline, change-link full response set and buyer Postmark sender remain unbuilt; real own-sender inbox, bounce and unopened proof NOT RUN. Automatic sending under an owner-consented PO-008 standing rule remains a required target, not prohibited by the interim explicit-send door.",
-      "to": "gap",
-      "ids": [
-        "PO-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 427,
       "cell": "gap",
       "text": "Own provider sandbox inbox reply/attachment receipt remains unproved: held Resend credential is rejected. Native signed-provider/network-edge fixtures prove transport integration but not mailbox delivery. Explicit current native buyer sends and unverified sender labels preserve PO-001/004\u2019s adopted default; no internal comments or inferred identity authority.  Default ADOPTED pending ct: each native buyer explicitly consents to the exact PO/revision/contact question; a random hash-routed reply address expires after 30 days or withdrawal, admits only signed/provider-hydrated mail from that nominated address, and labels sender identity unverified. Current scoped buyer/requester reads include messages/files, provider originals remain buyer-only, replay is inert, routing authority is excluded from archives and personal originals follow erasure. Expired-route continuation remains an explicit qualification Gap, not a permanent conversation guarantee.",
-      "to": "gap",
-      "ids": [
-        "PO-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 429,
       "cell": "gap",
       "text": "Current explicit buyer send freezes numbered changes, PDF and applicable originals, claims once through the real native mail adapter, shows honest outcomes and exact supplier acknowledgment, and fences current scope, expiry, withdrawal, superseding revisions, erasure and restored bearer authority. Network-edge provider acceptance is exercised; real mailbox delivery and broader PO-001 initial sending are not claimed. Default ADOPTED pending ct: explicit exact-revision buyer/contact consent, bounded document-only supplier link and unverified stated-name acknowledgment, claimed native mail attempt with no automatic retry  ct 23 Oct ruling applied as target: explicit human re-send/link reissue; cancellation after a sent change order; full PO-001 reply set on change links; provider bounce/delivery status; real test-inbox receipt NOT RUN. Current implementation retains the approved claim-once explicit-consent floor.",
-      "to": "gap",
-      "ids": [
-        "PO-004"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 431,
       "cell": "gap",
       "text": "Carrier tracking and delivery prompts not built",
-      "to": "gap",
-      "ids": [
-        "PO-006"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 432,
       "cell": "gap",
       "text": "Exemption certificates, use-tax flags and Avalara AvaTax rates absent",
-      "to": "gap",
-      "ids": [
-        "PO-007"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 433,
       "cell": "gap",
       "text": "Automatic sending, multi-request combination/shared PO/source splits, daily combination and combined Procure edits remain unbuilt. Current interim implementation: native owner explicitly authorizes internal generation; scheduler rechecks actual owner/approvals/supplier/catalogue/currency and claims once; no mail consent is inherited from generation. ct 23 Oct permits and requires the target owner-consented automatic-send standing rule; it remains an implementation Gap. PO-001/004 sending and PO-012 edits retain their exact authority obligations; no combined-source approval is claimed.",
-      "to": "gap",
-      "ids": [
-        "PO-008"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 434,
       "cell": "gap",
       "text": "None for current native doors; named future clauses retain their document acceptance",
-      "to": "gap",
-      "ids": [
-        "PO-009"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 436,
       "cell": "gap",
       "text": "Deposit terms, two-way deposit matching, prepaid posting and deposit credits not built",
-      "to": "gap",
-      "ids": [
-        "PO-011"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 437,
       "cell": "gap",
       "text": "Exact buyer revision/carry, separate charges, active/pending supplier checks, zero/within/over-limit/threshold and allocation-owner routing, first-allocation cents, invoice/risk lineage, approved native date revisions and explicit supplier change send/ack implemented. Mixed supplier-group conversion, NOTIFY-001 execution and Slack/Teams transports/qualification remain; Teams app/test tenant not held",
-      "to": "gap",
-      "ids": [
-        "PO-012"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 439,
       "cell": "gap",
       "text": "RMAs, credit memos and balances absent",
-      "to": "gap",
-      "ids": [
-        "RECEIVE-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 440,
       "cell": "gap",
       "text": "None for the signed Resend AP door; later mailbox connections, inbound providers and entity AP addresses inherit its rules",
-      "to": "gap",
-      "ids": [
-        "INVOICE-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 443,
       "cell": "gap",
       "text": "Automatic matching on arrival, tolerances, unplanned-charge tolerance and two-way deposit matching absent",
-      "to": "gap",
-      "ids": [
-        "MATCH-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 444,
       "cell": "gap",
       "text": "Assignment and resolution workflow absent",
-      "to": "gap",
-      "ids": [
-        "MATCH-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 445,
       "cell": "gap",
       "text": "Non-PO invoice coding, splits and approval routing not built",
-      "to": "gap",
-      "ids": [
-        "INVOICE-004"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 447,
       "cell": "gap",
       "text": "BILL handoff and payment status return not built",
-      "to": "gap",
-      "ids": [
-        "AP-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 448,
       "cell": "gap",
       "text": "Ledger payment status return and ACH provider handoff not built",
-      "to": "gap",
-      "ids": [
-        "AP-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 450,
       "cell": "gap",
       "text": "Card or limit funding at Coaster, Ramp and Brex not built",
-      "to": "gap",
-      "ids": [
-        "CARD-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 451,
       "cell": "gap",
       "text": "Card transaction reconciliation and invoice-free PO close not built",
-      "to": "gap",
-      "ids": [
-        "CARD-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 452,
       "cell": "gap",
       "text": "QuickBooks Online connection and sync not built (CSV export is PUR-011)",
-      "to": "gap",
-      "ids": [
-        "SYNC-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 453,
       "cell": "gap",
       "text": "Xero connection and sync not built",
-      "to": "gap",
-      "ids": [
-        "SYNC-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 454,
       "cell": "gap",
       "text": "NetSuite connection and sync not built",
-      "to": "gap",
-      "ids": [
-        "SYNC-003"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 455,
       "cell": "gap",
       "text": "BLOCKED for full PO/source provenance and 1099 transport on Pantry INTEG-001. Credit transport, non-PO REPORT-003 qualification, independent returned date/term correction and reconciliation qualification remain unproved. Default ADOPTED pending ct: native-owner-only explicit connection/USD book confirmation and exact bill posting consent, no automatic outbound/retry or original-document transfer.  ct 23 Oct ruling applied as target: standing posting rule and scoped AP role; readback-reconciled retry, scheduled payment/reconciliation return; imported/deposit/foreign-currency bills; reconciliation and non-PO REPORT-003. Credits, PO/source provenance and 1099 BLOCKED on Pantry INTEG-001. Current owner-confirmed USD/manual posting is the approved interim floor.",
-      "to": "gap",
-      "ids": [
-        "SYNC-004"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 456,
       "cell": "gap",
       "text": "Sync states, error queue, retries and tie-out report not built",
-      "to": "gap",
-      "ids": [
-        "SYNC-005"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 457,
       "cell": "gap",
       "text": "Sage Intacct connection and sync not built",
-      "to": "gap",
-      "ids": [
-        "SYNC-006"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 458,
       "cell": "gap",
       "text": "Business Central connection and sync not built",
-      "to": "gap",
-      "ids": [
-        "SYNC-007"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 459,
       "cell": "gap",
       "text": "QuickBooks Desktop Web Connector sync not built",
-      "to": "gap",
-      "ids": [
-        "SYNC-008"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 460,
       "cell": "gap",
       "text": "None for current doors; named capability clauses retain their expanded reporting acceptance",
-      "to": "gap",
-      "ids": [
-        "REPORT-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 461,
       "cell": "gap",
       "text": "Saved, scheduled and XLSX reports, OData feed and custom-field groupings absent",
-      "to": "gap",
-      "ids": [
-        "REPORT-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 463,
       "cell": "gap",
       "text": "Effective received dates, the period-end accrual report, exports and reversing journal posting not built",
-      "to": "gap",
-      "ids": [
-        "REPORT-004"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 464,
       "cell": "gap",
       "text": "Current native agreement terms, PDF proposals/corrections/confirmation, exact original custody, before-deadline reminders/value/spend/outcomes, CLM and owner-recorded signature references, scoped searchable values/text, confirmed source-backed negotiated and invoice-realized savings and complete archive restore asserted. Future provider capabilities inherit the full obligation before shipping.",
-      "to": "gap",
-      "ids": [
-        "CONTRACT-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 465,
       "cell": "gap",
       "text": "Channel preferences, digests, quiet hours and the in-app list not built",
-      "to": "gap",
-      "ids": [
-        "NOTIFY-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 466,
       "cell": "gap",
       "text": "General API keys, OpenAPI and webhooks absent; INTAKE-007 supplies create-request-only tokens",
-      "to": "gap",
-      "ids": [
-        "API-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 467,
       "cell": "gap",
       "text": "Indexed current native and inert imported records, scoped exact source opens, currency/date/coding filters and private document text",
-      "to": "gap",
-      "ids": [
-        "SEARCH-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 468,
       "cell": "gap",
       "text": "Real Procurify export and API adapter, deposits, comments, travel requests, approval pools, custom fields, split allocations, vendor approval routing, pending vendor requests, purchaser variance limits and item-level decisions absent",
-      "to": "gap",
-      "ids": [
-        "IMPORT-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 469,
       "cell": "gap",
       "text": "Coupa, Precoro and spreadsheet-template importers not built",
-      "to": "gap",
-      "ids": [
-        "IMPORT-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 471,
       "cell": "gap",
       "text": "Ledger-ID matching and first-sync linking not built",
-      "to": "gap",
-      "ids": [
-        "IMPORT-004"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 473,
       "cell": "gap",
       "text": "All nine groups proved. Legacy unavailable-source and did-not-verify histories remain visibly unverified under the ct 22 Oct ruling; migration attestations verify their migration record, not the original submission. Free text remains source data.",
-      "to": "gap",
-      "ids": [
-        "SECURITY-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 475,
       "cell": "gap",
       "text": "No agent execution",
-      "to": "gap",
-      "ids": [
-        "AGENT-001"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 476,
       "cell": "gap",
       "text": "Three actual supplier inboxes and autonomous invitation/specification clarification mail are unproved; unsupported source formats stay flagged. Held Resend credential is rejected. ct 23 Oct 07:58Z approved interim floor: deterministic v1/model-provider none, exact buyer-approved native RFQ scope plus owner per-type enablement, source text is data, clarification remains a draft or buyer escalation, and no agent award/approval/outbound authority. SOURCE-001 and future sending doors inherit exact original/version/baseline/current-authority duties.  ct 23 Oct 07:58Z approved deterministic labelled/source-backed human-send-only analysis with audited revocable per-type controls. Remaining rider Gap: every comparison line must visibly cite its exact source page/part; unsupported/unparseable formats stay flagged, never guessed. No autonomous send/award/approval.",
-      "to": "gap",
-      "ids": [
-        "AGENT-002"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 477,
       "cell": "gap",
       "text": "Reader requires one explicit Promised delivery: YYYY-MM-DD statement; broader supplier formats, live mailbox qualification, PunchOut/split-shipment alternatives and notification channels remain unproved. ct 23 Oct 07:58Z approved interim floor: exact source-bound native buyer ProposedAction records nonbinding supplier evidence and an in-app requester notice; no automatic commercial amendment, order, alternative purchase or outbound message. PUR-009 remains mandatory for binding changes.  ct 23 Oct 07:58Z approved source-bound immutable ProposedActions, exact dated statement shown at buyer confirmation, nonbinding alternatives and PUR-009 before adoption. The in-app requester notice states only that a supplier promise was recorded and by whom. Notice withdrawal upon future proposal rejection/expiry remains an explicit Gap; no rejected or unconfirmed proposal emits a notice.",
-      "to": "gap",
-      "ids": [
-        "AGENT-003"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 478,
       "cell": "gap",
       "text": "No agent execution",
-      "to": "gap",
-      "ids": [
-        "AGENT-004"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 479,
       "cell": "gap",
       "text": "Exact approved promises, provider-reported originals and 50/31/19 report, current-requester usefulness ProposedActions, current source refusals, enable/pause/full records, claimed real 30/90-day Cron, scoped REPORT-003 source annotations, audit and complete restore asserted. Live IdP/Auth collection inherits ACCESS-002/SECURITY-001 and provider-sandbox obligations before shipping.",
-      "to": "gap",
-      "ids": [
-        "AGENT-005"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 480,
       "cell": "gap",
       "text": "None for the ct-approved deterministic native boundary. Provider acceptance is recorded without mailbox-delivery or notice-effectiveness claims.",
-      "to": "gap",
-      "ids": [
-        "AGENT-006"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 481,
       "cell": "gap",
       "text": "Supplier onboarding and compliance agent not built",
-      "to": "gap",
-      "ids": [
-        "AGENT-007"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 482,
       "cell": "gap",
       "text": "None for current native sources. INVOICE-004 carries repeated non-PO detection when non-PO invoice intake ships; current records explicitly state it is unavailable.",
-      "to": "gap",
-      "ids": [
-        "AGENT-008"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 483,
       "cell": "gap",
       "text": "No benchmark or agent execution",
-      "to": "gap",
-      "ids": [
-        "AGENT-009"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 484,
       "cell": "gap",
       "text": "None for current native agents. Deterministic v1 records model/provider as none; pre-authorized chases use PO-003\u2019s claimed real mail adapter and honest network-edge outcomes. New agent types and transports inherit the whole governance and SECURITY-001 boundary before shipping.",
-      "to": "gap",
-      "ids": [
-        "AGENT-010"
-      ]
+      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
       "line": 485,
       "cell": "gap",
       "text": "None for the native web door. Unsupported questions are declined with their reason; Slack and Teams inherit these obligations in INTAKE-002 and INTAKE-003.",
-      "to": "gap",
-      "ids": [
-        "AGENT-011"
-      ]
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",

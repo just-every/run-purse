@@ -105,9 +105,11 @@
       ]
     },
     "ACCESS-001": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "ACCESS-001"
+        "ACCESS-001",
+        "ACCESS-004",
+        "ACCESS-005"
       ]
     },
     "ACCESS-002": {
@@ -123,9 +125,11 @@
       ]
     },
     "INTAKE-001": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "INTAKE-001"
+        "INTAKE-001",
+        "INTAKE-009",
+        "INTAKE-010"
       ]
     },
     "INTAKE-002": {
@@ -345,9 +349,11 @@
       ]
     },
     "PO-005": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "PO-005"
+        "PO-005",
+        "PO-013",
+        "PO-014"
       ]
     },
     "PO-006": {
@@ -549,9 +555,11 @@
       ]
     },
     "CONTRACT-001": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "CONTRACT-001"
+        "CONTRACT-001",
+        "CONTRACT-002",
+        "CONTRACT-003"
       ]
     },
     "NOTIFY-001": {
@@ -603,9 +611,12 @@
       ]
     },
     "SECURITY-001": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "SECURITY-001"
+        "SECURITY-001",
+        "SECURITY-002",
+        "SECURITY-003",
+        "SECURITY-004"
       ]
     },
     "ERASURE-001": {
