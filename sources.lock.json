@@ -104,7 +104,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "837344389fab89d0e956dfa1add77b3a97d923d42aa167a6d7aeb4a0152e1065",
+      "sha256": "317097e271bf8beb86413d3fdf0003c39b060e6d91322705a58222f02598be9a",
       "executable": false
     },
     "base-copies.json": {
@@ -956,7 +956,7 @@
       "executable": false
     },
     "scripts/installer/restore-invoice-exceptions.mjs": {
-      "sha256": "44f299014143356eeed4f9b76dfeb53036c582c5925c0e3d5e6200b1651d2777",
+      "sha256": "d0f4d672aa6426829497593e773d8d9b3b1b0ce7b3c64448592fcb7d58a4d8dc",
       "executable": false
     },
     "scripts/installer/restore-invoice-inbox.mjs": {
@@ -3596,7 +3596,7 @@
       "executable": false
     },
     "src/purse/receiving.ts": {
-      "sha256": "43d57ec367a5799d3532f3d04b5746c98314c0cfbde13b63aed9c72fc3b4bafa",
+      "sha256": "1dfb193b03e15cf37540eb41f9a500bd38b734e4d5599f7491588a1dd020317a",
       "executable": false
     },
     "src/purse/recurring-discovery-schedule.ts": {
@@ -5072,7 +5072,7 @@
       "executable": false
     },
     "tests/invoice-exceptions.test.mjs": {
-      "sha256": "acd721d8eaf150bd03070868d2e42f15b54c1428a3a42e6d54f6a31fe712caa2",
+      "sha256": "ccad5f910492fd05b0cf158166011af9b47d5d66f20e41371206b46e1d09d146",
       "executable": false
     },
     "tests/invoice-history-fixture.mjs": {

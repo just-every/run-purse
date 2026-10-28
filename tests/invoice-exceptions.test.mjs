@@ -150,17 +150,17 @@ test('Exception and correction history survives real archives and erasure withou
     const destination = await harness({ empty: true }); t.after(() => destination.close());
     await assert.rejects(importArchive(await adapter(destination), snapshot, [], journal), /erasure|journal/i);
 
-    // Returns reduce the net position without increasing the original receipt's ceiling.
+    // Returns and corrections reconcile the net position against the PO ceiling.
     const returned = await invoiceExceptionsFixture(t), source = returned.h;
     await source.command('receipt', { order: returned.order.id, line: returned.order.lines[0].id,
         event: 'return', quantity: '2', reason: 'Two units returned before the recount' }, returned.receiver);
     const retained = async target => (await target.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results;
     const beforeExcess = await retained(source);
-    await source.command('receipt-correction', await returned.correction({ quantity: '11' }), returned.receiver, 409);
-    assert.deepEqual(await retained(source), beforeExcess, 'Excess original quantity changes no business or audit records');
-    const valid = await returned.correction(), validCorrection = await source.command('receipt-correction', valid, returned.receiver);
-    assert.equal(validCorrection.correctedQ, 10000);
-    assert.deepEqual((await returned.current(returned.receiver)).positions.map(p => [p.accepted, p.outstanding]), [[8000, 2000]]);
+    await source.command('receipt-correction', await returned.correction({ quantity: '13' }), returned.receiver, 409);
+    assert.deepEqual(await retained(source), beforeExcess, 'A correction exceeding the net PO balance changes no business or audit records');
+    const valid = await returned.correction({ quantity: '11' }), validCorrection = await source.command('receipt-correction', valid, returned.receiver);
+    assert.equal(validCorrection.correctedQ, 11000);
+    assert.deepEqual((await returned.current(returned.receiver)).positions.map(p => [p.accepted, p.outstanding]), [[9000, 1000]]);
     const beforeReplay = await retained(source);
     await source.command('receipt-correction', valid, returned.receiver, 409);
     assert.deepEqual(await retained(source), beforeReplay);
@@ -174,7 +174,7 @@ test('Exception and correction history survives real archives and erasure withou
     assert.equal(returnedBoot.status, 303);
     const returnedState = await returnedDestination.send('/api/purse/state', undefined, returnedBoot.cookie);
     assert.equal(returnedState.status, 200);
-    assert.deepEqual(returnedState.value.data.order.find(o => o.id === returned.order.id).positions.map(p => [p.accepted, p.outstanding]), [[8000, 2000]]);
+    assert.deepEqual(returnedState.value.data.order.find(o => o.id === returned.order.id).positions.map(p => [p.accepted, p.outstanding]), [[9000, 1000]]);
     assert.equal(returnedState.value.data.invoice.find(i => i.id === returned.invoice.id).receiptMatch, 'Held for receipt');
     assert.notEqual((await returnedDestination.send('/api/purse/command/receipt-correction', valid, returned.receiver)).status, 200);
 });
