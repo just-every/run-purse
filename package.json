@@ -35,7 +35,7 @@
     "test:browser": "node tests/browser.mjs",
     "delivery:spec": "node scripts/build-deployment-spec.mjs",
     "check:deployment-spec": "node scripts/build-deployment-spec.mjs --check",
-    "sources:check": "node scripts/edition-authoring/cli.mjs check && node scripts/edition-authoring/cli.mjs verify-base --offline",
+    "sources:check": "node src/base/contract-docs.mjs check && node scripts/edition-authoring/cli.mjs check && node scripts/edition-authoring/cli.mjs verify-base --offline",
     "test:mail": "node --test tests/mail.test.mjs"
   },
   "dependencies": {

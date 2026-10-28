@@ -79,6 +79,7 @@ jobs:
       # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
+      - run: node src/base/contract-docs.mjs check
       - run: pnpm exec rer verify
   browser:
     needs: plan

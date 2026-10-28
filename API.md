@@ -766,3 +766,31 @@ The native owner confirms agreement terms and can select an active member using 
 The native owner requests `recurring-scenario-draft` with `{id,hash}` only after all same-hash consents. Current sources, grants and native identity versions are rechecked. The resulting nonbinding text cites recorded notice terms and its SHA-256 is `draftHash`. A person sends it with `POST /api/purse/order-send/recurring-notice` and `{id,hash,draftHash,recipient,reason,consent:true}`. This PO-004 native send boundary requires current native owner authority, exact-draft and recipient consent, unchanged sources and current consent identities, then claims once before the existing native mail adapter. Replays are refused; an uncertain outcome is investigated, never automatically retried. The attempt and provider outcome are retained against every agreement's notice deadline. Mailbox delivery and notice effectiveness are never claimed.
 
 After an accepted human notice attempt, `agreement-disposition` takes `{agreement,version,scenario,hash,disposition:non-renewal|cancellation,confirmed:true,reason}` for an approved cancellation scenario. It records the native owner's separate agreement decision and a confirmed non-renewing agreement revision. It changes no PO or recurring series. The person separately ends the series through `recurring-disposition` and records outstanding PO cancellation through the authorized native receiving door. All actions enter AUDIT-001. Archives retain source-exact forecasts, consents, proposals, attempts and decisions without restoring native identity or execution authority. Notice recipient and actor fields are included in owner-reviewed erasure. Personal source values erased from scenarios, drafts and proposal runs retain their original hashes with sealed evidence for the anonymous retained facts. Archive validation still recomputes the monetary arithmetic. Erased scenarios are labelled historical and cannot approve, draft, send or authorize a disposition.
+
+
+### Native supplier invoice approval
+
+`POST /api/purse/command/supplier-invoice-rule` accepts
+`{order, revision, version, enabled, consent: true, reason}`. Only the current
+native owner can consent. The version starts at zero and fences updates. The
+rule is bound to the current acknowledged PO, supplier link, frozen PDF and
+invoice-access consent version. Renew invoice access as the current owner before
+consenting again after an authority change. No supplier bearer can set a rule.
+
+Native AP source confirmation and reasoned risk review automatically approve
+exact three-way matched supplier submissions under that live rule. Approval
+requires a confirmed private original, exact PO prices, accepted quantity,
+proportionate approved freight and tax, and no unresolved INVOICE-003 flag.
+Cash-planning approval alone does not grant payment approval. Capture replay
+never makes a second approval. Owner, issuing buyer and approval-chain authority
+are checked again in the atomic commit.
+
+`POST /api/purse/command/supplier-invoice-schedule` accepts
+`{invoice, version: 0, date, reason}` under current scoped `payable.approve`.
+It records one audited native payment-date instruction, with no outbound call.
+Unapproved, held, erased, withdrawn or stale evidence refuses scheduling. A
+second schedule is refused. Approved and scheduled statuses are projected only
+to the supplier link that submitted the invoice; Paid still requires the existing
+exact accounting payment evidence. Original source documents and internal risk
+and consent records stay private. Archives retain history without supplier bearer
+or native identity authority.

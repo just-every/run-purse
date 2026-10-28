@@ -8,10 +8,10 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 | Tier | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
-| Core | 53 | 25 | 35 | 113 |
+| Core | 54 | 24 | 35 | 113 |
 | Agent surface | 0 | 0 | 0 | 0 |
 | Later | 0 | 0 | 0 | 0 |
-| Full target | 53 | 25 | 35 | 113 |
+| Full target | 54 | 24 | 35 | 113 |
 
 Judged from the code and tests at commit `66831028dc17110139ed4a4b0d12b32f47c8777d` (21 October 2026). Field proof register: 0 rows; 0 passed, 0 failed, 0 not run.
 
@@ -1088,7 +1088,7 @@ Core · target · **missing**
 
 #### INVOICE-005 — Supplier invoice submission from the PO (PO flip)
 
-Core · target · **partial**
+Core · target · **done**
 
 **Requirement.** From PO-001's no-account link, a supplier turns an acknowledged PO into an invoice: lines, quantities and prices prefill from the PO's uninvoiced and received balance, the supplier enters the invoice number, date, freight and tax and attaches its own invoice PDF, and the submission arrives as a structured invoice that needs no reading (INVOICE-002) and goes straight to INVOICE-003's checks and MATCH-001. The supplier cannot invoice above the remaining PO balance without the line being flagged, sees the invoice's status (received, approved, scheduled, paid) and cannot change remit-to details from this form.
 
@@ -1102,8 +1102,8 @@ Core · target · **partial**
 7. Supplier/currency replacement approves only unreceived supply as a separate native purchase; old receipts, bills, deposits and expected liabilities keep their original supplier and currency.
 8. No supplier send follows adoption, generation of a change proposal or native disposition. PO-001/004, PO-011, CODING-001/002, API-001 and future import/provider doors inherit these source, approval, liability and credit boundaries.
 
-**Evidence.** `tests/supplier-invoice.test.mjs` — “Supplier invoice link captures exact private PDF and balance ancestry, holds source confirmation and duplicate/excess evidence, and exposes only its own authentic statuses” proves acknowledged exact PO, received/remaining prefills, number/date/charges/PDF, own-submission status, excess/duplicate flags and approval refusal, no remit override, private originals/source-bound confirmation, explicit owner grant/withdrawal and archive. `tests/browser-supplier-invoice.mjs` proves owner grant, supplier flip, AP source review and excess hold at 1440/390.
-**Gap.** Automatic three-way matching/payment approval and approved/scheduled status return remain unbuilt; received and actual Pantry-paid status only. ct 23 Oct 07:58Z approved interim floor: document links never implicitly gain invoice/balance access; current owner explicitly consents for the exact live PO/link, current owner/issuer/approval fences remain, no bank/remit edits, AP confirms the private original before planning. PO-001/004/008 and future deposit/payment doors inherit these source/consent/hold duties.  ct 23 Oct 07:58Z approved the exact live-link revocable owner-consent floor: only this PO remaining/received/billed and own submissions, no other suppliers/PO prices/internal notes, no bank/remit edits, private original confirmed by AP before planning. Automatic matching/payment approval remain Gaps.
+**Evidence.** `tests/supplier-invoice.test.mjs` — “Supplier invoice link captures exact private PDF and balance ancestry, holds source confirmation and duplicate/excess evidence, and exposes only its own authentic statuses” proves exact acknowledged PO prefill, number/date/charges/PDF, private originals, source-bound AP confirmation, no remit override, own received and payment-evidenced paid status through the existing accounting transport edge, excess and duplicate flags, and revocable owner consent. Same file — “Owner-consented supplier flip approves only confirmed three-way evidence, schedules once and holds excess or later risk through public doors” proves exact live-link standing consent, automatic three-way payment approval, approved and native scheduled return, wrong-permission, stale and replay refusals, later-document holds, audit read and CSV, real archive restoration without bearer authority, revoked buyer access and erased-contact replay refusal. Same file — “Standing supplier approval refuses price and receipt discrepancies and holds source risk until reasoned review” proves independent price, receipt and unresolved remit holds through confirmation, risk review and scheduling, plus paused approval and supplier access after native owner transfer. `tests/browser-supplier-invoice.mjs` proves Settings consent, supplier prefill and PDF submission, private AP source review, exact goods plus proportionate PO freight and tax approval, approved and native scheduled status, excess hold, private-file refusal and no overflow at 1440 and 390. Native scheduling records an audited date instruction; it claims no provider execution, bank verification or settlement. PO-001/004/008 and future deposit and payment doors retain the existing source, consent and hold duties.
+**Gap.** None.
 
 ### Payables and payment handoff
 

@@ -122,3 +122,12 @@ into an empty installation of that release, upgrade that installation’s source
 in place, run `rer install` and `rer setup`, then export again. Keep the original release
 and private export until recovery is verified. Never import an older release’s
 archive directly into the current release.
+
+## Contract projections
+
+CONTRACT.md is the acceptance and status source. Generate projections before locking.
+
+Lander-Regenerate: node src/base/contract-docs.mjs write
+Lander-Regenerate: node scripts/edition-authoring/cli.mjs lock
+
+CI checks the generated projections with `node src/base/contract-docs.mjs check`.
