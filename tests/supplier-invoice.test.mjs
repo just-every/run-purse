@@ -7,8 +7,8 @@ import { orderSendFixture, orderLink } from './order-send-fixture.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
 import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 
-async function original(f, reference = 'synthetic-purse-4501', quantity = '1') {
-    const values = { supplier: f.supplier.name, reference, invoiceDate: '2026-10-23', dueDate: null, terms: null, poNumber: f.order.number, currency: 'USD', senderEmail: null, remitTo: null, subtotalAmount: String(Number(quantity) * 100) + '.00', freightAmount: '0.00', taxAmount: '0.00', totalAmount: String(Number(quantity) * 100) + '.00' };
+async function original(f, reference = 'synthetic-purse-4501', quantity = '1', {freight='0.00',tax='0.00'} = {}) {
+    const values = { supplier: f.supplier.name, reference, invoiceDate: '2026-10-23', dueDate: null, terms: null, poNumber: f.order.number, currency: 'USD', senderEmail: null, remitTo: null, subtotalAmount: String(Number(quantity) * 100) + '.00', freightAmount: freight, taxAmount: tax, totalAmount: (Number(quantity) * 100 + Number(freight) + Number(tax)).toFixed(2) };
     const document = await PDFDocument.create(), font = await document.embedFont(StandardFonts.Helvetica), page = document.addPage([650,790]);
     const rows = Object.entries(values).filter(([, value]) => value !== null).map(([key, value]) => key + ': ' + value).concat(['Description: ' + f.order.lines[0].description, 'Quantity: ' + quantity, 'Unit price: 100.00']);
     rows.forEach((line, index) => page.drawText(line, { x: 20, y: 760 - 24 * index, size: 10, font }));
@@ -57,6 +57,11 @@ test('Supplier invoice link captures exact private PDF and balance ancestry, hol
     data = (await h.state()).data; const second = data.invoice.find(value => value.reference === 'synthetic-purse-4516'); for (const code of ['near-duplicate','duplicate-document','po-balance']) assert.ok(second.flags.some(flag => flag.code === code), code); assert.equal(second.allocations[0].q, 1000, 'Excess quantity remains evidence');
     await h.command('payable-terms', { invoice: second.id, version: 0, invoiceDate: body.invoiceDate, term: 'Net 30', reason: 'synthetic-purse-4517' }, f.buyer, 409);
     const status = await (await read(url)).json(); assert.equal(status.invoices.length, 2); assert.ok(!JSON.stringify(status).includes('duplicate-document')); assert.ok(!JSON.stringify(status).includes('riskReviews')); assert.ok(!JSON.stringify(status).includes(source.document.sha256));
+    const charged=await original(f,'synthetic-purse-4520','1',{freight:'2.50',tax:'1.25'});
+    assert.equal((await post(h,url,{...body,reference:charged.values.reference,freightAmount:'2.50',taxAmount:'1.25',document:charged.document})).status,200);
+    const chargedData=(await h.state()).data,chargedInvoice=chargedData.invoice.find(row=>row.reference==='synthetic-purse-4520'),chargedSource=chargedData.supplierInvoiceSubmission.find(row=>row.invoice===chargedInvoice.id);
+    assert.equal(chargedInvoice.totalMinor,10375);assert.equal(chargedInvoice.allocations[0].amountMinor,10375);assert.equal(chargedSource.subtotalMinor,10000);assert.equal(chargedSource.freightMinor,250);assert.equal(chargedSource.taxMinor,125);
+    assert.deepEqual((await (await read(url)).json()).invoices.map(row=>row.reference).sort(),['synthetic-purse-4501','synthetic-purse-4516','synthetic-purse-4520']);
     assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent',{...grant,enabled:false,reason:'Owner withdraws supplier invoice access'},h.owner)).status,200);assert.equal((await read(url)).status,410);assert.equal((await read(link)).status,200,'Withdrawal of invoice access preserves the document-only link');
     const rows = (await h.db.prepare('SELECT * FROM p_records').all()).results; assert.equal(validatePurchasingArchive(rows), true);
     const corrupt = structuredClone(rows), row = corrupt.find(row => row.kind === 'supplierInvoiceSubmission'), altered = JSON.parse(row.value); altered.document.sha256 = '0'.repeat(64); row.value = JSON.stringify(altered); assert.throws(() => validatePurchasingArchive(corrupt), /supplier_invoice_original/);

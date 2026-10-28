@@ -5020,7 +5020,7 @@
       "executable": false
     },
     "tests/supplier-invoice.test.mjs": {
-      "sha256": "054e7e3ad99d40a7417cceac9094c21c6598cbb67b5871b179d8d0f2c9c5ecf7",
+      "sha256": "02bf193b80406fc1f9c5b078613ec9eab468a7c2e7d6e5b817ddf91b4b0ef664",
       "executable": false
     },
     "tests/supplier-performance.test.mjs": {
