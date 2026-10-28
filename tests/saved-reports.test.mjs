@@ -1,3 +1,4 @@
+import {reportDeliveryJourney,createReportKey,createReportSchedule,feed,tickReports} from './report-delivery-flow.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {join} from 'node:path';
@@ -16,6 +17,7 @@ test('Saved report views recompute scoped allocation rows, literal CSV and parse
  const direct=await h.send('/api/purse/spend-report?groupBy=glAccount',undefined,f.finance);assert.deepEqual(view.value.report,direct.value);
  const csv=await h.send(path+'/csv',undefined,f.finance),xlsx=await h.mf.dispatchFetch(h.origin+path+'/xlsx',{headers:{cookie:f.finance}});assert.equal(csv.status,200);assert.equal(xlsx.status,200);assert.equal(xlsx.headers.get('cache-control'),'no-store');assert.match(xlsx.headers.get('content-type'),/spreadsheetml/);assert.match(csv.headers.get('content-disposition'),/attachment/);
  await assertDownloads(csv.value,await xlsx.arrayBuffer(),view.value.report,f);
+ await reportDeliveryJourney(f,definition);
  const supplierView=(await f.save({groupBy:'supplier'})).value,supplierPath='/api/purse/saved-reports/'+supplierView.id;
  const supplierReport=(await h.send(supplierPath+'/view',undefined,f.finance)).value.report,supplierCsv=await h.send(supplierPath+'/csv',undefined,f.finance),supplierXlsx=await h.mf.dispatchFetch(h.origin+supplierPath+'/xlsx',{headers:{cookie:f.finance}});
  await assertDownloads(supplierCsv.value,await supplierXlsx.arrayBuffer(),supplierReport,f);
@@ -44,14 +46,20 @@ test('Saved definitions never restore authority and refuse revoked scope, foreig
  const auditor=await h.member(reportMail(4126),['auditor']);assert.equal((await f.save({},'synthetic-purse-4127',auditor)).status,403);assert.equal((await h.send('/api/purse/saved-reports',undefined,auditor)).value.maySave,false);
  const broad=(await f.save({groupBy:'department'})).value,scoped=(await f.save({department:'Operations'})).value;
  const path=id=>'/api/purse/saved-reports/'+id;
+ const key=await createReportKey(f,broad),person=(await h.send('/api/purse/report-schedules',undefined,f.finance)).value.recipients.find(row=>row.email===reportMail(4101));
+ const schedule=await createReportSchedule(f,scoped,person.id); const mailCount=h.messages.filter(message=>message.subject.startsWith('Saved report:')).length;
  await cmd('member',{email:reportMail(4101),name:'Changed current scope',active:true,grants:[{role:'finance-viewer',scope:{departments:['Research']}}]});
+ assert.equal((await feed(h,key)).status,403);await tickReports(h,Date.parse(schedule.anchor));assert.equal(h.messages.filter(message=>message.subject.startsWith('Saved report:')).length,mailCount,'Changed creator scope cannot deliver an unavailable filter');
  for(const format of ['view','csv','xlsx'])assert.equal((await h.send(path(scoped.id)+'/'+format,undefined,f.finance)).status,403);
  const narrowed=await h.send(path(broad.id)+'/view',undefined,f.finance);assert.equal(narrowed.status,200);assert.deepEqual(narrowed.value.report.rows.map(row=>[row.request,row.amountMinor]),[[f.hidden.id,7000]]);assert.deepEqual((await h.send('/api/purse/saved-reports',undefined,f.finance)).value.definitions.map(row=>row.id),[broad.id]);
+ assert.equal((await feed(h,key)).status,403);
  await cmd('member',{email:reportMail(4101),name:'Revoked report authority',active:true,roles:['receiver']});
  for(const format of ['view','csv','xlsx'])assert.equal((await h.send(path(broad.id)+'/'+format,undefined,f.finance)).status,403);
  const archive=join(h.dir,'synthetic-purse-4122.rer'),service=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});await exportArchive(service,archive,[]);
  const restored=await harness();t.after(()=>restored.close());const target=await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability});await importArchive(target,archive,[]);
  assert.equal((await restored.db.prepare("SELECT count(*) n FROM p_records WHERE kind='savedReport'").first()).n,2);
+ for(const table of ['p_report_keys','p_report_schedules','p_report_deliveries'])assert.equal((await restored.db.prepare('SELECT count(*) n FROM '+table).first()).n,0);
+ assert.equal((await feed(restored,{...key,url:key.url.replace(h.origin,restored.origin)})).status,401);
  assert.equal((await restored.send(path(broad.id)+'/view',undefined,f.finance)).status,401,'Old native session never travels with definitions');
  const replacement=await restored.member(reportMail(4101),['receiver']);for(const format of ['view','csv','xlsx'])assert.equal((await restored.send(path(broad.id)+'/'+format,undefined,replacement)).status,403);
  // A new current grant cannot adopt a different native person's private definition.
@@ -60,5 +68,7 @@ test('Saved definitions never restore authority and refuse revoked scope, foreig
  const meta=(await h.send('/api/purse/erasure',undefined,h.owner)).value,preview=await h.send('/api/purse/erasure/preview',{kind:'member',id:reportMail(4101),revision:meta.revision},h.owner);assert.equal(preview.status,200);const p=preview.value;
  const erased=await h.send('/api/purse/erasure/execute',{...p.subject,revision:p.revision,review:p.review,fingerprint:p.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
  assert.equal((await h.send(path(broad.id)+'/view',undefined,f.finance)).status,401);
+ assert.equal((await h.db.prepare('SELECT count(*) n FROM p_report_keys').first()).n,0,'Erased identity retains no report credential');
+ assert.equal((await h.db.prepare('SELECT count(*) n FROM p_report_schedules').first()).n,0,'Erased identity retains no executable report schedule');
  const definitions=(await h.db.prepare("SELECT value FROM p_records WHERE kind='savedReport'").all()).results;assert.ok(!JSON.stringify(definitions).includes(reportMail(4101)));assert.ok(definitions.every(row=>JSON.parse(row.value).actor.startsWith('erased-')));
 });

@@ -2,7 +2,8 @@ import {createHash} from 'node:crypto';
 import {harness} from './purse-harness.mjs';
 export const reportMail = number => 'synthetic-purse-' + number + String.fromCharCode(64) + 'example.test';
 export async function savedReportFixture() {
- const h=await harness({protectedKey:createHash('sha256').update('synthetic-purse-4123').digest('hex')}),cmd=h.command;
+ let uncertain=false;
+ const h=await harness({mail:message=>uncertain&&message.subject.startsWith('Saved report:')?new Response('',{status:503}):Response.json({id:crypto.randomUUID()}),protectedKey:createHash('sha256').update('synthetic-purse-4123').digest('hex')}),cmd=h.command;
  try {
   await cmd('business',{name:'synthetic-purse-4100',currencies:['USD','CAD'],locations:['Denver'],costCentres:['Operations','Research'],projects:['Network']});
   const finance=await h.member(reportMail(4101),['finance-viewer']),requester=await h.member(reportMail(4102),['requester']),approver=await h.member(reportMail(4103),['approver']);
@@ -23,6 +24,6 @@ export async function savedReportFixture() {
   const reserved=await submit({...unsplit,title:'synthetic-purse-4113'}),cad=await submit({...unsplit,title:'synthetic-purse-4114',currency:'CAD',lines:unsplit.lines.map(line=>({...line,unitMinor:5003}))});
   const hidden=await submit({...unsplit,title:'synthetic-purse-4115',costCentre:'Research',lines:unsplit.lines.map(line=>({...line,unitMinor:7000}))});
   const save=async(filters={},name='synthetic-purse-4116',cookie=finance)=>h.send('/api/purse/saved-reports',{name,filters},cookie);
-  return {h,cmd,finance,requester,approver,supplier,form,request,order,invoice,reserved,cad,hidden,protectedValues,draft,submit,save,close:()=>h.close()};
+  return {reportMailUncertain:value=>{uncertain=value;},h,cmd,finance,requester,approver,supplier,form,request,order,invoice,reserved,cad,hidden,protectedValues,draft,submit,save,close:()=>h.close()};
  } catch(error) { await h.close();throw error; }
 }

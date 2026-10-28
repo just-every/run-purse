@@ -8,7 +8,7 @@ import { actor, load, readFence, save } from './store';
 import { all, audit, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
 // A definition is a private preference, never a snapshot or an access grant.
-function filtersFor(data: Data, input: Data) {
+export function filtersFor(data: Data, input: Data) {
     requireThat(input && typeof input === 'object' && !Array.isArray(input), 'Report filters required');
     const choices = spendReport(data), dimensions = Object.keys(choices.choices);
     requireThat(Object.keys(input).every(key => ['from', 'through', 'groupBy', ...dimensions].includes(key)), 'Unsupported report filter');

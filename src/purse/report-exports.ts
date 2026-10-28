@@ -5,7 +5,7 @@ type Cell = string | number;
 // Explicit columns exclude originals, contact details, protected values and authority.
 const rowFields = ['request', 'revision', 'title', 'line', 'description', 'department', 'project', 'location', 'supplier', 'supplierName', 'category', 'glAccount', 'currency', 'kind', 'date', 'policy', 'order', 'number', 'invoice', 'reference', 'allocation', 'amountMinor'];
 const metrics = ['reservedMinor', 'committedMinor', 'actualMinor'];
-function tables(report: Data) {
+export function reportTables(report: Data) {
     const fields = [...rowFields, ...report.customDimensions.map((field: Data) => field.value)];
     const cell = (value: unknown): Cell => typeof value === 'number' ? value : value == null ? '' : String(value);
     return [
@@ -21,7 +21,7 @@ function csvCell(value: Cell) {
     return '"' + literal.replaceAll('"', '""') + '"';
 }
 function csv(report: Data) {
-    const sheets = tables(report), headers = ['recordType', ...new Set(sheets.flatMap(sheet => sheet.headers))];
+    const sheets = reportTables(report), headers = ['recordType', ...new Set(sheets.flatMap(sheet => sheet.headers))];
     return [headers, ...sheets.flatMap(sheet => sheet.rows.map(row => {
         const values = Object.fromEntries(sheet.headers.map((field, index) => [field, row[index]]));
         return headers.map(field => field === 'recordType' ? sheet.name : values[field] ?? '');
@@ -30,7 +30,7 @@ function csv(report: Data) {
 const xml = (value: Cell) => String(value).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&apos;');
 const column = (index: number): string => index < 26 ? String.fromCharCode(65 + index) : column(Math.floor(index / 26) - 1) + column(index % 26);
 function xlsx(report: Data) {
-    const sheets = tables(report), files: Record<string, Uint8Array> = {};
+    const sheets = reportTables(report), files: Record<string, Uint8Array> = {};
     const add = (path: string, content: string) => { files[path] = strToU8('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' + content); };
     add('[Content_Types].xml', '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' + sheets.map((_, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('') + '</Types>');
     add('_rels/.rels', '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');

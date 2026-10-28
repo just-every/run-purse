@@ -7,6 +7,7 @@ const sql=(sql:string,...params:any[]):D1Sql=>({sql,params});
 export async function eraseNativeCopies(env:Bindings,plan:ErasurePlan,a:Actor) {
  const statements:D1Sql[]=[],installationFields:Data[]=[],db=env.DB,operator=plan.subject.operator;
  if(operator) {
+  statements.push(sql('DELETE FROM p_report_keys WHERE actor=?',operator),sql('DELETE FROM p_report_schedules WHERE actor=? OR recipient=?',operator,operator));
   installationFields.push({store:'native identity',fields:['email','display name','external identity links','SCIM links','sessions and outstanding credentials']});
   requireThat(operator!==a.id,'Cannot erase the current owner',409);
   statements.push(sql("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND role!='owner') THEN 1 ELSE 0 END",operator),
@@ -29,6 +30,9 @@ export async function eraseNativeCopies(env:Bindings,plan:ErasurePlan,a:Actor) {
  for(const row of (await db.prepare('SELECT * FROM p_integration_requests').all<Data>()).results) {
   const response=plan.scrub(JSON.parse(row.response));
   if(JSON.stringify(response)!==row.response)statements.push(sql('UPDATE p_integration_requests SET response=? WHERE integration=? AND idempotency_key=?',JSON.stringify(response),row.integration,row.idempotency_key));
+ }
+ for(const row of (await db.prepare('SELECT * FROM p_report_keys').all<Data>()).results) {
+  if(JSON.stringify(plan.scrub(row))!==JSON.stringify(row))statements.push(sql('DELETE FROM p_report_keys WHERE id=?',row.id));
  }
  for(const row of (await db.prepare('SELECT * FROM p_integration_tokens').all<Data>()).results) {
   const next=plan.scrub(row);if(JSON.stringify(next)!==JSON.stringify(row))statements.push(sql('UPDATE p_integration_tokens SET requester=?,requester_email=?,name=?,revoked_at=? WHERE id=?',next.requester,next.requester_email,next.name,new Date().toISOString(),row.id));

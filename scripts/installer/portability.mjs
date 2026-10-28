@@ -8,7 +8,7 @@ import { recordRestoreHistory } from './restore-history.mjs';
 export default {
  product: 'just-every/procurement-purse',
  replaceableTables: ['p_meta'],
- excludeTables: ['p_comment_search','p_restore_history','p_order_thread_routes','p_pantry_credentials', 'p_order_send_links', 'p_scim_links', 'p_scim_authority', 'p_supplier_protected', 'p_search_fts', 'p_search_fts_data', 'p_search_fts_idx', 'p_search_fts_docsize', 'p_search_fts_config', 'p_search_fold', 'p_search_drop', 'p_integration_tokens', 'p_integration_requests', 'p_import_custody', 'p_supplier_document_links', 'p_rfq_links'],
+ excludeTables: ['p_report_keys','p_report_schedules','p_report_deliveries','p_comment_search','p_restore_history','p_order_thread_routes','p_pantry_credentials', 'p_order_send_links', 'p_scim_links', 'p_scim_authority', 'p_supplier_protected', 'p_search_fts', 'p_search_fts_data', 'p_search_fts_idx', 'p_search_fts_docsize', 'p_search_fts_config', 'p_search_fold', 'p_search_drop', 'p_integration_tokens', 'p_integration_requests', 'p_import_custody', 'p_supplier_document_links', 'p_rfq_links'],
  exportRow(table,row) {
   if(table!=='p_records')return row;
   const value=JSON.parse(row.value);

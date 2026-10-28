@@ -801,7 +801,8 @@ or native identity authority.
 REPORT-002 currently saves native REPORT-001 definitions, with each definition
 private to its creating native member. The current `report.read` permission is
 required on every list, open and download. Read-only auditors can read reports
-but cannot change saved definitions. No sharing or scheduled delivery is implied.
+but cannot change saved definitions or create scheduled deliveries. The native HTTP
+doors below configure scheduled email and owner-managed read-only report feeds.
 
 - `GET /api/purse/saved-reports` lists currently usable private definitions and
   `maySave`. A definition whose filter is unavailable in the current scope is
@@ -830,9 +831,64 @@ private native-actor binding and audit provenance, exclude native sessions,
 and do not automatically rebind definitions to a newly created identity.
 Restoring a definition cannot restore revoked authority. Erasure anonymizes its
 native actor and personal values through the existing reviewed erasure door.
-Weekly and monthly email scheduling, received matching attachments, scoped
-OData under API-001, the authorized scheduled Google Sheets connection and full
-CODING-001 and CODING-002 qualification remain REPORT-002 gaps.
+
+### Scheduled report email
+
+`GET /api/purse/report-schedules` returns the signed-in report member's schedules
+and current native recipients with report permission. To configure delivery, use
+`POST /api/purse/report-schedules` with `{view,version,recipient,cadence,startAt,
+format,consent:true}`. The view belongs to the sender; `recipient` is one of the
+native member IDs returned by the GET. Cadence is `weekly` or `monthly`, format
+is `csv` or `xlsx`, and `startAt` is an explicit future ISO UTC instant. Weekly
+means seven UTC days. Monthly retains the selected UTC day, clamped to the last
+day of shorter months. Missed occurrences coalesce into one current report.
+The same POST with `{id,remove:true}` stops an owned schedule.
+
+Both the creating member and the recipient need current report authority at
+configuration and delivery. Each attachment recomputes the saved filters using
+the recipient's current scope, rather than sending the creator's rows. An
+unavailable filter, changed saved-view version or changed native identity pauses
+the binding. An exact occurrence is claimed durably before one mail attempt;
+concurrent ticks and unknown acknowledgments never resend it. Native audit
+records the attempt and honest outcome without retaining attachment contents.
+Provider acceptance does not establish receipt at a mailbox. Scheduled consent
+and delivery capability are installation-local and excluded from archives.
+
+### Read-only OData report keys
+
+Only the native owner manages report keys. `GET /api/purse/report-keys` lists
+metadata and saved-view identities. `POST /api/purse/report-keys` accepts
+`{view,version,name,department,expiresDays,consent:true}`. Department is optional;
+when present it must match an available department and can only narrow the
+bound member's current scope. Expiry defaults to seven days with a thirty-day
+maximum. The response shows the random `token` once and supplies the service
+`url`. Store it privately. Metadata and archives contain no bearer credential.
+`POST /api/purse/report-keys/:id/rotate` shows a replacement bearer once;
+`POST /api/purse/report-keys/:id/revoke` withdraws the capability immediately.
+Neither action extends expiry or changes the exact saved-view binding.
+
+Send the key in the Authorization header using the Bearer scheme. The service
+at `/api/purse/report-feed/:id/` advertises `Rows`, `Groups` and `Totals`, with
+OData v4 metadata at `$metadata`. Every collection uses the same explicit
+unprotected export columns, exact integer minor units and separate currencies
+as the native downloads. Native custom-field property names are represented by
+`custom_` followed by the UTF-8 name encoded as hexadecimal. Collections accept
+`$select`, `$top` (1 through 1000), `$skip` and `$count`, and return a next link
+when needed. Unsupported query operations are refused rather than ignored;
+filters and groupings are configured on the bound saved view.
+
+Every read rechecks the member's native identity version, report grant, current
+record scope and exact view version. Rotation, expiry and revocation are fenced
+with the read audit. Each key permits sixty reads per minute and no writes.
+Existing request-creation and PO-read tokens cannot use the report feed; report
+keys cannot authorize those other doors. Erasure removes affected credentials
+and schedules. Restores retain definitions but never executable report keys or
+scheduled-delivery authority.
+
+Real mailbox receipt, Excel and Power BI client qualification, the authorized
+scheduled Google Sheets connection and full CODING-001 and CODING-002
+qualification remain REPORT-002 gaps. General API-001 keys and automation are
+outside this bounded report credential.
 ### Internal purchasing comments
 
 Native sessions read a thread with

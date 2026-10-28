@@ -1,3 +1,4 @@
+import { runReportSchedules } from './report-schedule';
 import {runPoGeneration} from './po-generation-schedule';
 import { runRecurringOrders } from './recurring-schedule';
 import { runValueCheckins } from './agent-value-checkins';
@@ -12,6 +13,7 @@ import { runReceiptPrompts } from './receipt-prompts';
 import { runTravelReleases } from './travel-release-schedule';
 
 export async function runPurchasingSchedule(env: Bindings, now: number) {
+    const reports = await runReportSchedules(env, now);
     await sendEmailIntakeLinks(env);
     const generation=await runPoGeneration(env,now);
     const recurring = await runRecurringOrders(env, now);
@@ -23,5 +25,5 @@ export async function runPurchasingSchedule(env: Bindings, now: number) {
     const discovery = await runRecurringDiscoverySchedule(env, now);
     const agreements = await runAgreementReminders(env, now);
     const travelReleases = await runTravelReleases(env, now);
-    return { generation, recurring, documents, orders, receipts, rfqs, agreements, values, travelReleases, discovery };
+    return { reports, generation, recurring, documents, orders, receipts, rfqs, agreements, values, travelReleases, discovery };
 }
