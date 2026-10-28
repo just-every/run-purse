@@ -1,3 +1,4 @@
+import { supplierTaxView } from './supplier-tax';
 import { reviewView } from './cross-team-reviews';
 import { visibleBudgetAlerts } from './budget-alerts';
 import { visibleCodingAgent } from './coding-agent';
@@ -123,6 +124,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.orderChaseEvidence = all(s, 'supplierOrderEvidence').filter(evidence => orderIds.has(evidence.order));
     data.supplierIssue = all(s, 'supplierIssue').filter(issue => orderIds.has(issue.order)
         && ['procurement.manage', 'performance.read'].some(permission => allowed(s, a, permission, get(s, 'order', issue.order))));
+    data.supplierTax = a.owner ? all(s,'supplier').filter(supplier => !supplier.mergedInto).map(supplier => supplierTaxView(s,a,supplier.id)) : [];
     const supplierDocumentIds = new Set<string>();
     data.supplierDocument = all(s, 'supplierDocument').filter(document => mayReadPrivateSupplier(s, a, get(s, 'supplier', document.supplier)))
         .map(document => { supplierDocumentIds.add(document.id); return { ...document, compliance: supplierDocumentStatus(s, document) }; });
