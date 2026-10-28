@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {build} from 'esbuild';
 import {mkdir} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
@@ -11,17 +12,18 @@ const bundle=await build({stdin:{contents:"import React from 'react';import{crea
 const browser=await chromium.launch({headless:true,executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH || undefined,args:['--use-mock-keychain','--password-store=basic',...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?['--no-sandbox']:[])]});
 const h=await harness(),contexts=[];
 try {
- const f=await budgetFixture(h);
+ const f=await budgetFixture(h),uploaded=Buffer.from('\uFEFF'+f.input.csv);
  const context=async(cookie,width)=>{const context=await nativeWebContext(browser,h,width,bundle.outputFiles[0].text,cookie);contexts.push(context);return context;};
  const page=await (await context(h.owner,1440)).newPage();
  await page.goto(h.origin+'/app?tab=Settings');const panel=page.getByRole('region',{name:'Budget import',exact:true});await panel.getByRole('heading',{name:'Budget import and owners'}).waitFor();
- await panel.getByLabel('Budget CSV file',{exact:true}).setInputFiles({name:'synthetic-purse-2507.csv',mimeType:'text/csv',buffer:Buffer.from(f.input.csv)});
+ await panel.getByLabel('Budget CSV file',{exact:true}).setInputFiles({name:'synthetic-purse-2507.csv',mimeType:'text/csv',buffer:uploaded});
  await panel.getByRole('button',{name:'Read budget file',exact:true}).click();
  await panel.getByLabel('Target budget for ops',{exact:true}).selectOption(f.usd.id);
  await panel.getByLabel('Target budget for euro',{exact:true}).selectOption(f.eur.id);
  for(const [label,value] of [['Department mapping for Ops','Operations'],['Location mapping for DEN','Denver'],['Project mapping for Office','Office'],['GL account mapping for GL6100','6100'],['Budget owner for Steward',email(2503)]])await panel.getByLabel(label,{exact:true}).selectOption(value);
- const before=await h.db.prepare('SELECT revision FROM p_meta').all();
+ const before=await h.db.prepare('SELECT revision FROM p_meta').all(),previewResponse=page.waitForResponse(response=>response.url().endsWith('/budget-import/preview'));
  await panel.getByRole('button',{name:'Preview budget import',exact:true}).click();const review=panel.getByRole('region',{name:'Reviewed budget changes',exact:true});await review.waitFor();
+ assert.equal((await (await previewResponse).json()).sourceHash,createHash('sha256').update(uploaded).digest('hex'),'Review binds the exact uploaded UTF-8 bytes including its BOM');
  assert.deepEqual((await h.db.prepare('SELECT revision FROM p_meta').all()).results,before.results);
  const usd=review.getByRole('row').filter({hasText:f.usd.name}),eur=review.getByRole('row').filter({hasText:f.eur.name});
  assert.ok((await usd.textContent()).includes('$1,000.01'));assert.ok((await eur.textContent()).includes('EUR 1,200.23'));assert.ok((await usd.textContent()).includes('80%'));
@@ -35,10 +37,16 @@ try {
  for(const [label,value] of [['Department mapping for Ops','Operations'],['Location mapping for DEN','Denver'],['Project mapping for Office','Office'],['GL account mapping for GL6100','6100'],['Budget owner for Steward',email(2503)]])await phonePanel.getByLabel(label,{exact:true}).selectOption(value);
  await phonePanel.getByRole('button',{name:'Preview budget import',exact:true}).click();await phonePanel.getByRole('region',{name:'Reviewed budget changes',exact:true}).waitFor();
  assert.ok(await phone.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Budget settings fit the phone');await snapshot(phonePanel,390,'settings');
+ await h.command('member',{email:email(2504),name:'Current requester after review',roles:['requester'],active:true});
+ await review.getByRole('checkbox').check();
+ const refused=page.waitForResponse(response=>response.url().endsWith('/command/budget-import-commit'));await review.getByRole('button',{name:'Commit reviewed budgets',exact:true}).click();assert.equal((await refused).status(),409);await review.getByRole('alert').filter({hasText:'preview again'}).waitFor();assert.equal((await h.state()).data.policy.find(row=>row.id===f.usd.id).budgetMinor,200000);
+ await panel.getByRole('button',{name:'Preview budget import',exact:true}).click();await review.getByRole('alert').waitFor({state:'detached'});assert.equal(await review.getByRole('checkbox').isChecked(),false,'Fresh review needs fresh consent');
  await review.getByRole('checkbox').check();
  const response=page.waitForResponse(response=>response.url().endsWith('/command/budget-import-commit'));
  await review.getByRole('button',{name:'Commit reviewed budgets',exact:true}).click();assert.equal((await response).status(),200);await panel.getByRole('status').filter({hasText:'2 changed budgets'}).waitFor();
  const repeat=async()=>{await panel.getByRole('button',{name:'Preview budget import',exact:true}).click();const repeatReview=panel.getByRole('region',{name:'Reviewed budget changes',exact:true});await repeatReview.getByText('0 changed budgets. No budget has been written.',{exact:true}).waitFor();await repeatReview.getByRole('checkbox').check();await repeatReview.getByRole('button',{name:'Commit reviewed budgets',exact:true}).click();await panel.getByRole('status').filter({hasText:'0 changed budgets'}).waitFor();};await repeat();
+ await panel.getByRole('button',{name:'Preview budget import',exact:true}).click();await panel.getByRole('region',{name:'Reviewed budget changes',exact:true}).waitFor();
+ await panel.getByLabel('Budget CSV file',{exact:true}).setInputFiles({name:'synthetic-purse-2513.csv',mimeType:'text/csv',buffer:Buffer.from(f.input.csv.replace('1000.01','1000.02'))});assert.equal(await panel.getByRole('region',{name:'Reviewed budget changes',exact:true}).count(),0,'Choosing changed bytes clears the old review');assert.equal(await panel.getByRole('button',{name:'Preview budget import',exact:true}).count(),0,'Read the newly chosen file before another preview');
  await f.purchase(79000,'Below threshold source');assert.equal((await h.state(f.owner)).data.budgetAlerts.length,0);await f.purchase(1001,'Crossing threshold source');
  const memberPage=await (await context(f.owner,1440)).newPage();await memberPage.goto(h.origin+'/app?tab=Reports');const alerts=memberPage.getByRole('region',{name:'Budget threshold alerts',exact:true});await alerts.getByText(/Operations quarter/).waitFor();
  assert.equal(await alerts.getByRole('listitem').count(),1);assert.ok((await alerts.textContent()).includes('$800.01'));await memberPage.reload();await alerts.waitFor();assert.equal(await alerts.getByRole('listitem').count(),1);await snapshot(alerts,1440,'owner-alert');
