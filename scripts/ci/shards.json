@@ -9,7 +9,6 @@
       "journeys": [
         "catalogue-journey.test.mjs",
         "supplier-trust-journey.test.mjs",
-        "agreements-journey.test.mjs",
         "reporting-journey.test.mjs"
       ]
     },
@@ -51,7 +50,8 @@
         "erasure-journey.test.mjs",
         "sourcing-journey.test.mjs",
         "order-follow-through-journey.test.mjs",
-        "order-documents-journey.test.mjs"
+        "order-documents-journey.test.mjs",
+        "agreements-journey.test.mjs"
       ]
     }
   ],
@@ -91,6 +91,11 @@
     {
       "args": [
         "tests/browser-custom-fields.mjs"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser-supplier-tax.mjs"
       ]
     }
   ]

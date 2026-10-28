@@ -365,8 +365,8 @@ STOCK-001, PO-010, SUPPLIER-007, SUPPLIER-005, CATALOG-001, SUPPLIER-003, SUPPLI
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 17 | 0 | 0 | 17 |
-| Target and push further | 37 | 30 | 29 | 96 |
-| All | 54 | 30 | 29 | 113 |
+| Target and push further | 37 | 31 | 28 | 96 |
+| All | 54 | 31 | 28 | 113 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -405,7 +405,7 @@ STOCK-001, PO-010, SUPPLIER-007, SUPPLIER-005, CATALOG-001, SUPPLIER-003, SUPPLI
 | `SUPPLIER-003` | Duplicate supplier detection | target | done | `src/purse/supplier-matching.ts`; `src/purse/supplier-identity.ts`; `src/purse/supplier-csv-custody.ts`; `src/purse/supplier-merge.ts`; `tests/supplier-trust-journey.test.mjs`; `tests/supplier-trust-journey.test.mjs` |  |
 | `SUPPLIER-004` | Document expiry, compliance refresh and renewal reminders | target | done | `src/purse/supplier-documents.ts`; `src/purse/supplier-reminders.ts`; `src/purse/supplier-refresh.ts`; `tests/supplier-trust-journey.test.mjs`; `tests/supplier-trust-journey.test.mjs` |  |
 | `SUPPLIER-005` | Supplier performance and issues | target | done | `tests/supplier-trust-journey.test.mjs` SUPPLIER-005; `tests/supplier-trust-journey.test.mjs` at 1440/390 | Receipt-backed on-time/quality measures, distinct invoice exceptions, buyer-evidenced acknowledgment speed, currency-separated PO/invoice figures, PO-linked issues with reasoned resolution and source drill-through |
-| `SUPPLIER-006` | 1099 readiness | target | missing |  | 1099 eligibility, box totals and export to each ledger's 1099 fields not built |
+| `SUPPLIER-006` | 1099 readiness | target | partial | `tests/supplier-trust-journey.test.mjs` — Human supplier tax review binds private W-9 bytes, keeps decisions and refuses stale or unauthorized changes through native HTTP; Supplier tax archive and erasure preserve anonymous evidence without restoring reviewer or identity authority. `tests/browser-supplier-tax.mjs` — Native supplier tax review at 1440 with reviewed and changed-evidence screens at 1440 and 390. | Native owner-recorded eligibility, unknown state, NEC and MISC box and backup-withholding judgments are bound to reviewed private W-9 versions and original digests. Interim owner-only authority follows the standing conservative default; scoped delegation and provider boundaries remain unqualified. Missing account and access: all named ledger sandbox or sample companies with 1099 transport. AP-001 and AP-002 payment-source qualification, calendar-year eligible-payment totals by box, year-end reconciliation, every ledger’s own vendor 1099 fields, filing-partner exports and actual provider journeys remain unbuilt. Pantry transport remains blocked on Pantry INTEG-001. Onboarding, verified-bank and TIN Matching holds remain unchanged. |
 | `SUPPLIER-007` | Restricted-party screening | target | done | `tests/supplier-trust-journey.test.mjs` SUPPLIER-007; `tests/supplier-trust-journey.test.mjs` at 1440/390 | OFAC SDN via public Commerce CSL; native name/address screening, activation holds, versioned source evidence and owner review; imported/legacy activation requires screening |
 | `SUPPLIER-008` | New-supplier requests and vendor approval | target | missing |  | Requests accept only a register supplier (`src/purse/requests.ts`); new-supplier proposals, pending supplier status, the vendor approval chain and holding POs until activation not built |
 | `SOURCE-001` | RFQ invitations and supplier responses | target | done | `src/purse/rfq.ts`; `src/purse/rfq-public.ts`; `src/purse/rfq-originals.ts`; `src/purse/rfq-mail.ts`; `src/ui/rfq.tsx`; `tests/sourcing-journey.test.mjs`; `tests/sourcing-journey.test.mjs`; `scripts/installer/restore-rfq.mjs` |  |
