@@ -244,6 +244,12 @@
       "name": "0039_comment_search.sql",
       "sha256": "bdc6308e473019cde10bb38d1ac297fa99344a356d396b207fc4f877a7155885",
       "sql": "-- Internal comment search is derived and excluded from archives. Current\n-- source history rebuilds it before a query; neither the index nor a restore\n-- grants access to its parent.\nCREATE TABLE p_comment_search (\n    business TEXT NOT NULL,\n    comment TEXT NOT NULL,\n    parent_kind TEXT NOT NULL,\n    parent_record TEXT NOT NULL,\n    body TEXT NOT NULL,\n    PRIMARY KEY (business, comment)\n);\nCREATE INDEX p_comment_search_parent ON p_comment_search(business, parent_kind, parent_record);\nCREATE TRIGGER p_comment_search_update AFTER UPDATE ON p_records WHEN old.kind='comment' BEGIN\n    DELETE FROM p_comment_search WHERE business=old.business AND comment=old.id;\nEND;\nCREATE TRIGGER p_comment_search_delete AFTER DELETE ON p_records WHEN old.kind='comment' BEGIN\n    DELETE FROM p_comment_search WHERE business=old.business AND comment=old.id;\nEND;\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0040_cross_team_reviews.sql",
+      "sha256": "eb88391c6cb8bc97f30cad5b12a03cd5e0cb56550d3f3e3c7d5c33171a96aa55",
+      "sql": "-- Current installation proof is intentionally excluded from portable history.\nCREATE TABLE p_cross_review_authority (\n review TEXT PRIMARY KEY,\n version INTEGER NOT NULL,\n actor TEXT NOT NULL,\n operator_version INTEGER NOT NULL\n);\n"
     }
   ],
   "compatibilityDate": "2026-09-08",

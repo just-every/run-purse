@@ -53,7 +53,7 @@ test('Native cross-team reviews order questions, files and decisions before inde
     const revised=await h.command('amend',{...f.request,id:f.request.id,revision:1,reason:'Changed request terms',terms:'Net 45'},f.requester);f.request=revised;
     await h.command('submit',{id:revised.id,revision:revised.revision},f.requester);await decide(f,409);
     await h.command('cross-review-record',{id:security.id,revision:1,version:2,decision:'approved',body:'Old review replay'},f.reviewers.security.cookie,409);
-    for(const type of ['security','privacy','it','legal'])await f.record(type);
+    for(const type of ['security','privacy','it','legal'])await f.record(type,'approved',type==='security'?{file:reviewFile}:{});
     await decide(f);
     const prepared=await h.command('convert',{id:revised.id,revision:2},f.buyer);
     await h.command('intake-form',{...f.config,id:f.form.id,version:1});
@@ -63,6 +63,35 @@ test('Native cross-team reviews order questions, files and decisions before inde
     await h.command('submit',{id:unformed.id,revision:1},f.requester);
     assert.equal((await h.state()).data.request.find(r=>r.id===unformed.id).crossTeamReviews.required,4);
     await h.command('decision',{id:unformed.id,revision:1,decision:'approved',reason:'Bypass refused'},f.approver,409);
+    // Carried purchase decisions do not carry the reviews across an approver edit.
+    const finalApprover=await h.member(reviewEmail(6170),['approver']);
+    await h.command('policy',{...f.policy,approvalSteps:[{email:reviewEmail(6170),minMinor:0,purchaseType:'software'}],editRules:{software:{allowed:['notes'],material:['costCentre']}}});
+    f.request=await h.command('request',f.draft,f.requester);
+    f.request=await h.command('submit',{id:f.request.id,revision:1},f.requester);
+    await decide(f,409);
+    for(const type of ['security','privacy','it','legal'])await f.record(type,'approved',type==='security'?{file:reviewFile}:{});
+    assert.equal((await decide(f)).status,'pending');
+    f.request=await h.command('approver-edit',{id:f.request.id,revision:1,changes:{notes:'synthetic-purse-6171 updated notes'},reason:'Exact edited revision needs fresh reviews'},finalApprover);
+    assert.equal(f.request.revision,2);
+    assert.ok((await h.state()).data.decision.some(d=>d.request===f.request.id&&d.revision===2&&d.carriedFrom));
+    await h.command('decision',{id:f.request.id,revision:2,decision:'approved',reason:'Reviews have not renewed'},finalApprover,409);
+    for(const type of ['security','privacy','it','legal'])await f.record(type,'approved',type==='security'?{file:reviewFile}:{});
+    assert.equal((await h.command('decision',{id:f.request.id,revision:2,decision:'approved',reason:'Exact edited revision reviewed independently'},finalApprover)).status,'approved');
+    assert.equal((await h.command('convert',{id:f.request.id,revision:2,issue:true},f.buyer)).status,'issued');
+    const historicReview=(await f.rows()).find(row=>row.revision===2&&row.type==='security'),historicFile=historicReview.events.at(-1).files[0];
+    assert.equal((await h.send(download(historicFile),undefined,f.requester)).status,200);
+    const scopedEmail=reviewEmail(6172),scoped=await h.member(scopedEmail,['auditor']);
+    await h.command('member',{email:scopedEmail,name:'synthetic-purse-6173',active:true,grants:[{role:'auditor',scope:{locations:['Denver']}}]});
+    f.request=await h.command('amend',{...f.request,location:'Denver',reason:'Move the current purchase to another location'},f.requester);
+    const scopedRequest=(await h.state(scoped)).data.request.find(r=>r.id===f.request.id);
+    assert.ok(scopedRequest,'Current Denver request is readable');
+    assert.deepEqual(scopedRequest.crossTeamReviews.rows,[],'Current request access does not disclose historical Austin reviews');
+    assert.equal((await h.send(download(historicFile),undefined,scoped)).status,403);
+    const scopedAudit=await h.send('/api/purse/audit?subject='+f.request.id,undefined,scoped);
+    assert.ok(!scopedAudit.value.events.some(event=>event.action.startsWith('cross-review-')),'Audit cannot lend access to an out-of-scope historical review');
+    const scopedCsv=await h.send('/api/purse/audit.csv?subject='+f.request.id,undefined,scoped);
+    assert.ok(!scopedCsv.value.includes(historicReview.events.at(-1).body));
+
     assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
 });
 

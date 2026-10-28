@@ -75,7 +75,7 @@ export function reviews(s: State, a: Actor, op: string, b: Data): Data | undefin
 }
 export function reviewView(s: State, a: Actor, r: Data) {
     const {plan,basis} = matchingReviews(s,r);
-    const rows: Data[] = all(s,'crossTeamReview').filter(row => row.request === r.id).map(row => {
+    const rows: Data[] = all(s,'crossTeamReview').filter(row => row.request === r.id && allowed(s,a,'request.read',get(s,'revision',row.request+':'+row.revision))).sort((a,b) => b.revision - a.revision || a.stage - b.stage || a.type.localeCompare(b.type) || a.id.localeCompare(b.id)).map(row => {
         const current = row.revision === r.revision && row.basis === basis;
         const stageReady = all(s,'crossTeamReview').filter(other => other.request === r.id && other.revision === r.revision && other.basis === basis && other.stage < row.stage).every(other => reviewSatisfied(s,other,r));
         return {...row,current,satisfied:current && reviewSatisfied(s,row,r),mayReview:current && stageReady && !row.erasure && r.status === 'pending' && !a.owner && a.email.toLowerCase() === row.reviewer};

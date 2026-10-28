@@ -885,3 +885,39 @@ native actor and personal values through the existing reviewed erasure door.
 Weekly and monthly email scheduling, received matching attachments, scoped
 OData under API-001, the authorized scheduled Google Sheets connection and full
 CODING-001 and CODING-002 qualification remain REPORT-002 gaps.
+
+## Native cross-team reviews (INTAKE-005)
+
+Category forms in Settings accept `reviews: [{type, reviewer, stage}]` through
+`intake-form`. The supported teams are `security`, `privacy`, `it`, `legal` and
+`finance`. Each form names at most one current member per team and a stage from
+1 to 5. Equal stages run in parallel; earlier stages must approve first. All
+active forms matching a request's purchase type or line categories apply,
+including a request created without a category form. Publishing remains under
+unrestricted `intake.admin` permission; assigning a reviewer grants no record
+access or purchase-approval permission.
+
+Submission opens reviews for the exact revision and current form versions.
+`data.request[].crossTeamReviews` includes current and historical reviews,
+completion and the caller's `mayReview` controls under current request-read
+scope. `cross-review-record` accepts `{id, revision, version, decision, body,
+file?}`. Decisions are `question`, `approved` or `rejected`; questions leave the
+review unresolved. Only the assigned active native member with current request
+access can respond. Each event retains notes, actor, time and optional file.
+Files are limited to 1 MB each and ten per review, and use the ordinary scoped
+attachment download door. Questions and decisions append to the audit, including
+its CSV export; they never create a purchase decision or send external messages.
+
+Approval, conversion and issuance require every current review to approve.
+Amendments and approver edits require fresh reviews for the new revision, even
+when a purchase decision may otherwise carry. Changed form versions also
+invalidate earlier review authority. Current membership, request scope and native
+identity are checked again before purchase authority is used. The independent
+purchase-approval policy remains required after the reviews finish.
+
+Archives retain validated review history and files, but exclude installation
+review authority. Restored approvals are historical; revise and submit under
+current members before purchasing. Owner-reviewed erasure anonymizes review
+identities, withdraws affected files and removes their local authority. Erased
+captures cannot be replayed. Jira, ServiceNow, Linen, OneTrust and Locket review
+connections are not implemented by this native door.

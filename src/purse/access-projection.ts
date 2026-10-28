@@ -106,6 +106,7 @@ export function scopeAuditRows(s: State, a: Actor, data: Data) {
         const action = typeof event.action === 'string' ? event.action : '';
         if(['amend','approver-edit'].includes(action)&&event.revision){const prior=s.get('revision:'+event.record+':'+(event.revision-1))?.value;if(prior&&!allowed(s,a,'request.read',prior))return false;}
         if ((action.startsWith('invoice') || event.invoice) && !allowed(s, a, 'invoice.read', event)) return false;
+        if (action.startsWith('cross-review-') && event.review) { const review=s.get('crossTeamReview:'+event.review)?.value; if(!review || !canReadRecord(s,a,'crossTeamReview',review))return false; }
         if (action.startsWith('cash-') && !allowed(s, a, 'cash.read', event)) return false;
         if (auditEventAllowed(s, a, event)) return true;
         if (event.rfq && !allowed(s, a, 'rfq.read', event)) return false;
