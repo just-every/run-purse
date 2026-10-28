@@ -847,3 +847,41 @@ authority. Commit changes budget amounts and native alert custody, preserving
 policy approval authority. An unchanged import performs no writes. Audit retains
 source and mapping digests, amounts and assignments; it retains no CSV original.
 Current scoped state reads expose only permitted budget positions and alerts.
+
+## Private saved spend reports
+
+REPORT-002 currently saves native REPORT-001 definitions, with each definition
+private to its creating native member. The current `report.read` permission is
+required on every list, open and download. Read-only auditors can read reports
+but cannot change saved definitions. No sharing or scheduled delivery is implied.
+
+- `GET /api/purse/saved-reports` lists currently usable private definitions and
+  `maySave`. A definition whose filter is unavailable in the current scope is
+  omitted; opening that definition directly is refused.
+- `POST /api/purse/saved-reports` with `{name,filters}` saves the last applied
+  filters. Supported keys are `from`, `through`, `groupBy`, `department`,
+  `project`, `location`, `supplier`, `category`, `glAccount` and the native form
+  dimension keys advertised by the current spend report. Dates are inclusive.
+  Unavailable filter values and unsupported fields are refused.
+- The same POST with `{id,version,name,filters}` replaces a private definition;
+  `{id,version,remove:true}` removes it. A stale version returns 409.
+- `GET /api/purse/saved-reports/:id/view` returns `{definition,report}` freshly
+  computed from current records. The final native-session and revision fence
+  also covers downloads at the same path ending in `csv` or `xlsx`.
+
+XLSX contains Rows, Groups and Totals sheets. CSV contains the same tables in a
+single header with a `recordType` column identifying Rows, Groups or Totals.
+Amounts are exact integer minor units; unlike currencies are never combined.
+Allocation shares and current native form dimensions are retained. XLSX text
+cells are literal strings. CSV prefixes text that a spreadsheet might execute
+with an apostrophe; numeric amounts remain numeric. Neither format includes
+protected tax or bank data, source originals, contact fields or credentials.
+
+Definitions contain no cached rows or access grants. Archives preserve their
+private native-actor binding and audit provenance, exclude native sessions,
+and do not automatically rebind definitions to a newly created identity.
+Restoring a definition cannot restore revoked authority. Erasure anonymizes its
+native actor and personal values through the existing reviewed erasure door.
+Weekly and monthly email scheduling, received matching attachments, scoped
+OData under API-001, the authorized scheduled Google Sheets connection and full
+CODING-001 and CODING-002 qualification remain REPORT-002 gaps.
