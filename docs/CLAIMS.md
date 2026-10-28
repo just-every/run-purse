@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005`. Current candidate counts: 54 done, 28 partial, 31 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 CODING-002`. Current candidate counts: 54 done, 29 partial, 30 missing; 113 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -49,7 +49,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `PUNCHOUT-002` | Other PunchOut and hosted catalogs | partial |
 | `STOCK-001` | Stockroom consumables | done |
 | `CODING-001` | Split allocations across codings | missing |
-| `CODING-002` | Custom header and line fields | missing |
+| `CODING-002` | Custom header and line fields | partial |
 | `APPROVAL-001` | Multi-step conditional approval chains | partial |
 | `APPROVAL-002` | Approval reminders, escalation and out-of-office | missing |
 | `APPROVAL-003` | Approve from any channel | partial |

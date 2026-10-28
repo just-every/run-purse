@@ -488,12 +488,37 @@ approval or supplier send is fabricated.
 `consent:true`. It takes `{id?,version?,name,purchaseType,active,questions,
 headerFields,lineFields,requiredFiles,defaults}`. Purchase types are `goods`,
 `software`, `services`, `contractors` and `equipment`. Each field is
-`{id,label,type:"text"|"choice",options?,required,active,when?:{field,equals}}`;
+`{id,label,type:"text"|"choice"|"number"|"date"|"boolean",options?,inactiveOptions?,required,active,when?:{field,equals}}`;
 a condition names an earlier choice in the same field list. The form permits
 30 fields per list, 50 choices per choice, and 10 required filename fragments.
 Required files are exact retained uploads whose filenames contain the configured
 fragment. Definitions for protected tax, bank or credential fields are refused;
 those values retain their dedicated native owner storage/reveal boundary.
+
+Native number values use finite decimal text without exponent notation and with
+magnitude at most the safe integer limit; dates use valid `YYYY-MM-DD` calendar
+dates, and yes or no values use `"Yes"` or `"No"`. Zero and `"No"` satisfy a
+required field. A Purse list retains every value in `options`; its explicitly
+inactive values appear in `inactiveOptions` and cannot be selected or submitted.
+Changing definitions never rewrites an approved revision. Request-again review
+omits obsolete values and asks for replacements under the current definition.
+
+PO-backed invoice capture copies header values, line values, the exact form
+snapshot and the issued source revision from the PO. Caller-supplied replacement
+custom values are refused. Source confirmation, private original access,
+duplicate and unresolved-risk holds retain their ordinary checks. A later field
+change needs a new request revision and fresh purchase approval; previous bills
+keep their issued values. Native line `glAccount` values remain on the purchasing
+revision and PO. Guided line coding exposes the GL account under the existing
+coding disclosure.
+
+REPORT-001 returns namespaced custom dimensions from permitted retained purchase
+snapshots, including fields no longer present on the current revision. Its
+filters, choices, grouping and drill-through use current record access, retain
+issued bill values and keep currency totals separate. Ledger-origin lists,
+connection mappings and posting, broader custom-field defaults, materiality,
+non-PO and allocation fields and incumbent imports remain unqualified under
+CODING-002. This native path makes no provider or payment claim.
 
 Defaults set configured `currency`, `location`, `costCentre`, `project`,
 `category` and optional `allocations:[{costCentre,project,basisPoints}]`.

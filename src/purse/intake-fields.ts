@@ -9,6 +9,7 @@ export function fieldDefinitions(input: unknown) {
     const fields: Data[] = input.map((f: Data) => {
         const id = text(f.id, 'Field key', 60); requireThat(!containsProtectedInput({field:id}) && !containsProtectedInput({field:f.label}), 'Protected tax, bank and credential fields use their dedicated owner door'); requireThat(/^[a-z][a-z0-9_]*$/.test(id), 'Use lowercase field keys');
         requireThat(['text', 'choice', 'number', 'date', 'boolean'].includes(f.type), 'Choose text, choice, number, date or yes or no');
+        requireThat(f.type !== 'choice' || Array.isArray(f.options) && Array.isArray(f.inactiveOptions ?? []), 'Supply choice lists');
         const options = f.type === 'choice' ? (f.options ?? []).map((v: unknown) => text(v, 'Choice', 200)) : [];
         requireThat(f.type !== 'choice' || options.length > 0 && options.length <= 50 && new Set(options).size === options.length, 'Supply unique choices');
         const inactiveOptions = f.type === 'choice' ? (f.inactiveOptions ?? []).map((v: unknown) => text(v, 'Inactive choice', 200)) : [];
@@ -23,7 +24,7 @@ export function fieldDefinitions(input: unknown) {
 export function fieldValues(fields: Data[], input: Data = {}, required = false) {
     requireThat(input && typeof input === 'object' && !Array.isArray(input), 'Field values must be an object');
     const values: Data = {};
-    for (const key of Object.keys(input)) requireThat(fields.some(field => field.id === key), 'Unknown field: ' + key);
+    for (const key of Object.keys(input)) if (fields.length) requireThat(fields.some(field => field.id === key), 'Unknown field: ' + key);
     for (const field of fields) {
         if (!field.active) { requireThat(input[field.id] == null || input[field.id] === '', field.label + ' is inactive'); continue; }
         if (!shown(field, input)) continue;

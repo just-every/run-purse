@@ -6,6 +6,7 @@ import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/port
 import portability from '../scripts/installer/portability.mjs';
 import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
 import {harness} from './purse-harness.mjs';
+import {reauthenticateErasure} from './erasure-flow.mjs';
 import {customFieldsFixture,fieldMail} from './custom-fields-fixture.mjs';
 
 test('Native typed custom fields validate requests, freeze approved PO and source-confirmed bill values, and reconcile scoped currency reports',async t=>{
@@ -44,6 +45,7 @@ test('Native typed custom fields validate requests, freeze approved PO and sourc
 
 test('Definition changes and amendments retain historical custom values and archive restore cannot revive purchasing authority',async t=>{
  const h=await harness();t.after(()=>h.close());const f=await customFieldsFixture(h),{cmd,draft}=f;
+ draft.customFields.event=fieldMail(6201);
  const original=await f.approve(await cmd('request',draft,f.requester)),order=await f.issue(original);await f.receive(order);const proof=await f.bill(order,'synthetic-purse-6220');
  const changed=await cmd('intake-form',{...f.config,id:f.form.id,version:1,headerFields:f.config.headerFields.map(field=>field.id==='event'?{...field,label:'Current event name'}:field),lineFields:f.config.lineFields.map(field=>({...field,inactiveOptions:['synthetic-purse-6207','synthetic-purse-6209']}))});
  const current=(await h.state()).data;assert.deepEqual(current.order.find(row=>row.id===order.id).customFields,draft.customFields);assert.equal(current.order.find(row=>row.id===order.id).intakeFormSnapshot.headerFields[0].label,'Event');assert.deepEqual(current.invoice.find(row=>row.id===proof.invoice.id).allocations[0].customFields,{grant:'synthetic-purse-6207'});
@@ -60,4 +62,12 @@ test('Definition changes and amendments retain historical custom values and arch
  assert.equal((await restored.send('/api/purse/command/issue',{id:replacement.id,revision:2,reason:'Old authority replay'},f.buyer)).status,401);
  const after=(await h.state()).data;await cmd('member',{email:fieldMail(6201),name:'Revoked requester',roles:['receiver'],active:true});await cmd('amend',{...draft,id:original.id,revision:2,reason:'Revoked request edit'},f.requester,403);assert.deepEqual((await h.state()).data.revision,after.revision);
  assert.equal(validatePurchasingArchive((await restored.db.prepare('SELECT * FROM p_records').all()).results),true);
+ await cmd('member',{email:fieldMail(6201),name:'Former requester',roles:['receiver'],active:false});
+ await reauthenticateErasure(h);
+ const inventory=await h.send('/api/purse/erasure',undefined,h.owner),preview=await h.send('/api/purse/erasure/preview',{kind:'member',id:fieldMail(6201),revision:inventory.value.revision},h.owner);assert.equal(preview.status,200,JSON.stringify(preview.value));
+ const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
+ assert.equal((await h.send('/api/purse/state',undefined,f.requester)).status,401);assert.equal((await h.send('/api/purse/command/request',draft,f.requester)).status,401);
+ const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(erasedRows.every(row=>!row.value.includes(fieldMail(6201))),'Historical request, PO and bill custom values are scrubbed together');assert.equal(validatePurchasingArchive(erasedRows),true);
+ const journal=join(h.dir,'synthetic-purse-6223.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),journal,[]);
+ const fenced=await harness({empty:true});t.after(()=>fenced.close());await assert.rejects(importArchive(await createPortability({db:fenced.db,buckets:{ORIGINALS:fenced.originals},policy:portability}),path,[],journal),/erasure_epoch/);assert.equal((await fenced.db.prepare('SELECT count(*) AS n FROM p_records').first()).n,0);
 });
