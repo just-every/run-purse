@@ -24,10 +24,8 @@ export function fieldDefinitions(input: unknown) {
 export function fieldValues(fields: Data[], input: Data = {}, required = false) {
     requireThat(input && typeof input === 'object' && !Array.isArray(input), 'Field values must be an object');
     const values: Data = {};
-    for (const key of Object.keys(input)) if (fields.length) requireThat(fields.some(field => field.id === key), 'Unknown field: ' + key);
     for (const field of fields) {
-        if (!field.active) { requireThat(input[field.id] == null || input[field.id] === '', field.label + ' is inactive'); continue; }
-        if (!shown(field, input)) continue;
+        if (!field.active || !shown(field, input)) continue;
         const value = input[field.id];
         if (value == null || value === '') { requireThat(!required || !field.required, field.label + ' is required'); continue; }
         values[field.id] = customValue(field, value);

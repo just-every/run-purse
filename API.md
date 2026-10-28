@@ -500,7 +500,8 @@ magnitude at most the safe integer limit; dates use valid `YYYY-MM-DD` calendar
 dates, and yes or no values use `"Yes"` or `"No"`. Zero and `"No"` satisfy a
 required field. A Purse list retains every value in `options`; its explicitly
 inactive values appear in `inactiveOptions` and cannot be selected or submitted.
-Changing definitions never rewrites an approved revision. Request-again review
+Changing definitions never rewrites an approved revision. Applying a current
+form discards obsolete or hidden field keys from an unfinished draft. Request-again review
 omits obsolete values and asks for replacements under the current definition.
 
 PO-backed invoice capture copies header values, line values, the exact form

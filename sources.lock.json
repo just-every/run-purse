@@ -104,7 +104,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "15f03f4e211d21ac54eabdad832221b3037d6b860a2df5ce5f7c28e827f76814",
+      "sha256": "9a1156f23737a3ec5298d18ee398073f7901a982dc8fd103b18863b9145f0886",
       "executable": false
     },
     "base-copies.json": {
@@ -3224,7 +3224,7 @@
       "executable": false
     },
     "src/purse/intake-fields.ts": {
-      "sha256": "89440f35fee7b966136883ca61766fa749a31af27fd368baa6011776bef799a0",
+      "sha256": "5f54d264a76d6666a427bfa02423aed3d0411accd10def162c72fe7b30214373",
       "executable": false
     },
     "src/purse/intake-forms.ts": {
@@ -4904,7 +4904,7 @@
       "executable": false
     },
     "tests/custom-fields.test.mjs": {
-      "sha256": "6123d1ea3a92650a3e5bcd589731052f3303ade6e0d116a3ca3f3986defea018",
+      "sha256": "d34cb47370b5ad1b35640044668db2e9249d81c1d68cc5fabd6c63e44a90da9d",
       "executable": false
     },
     "tests/document-profile-fixture.mjs": {
