@@ -1,4 +1,4 @@
-import {supplierCreditsJourney} from './supplier-credits.test.mjs';
+import {supplierCreditsJourney} from './supplier-credits-flow.mjs';
 
 import assert from 'node:assert/strict'
 import {harness} from './purse-harness.mjs'

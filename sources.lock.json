@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "2e3faf23b189ab87b599d84ee11cec58dc1d6d826d0c25b6d0d64c8a0539bfeb",
+      "sha256": "a17ca3fb43c5742b5a16fe9eb72576401685758626520aa1401aa1aec12472f9",
       "executable": false
     },
     "DEMO.md": {
@@ -4768,7 +4768,7 @@
       "executable": false
     },
     "tests/browser.mjs": {
-      "sha256": "8c8efe86bab8c4db1718535e73098f9e735050bf01174637ca0113e7ec34c642",
+      "sha256": "e74840e429459b4ca34d634fee09d9aa886277d6e96f7a22cfbccfbbec4f234f",
       "executable": false
     },
     "tests/budget-import-fixture.mjs": {
@@ -5012,7 +5012,7 @@
       "executable": false
     },
     "tests/payables-flow.mjs": {
-      "sha256": "3e6cf3cf456a9eba2735c081cc630ccb61c299a75b3013bbdddcf3941a2349c4",
+      "sha256": "75c400740502797e3500257214e8d30eeb4d269180d06a86c30475c83c0eed3a",
       "executable": false
     },
     "tests/payables-journey.test.mjs": {
@@ -5157,6 +5157,10 @@
     },
     "tests/supplier-credits-fixture.mjs": {
       "sha256": "2ef50403c9e6298c7c15af22e859ac1365303d2f627ff5ad3463953ca23fd32d",
+      "executable": false
+    },
+    "tests/supplier-credits-flow.mjs": {
+      "sha256": "c74c334e2da7c8fb12b040a1d52f39ba604d45f01bd91e1fa2e6288519a2b3f9",
       "executable": false
     },
     "tests/supplier-credits.test.mjs": {
