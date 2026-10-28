@@ -132,7 +132,7 @@
       "executable": false
     },
     "deploy.json": {
-      "sha256": "0bd0b13dbcd6e295395df79aa91b7b0232d20868258d7a1150afe4b4a1ff03c2",
+      "sha256": "5996f2c1dd18e2534f698e91b854226a6da2cf27555061cc4363eeff87b8a96f",
       "executable": false
     },
     "docs/backup-and-restore.md": {
@@ -196,7 +196,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "da96c30a4a1c57ef733debe8ce2712629a7c4215e1176b367fc78c50433eb1cc",
+      "sha256": "435d336100d6db389c415cc0224b53cb7420945777aba7c6265b53ccd6d81960",
       "executable": false
     },
     "migrations/core/0001_operator_auth.sql": {
@@ -5176,7 +5176,7 @@
       "executable": false
     },
     "wrangler.jsonc": {
-      "sha256": "a1f3882982c5438e6772eedc4c49e21c82be328af7718f7b1842348c8a50e157",
+      "sha256": "30fe395d6586a49ada68785f560fca96294ef68590167ff1dd497e607994ff23",
       "executable": false
     }
   }

@@ -33,10 +33,6 @@
       "environment": "MAIL_API_KEY"
     },
     {
-      "binding": "MAIL_FROM",
-      "environment": "MAIL_FROM"
-    },
-    {
       "binding": "EMAIL_INTAKE_WEBHOOK_SECRET",
       "environment": "EMAIL_INTAKE_WEBHOOK_SECRET",
       "optional": true
