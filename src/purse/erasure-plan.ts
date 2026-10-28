@@ -5,7 +5,7 @@ import { diffValue } from './erasure-diff';
 import type { ErasureSubject } from './erasure-subject';
 
 const structural = /^(?:sha256|evidenceHash|retainedDigest|attestation|bankBinding|secret|fingerprint|sourceFingerprint|mediaType|action|status|event|kind|provider|providerSenderLabel|senderVerified|currency|representation|state|method|code|comparison|authentication|at|.*At|.*Date|.*Version)$/;
-const privateNotes = new Set(['body','sourceText','sourceHtml','messageId','notes','note','personalNotes']);
+const privateNotes = new Set(['body','commentSearchText','sourceText','sourceHtml','messageId','notes','note','personalNotes']);
 export type ErasurePlan = { state:State; fields:Data[]; blobs:string[]; affected:Data[]; fingerprint:string; alias:string; email:string; subject:ErasureSubject; id:string; scrub:(value:any)=>any };
 export function planErasure(before:State,subject:ErasureSubject,id:string,revision:number):ErasurePlan {
  requireThat(/^[a-f0-9-]{36}$/.test(id),'Review identifier invalid');

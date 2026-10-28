@@ -1,3 +1,4 @@
+import { Comments } from './comments';
 import { SupplierProtected } from './supplier-protected';
 import { Separated } from './separated';
 import { useState } from 'react';
@@ -9,7 +10,7 @@ import { SupplierDocuments } from './supplier-documents';
 import { Form, Field, Table, Attachments, Chip, call, calendarDay, type D } from './shared';
 
 export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; mutate: (op: string, b: D) => Promise<any>; reload: () => Promise<void> }) {
-    const [selectedId, setSelectedId] = useState<string>(), [duplicate, setDuplicate] = useState<D>(), [openError, setOpenError] = useState('');
+    const [selectedId, setSelectedId] = useState<string | undefined>(new URLSearchParams(window.location.search).get('supplier') ?? undefined), [duplicate, setDuplicate] = useState<D>(), [openError, setOpenError] = useState('');
     const selected = data.supplier.find((s: D) => s.id === selectedId);
     const open = (id?: string) => { setSelectedId(id); setDuplicate(undefined); };
     return <Separated><><h2 className="page-title">Known suppliers</h2>
@@ -46,6 +47,7 @@ export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; 
         {data.mayManageSupplierRegister && duplicate && <DuplicateSupplierReview review={duplicate.review} input={duplicate.input} mutate={mutate} onSaved={s => open(s.id)} onOpen={async id => { try { await reload(); open(id); setOpenError(''); } catch (e) { setOpenError((e as Error).message); } }}/>}
         {openError && <p role="alert">{openError}</p>}
         {selected && <>
+            <Comments key={selected.id} kind="supplier" record={selected.id} mutate={mutate}/>
             {selected.mayReadProtected && <SupplierProtected key={selected.id + ":protected"} supplier={selected} owner={actor.roles.includes('owner')} reload={reload}/>}
             {!selected.mergedInto && <Attachments data={data} kind="supplier" record={selected.id} editable={Boolean(data.mayManageSupplierRegister && selected.mayManagePurchasing)} mutate={mutate}/>}
             {!selected.mergedInto && data.mayManageSupplierRegister && <><SupplierPerformance key={selected.id} supplier={selected} data={data} mutate={mutate}/><SupplierScreening supplier={selected} owner={actor.roles.includes('owner')} mutate={mutate}/><SupplierDocuments key={selected.id + ":documents"} supplier={selected} data={data} mutate={mutate} reload={reload}/><SupplierMerge key={selected.id} supplier={selected} data={data} mutate={mutate} onMerged={() => setDuplicate(undefined)}/></>}

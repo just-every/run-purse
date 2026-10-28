@@ -21,7 +21,8 @@ export function auditEventAllowed(s:State,a:Actor,event:Data,permission='audit.r
   });
  }
  const kinds=['comment','travelExpense','request','order','invoice','receipt','rfq','invoiceReading','invoiceSource','apInvoiceEmail','emailIntake','quote','quoteAward','stockroom','supplierIssue','supplierOrderEvidence','orderClosure','orderChaseEvent','orderThreadMessage','orderSupplierResponse','agentRun','valueConfirmation'];
- const subject=kinds.map(kind=>s.get(kind+':'+event.record)?.value).find(Boolean);
+ const subject=event.parentKind ? s.get(event.parentKind+':'+event.record)?.value
+  : kinds.map(kind=>s.get(kind+':'+event.record)?.value).find(Boolean);
  if(!subject||!allowed(s,a,permission,subject))return false;
  // A before/after revision may have crossed a scope boundary. Its evidence
  // is private unless both historical versions are within this grant.
