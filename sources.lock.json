@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "6887605d4648b5ef811240a60cde852905a0cc3564b2e394e8dd651ee48515ae",
+      "sha256": "95fded14a9e2b8519df956ad58aa6fbf43c32c5b258a67987307e92ef128a9f0",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "ac0a91d2c3c241bd0f06ed727c36df5476435fc09fbfa1ee8302f33e8204f715",
+      "sha256": "2fc037f0bd495b9f9793c581635ac4a43e9dfe877cbd77d9136985ed05bfe09c",
       "executable": false
     },
     "DEMO.md": {
@@ -140,7 +140,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "364a77027a46cb5676d9c861df0fbbd105244a898f7f8ca25d744d192ae379b7",
+      "sha256": "f6f8bda5a7428d57220b9cfd6ef45b7af2ea09df62e1fde761d4b9c1a7e22944",
       "executable": false
     },
     "docs/getting-started.md": {
@@ -188,7 +188,7 @@
       "executable": false
     },
     "IMPORTING.md": {
-      "sha256": "7b969880877a2cd3701d4aa3dd8d157ad62bdbd5fea5dddff1afa5f82a85f327",
+      "sha256": "c2c7c21e3ff33a5d9d12c7e57c45e69046b78ba7399b67ebb0a468dd86289ad3",
       "executable": false
     },
     "LICENSE": {
@@ -364,7 +364,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "11849075f0e457b39d8656e473e5bf52283e89cff67ca5203e614b89790319ce",
+      "sha256": "46df6c6e9fb2cc0d2618e3090c00b91de84330580b1f2de0af3adf8e0f902d79",
       "executable": false
     },
     "packaging.json": {
@@ -2964,7 +2964,7 @@
       "executable": false
     },
     "src/purse/api.ts": {
-      "sha256": "54d55e5c6d361eaaa6c84d1c00efc2c40d9861b4c1761b262dac54b30ee48502",
+      "sha256": "13c06a2143ed81612a5c2c590480aa0703f92a9b82a3543b2c5a04fa0a3db297",
       "executable": false
     },
     "src/purse/approval-chain-authority.ts": {
@@ -2999,6 +2999,10 @@
       "sha256": "3eb5db909c6d6b4cfbf7ed4880d7cab23114f80e05a6c86d76c1ced377da19ec",
       "executable": false
     },
+    "src/purse/budget-alerts.ts": {
+      "sha256": "f117524a9063d6fc593971cd9c8d58ae08b8df591748153fc77380aba7f416c4",
+      "executable": false
+    },
     "src/purse/budget-allocations.ts": {
       "sha256": "57daf1385369e36a31fdbbae6dcf9e1c520cd3165669764ef4e87175bbbda723",
       "executable": false
@@ -3007,12 +3011,16 @@
       "sha256": "55a3742e5315264b4d49eb20d0b523e14ebd1d3ed530b94b3435c1efc45a4fc0",
       "executable": false
     },
+    "src/purse/budget-import.ts": {
+      "sha256": "fd89bb6375755f3708032cda2396c47fa43a396c564902cd51153aca80c43818",
+      "executable": false
+    },
     "src/purse/budget-position.ts": {
       "sha256": "4c458c50dc356cb43b151360c100893e97e922cb60f8549e56326a7197413d68",
       "executable": false
     },
     "src/purse/budget-view.ts": {
-      "sha256": "361a034ae9428326d68303e57d5938b72bd34b13fd137ee43e2e34e7950597f5",
+      "sha256": "65e3eef2610f3ed46603d44cefe95095c4bff664966c39dbc1c7a68b7454d83e",
       "executable": false
     },
     "src/purse/cash-requirements.ts": {
@@ -3052,7 +3060,7 @@
       "executable": false
     },
     "src/purse/documents.ts": {
-      "sha256": "63dfa0b238279467ea612ac76b667586c72e2007c43839f6c5c57f3df4ed1511",
+      "sha256": "13938393ec720581fae81041e5e71a66f4789db2e78c3963105b0c615e4de487",
       "executable": false
     },
     "src/purse/email-intake-api.ts": {
@@ -4088,7 +4096,7 @@
       "executable": false
     },
     "src/ui/app.tsx": {
-      "sha256": "29ebcff34c7c3877b5c3d87504caf945ec8240e967caf7f61f279d08326960f2",
+      "sha256": "dc38a720ddcb0dc001e096c7bbc66c970b2d7a867b8d265e108105234147ea0f",
       "executable": false
     },
     "src/ui/approval-edit-notices.tsx": {
@@ -4121,6 +4129,10 @@
     },
     "src/ui/budget-dimensions.tsx": {
       "sha256": "3588080dda38e79709e722ca0b0d66013849688d756607fd07eaaca1b701b5e9",
+      "executable": false
+    },
+    "src/ui/budget-import.tsx": {
+      "sha256": "7aa5a1a7135da8f74011d740bdddcbad0532774e0db0986c4645d6d17b68ea8f",
       "executable": false
     },
     "src/ui/budget-review.tsx": {
@@ -4368,7 +4380,7 @@
       "executable": false
     },
     "src/ui/settings.tsx": {
-      "sha256": "1007cba39820b3389bc37a9bdc2a802def190ab16828fbecabc53cbd8b24fd65",
+      "sha256": "134140ac17b9060a1e382c6e7f04c92aa82301423e7864b96fcdb8d8a67657e7",
       "executable": false
     },
     "src/ui/shared.tsx": {
@@ -4765,6 +4777,14 @@
     },
     "tests/browser.mjs": {
       "sha256": "247eb19a2a7746d34ae9287335edefaf0c541c6a1ba59d4a034ffff5a87ce569",
+      "executable": false
+    },
+    "tests/budget-import-fixture.mjs": {
+      "sha256": "37d69a92fe94ca763c47410067aef3df2e329543c42f70ddd4f34ece55dd8978",
+      "executable": false
+    },
+    "tests/budget-import.test.mjs": {
+      "sha256": "94b53744a850a7f1c369fe78f5445f2d02a94c660cb1d249221aad6933c9ad2a",
       "executable": false
     },
     "tests/catalogue.test.mjs": {

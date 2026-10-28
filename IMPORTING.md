@@ -168,3 +168,31 @@ Review the complete final report in the source system and enter its workspace or
 Expensify provides [custom export templates](https://integrations.expensify.com/Integration-Server/doc/export_report_template.html); Ramp documents its [CSV accounting export fields](https://support.ramp.com/exporting-your-data-to-csv/). Brex documents [customizable accounting exports](https://www.brex.com/support/brex-dashboard-accounting-page). Navan and Brex header labels depend on the selected report template, so review the original header before confirmation.
 
 The current native owner or scoped finance with payable approval may confirm the return. Only the current native owner downloads its retained original. Repeating the same source cannot repeat actual spend or reservation release. An over-estimate report requires renewed trip approval. Import never fetches a URL or performs booking or payment.
+
+## Native budget CSV
+
+In Settings, open Budget import and owners. Create the dated approval policies
+first. The current native owner reads a UTF-8 CSV, explicitly maps its columns,
+budget references, department, location, project, GL account and active member
+owners, then previews each amount and confirms the exact reviewed import.
+The source currency and mapped coding must match the selected policy. Imports
+change its budget amount and alert assignment; they preserve approval limits,
+chains, periods and over-budget authority. Assignment adds no approval grant.
+
+Typical columns are `budget`, `amount`, `currency`, `department`, `location`,
+`project`, `glAccount`, `owner` and `thresholds`. Column names are configurable.
+Amounts use decimal currency text with at most two fractional digits. Each row
+targets one dated budget, with a separate currency. Thresholds are whole
+percentages separated by semicolons; an empty cell disables native alerts.
+
+Preview persists nothing. Changing the bytes, mapping, native session or current
+state requires another preview. An unchanged reviewed re-import changes no
+product records or audit events. Each dated budget creates at most one native
+notification per configured threshold when reserved, committed and recorded
+actual exposure reaches it. Owners see notifications and complete budget totals
+only while their current report grant covers that budget. Private purchases
+retain anonymous sums and acquire no new drill-through access. Notifications
+appear in the signed-in workspace; this door sends no email or provider message.
+Only the source digest and mapping digest are retained, with before and after
+amounts and assignments in the audit. CSV originals are not retained. Spreadsheet,
+Easel and ledger budget qualification remain unproved in BUDGET-002.

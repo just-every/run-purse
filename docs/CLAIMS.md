@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005`. Current candidate counts: 54 done, 24 partial, 35 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write BUDGET-002`. Current candidate counts: 54 done, 25 partial, 34 missing; 113 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -56,7 +56,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `APPROVAL-004` | Approver edits on a pending request | partial |
 | `COMMENT-001` | Internal comments and @mentions | missing |
 | `BUDGET-001` | Budgets and live budget position | partial |
-| `BUDGET-002` | Budget import and ownership | missing |
+| `BUDGET-002` | Budget import and ownership | partial |
 | `PO-001` | POs sent to suppliers and acknowledged | partial |
 | `PO-002` | Supplier messaging on the PO | partial |
 | `PO-003` | Overdue acknowledgment and delivery chasing | done |
