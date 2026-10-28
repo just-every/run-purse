@@ -33,6 +33,7 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
     }
     if (kind === 'intakeDraft') return record.requester === a.id && record.requesterEmail === a.email && allowed(s,a,'request.create');
     if (kind === 'travelExpense') return a.owner && allowed(s,a,'request.read',get(s,'request',record.request));
+    if (['supplierRma', 'supplierCredit', 'supplierCreditApplication'].includes(kind)) return allowed(s,a,'invoice.read',record) && (kind !== 'supplierCreditApplication' || allowed(s,a,'invoice.read',get(s,'supplierCredit',record.credit)));
     if (kind === 'quote') return allowed(s,a,'request.read',record);
     if (kind === 'request') return allowed(s, a, 'request.read', record);
     if (kind === 'order') return allowed(s, a, 'po.read', record);

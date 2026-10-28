@@ -3,10 +3,17 @@ import { publicInvoice } from './invoice-status';
 import { invoiceEvidence, storeInvoiceOriginal } from './invoice-evidence';
 import { canonicalSupplier } from './supplier-identity';
 import { moneyInput } from './money';
+import { createHash } from 'node:crypto';
 import { all, audit, get, put, requireThat, text, minor, quantity, extended, uid, type Actor, type Data, type State } from './types';
 import { linePosition, commitment, remainingValue } from './orders';
 import { ledger } from './requests';
 import { allowed, requirePermission } from './access';
+
+export const invoiceCreditApplied = (s: State, id: string) => all(s, 'supplierCreditApplication').filter(row => row.invoice === id).reduce((n, row) => n + row.amountMinor, 0);
+export function creditInvoiceVersion(s: State, invoice: Data) {
+    return createHash('sha256').update(JSON.stringify([s.get('invoice:' + invoice.id)?.revision, s.get('payable:' + invoice.id)?.revision,
+        all(s, 'supplierCreditApplication').filter(row => row.invoice === invoice.id).map(row => row.id).sort()])).digest('hex');
+}
 
 export function scopedInvoice(s: State, a: Actor, value: Data) {
     const projected = publicInvoice(value);

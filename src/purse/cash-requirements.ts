@@ -1,3 +1,4 @@
+import { invoiceCreditApplied } from './invoices';
 import { adoptionDeposits, currentOperationalOrder, operationalOrder } from './adoption-position';
 import { openInvoiceFlags } from './invoice-status';
 import { all, extended, get, type Actor, type Data, type State } from './types';
@@ -13,7 +14,7 @@ export function cashRequirementsFromRecords(s:State,accepts:(record:Data)=>boole
     const payables = all(s, 'payable').filter(p => accepts(get(s, 'invoice', p.invoice)));
     const eligibleBills = payables.filter(p => p.approvedAt && !openInvoiceFlags(get(s, 'invoice', p.invoice)).length).map((p): Data => {
         const invoice = get(s, 'invoice', p.invoice), order = get(s, 'order', invoice.order);
-        const amountMinor = invoice.pantry?.status === 'posted' ? invoice.pantry.openMinor : p.approvedMinor;
+        const amountMinor = invoice.pantry?.status === 'posted' ? invoice.pantry.openMinor : Math.max(0, p.approvedMinor - invoiceCreditApplied(s, invoice.id));
         return { ...p, reference: invoice.reference, order: order.id, number: order.number, currency: invoice.currency, amountMinor, dueDate: invoice.pantry?.dueDate ?? p.dueDate, discountDate: invoice.pantry?.discountDate ?? p.discountDate, week: weekOf(invoice.pantry?.dueDate ?? p.dueDate), discountMinor: Number((BigInt(amountMinor) * BigInt(p.discountPercent) + 50n) / 100n) };
     }).sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.reference.localeCompare(b.reference));
     const bills = eligibleBills.filter(bill => !get(s, 'invoice', bill.invoice).sourcePayment && bill.amountMinor > 0);
