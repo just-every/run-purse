@@ -20,6 +20,8 @@ test('Reviewed native budgets bind bytes, mapping and authority; unchanged impor
   assert.deepEqual(review.rows.map(row=>[row.currency,row.amountMinor]),[['USD',100001],['EUR',120023]]);
   await f.commit(review,{csv:f.input.csv.replace('1000.01','1000.02')},409);
   await f.commit(review,{csv:f.input.csv.replaceAll('\n','\r\n')},409);
+  const bom=await f.preview({...f.input,csv:'\uFEFF'+f.input.csv});assert.deepEqual(bom.rows,review.rows);assert.notEqual(bom.sourceHash,review.sourceHash);
+  await f.commit(review,{csv:'\uFEFF'+f.input.csv},409);
   await f.commit(review,{mapping:{...f.input.mapping,budgets:{...f.input.mapping.budgets,unused:f.usd.id}}},409);
   await f.commit(review,{mapping:{...f.input.mapping,dimensions:{...f.input.mapping.dimensions,location:{DEN:'Austin'}}}},400);
   await f.commit(review,{review:'0'.repeat(64)},409);
@@ -70,6 +72,8 @@ test('Budget owner sees scoped totals and a single threshold crossing without ac
   assert.equal((await h.state(f.owner)).data.budgetAlerts.length,1);
   assert.deepEqual((await h.db.prepare("SELECT * FROM p_records WHERE kind='budgetAlert'").all()).results,firstAlertRows);
   assert.equal((await h.send('/api/purse/audit',undefined,h.owner)).value.events.filter(event=>event.action==='budget-threshold').length,1,'Repeated evaluation adds no duplicate alert or delivery event');
+  await f.purchase(15000,'Configured second threshold');
+  assert.deepEqual((await h.state(f.owner)).data.budgetAlerts.map(row=>[row.percent,row.usedMinor,row.currency]).sort((a,b)=>a[0]-b[0]),[[80,80001,'USD'],[95,95001,'USD']],'Each configured percentage fires separately');
   assert.equal((await h.state(f.outside)).data.budgetAlerts.length,0);
   await h.command('member',{email:email(2503),name:'Budget steward',grants:[{role:'finance-viewer',scope:{departments:['Research']}}],active:true});
   const revoked=(await h.state(f.owner)).data;assert.equal(revoked.periodBudgets.length,0);assert.equal(revoked.budgetAlerts.length,0);
