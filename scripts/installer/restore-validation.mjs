@@ -1,3 +1,4 @@
+import { validateComments } from './restore-comments.mjs';
 import { validateCodingAgent } from './restore-coding-agent.mjs';
 import { validateRecurringDiscovery } from './restore-recurring-discovery.mjs';
 import { validateRecurringScenarios } from './restore-recurring-scenarios.mjs';
@@ -41,7 +42,7 @@ import { validateSupplierDocuments } from './restore-supplier-documents.mjs';
 import { validateAccess } from './restore-access.mjs';
 import { validateScim } from './restore-scim.mjs';
 
-const kinds = new Set(['codingExample','codingReview','invoiceCoding','erasureRetention','poGenerationPolicy','poGenerationEvent','supplierInvoiceSubmission','quoteAgentConsent','quoteAgentReview','orderSupplierResponse','orderThreadMessage','lateOrderNotice','agentPolicy','recurringScenario','recurringScenarioConsent','recurringScenarioDraft','recurringNoticeSend','agreementDisposition','recurringDiscoveryNotice','pantryConfig','pantrySync','orderSend','orderAcknowledgment','travelReleaseRule','travelReleasePolicy','travelRelease','travelExpense','intakeForm','intakeDraft','supplierProposal','orderAdoption','deposit','budget','blanketRelease','recurringSeries','recurringEvent','erasureReceipt','scimUser','scimApprovalTransfer','accessRole','buyerRoleLimit','invoiceEvidenceKey','invoiceEvidenceMigration','invoiceInboxConfig','apInvoiceEmail','valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
+const kinds = new Set(['comment','commentNotice','codingExample','codingReview','invoiceCoding','erasureRetention','poGenerationPolicy','poGenerationEvent','supplierInvoiceSubmission','quoteAgentConsent','quoteAgentReview','orderSupplierResponse','orderThreadMessage','lateOrderNotice','agentPolicy','recurringScenario','recurringScenarioConsent','recurringScenarioDraft','recurringNoticeSend','agreementDisposition','recurringDiscoveryNotice','pantryConfig','pantrySync','orderSend','orderAcknowledgment','travelReleaseRule','travelReleasePolicy','travelRelease','travelExpense','intakeForm','intakeDraft','supplierProposal','orderAdoption','deposit','budget','blanketRelease','recurringSeries','recurringEvent','erasureReceipt','scimUser','scimApprovalTransfer','accessRole','buyerRoleLimit','invoiceEvidenceKey','invoiceEvidenceMigration','invoiceInboxConfig','apInvoiceEmail','valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agreementReading','agreementReadingEvent','agreementAward','agreement','agreementInvoice','agreementReminder','business','member','supplier','supplierMatchingKey','supplierMerge','catalogue','catalogueBundle','catalogueGrant','policy','delegation','code','request','revision','decision','quote','order','receipt','invoice','attachment','commitment','agentRun','proposedAction','audit','stockroom','orderClosure','supplierOrderEvidence','supplierIssue','supplierDocument','supplierDocumentReminder','supplierDocumentSubmission','orderChasePolicy','orderChaseEvent','payable','cashExpectation','poProfile','quoteAward','receiptRule','receiptPromptEvent','quoteReading','quoteReadingEvent','invoiceSource','invoiceReading','invoiceReadingEvent','rfq','rfqResponse','rfqMailEvent','emailIntake','emailIntakeConfig','emailIntakeMailEvent']);
 export const check = (value, code) => { if (!value) throw new PortabilityError('purse_' + code, 409); };
 export const same = (a, b) => canonicalJson(a) === canonicalJson(b);
 export const integer = n => Number.isSafeInteger(n) && n >= 0;
@@ -84,6 +85,7 @@ export function validatePurchasingArchive(rows) {
  if (!rows.length) return true;
  check(all('business').length === 1, 'business'); get('business','main');
  validateAccess(all,get);
+ validateComments(all,get,check,same);
  validateRecurringScenarios(all,get,check,rows);
  validateRecurringDiscovery(all,get,check);
  validateApprovalChains(all,get,check,same);
@@ -135,7 +137,7 @@ export function validatePurchasingArchive(rows) {
  for (const e of all('commitment')) { get('revision',e.request + ':' + e.revision); get('policy',e.policy); check(Number.isSafeInteger(e.amountMinor),'commitment_amount'); if(e.budgetAllocations){check(Array.isArray(e.budgetAllocations)&&e.budgetAllocations.reduce((sum,share)=>sum+share.amountMinor,0)===e.amountMinor,'commitment_allocations');for(const share of e.budgetAllocations){check(Number.isSafeInteger(share.amountMinor),'commitment_allocation');check(get('policy',share.policy).currency===e.currency,'commitment_allocation_currency');}} }
  for (const a of all('attachment')) {
   check(a.privateSupplierDocument === undefined || typeof a.privateSupplierDocument === 'boolean' && (!a.privateSupplierDocument || a.kind === 'supplier'),'supplier_document_private');
-  check(['travelExpense','intakeDraft','request','supplier','order','invoice','invoiceSource','agreement'].includes(a.kind),'attachment_kind'); get(a.kind,a.record);
+  check(['comment','travelExpense','intakeDraft','request','supplier','order','invoice','invoiceSource','agreement'].includes(a.kind),'attachment_kind'); get(a.kind,a.record);
   check(all('audit').some(e => e.action === 'attachment' && e.attachment === a.id && e.record === a.record),'attachment_link');
   check(typeof a.base64 === 'string','attachment_bytes');
   let bytes; try { bytes = atob(a.base64); } catch { check(false,'attachment_bytes'); }

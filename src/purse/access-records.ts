@@ -43,6 +43,10 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
         return kind === 'agreement' ? selected.versions.has(record.id)
             : selected.readingVersions.has(readingId) && selected.readingVersions.get(readingId) === record.version;
     }
+    if (kind === 'comment') {
+        const parent = s.get(record.kind + ':' + record.record)?.value;
+        return Boolean(parent && canReadRecord(s, a, record.kind, parent, visited));
+    }
     if (kind === 'attachment') {
         const parent = s.get(record.kind + ':' + record.record)?.value;
         if (!parent) return false;

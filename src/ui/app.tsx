@@ -1,3 +1,4 @@
+import { CommentNotices } from './comments';
 import { useSeparators } from './separated';
 import { AgentValue } from './agent-value';
 import { Agreements } from './agreements';
@@ -34,6 +35,7 @@ function PurchasingApp() {
         <TopBar actor={actor} business={business?.name} tab={current} onTab={open} onAsk={business ? () => { open('Requests'); focusComposer(); } : undefined}/>
         <main className="workspace" data-tab={current}>
             <p className="notice" aria-live="polite">{notice}</p>
+            {business && <CommentNotices refresh={data}/>}
             {current === 'Requests' && (business ? <Requests data={data} actor={actor} mutate={mutate}/> : <EmptyWorkspace owner={actor.roles.includes('owner')} onSetUp={() => open('Settings')}/>)}
             {current === 'Value' && <AgentValue data={data} actor={actor} mutate={mutate}/> }
             {current === 'Overview' && <Overview data={data} onSetUp={() => open('Settings')}/>}
