@@ -14,7 +14,9 @@ export function supplierTaxBasis(s: State, supplierId: string) {
     const documents = all(s, 'supplierDocument').filter(row => ids.has(row.supplier) && row.type === 'w9').sort((a,b) => a.id.localeCompare(b.id));
     const evidence = documents.map(document => supplierDocumentOriginal(s,document));
     const identities = family.map(row => Object.fromEntries(['id','name','dba','address','remitTo','postalState','mergedInto'].map(field => [field,row[field] ?? null])));
-    return { basis: sha256(canonicalJson({ identities, evidence })), evidence };
+    const documentIds = new Set(documents.map(document => document.id));
+    const pendingReview = all(s,'supplierDocumentSubmission').some(row => documentIds.has(row.document) && row.status === 'pending');
+    return { basis: sha256(canonicalJson({ identities, evidence, pendingReview })), evidence, pendingReview };
 }
 
 export function supplierTaxView(s: State, a: Actor, supplierId: string): Data {
@@ -24,6 +26,7 @@ export function supplierTaxView(s: State, a: Actor, supplierId: string): Data {
         .sort((a,b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id));
     const own = history.filter(row => row.supplier === root).sort((a,b) => a.version - b.version), latest = own.at(-1);
     const status = (row: Data) => {
+        if (source.pendingReview) return 'W-9 replacement awaiting buyer review; fresh tax review required';
         if (row.erasure || !source.evidence.some(file => file.document === row.document && file.available)) return 'Evidence withdrawn; fresh review required';
         if (row.basis !== source.basis || row.supplier !== root) return 'Evidence or supplier identity changed; fresh review required';
         if (row.id !== latest?.id) return 'Superseded';
@@ -46,6 +49,7 @@ export function supplierTax(s: State, a: Actor, op: string, b: Data): Data | und
     requireThat(!supplier.mergedInto, 'Review the surviving supplier', 409);
     const view = supplierTaxView(s,a,supplier.id);
     requireThat(b.version === view.version && b.basis === view.basis, 'Tax evidence or decisions changed; reload and review again',409);
+    requireThat(!view.pendingReview, 'Review the pending W-9 replacement before recording a fresh tax review',409);
     const source = view.evidence.find((file: Data) => file.document === b.document);
     requireThat(source?.available && (['documentVersion','attachment','sha256'] as const).every(field => b[field] === source[field]), 'Review the exact current private W-9 original and version',409);
     requireThat(b.reviewed === true, 'Confirm a human reviewed this exact W-9');
