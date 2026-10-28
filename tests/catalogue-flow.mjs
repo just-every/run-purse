@@ -1,0 +1,76 @@
+
+import assert from 'node:assert/strict'
+import {harness} from './purse-harness.mjs'
+
+export async function catalogueFlow(){
+{
+ // CATALOG-001 items retain metadata, dated prices, coding, required files and atomically expanded bundles through authenticated HTTP
+ const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
+ try {
+ const h=await harness();t.after(()=>h.close());const {command:cmd,state,send}=h
+ await cmd('business',{name:'Front Range Engineering',currencies:['USD','EUR'],locations:['Denver','Chicago'],costCentres:['Engineering','Sales'],projects:['New hires']})
+ const requester=await h.member('engineer@example.test',['requester']),buyer=await h.member('buyer@example.test',['buyer']),approver=await h.member('approver@example.test',['approver'])
+ const suppliers=[];for(const name of ['Rocky Mountain Computers','Office Supply Group'])suppliers.push(await cmd('supplier',{name,status:'active',reason:'Approved equipment supplier'},buyer))
+ await cmd('policy',{name:'New hire equipment',currency:'USD',category:'Equipment',project:'New hires',approver:'approver@example.test',limitMinor:1000000,budgetMinor:5000000})
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York'}).format(new Date())
+ const items=[];for(const [i,description] of ['Engineering laptop','Docking station','Ergonomic keyboard'].entries())items.push(await cmd('catalogue',{description,supplier:suppliers[0].id,currency:'USD',unitMinor:[120000,15000,8000][i],category:'Equipment',project:'New hires',location:'Denver',costCentre:'Engineering',approved:true,partNumber:['LT-540','DK-200','KB-100'][i],unit:'each',validFrom:today,validUntil:today,requiredAttachments:i===0?['security-review.pdf']:[]},buyer))
+ const bundle=await cmd('catalogue-bundle',{name:'New engineer laptop kit',approved:true,items:items.map(c=>({catalogue:c.id,quantity:'1'}))},buyer)
+ const base={title:'Maya new hire equipment',needDate:'2026-12-01',location:'Denver',costCentre:'Engineering',terms:'Supplier quote 802; net 30'}
+ const result=await cmd('request-bundle',{...base,bundle:bundle.id},requester),r=result.requests[0]
+ assert.equal(result.requests.length,1);assert.equal(r.lines.length,3);assert.equal(r.totalMinor,143000)
+ assert.deepEqual(r.lines.map(l=>[l.partNumber,l.unit,l.category,l.project]),items.map(i=>[i.partNumber,i.unit,i.category,i.project]))
+ assert.deepEqual(r.lines[0].requiredAttachments,['security-review.pdf']);assert.ok(r.lines.every(l=>l.catalogue&&l.id));assert.equal(r.status,'draft')
+ await cmd('submit',{id:r.id,revision:r.revision},requester,409)
+ await cmd('attachment',{kind:'request',record:r.id,name:'security-review.pdf',base64:Buffer.from('Approved security review supplied by engineering').toString('base64')},requester)
+ await cmd('submit',{id:r.id,revision:r.revision},requester)
+ await cmd('decision',{id:r.id,revision:r.revision,decision:'approved',reason:'New hire kit approved'},approver)
+ const o=await cmd('convert',{id:r.id,revision:r.revision},buyer)
+ assert.deepEqual(o.lines.map(l=>l.partNumber),items.map(i=>i.partNumber))
+ await cmd('catalogue',{...items[0],unitMinor:125000},buyer)
+ assert.equal((await state()).data.revision.find(v=>v.request===r.id&&v.revision===1).lines[0].unitMinor,120000)
+ const seat=await cmd('catalogue',{description:'Office chair',supplier:suppliers[1].id,currency:'EUR',unitMinor:35000,category:'Equipment',project:'New hires',approved:true},buyer)
+ const mixed=await cmd('catalogue-bundle',{name:'Mixed supplier kit',approved:true,items:[{catalogue:items[0].id,quantity:'2.5'},{catalogue:seat.id,quantity:'1'}]},buyer)
+ const multi=await cmd('request-bundle',{...base,bundle:mixed.id},requester)
+ assert.deepEqual(multi.requests.map(r=>[r.currency,r.lines.length,r.totalMinor]).sort(),[['EUR',1,35000],['USD',1,312500]])
+ const unchanged=async(op,input,cookie=buyer,status=400)=>{const before=(await state()).data;await cmd(op,input,cookie,status);assert.deepEqual((await state()).data,before)}
+ await unchanged('catalogue',{...items[0],validFrom:'2026-02-30'})
+ await unchanged('catalogue',{...items[0],validFrom:'2027-01-01',validUntil:'2026-12-01'})
+ await unchanged('catalogue-bundle',{name:'Empty',approved:true,items:[]})
+ await unchanged('catalogue-bundle',{name:'Repeated',approved:true,items:[{catalogue:seat.id,quantity:'1'},{catalogue:seat.id,quantity:'2'}]})
+ await unchanged('catalogue',{...items[0],approved:true},requester,403)
+ assert.equal((await send('/api/purse/command/request-bundle',{...base,bundle:bundle.id})).status,401)
+ const expired=await cmd('catalogue',{...seat,validUntil:'2000-01-01'},buyer)
+ await unchanged('request-bundle',{...base,bundle:mixed.id},requester,409)
+ await unchanged('request',{...base,supplier:seat.supplier,currency:seat.currency,lines:[{catalogue:expired.id,quantity:'1'}]},requester,409)
+ // Member-derived restrictions are enforced independently of body location/role fields.
+ const chicago=await h.member('chicago@example.test',['requester'])
+ await cmd('catalogue-grant',{email:'engineer@example.test',departments:['Engineering'],locations:['Denver'],entities:['Summit US']})
+ await cmd('catalogue-grant',{email:'chicago@example.test',departments:['Engineering'],locations:['Chicago'],entities:['Summit US']})
+ const restricted=await cmd('catalogue',{...items[0],access:{departments:['Engineering','Research'],locations:['Denver'],entities:['Summit US'],roles:['requester']}},buyer)
+ const restrictedBundle=await cmd('catalogue-bundle',{...bundle,access:{departments:['Engineering']}},buyer)
+ assert.ok((await state(requester)).data.catalogue.some(c=>c.id===restricted.id))
+ assert.ok((await state(requester)).data.catalogueBundle.some(c=>c.id===restrictedBundle.id))
+ assert.ok(!(await state(chicago)).data.catalogue.some(c=>c.id===restricted.id))
+ assert.ok(!(await state(chicago)).data.catalogueBundle.some(c=>c.id===restrictedBundle.id),'A bundle never leaks a restricted component')
+ const restrictedInput={...base,supplier:restricted.supplier,currency:'USD',location:'Denver',lines:[{catalogue:restricted.id,quantity:'1',project:'New hires'}],roles:['owner'],departments:['Engineering'],entities:['Summit US']}
+ await unchanged('request',restrictedInput,chicago,403)
+ await unchanged('request-bundle',{...base,bundle:restrictedBundle.id},chicago,403)
+ await unchanged('catalogue-grant',{email:'chicago@example.test',locations:['Denver']},chicago,403)
+ await unchanged('catalogue-grant',{email:'chicago@example.test',locations:['Denver']},buyer,403)
+ assert.ok((await state(buyer)).data.catalogue.some(c=>c.id===restricted.id),'Buyers can maintain every item')
+ assert.equal((await state(buyer)).data.catalogue.find(c=>c.id===restricted.id).requestable,false)
+ const allowed=await cmd('request',restrictedInput,requester)
+ // Removing one dimension revokes access; the API cannot supply it in the request.
+ await cmd('catalogue-grant',{email:'engineer@example.test',departments:['Engineering'],locations:['Denver'],entities:[]})
+ await unchanged('submit',{id:allowed.id,revision:allowed.revision},requester,403)
+ await unchanged('amend',{...restrictedInput,id:allowed.id,revision:allowed.revision,reason:'Buyer cannot widen requester access'},buyer,403)
+ assert.equal((await state(requester)).data.catalogueGrant.length,0)
+ await cmd('catalogue-grant',{email:'engineer@example.test',departments:['Engineering'],locations:['Denver'],entities:['Summit US']})
+ const byRole=await cmd('catalogue',{...seat,validUntil:null,access:{roles:['approver']}},buyer)
+ assert.ok(!(await state(requester)).data.catalogue.some(c=>c.id===byRole.id))
+ assert.ok((await state(approver)).data.catalogue.some(c=>c.id===byRole.id))
+ assert.ok((await state()).data.audit.some(e=>e.action==='request-bundle'&&e.bundle===bundle.id&&e.record===r.id))
+
+ } finally {for(const close of cleanups.reverse())await close();}
+}
+}

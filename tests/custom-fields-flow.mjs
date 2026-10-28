@@ -1,0 +1,86 @@
+import assert from 'node:assert/strict';
+import {join} from 'node:path';
+import {createPortability} from '@runeditrun/rer/modules/portability';
+import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import portability from '../scripts/installer/portability.mjs';
+import {harness} from './purse-harness.mjs';
+import {reauthenticateErasure} from './erasure-flow.mjs';
+import {customFieldsFixture,fieldMail} from './custom-fields-fixture.mjs';
+
+export async function customFieldsFlow(){
+
+{
+ // Native typed custom fields validate requests, freeze approved PO and source-confirmed bill values, and reconcile scoped currency reports
+ const cleanups=[];const t={after:fn=>cleanups.push(fn)};
+ try {
+ const h=await harness();t.after(()=>h.close());const f=await customFieldsFixture(h),{cmd,draft}=f;
+ await cmd('intake-form',f.config,f.requester,403);
+ const missing=await cmd('request',{...draft,lines:[{...draft.lines[0],customFields:{}}]},f.requester);
+ const refused=await cmd('submit',{id:missing.id,revision:1},f.requester,400);assert.match(refused.error,/Grant.*required/);
+ assert.equal((await h.state()).data.commitment.length,0);
+ for(const [field,value,label] of [['attendees','NaN','Attendees'],['attendees','1e3','Attendees'],['event_date','2026-02-30','Event date'],['funded','maybe','Grant funded']]) {
+  const before=(await h.state()).data.request.length;
+  const result=await cmd('request',{...draft,customFields:{...draft.customFields,[field]:value}},f.requester,400);assert.ok(result.error.includes(label));assert.equal((await h.state()).data.request.length,before);
+ }
+ for(const value of ['synthetic-purse-6209','synthetic-purse-6299'])assert.match((await cmd('request',{...draft,lines:[{...draft.lines[0],customFields:{grant:value}}]},f.requester,400)).error,/Grant.*inactive or unknown/);
+ const extra=await cmd('request',{...draft,customFields:{...draft.customFields,unknown:'synthetic-purse-6298'}},f.requester);assert.deepEqual(extra.customFields,draft.customFields,'Unknown keys confer no stored field or authority');
+ const request=await f.approve(await cmd('request',draft,f.requester)),order=await f.issue(request);await f.receive(order);
+ const proof=await f.bill(order,'synthetic-purse-6213'),invoice=proof.invoice;
+ assert.deepEqual(order.customFields,draft.customFields);assert.deepEqual(invoice.customFields,draft.customFields);assert.deepEqual(invoice.allocations[0].customFields,{grant:'synthetic-purse-6207'});assert.equal(invoice.sourceOrderRevision,1);assert.equal(invoice.allocations[0].sourceOrderRevision,1);assert.equal(invoice.document.sha256,proof.reading.sourceDescriptor.sha256);
+ assert.equal((await h.send('/api/purse/download/attachment/'+proof.source.attachment,undefined,f.requester)).status,403);
+ assert.equal((await h.send('/api/purse/download/attachment/'+proof.source.attachment,undefined,f.buyer)).status,200);
+ await cmd('invoice-reading-confirm',proof.confirm,f.buyer,409);
+ const before=(await h.state()).data.invoice;
+ await cmd('invoice',{order:order.id,reference:'synthetic-purse-6214',source:'Cannot replace source coding',customFields:{event:'synthetic-purse-6297'},allocations:[{line:order.lines[0].id,quantity:'2',amountMinor:10000}]},f.buyer,400);
+ await cmd('invoice',{order:order.id,reference:'synthetic-purse-6215',source:'Cannot replace source coding',allocations:[{line:order.lines[0].id,quantity:'2',amountMinor:10000,customFields:{grant:'synthetic-purse-6208'}}]},f.buyer,400);
+ await cmd('invoice-source',{order:order.id,document:proof.document},f.requester,403);assert.deepEqual((await h.state()).data.invoice,before);
+ const cad=await f.approve(await cmd('request',{...draft,currency:'CAD',title:'synthetic-purse-6216',lines:[{...draft.lines[0],unitMinor:2500}]},f.requester)),cadOrder=await f.issue(cad);await f.receive(cadOrder);const cadBill=await f.bill(cadOrder,'synthetic-purse-6217');
+ const hidden=await f.approve(await cmd('request',{...draft,location:'Denver',title:'synthetic-purse-6218',customFields:{...draft.customFields,event:'synthetic-purse-6219'}},f.requester));
+ const grant='line:'+f.form.id+':grant',event='header:'+f.form.id+':event';
+ const report=await f.report({groupBy:grant,[event]:'synthetic-purse-6211',glAccount:'6100'});
+ assert.deepEqual(report.groups.map(group=>[group.label,group.currency,group.actualMinor]),[['synthetic-purse-6207','CAD',5000],['synthetic-purse-6207','USD',10000]]);
+ assert.deepEqual(report.rows.filter(row=>row.kind==='actual').map(row=>[row.invoice,row.line,row.currency,row.amountMinor,row[grant]]).sort(),[[invoice.id,order.lines[0].id,'USD',10000,'synthetic-purse-6207'],[cadBill.invoice.id,cadOrder.lines[0].id,'CAD',5000,'synthetic-purse-6207']].sort());
+ assert.ok(!JSON.stringify(report).includes(hidden.id));assert.ok(!JSON.stringify(report).includes('synthetic-purse-6219'));
+ for(const dimension of [grant,event,'glAccount'])assert.ok((await f.report({groupBy:dimension})).groups.every(group=>group.rows.length>0));
+ await cmd('member',{email:fieldMail(6204),name:'Revoked report reader',roles:['receiver'],active:true});assert.equal((await h.send('/api/purse/spend-report?groupBy='+grant,undefined,f.finance)).status,403);
+ 
+ }finally{for(const close of cleanups.reverse())await close();}
+}
+
+{
+ // Definition changes and amendments retain historical custom values and archive restore cannot revive purchasing authority
+ const cleanups=[];const t={after:fn=>cleanups.push(fn)};
+ try {
+ const h=await harness();t.after(()=>h.close());const f=await customFieldsFixture(h),{cmd,draft}=f;
+ draft.customFields.event=fieldMail(6201);
+ const original=await f.approve(await cmd('request',draft,f.requester)),order=await f.issue(original);await f.receive(order);const proof=await f.bill(order,'synthetic-purse-6220');
+ const unfinished=await cmd('intake-draft',{fields:{...draft,title:'synthetic-purse-6224'}},f.requester);
+ const changed=await cmd('intake-form',{...f.config,id:f.form.id,version:1,headerFields:f.config.headerFields.filter(field=>field.id!=='funded').map(field=>field.id==='event'?{...field,label:'Current event name'}:field.id==='attendees'?{...field,active:false}:field),lineFields:f.config.lineFields.map(field=>({...field,inactiveOptions:['synthetic-purse-6207','synthetic-purse-6209']}))});
+ await cmd('intake-complete',{id:unfinished.id,version:unfinished.version,consent:true},f.requester,400);
+ const reselected=await cmd('intake-draft',{id:unfinished.id,version:unfinished.version,fields:{...unfinished.fields,lines:unfinished.fields.lines.map(line=>({...line,customFields:{grant:'synthetic-purse-6208'}}))}},f.requester);
+ const resumed=await cmd('intake-complete',{id:reselected.id,version:reselected.version,consent:true},f.requester);assert.equal(resumed.customFields.funded,undefined);assert.equal(resumed.customFields.attendees,undefined);assert.equal(resumed.customFields.event,fieldMail(6201));
+ const current=(await h.state()).data;assert.deepEqual(current.order.find(row=>row.id===order.id).customFields,draft.customFields);assert.equal(current.order.find(row=>row.id===order.id).intakeFormSnapshot.headerFields[0].label,'Event');assert.deepEqual(current.invoice.find(row=>row.id===proof.invoice.id).allocations[0].customFields,{grant:'synthetic-purse-6207'});
+ const copied=await cmd('request-again-preview',{kind:'order',id:order.id},f.requester);assert.deepEqual(copied.draft.lines[0].customFields,{});assert.ok(copied.flags.some(flag=>flag.field==='line field'));
+ const amendment=await cmd('amend',{...draft,id:original.id,revision:1,reason:'New grant requires fresh purchase approval',customFields:{...draft.customFields,event:'synthetic-purse-6221',attendees:'12.5',funded:'Yes'},lines:[{...draft.lines[0],id:original.lines[0].id,quantity:'3',customFields:{grant:'synthetic-purse-6208'}}]},f.requester);
+ await cmd('convert',{id:amendment.id,revision:2},f.buyer,409);assert.equal((await h.state()).data.order.find(row=>row.id===order.id).intakeFormVersion,1);
+ const replacement=await f.issue(await f.approve(amendment));assert.equal(replacement.intakeFormVersion,changed.version);assert.equal(replacement.customFields.funded,undefined);assert.equal(replacement.customFields.attendees,undefined);assert.equal(replacement.lines[0].customFields.grant,'synthetic-purse-6208');assert.equal((await h.state()).data.revision.find(row=>row.request===original.id&&row.revision===1).lines[0].customFields.grant,'synthetic-purse-6207');
+ const report=await f.report({groupBy:'line:'+f.form.id+':grant'});assert.equal(report.rows.find(row=>row.invoice===proof.invoice.id)['line:'+f.form.id+':grant'],'synthetic-purse-6207');assert.equal(report.groups.find(group=>group.value==='synthetic-purse-6208').committedMinor,5000);
+ const path=join(h.dir,'synthetic-purse-6222.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),path,[]);
+ const restored=await harness();t.after(()=>restored.close());await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),path,[]);
+ const rows=async(db,kind)=>(await db.prepare('SELECT * FROM p_records WHERE kind=? ORDER BY id').bind(kind).all()).results;
+ for(const kind of ['intakeForm','intakeDraft','request','revision','order','invoice'])assert.deepEqual(await rows(restored.db,kind),await rows(h.db,kind),kind+' retains exact typed values and frozen sources');
+ assert.equal((await restored.send('/api/purse/state',undefined,f.buyer)).status,401);
+ assert.equal((await restored.send('/api/purse/command/issue',{id:replacement.id,revision:2,reason:'Old authority replay'},f.buyer)).status,401);
+ const after=(await h.state()).data;await cmd('member',{email:fieldMail(6201),name:'Revoked requester',roles:['receiver'],active:true});await cmd('amend',{...draft,id:original.id,revision:2,reason:'Revoked request edit'},f.requester,403);assert.deepEqual((await h.state()).data.revision,after.revision);
+ 
+ await cmd('member',{email:fieldMail(6201),name:'Former requester',roles:['receiver'],active:false});
+ await reauthenticateErasure(h);
+ const inventory=await h.send('/api/purse/erasure',undefined,h.owner),preview=await h.send('/api/purse/erasure/preview',{kind:'member',id:fieldMail(6201),revision:inventory.value.revision},h.owner);assert.equal(preview.status,200,JSON.stringify(preview.value));
+ const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
+ assert.equal((await h.send('/api/purse/state',undefined,f.requester)).status,401);assert.equal((await h.send('/api/purse/command/request',draft,f.requester)).status,401);
+ const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(erasedRows.every(row=>!row.value.includes(fieldMail(6201))),'Historical request, PO and bill custom values are scrubbed together');
+ const journal=join(h.dir,'synthetic-purse-6223.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),journal,[]);
+ const fenced=await harness({empty:true});t.after(()=>fenced.close());await assert.rejects(importArchive(await createPortability({db:fenced.db,buckets:{ORIGINALS:fenced.originals},policy:portability}),path,[],journal),/erasure_epoch/);assert.equal((await fenced.db.prepare('SELECT count(*) AS n FROM p_records').first()).n,0);
+ }finally{for(const close of cleanups.reverse())await close();}
+}
+}
