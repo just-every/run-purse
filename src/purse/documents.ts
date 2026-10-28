@@ -1,4 +1,5 @@
 import { supplierTaxView } from './supplier-tax';
+import { visibleSupplierCredits } from './supplier-credits';
 import { reviewView } from './cross-team-reviews';
 import { visibleBudgetAlerts } from './budget-alerts';
 import { visibleCodingAgent } from './coding-agent';
@@ -108,6 +109,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
         .some(permission => allowed(s, a, permission, get(s, 'invoice', payable.invoice))));
     data.cashExpectation = all(s, 'cashExpectation').filter(expectation => orderIds.has(expectation.order)
         && ['cash.read', 'payable.terms'].some(permission => allowed(s, a, permission, get(s, 'order', expectation.order))));
+    Object.assign(data, visibleSupplierCredits(s,a));
     data.cashRequirements = cashView(s, a, orderIds, invoiceIds);
     Object.assign(data, visibleCodingAgent(s,a));
     data.agentPolicy = a.owner ? all(s, 'agentPolicy') : [];
