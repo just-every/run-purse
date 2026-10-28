@@ -1,3 +1,4 @@
+import { assignedBudgetVisible } from './budget-alerts';
 import { periodBudgetPosition } from './budget-position';
 import { accessGrants } from './access';
 import { coveringPolicies } from './policy-match';
@@ -9,7 +10,7 @@ export function visibleBudgetPositions(s: State, a: Actor, data: Data) {
     const orders = new Set(data.order.map((order: Data) => order.id));
     const invoices = new Set(data.invoice.map((invoice: Data) => invoice.id));
     return all(s, 'policy').filter(policy => policy.budgetPeriod && (accessGrants(s,a).some(grant => grant.role !== 'requester' && grant.permissions.includes('request.read') && !Object.keys(grant.scope).length && !Object.keys(grant.roleScope ?? {}).length)
-        || allowed(s, a, 'access.manage', policy)
+        || allowed(s, a, 'access.manage', policy) || assignedBudgetVisible(s,a,policy)
         || data.request.some((request: Data) => request.policy === policy.id || coveringPolicies([policy], request).length
             || request.budgetReview?.ids.includes(policy.id))))
         .map(policy => {
