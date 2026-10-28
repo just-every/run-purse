@@ -224,6 +224,9 @@ An identical reviewed re-import writes nothing, including no new audit event.
 Changed terms update only the catalogue: approved revisions and POs retain their
 frozen lines and prices. Catalogue items and change audit continue in ordinary
 portable archives; a restored installation requires a new current-session review.
+Replaying source bytes whose imported terms were erased is refused. Reintroducing
+a previously erased item field is also refused after a formatting change; submit
+a corrected file with personal data removed.
 
 This native CSV door does not connect a PunchOut supplier, return carts, transmit
 POs or receive supplier confirmations. PUNCHOUT-002 retains those qualifications.
