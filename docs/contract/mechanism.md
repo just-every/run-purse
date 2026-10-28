@@ -463,3 +463,32 @@ Email intake proof boundary: The real Base inbound/outbound adapters run with pr
 
 
 Email intake proof boundary: The real Base inbound/outbound adapters run with provider network-edge fakes under ct's 19 October 18:06Z ruling; no mailbox delivery or provider sandbox claim is made.
+
+## Record encodings and transport details
+
+- AGENT-011: The native web reader is deterministic v1 with model and provider recorded as none; it accepts exact REPORT-001 dimensions, one stated UTC period and a reserved, committed or recorded-actual metric.
+- AGENT-010: Purse agent runs retain purchasing inputs, exact sources, model/provider, messages, proposals and outcomes by purchase type.
+- AGENT-008: The native deterministic-v1 executor uses scoped requests and PO-backed invoices, records model and provider as none, and applies the company policy to standard preparation and any commitment sign-off.
+- AGENT-005: Real hourly Cron claims
+- AGENT-005: exact JSON original
+- AGENT-005: (only distinct seat IDs with active === true count)
+- AGENT-005: (86400000 milliseconds per day from the earliest accepted native delivery receipt timestamp for the issued purchase lineage)
+- SECURITY-004: one invoice per no-store POST
+- SECURITY-004: Each attestation is an HMAC under the invoice-evidence key over the exact legacy hash, representation, retained-field digest, state, event, actor and time.
+- SECURITY-002: Encryption is AES-256-GCM in a separate table outside p_records, bound to business/supplier/field/key ID.
+- SECURITY-002: The installation key is a Worker secret provisioned through rer setup and rer-setup.json, never D1/R2/archives/argv/logs; unavailable keys return 503 without fallback and revision races return 409.
+- SECURITY-001: one field per POST
+- CONTRACT-001: Hourly Cron claims
+- INVOICE-002: a private original download and source-bound JSON proposal
+- PO-004: an exact-origin POST
+- SOURCE-001: private R2 objects
+- SOURCE-001: exact same-origin POST
+- SUPPLIER-004: Hourly cron processes
+- SUPPLIER-003: an accompanying JSON artifact
+- SUPPLIER-003: TINs and routing/account pairs use keyed HMAC-SHA-256 with a private, portable business matching key.
+- INTAKE-007: POST /api/purse/integration/requests requires a bearer in the Authorization header, an Idempotency-Key and the ordinary complete purchasing fields.
+- INTAKE-007: The same token integration and Idempotency-Key with identical UTF-8 JSON bytes return the original creation response, including after rotation or later human edits; a changed body returns 409 without another draft, and conretries create once.
+- INTAKE-006: Real Cron releases once
+- INTAKE-004: the exact provider JSON and decoded attachments in R2
+- INTAKE-004: 2 MB provider JSON
+- PUR-013: Base import-kit D1, native-session SQL guards

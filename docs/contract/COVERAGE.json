@@ -397,6 +397,15 @@
       "to": "clause",
       "ids": [
         "PUR-013"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -412,6 +421,15 @@
       "to": "clause",
       "ids": [
         "PUR-013"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -775,6 +793,15 @@
       "to": "clause",
       "ids": [
         "INTAKE-004"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -793,6 +820,15 @@
       "to": "clause",
       "ids": [
         "INTAKE-004"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -817,6 +853,15 @@
       "to": "clause",
       "ids": [
         "INTAKE-006"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -826,6 +871,15 @@
       "to": "clause",
       "ids": [
         "INTAKE-007"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -842,6 +896,15 @@
       "to": "clause",
       "ids": [
         "INTAKE-007"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -858,6 +921,15 @@
       "to": "clause",
       "ids": [
         "INTAKE-007"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -874,6 +946,15 @@
       "to": "clause",
       "ids": [
         "INTAKE-007"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -943,6 +1024,15 @@
       "to": "clause",
       "ids": [
         "SUPPLIER-003"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -952,6 +1042,15 @@
       "to": "clause",
       "ids": [
         "SUPPLIER-004"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -970,6 +1069,15 @@
       "to": "clause",
       "ids": [
         "SUPPLIER-004"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1016,6 +1124,15 @@
       "to": "clause",
       "ids": [
         "SOURCE-001"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1034,6 +1151,15 @@
       "to": "clause",
       "ids": [
         "SOURCE-001"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1064,6 +1190,15 @@
       "to": "clause",
       "ids": [
         "CATALOG-001"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1179,6 +1314,15 @@
       "to": "clause",
       "ids": [
         "BUDGET-001"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1240,6 +1384,15 @@
       "to": "clause",
       "ids": [
         "PO-004"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1256,6 +1409,15 @@
       "to": "clause",
       "ids": [
         "PO-004"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1327,6 +1489,15 @@
       "to": "clause",
       "ids": [
         "PO-009"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1367,6 +1538,15 @@
       "to": "clause",
       "ids": [
         "RECEIVE-001"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1391,6 +1571,15 @@
       "to": "clause",
       "ids": [
         "INVOICE-001"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1461,6 +1650,15 @@
       "to": "clause",
       "ids": [
         "INVOICE-002"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1476,6 +1674,15 @@
       "to": "clause",
       "ids": [
         "INVOICE-003"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1661,6 +1868,15 @@
       "to": "clause",
       "ids": [
         "AP-003"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1760,6 +1976,15 @@
       "to": "clause",
       "ids": [
         "REPORT-001"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1778,6 +2003,15 @@
       "to": "clause",
       "ids": [
         "REPORT-003"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1798,6 +2032,15 @@
         "CONTRACT-001",
         "CONTRACT-002",
         "CONTRACT-003"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -1931,6 +2174,15 @@
       "to": "clause",
       "ids": [
         "SEARCH-001"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -2055,6 +2307,15 @@
       "to": "clause",
       "ids": [
         "AUDIT-001"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -2067,6 +2328,15 @@
         "SECURITY-002",
         "SECURITY-003",
         "SECURITY-004"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -2088,6 +2358,15 @@
         "SECURITY-002",
         "SECURITY-003",
         "SECURITY-004"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -2172,6 +2451,15 @@
       "to": "clause",
       "ids": [
         "AGENT-005"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -2181,6 +2469,15 @@
       "to": "clause",
       "ids": [
         "AGENT-006"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -2199,6 +2496,15 @@
       "to": "clause",
       "ids": [
         "AGENT-006"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -2208,6 +2514,15 @@
       "to": "clause",
       "ids": [
         "AGENT-006"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -2226,6 +2541,15 @@
       "to": "clause",
       "ids": [
         "AGENT-008"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -2244,6 +2568,15 @@
       "to": "clause",
       "ids": [
         "AGENT-010"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {
@@ -2253,6 +2586,15 @@
       "to": "clause",
       "ids": [
         "AGENT-011"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/mechanism.md"
+        },
+        {
+          "to": "changelog"
+        }
       ]
     },
     {

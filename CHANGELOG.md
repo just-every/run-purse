@@ -668,3 +668,26 @@ in place, run `rer install` and `rer setup` inside that existing checkout, then 
 and private export until recovery is verified. Never import an older release’s
 archive directly into the current release.
 
+
+## 28 October 2026 — Native implementation notes moved from requirements
+
+- AGENT-006: The deterministic v1 slice has no model or provider.
+- AGENT-005: Native operation is labelled deterministic v1, model/provider: none.
+- SECURITY-001: All supplier/state/merge/duplicate/import-plan reads reuse supplierPublicValue rather than duplicating projection.
+- AUDIT-001: Until ACCESS-001 supplies read-only auditors, the owner alone reads and exports the full log; 
+- SEARCH-001: This completes native doors. 
+- REPORT-003: Until ACCESS-001 supplies AP/finance roles, owners and buyers read the performance dashboard/API. 
+- REPORT-003: This completes native doors. 
+- REPORT-001: This completes native capabilities. 
+- AP-003: Until ACCESS-001 provides AP and finance roles, the owner and buyers record terms, approve for cash planning and read this view; 
+- AP-003: This completes native invoice and planning doors; 
+- INVOICE-003: Until ACCESS-001 supplies AP roles, owners and buyers capture and review native invoice evidence. 
+- INVOICE-003: This completes native doors. 
+- INVOICE-002: Until ACCESS-001 supplies AP roles, the owner/buyer stages and reviews originals; 
+- INVOICE-002: This completes native invoice kinds and reading doors. 
+- INVOICE-001: Until ACCESS-001 adds an AP role, only owners and buyers read captures and download their originals. 
+- RECEIVE-001: This completes native receipt doors. 
+- PO-009: This completes native document doors; 
+- BUDGET-001: Cross-period dispositions, fully matched/synced bills and native deposits, and CARD-001/002 funded/settled provider evidence remain gaps.
+- CATALOG-001: Until ACCESS-001 supplies a separate admin role, the owner acts as admin. 
+- INTAKE-004: Until ACCESS-001 supplies admin, the owner performs administration. 
