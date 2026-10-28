@@ -39,3 +39,17 @@ export async function additionalCommentRecords(f) {
         { kind: 'agreement', record: agreement.id, reader: f.requester, denied: f.approver, name: agreement.name },
     ] };
 }
+
+export async function agreementCommentFixture(f) {
+    const { h } = f, email = f.email(5700), finance = await h.member(email, ['finance-viewer']);
+    await h.command('member', { email, name: 'synthetic-purse-5701', active: true, grants: [{ role: 'finance-viewer', scope: { locations: ['Austin'] } }] });
+    const financeId = (await h.state(finance)).actor.id;
+    const input = { version: 0, confirmed: true, name: 'synthetic-purse-5702 awarded agreement', reference: 'synthetic-purse-5703', supplier: f.supplier.id, currency: 'USD', parties: 'synthetic-purse-5704', startDate: '2026-01-01', endDate: '2027-12-31', autoRenew: false, noticeDays: 30, paymentTerms: 'Net 30', reminderDays: [7], remindersEnabled: false, reason: 'synthetic-purse-5705', ownerMember: f.email(2802), valueMinor: 20000, firstOfferMinor: 24000, firstOfferSource: 'synthetic-purse-5706', awardSource: 'synthetic-purse-5707', priceLines: f.pending.lines.map(line => ({ ...line, firstUnitMinor: 12000, awardedUnitMinor: 10000 })) };
+    const agreement = await h.command('agreement', input);
+    const awardVersion = async version => {
+        const request = await h.command('request', { ...f.pending, id: undefined, title: 'synthetic-purse-5708 award request' }, f.buyer);
+        return h.command('agreement-award', { agreement: agreement.id, agreementVersion: version, request: request.id, revision: request.revision, reason: 'synthetic-purse-5709', lines: request.lines.map((line, agreementLine) => ({ requestLine: line.id, agreementLine, firstUnitMinor: 12000, awardedUnitMinor: 10000 })) }, f.buyer);
+    };
+    await awardVersion(1);
+    return { agreement, input, finance, financeId, awardVersion };
+}

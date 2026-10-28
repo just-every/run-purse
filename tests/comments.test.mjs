@@ -8,13 +8,53 @@ import { validatePurchasingArchive } from '../scripts/installer/restore-validati
 import { harness } from './purse-harness.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
 import { pdfContent } from './pdf-content.mjs';
-import { commentsFixture, commentPath, additionalCommentRecords } from './comments-fixture.mjs';
+import { commentsFixture, commentPath, additionalCommentRecords, agreementCommentFixture } from './comments-fixture.mjs';
 
 const file = { name: 'synthetic-purse-5105.txt', mediaType: 'text/plain', base64: Buffer.from('synthetic-purse-5106 internal bytes').toString('base64') };
 const notices = (h, cookie) => h.send('/api/purse/comments/notices', undefined, cookie);
 const history = async (h, kind, id, cookie) => { const r = await h.send(commentPath(kind, id), undefined, cookie); assert.equal(r.status, 200, JSON.stringify(r.value)); return r.value.comments; };
 const archive = async (h, name) => { const path = join(h.dir, name + '.rer'); await exportArchive(await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability }), path, []); return path; };
 const restore = async (t, path) => { const h = await harness({ empty: true }); t.after(() => h.close()); await importArchive(await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability }), path, []); const r = await h.send('/auth/bootstrap', { token: 'synthetic-local-test-bootstrap-token-0123456789', displayName: 'synthetic-purse-5107' }); assert.equal(r.status, 303); return { h, cookie: r.cookie }; };
+
+async function agreementCommentScope(f) {
+    const { h } = f, { agreement, input, finance, financeId, awardVersion } = await agreementCommentFixture(f);
+    const initial = await h.command('comment-add', { kind: 'agreement', record: agreement.id, attempt: 'synthetic-purse-5710', body: 'synthetic-purse-5711 current awarded context', mentions: [financeId], file }, f.buyer);
+    const own = await f.add('agreement', agreement.id, 'synthetic-purse-5712 finance context', finance);
+    const download = id => '/api/purse/download/attachment/' + id;
+    const initialFile = initial.versions[0].files[0];
+    assert.deepEqual((await history(h, 'agreement', agreement.id, finance)).map(c => c.id).sort(), [initial.id, own.id].sort());
+    assert.equal((await h.send(download(initialFile), undefined, finance)).value, 'synthetic-purse-5106 internal bytes');
+    const visible = (await notices(h, finance)).value;
+    assert.equal(visible.notices.find(n => n.record === agreement.id).body, initial.versions[0].body);
+    assert.ok(visible.recent.some(c => c.id === initial.id));
+    await h.command('agreement', { ...input, id: agreement.id, version: 1, name: 'synthetic-purse-5713 private amendment' });
+    const privateComment = await h.command('comment-add', { kind: 'agreement', record: agreement.id, attempt: 'synthetic-purse-5714', body: 'synthetic-purse-5715 confidential amendment context', mentions: [financeId], file: { ...file, name: 'synthetic-purse-5716.txt', base64: Buffer.from('synthetic-purse-5717 confidential amendment bytes').toString('base64') } }, f.buyer);
+    assert.equal((await h.send(commentPath('agreement', agreement.id), undefined, finance)).status, 403, 'Historical finance entitlement refuses the current thread');
+    assert.deepEqual(privateComment.warnings.map(w => w.id), [financeId], 'A historical award never grants the live agreement thread');
+    for (const id of [initialFile, privateComment.versions[0].files[0]]) assert.equal((await h.send(download(id), undefined, finance)).status, 403, 'Both retained and new comment bytes require current agreement scope');
+    const hidden = (await notices(h, finance)).value;
+    assert.equal(hidden.notices.length, 2);
+    assert.ok(hidden.notices.every(n => n.canRead === false && n.message === 'You were mentioned on a record you cannot access.'));
+    assert.ok(hidden.recent.every(c => ![initial.id, own.id, privateComment.id].includes(c.id)), 'Dashboard excludes the entire inaccessible agreement thread');
+    for (const value of [agreement.id, initial.versions[0].body, privateComment.versions[0].body, 'synthetic-purse-5713', 'synthetic-purse-5716']) assert.ok(!JSON.stringify(hidden).includes(value), 'Notices redact historical and current content');
+    const state = (await h.state(finance)).data;
+    assert.equal(state.agreement.find(a => a.id === agreement.id).version, 1, 'Retained awarded agreement evidence stays readable');
+    assert.ok(!state.attachment.some(a => [initialFile, privateComment.versions[0].files[0]].includes(a.id)), 'State omits current-scope comment attachment metadata');
+    assert.ok(!state.audit.some(event => [initial.id, own.id, privateComment.id].includes(event.comment)), 'State audit snapshots cannot disclose the inaccessible live thread');
+    await h.command('comment-add', { kind: 'agreement', record: agreement.id, attempt: 'synthetic-purse-5718', body: 'No current access', mentions: [] }, finance, 403);
+    await h.command('comment-edit', { id: own.id, version: 1, body: 'No current access', mentions: [] }, finance, 403);
+    await h.command('comment-delete', { id: own.id, version: 1 }, finance, 403);
+    for (const cookie of [h.owner, f.buyer, f.requester]) {
+        assert.ok((await history(h, 'agreement', agreement.id, cookie)).some(c => c.id === privateComment.id));
+        assert.equal((await h.send(download(privateComment.versions[0].files[0]), undefined, cookie)).value, 'synthetic-purse-5717 confidential amendment bytes');
+    }
+    await awardVersion(2);
+    assert.ok((await history(h, 'agreement', agreement.id, finance)).some(c => c.id === privateComment.id), 'An exact current-version award restores legitimate thread access');
+    assert.equal((await h.send(download(privateComment.versions[0].files[0]), undefined, finance)).value, 'synthetic-purse-5717 confidential amendment bytes');
+    assert.ok((await notices(h, finance)).value.notices.every(n => n.canRead));
+    assert.equal((await h.state(finance)).data.audit.find(event => event.action === 'comment-add' && event.comment === privateComment.id).snapshot.body, privateComment.versions[0].body, 'Current agreement readers retain their comment audit evidence');
+    assert.equal((await h.command('comment-edit', { id: own.id, version: 1, body: 'synthetic-purse-5719 current finance edit', mentions: [] }, finance)).version, 2);
+}
 
 test('Internal comments preserve the pending queue and current scope while member mentions redact inaccessible content', async t => {
     const f = await commentsFixture(t), { h } = f;
@@ -48,6 +88,7 @@ test('Internal comments preserve the pending queue and current scope while membe
     const redacted = (await notices(h, f.requester)).value.notices[0]; assert.equal(redacted.canRead, false); assert.ok(!JSON.stringify(redacted).includes(body.body));
     await h.command('comment-edit', { id: own.id, version: 1, body: 'No access', mentions: [] }, f.requester, 403);
     await h.command('comment-delete', { id: own.id, version: 1 }, f.requester, 403);
+    await agreementCommentScope(f);
 });
 
 test('Author changes keep complete audited versions and portable files, and member erasure cannot revive authors or captures', async t => {

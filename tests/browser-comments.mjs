@@ -3,7 +3,7 @@ import { mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { build } from 'esbuild';
 import { nativeWebContext } from './native-web-fixture.mjs';
-import { commentsFixture, additionalCommentRecords } from './comments-fixture.mjs';
+import { commentsFixture, additionalCommentRecords, agreementCommentFixture } from './comments-fixture.mjs';
 const { chromium } = await import(process.env.PURSE_PLAYWRIGHT_MODULE || '@playwright/test');
 const selector = process.argv.find(a => a.startsWith('--width=')), widths = selector ? [Number(selector.split('=')[1])] : [1440, 390];
 const evidence = resolve(process.env.PURSE_EVIDENCE || '.cache/comments'); await mkdir(evidence, { recursive: true });
@@ -110,6 +110,39 @@ try {
                 await dashboard.getByRole('region', { name: 'Recent internal comments', exact: true }).locator('summary').click();
             }
             await capture('recent-comments-dashboard', dashboard.getByRole('region', { name: 'Recent internal comments', exact: true }), dashboard);
+            const scope = await agreementCommentFixture(f);
+            const currentBody = 'synthetic-purse-5720 awarded agreement context';
+            await f.h.command('comment-add', { kind: 'agreement', record: scope.agreement.id, attempt: 'synthetic-purse-5721', body: currentBody, mentions: [scope.financeId] }, f.buyer);
+            const financePage = await (await context(scope.finance)).newPage();
+            const agreementUrl = f.h.origin + '/app?agreement=' + scope.agreement.id;
+            await financePage.goto(agreementUrl);
+            const financeThread = financePage.getByRole('region', { name: 'Internal comments', exact: true });
+            await financeThread.getByText(currentBody, { exact: true }).first().waitFor();
+            await capture('current-awarded-agreement-comments', financeThread, financePage);
+            await f.h.command('agreement', { ...scope.input, id: scope.agreement.id, version: 1, name: 'synthetic-purse-5722 private amendment' });
+            const privateBody = 'synthetic-purse-5723 confidential amendment context';
+            await f.h.command('comment-add', { kind: 'agreement', record: scope.agreement.id, attempt: 'synthetic-purse-5724', body: privateBody, mentions: [scope.financeId], file: { name: 'synthetic-purse-5725.txt', mediaType: 'text/plain', base64: Buffer.from('synthetic-purse-5726 private amendment bytes').toString('base64') } }, f.buyer);
+            await financePage.reload();
+            await financeThread.getByRole('alert').getByText('Record outside your scope', { exact: true }).waitFor();
+            if (width === 1440) assert.ok(!(await financeThread.textContent()).includes(privateBody));
+            await capture('historical-award-comment-refusal', financeThread, financePage);
+            await financePage.goto(f.h.origin + '/app?tab=Overview');
+            const financeMentions = financePage.getByRole('region', { name: 'Comment mentions', exact: true });
+            await financeMentions.locator('summary').click();
+            await financeMentions.getByText('You were mentioned on a record you cannot access.', { exact: true }).first().waitFor();
+            const financeRecent = financePage.getByRole('region', { name: 'Recent internal comments', exact: true });
+            await financeRecent.locator('summary').click();
+            if (width === 1440) {
+                assert.equal(await financeMentions.getByRole('link').count(), 0);
+                for (const region of [financeMentions, financeRecent]) for (const value of [currentBody, privateBody, 'synthetic-purse-5722', 'synthetic-purse-5725']) assert.ok(!(await region.textContent()).includes(value));
+            }
+            await capture('historical-award-redacted-mentions', financeMentions, financePage);
+            await capture('historical-award-scoped-recent', financeRecent, financePage);
+            await scope.awardVersion(2);
+            await financePage.goto(agreementUrl);
+            await financeThread.getByText(privateBody, { exact: true }).first().waitFor();
+            await financeThread.getByRole('link', { name: 'synthetic-purse-5725.txt', exact: true }).waitFor();
+            await capture('current-amendment-award-comments', financeThread, financePage);
             assert.deepEqual(errors, []);
             console.log('Native request comments, member picker, redacted notices, history and PO attachment screens passed at ' + width);
         } finally { for (const c of contexts) await c.close(); await f.h.close(); }

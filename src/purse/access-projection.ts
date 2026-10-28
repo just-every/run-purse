@@ -7,7 +7,7 @@ import { releasePosition } from './blanket-releases';
 import { servicePosition } from './service-orders';
 import { currentScimAssignment, scimAssignmentAllows, scimApprovalHolder } from './scim-approvals';
 import { accessGrants, allowed, buyerLimit, buyerLimits } from './access';
-import { canReadRecord, unrestrictedPermission } from './access-records';
+import { canReadCommentParent, canReadRecord, unrestrictedPermission } from './access-records';
 import { blanketPosition } from './blanket-orders';
 import { publicEvidence } from './invoice-status';
 import { coveringPolicies } from './policy-match';
@@ -114,6 +114,7 @@ export function scopeAuditRows(s: State, a: Actor, data: Data) {
             const row = sources[0];
             if (row.kind === 'supplier') return unrestrictedPermission(s, a, 'procurement.manage');
             if (row.kind === 'policy') return policyIds.has(row.id);
+            if (row.kind === 'agreement' && action.startsWith('comment-')) return canReadCommentParent(s, a, row.kind, { ...row.value, id: row.id });
             return canReadRecord(s, a, row.kind, { ...row.value, id: row.id });
         }
         return event.actor === a.id && event.action === 'protected-input-refused';
