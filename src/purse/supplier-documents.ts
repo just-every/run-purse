@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { canonicalSupplier } from './supplier-identity';
 import { all, audit, can, date, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
@@ -89,4 +90,13 @@ export function lapsedSupplierDocuments(s: State, supplierId: string, now = Date
     const supplier = canonicalSupplier(s, supplierId);
     return all(s, 'supplierDocument').filter(document => document.required && canonicalSupplier(s, document.supplier) === supplier
         && supplierDocumentStatus(s, document, now).lapsed);
+}
+
+/** A value-free binding to the buyer-reviewed original; withdrawn bytes remain history. */
+export function supplierDocumentOriginal(s: State, document: Data) {
+    const file = get(s, 'attachment', document.attachment);
+    return { document: document.id, documentVersion: document.version, sourceSupplier: document.supplier, attachment: file.id,
+        sha256: file.erasure ? file.sha256 : createHash('sha256').update(Uint8Array.from(atob(file.base64), char => char.charCodeAt(0))).digest('hex'),
+        available: !file.erasure && file.privateSupplierDocument === true && file.kind === 'supplier' && file.record === document.supplier
+            && document.review?.attachment === file.id && Boolean(document.reviewedBy) };
 }
