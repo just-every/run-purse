@@ -34,7 +34,8 @@
     },
     {
       "binding": "MAIL_FROM",
-      "environment": "MAIL_FROM"
+      "environment": "MAIL_FROM",
+      "verifyStandIn": "Purse <purse@example.com>"
     },
     {
       "binding": "EMAIL_INTAKE_WEBHOOK_SECRET",
@@ -49,7 +50,8 @@
     {
       "binding": "OIDC_PROVIDERS",
       "environment": "OIDC_PROVIDERS",
-      "optional": true
+      "optional": true,
+      "verifyStandIn": "[]"
     },
     {
       "binding": "OIDC_CREDENTIALS",

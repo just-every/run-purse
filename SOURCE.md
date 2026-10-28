@@ -78,3 +78,38 @@ checksum check.
 All seven vendored modules (`demo`, `operator-auth`, `owner-claim`, `mail`, `dependencies`, `import-kit` and its `d1-transport` dependency) are refreshed together from tag `rer-v0.2.30` (`d434ea67989fe10b6ddff01daba8bb350975e54a`), with the `src/base` runtime copies, `src/client.tsx`, `src/router.tsx`, the installer seed and fonts, and `.github/workflows/run-demo.yml`. Their runtime bytes are recorded in `base-copies.json`; applied migrations retain their historical bytes. Demo labels and effects use Base unchanged. Base mail silently suppresses demo delivery and auth accepts its success result; Purse needs no demo mail wrapper and serves no captured-mail viewer. See `DEMO.md`.
 
 Migration `0022_import_kit_progress.sql` materializes the tag’s additive preparation-step and erasure-progress schema arrays. Earlier applied migrations are unchanged.
+
+## Agent door source preparation
+
+The shared agent door and Business settings source are retained at Base commit
+`d555e789cffb744a9f83d76ebe42a2e3bdd7a055` (unreleased). Their exact paths,
+digests and modes are recorded in `base-copies.json`:
+
+| Included source | Base origin |
+| --- | --- |
+| `src/modules/agent-door` | `modules/agent-door` |
+| `src/modules/business-settings` | `modules/business-settings` |
+| `src/foundation/runtime/theme-frame.ts` | `foundation/runtime/theme-frame.ts` |
+| `src/foundation/runtime/icon-head.ts` | `foundation/runtime/icon-head.ts` |
+
+The archive-aware authoring command from that same Base pin records these
+copies. Existing runtime copies and the installed command pin remain at their
+individually recorded revisions. No generated CLI source is changed.
+
+Additive migrations `0040_business_settings.sql`, `0041_business_people.sql`
+and `0042_agent_door.sql` retain the corresponding Base schema bytes. Earlier
+migrations are unchanged. This preparation does not expose an MCP endpoint,
+accept Business policy, bind teammates or change native purchasing authority.
+
+Full adoption requires production-native invitation and sensitive-action proof
+lifecycles. Purse supports OIDC invitation acceptance, but protected reveal and
+key changes still require a consumed, session-bound native email step-up proof.
+OIDC admission alone does not create that proof. The pinned verifier's owner
+initializer receives an application request function but no captured-mail reader;
+its isolated network module can return provider receipts but cannot deliver
+one-time confirmation links to the initializer. Production one-click sign-in
+is unavailable. A test-only verifier mail-capture interface is needed to complete
+real native email confirmation without direct SQL, demo authority or a production
+verification route. Until that exists and native adapters and the complete
+specialist journey pass, this source preparation is not agent-door adoption or
+release evidence.
