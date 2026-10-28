@@ -5,11 +5,17 @@ import { call, Form, Field, Table, money, type D } from './shared';
 const dimensions = [['department', 'Department'], ['project', 'Project'], ['location', 'Location'], ['supplier', 'Supplier'], ['category', 'Category'], ['glAccount', 'GL account']];
 export function SpendReport({ data }: { data: D }) {
     const [report, setReport] = useState<D>(), [error, setError] = useState(''), [detail, setDetail] = useState<D>();
+    const [filters, setFilters] = useState<D>({}), [saved, setSaved] = useState<D[]>([]), [selected, setSelected] = useState<D>(), [maySave, setMaySave] = useState(false), [formVersion, setFormVersion] = useState(0);
+    async function savedList() { const result = await call('saved-reports'); setSaved(result.definitions); setMaySave(result.maySave); }
+    async function openSaved(id: string) {
+        const result = await call('saved-reports/' + id + '/view');
+        setReport(result.report); setFilters(result.definition.filters); setSelected(result.definition); setDetail(undefined); setError(''); setFormVersion(value => value + 1);
+    }
     async function load(filters: D = {}) {
         const params = new URLSearchParams(Object.entries(filters).filter(([, v]) => v !== ''));
-        setReport(await call('spend-report?' + params)); setDetail(undefined); setError('');
+        setReport(await call('spend-report?' + params)); setFilters(filters); setSelected(undefined); setDetail(undefined); setError('');
     }
-    useEffect(() => { load().catch(e => setError(e.message)); }, []);
+    useEffect(() => { Promise.all([load(), savedList()]).catch(e => setError(e.message)); }, []);
     const shownDimensions = [...dimensions, ...(report?.customDimensions ?? []).map((field:D) => [field.value, field.label])];
     return <section><h1 className="page-title">Spend and commitments</h1>
         <p className="quiet">Current outstanding authority is reserved before PO issuance and committed after issuance. Actual is recorded invoice evidence, including exceptions; it is not a payment or matching confirmation. Currencies stay separate.</p>
@@ -17,11 +23,19 @@ export function SpendReport({ data }: { data: D }) {
         <SpendQuestions data={data}/>
         <PeriodBudgets data={data}/>
         {error && <p role="alert">{error}</p>}
-        {report && <><Form label="Filter spend" onSubmit={load}>
-            <Field label="From date" name="from" type="date" required={false}/><Field label="Through date" name="through" type="date" required={false}/>
-            {shownDimensions.map(([id, label]) => <label className="field" key={id}>{label}<select aria-label={label} name={id}><option value="">All {label.toLowerCase()}s</option>{report.choices[id].map((c: D) => <option key={c.value} value={c.value}>{c.label}</option>)}</select></label>)}
-            <Field label="Group by" name="groupBy" defaultValue="supplier" options={shownDimensions.map(([value, label]) => ({ value, label }))}/>
+        {report && <><Form key={formVersion} label="Filter spend" onSubmit={load}>
+            <Field label="From date" name="from" type="date" defaultValue={filters.from} required={false}/><Field label="Through date" name="through" type="date" defaultValue={filters.through} required={false}/>
+            {shownDimensions.map(([id, label]) => <label className="field" key={id}>{label}<select aria-label={label} name={id} defaultValue={filters[id] ?? ''}><option value="">All {label.toLowerCase()}s</option>{report.choices[id].map((c: D) => <option key={c.value} value={c.value}>{c.label}</option>)}</select></label>)}
+            <Field label="Group by" name="groupBy" defaultValue={filters.groupBy || 'supplier'} options={shownDimensions.map(([value, label]) => ({ value, label }))}/>
         </Form>
+        <section aria-label="Saved report views"><h2>Saved views</h2>
+            <p className="quiet">Save the applied filters and grouping for yourself. Every open and download uses your current access and current records. Amounts in downloads are integer minor units, separated by currency.</p>
+            {saved.length > 0 && <Form label="Open saved view" onSubmit={async b => openSaved(b.view)}><Field label="Saved view" name="view" options={saved.map(view => ({value:view.id,label:view.name}))}/></Form>}
+            {maySave && <Form label="Save current view" onSubmit={async b => { const definition = await call('saved-reports', {name:b.name,filters}); await savedList(); await openSaved(definition.id); }}><Field label="View name" name="name"/></Form>}
+            {selected && <div className="record"><h3>{selected.name}</h3><p><a href={'/api/purse/saved-reports/' + selected.id + '/csv'}>Download CSV</a> · <a href={'/api/purse/saved-reports/' + selected.id + '/xlsx'}>Download XLSX</a></p>
+                {maySave && <Form label="Remove saved view" onSubmit={async () => { await call('saved-reports', {id:selected.id,version:selected.version,remove:true}); setSelected(undefined); await savedList(); }}><span>Remove this private definition.</span></Form>}
+            </div>}
+        </section>
         <h2>Currency totals</h2><Table heads={['Currency', 'Reserved', 'Committed', 'Actual invoice evidence']}>
             {report.totals.map((r: D) => <tr key={r.currency}><td>{r.currency}</td>{['reserved', 'committed', 'actual'].map(k => <td key={k}><button onClick={() => setDetail({ label: r.currency + ' · ' + k, rows: report.rows.filter((s: D) => s.currency === r.currency && s.kind === k) })}>{money(r[k + 'Minor'], r.currency)}</button></td>)}</tr>)}
         </Table>{!report.rows.length && <p className="quiet">No records match these filters.</p>}

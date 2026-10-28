@@ -57,7 +57,8 @@
     ["tests/browser.mjs", "--width=1440", "--journey=rfq"]
   ],
   "19": [
-    ["tests/browser.mjs", "--width=1440", "--journey=spend-report"]
+    ["tests/browser.mjs", "--width=1440", "--journey=spend-report"],
+    ["tests/browser-saved-reports.mjs"]
   ],
   "20": [
     ["tests/browser.mjs", "--width=390", "--journey=performance-report"]
