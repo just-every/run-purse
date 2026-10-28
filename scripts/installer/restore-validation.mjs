@@ -32,7 +32,7 @@ import { validatePayables } from './restore-payables.mjs';
 import { validateOrderLinks } from './restore-order-links.mjs';
 import { validateSupplierPerformance } from './restore-supplier-performance.mjs';
 import {validatePoGeneration} from './restore-po-generation.mjs';
-import { validateSupplierInvoices } from './restore-supplier-invoice.mjs';
+import { validateSupplierInvoices, validateSupplierInvoiceApprovals } from './restore-supplier-invoice.mjs';
 import { validateQuoteAgents } from './restore-quote-agent.mjs';
 import { validateOrderThreads } from './restore-order-thread.mjs';
 import { validateAgentGovernance } from './restore-agent-governance.mjs';
@@ -162,5 +162,5 @@ export function validatePurchasingArchive(rows) {
  validateInvoiceReadings(all,get,check);
  validateQuoteReadings(all,get,check);
  validateReceiptRouting(all,get,check);
- validateInvoiceRisk(all,get,check); validateQuoteAwards(all,get,check); validatePayables(all,get,check); validatePantry(all,get,check); validateOrderLinks({get,all}); validateSupplierPerformance({get,all}); validateSupplierDocuments(all,get,check); validatePoDocuments(all,get); validateOrderChasing(all,get,check); validateAgentGovernance(all,get,check); validateCodingAgent(all,get,check); validateOrderThreads(all,get,check); validateQuoteAgents(all,get,check); validateSupplierInvoices(all,get,check); validatePoGeneration(all,get,check); return true;
+ validateInvoiceRisk(all,get,check); validateQuoteAwards(all,get,check); validatePayables(all,get,check); validatePantry(all,get,check); validateOrderLinks({get,all}); validateSupplierPerformance({get,all}); validateSupplierDocuments(all,get,check); validatePoDocuments(all,get); validateOrderChasing(all,get,check); validateAgentGovernance(all,get,check); validateCodingAgent(all,get,check); validateOrderThreads(all,get,check); validateQuoteAgents(all,get,check); validateSupplierInvoices(all,get,check); validateSupplierInvoiceApprovals(all,get,check); validatePoGeneration(all,get,check); return true;
 }

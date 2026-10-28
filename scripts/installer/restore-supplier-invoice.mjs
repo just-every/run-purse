@@ -27,3 +27,28 @@ export function validateSupplierInvoices(all, get, check) {
     }
     for (const invoice of all('invoice').filter(invoice => invoice.supplierSubmission)) check(get('supplierInvoiceSubmission', invoice.supplierSubmission).invoice === invoice.id, 'supplier_invoice_backlink');
 }
+
+export function validateSupplierInvoiceApprovals(all, get, check) {
+    for (const event of all('orderSend')) {
+        const history = event.invoiceApprovalRuleHistory ?? [];
+        check(!event.invoiceApprovalRule || JSON.stringify(event.invoiceApprovalRule) === JSON.stringify(history.at(-1)), 'supplier_invoice_rule_latest');
+        for (const [index, rule] of history.entries()) {
+            check(rule.version === index + 1 && typeof rule.enabled === 'boolean' && rule.order === event.order && rule.send === event.id && rule.revision === event.revision && rule.pdfSha256 === event.pdf.sha256 && typeof rule.actor === 'string' && Number.isSafeInteger(rule.operatorVersion) && rule.operatorVersion > 0 && rule.reason?.trim() && Number.isFinite(Date.parse(rule.at)), 'supplier_invoice_rule');
+            check(!rule.enabled || event.invoiceConsentHistory?.some(consent => consent.version === rule.invoiceConsentVersion && consent.enabled && consent.actor === rule.actor && consent.operatorVersion === rule.operatorVersion), 'supplier_invoice_rule_consent');
+            check(all('audit').some(entry => entry.action === 'supplier-invoice-rule' && entry.record === event.order && entry.version === rule.version && entry.enabled === rule.enabled && entry.actor === rule.actor && entry.at === rule.at), 'supplier_invoice_rule_audit');
+        }
+    }
+    for (const invoice of all('invoice')) {
+        const approval = invoice.paymentApproval;
+        check(!invoice.paymentSchedule || approval, 'supplier_invoice_schedule_approval');
+        if (!approval) continue;
+        const source = get('supplierInvoiceSubmission', invoice.supplierSubmission), event = get('orderSend', source.send), rule = event.invoiceApprovalRuleHistory?.find(rule => rule.version === approval.ruleVersion);
+        check(rule?.enabled && approval.invoice === invoice.id && approval.order === invoice.order && approval.send === event.id && approval.revision === source.revision && approval.owner === rule.actor && approval.operatorVersion === rule.operatorVersion && approval.documentSha256 === invoice.document.sha256 && approval.reading === invoice.confirmedReading && invoice.sourceConfirmation === 'confirmed' && approval.amountMinor === invoice.totalMinor && approval.currency === invoice.currency && approval.match === 'three-way' && Date.parse(approval.at) >= Date.parse(invoice.confirmedAt), 'supplier_invoice_payment_approval');
+        check(all('audit').some(entry => entry.action === 'supplier-invoice-approved' && entry.record === invoice.id && entry.ruleVersion === approval.ruleVersion && entry.documentSha256 === approval.documentSha256 && entry.actor === approval.actor && entry.at === approval.at), 'supplier_invoice_approval_audit');
+        const schedule = invoice.paymentSchedule;
+        if (schedule) {
+            check(schedule.version === 1 && schedule.invoice === invoice.id && date(schedule.date) && schedule.approvalAt === approval.at && schedule.basis === 'native-payment-instruction' && schedule.reason?.trim() && Date.parse(schedule.at) >= Date.parse(approval.at), 'supplier_invoice_schedule');
+            check(all('audit').some(entry => entry.action === 'supplier-invoice-schedule' && entry.record === invoice.id && entry.date === schedule.date && entry.actor === schedule.actor && entry.at === schedule.at), 'supplier_invoice_schedule_audit');
+        }
+    }
+}

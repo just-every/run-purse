@@ -62,3 +62,59 @@ test('Supplier invoice link captures exact private PDF and balance ancestry, hol
     await h.send('/api/purse/order-send/' + f.order.id + '/revoke', { reason: 'synthetic-purse-4518' }, f.buyer);
     assert.equal((await read(url)).status, 410); assert.equal((await post(h, url, { ...body, reference: 'synthetic-purse-4519' })).status, 410);
 });
+
+
+test('Owner-consented supplier flip approves only confirmed three-way evidence, schedules once and holds excess or later risk through public doors', async t => {
+    const h = await harness(); t.after(() => h.close()); const f = await orderSendFixture(h);
+    await f.send(); const link = orderLink(h), url = link.href + '/invoices';
+    await post(h, link, { decision: 'acknowledge', revision: f.order.revision, consent: true, name: 'synthetic-purse-4600' });
+    await h.command('receipt', { order: f.order.id, line: f.order.lines[0].id, event: 'receive', quantity: '1', reason: 'Accepted first unit' });
+    const grant = { revision: f.order.revision, enabled: true, consent: true, reason: 'Share exact supplier invoice balance' };
+    assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent', grant, h.owner)).status, 200);
+    const rule = { order: f.order.id, revision: f.order.revision, version: 0, enabled: true, consent: true, reason: 'Approve exact matched invoices after private AP review' };
+    await h.command('supplier-invoice-rule', rule, f.buyer, 403);
+    await h.command('supplier-invoice-rule', {...rule, consent:false}, h.owner, 400);
+    await h.command('supplier-invoice-rule', rule);
+    await h.command('supplier-invoice-rule', rule, h.owner, 409);
+    const pdf = await original(f, 'synthetic-purse-4601'), body = { revision: f.order.revision, consent: true, reference: pdf.values.reference, invoiceDate: pdf.values.invoiceDate, freightAmount: '0.00', taxAmount: '0.00', lines: [{line:f.order.lines[0].id, quantity:'1', unitAmount:'100.00'}], document:pdf.document };
+    assert.equal((await post(h,url,body)).status,200);
+    let invoice = (await h.state()).data.invoice.find(value=>value.reference===body.reference);
+    assert.equal(invoice.paymentApproval,undefined,'Source confirmation is mandatory despite the rule');
+    const schedule = {invoice:invoice.id,version:0,date:'2026-11-20',reason:'Native AP payment instruction'};
+    await h.command('supplier-invoice-schedule',schedule,f.outsider,403);
+    await h.command('supplier-invoice-schedule',schedule,f.buyer,409);
+    const instructions = await h.command('invoice-reading-instructions',{source:invoice.supplierSource},f.buyer);
+    const field = value => ({value,confidence:value===null?0:1,page:value===null?null:1,excerpt:value});
+    const reading = await h.command('invoice-reading-propose',{source:instructions.source,reader:{provider:'synthetic-purse-4602',model:'synthetic-purse-4603',runReference:'synthetic-purse-4604'},fields:{...Object.fromEntries(Object.entries(pdf.values).map(([key,value])=>[key,field(value)])),lines:[{description:field(f.order.lines[0].description),quantity:field('1'),unitAmount:field('100.00'),amount:field('100.00')}]}},f.buyer);
+    const confirm = {id:reading.id,version:1,reviewed:true,reason:'AP confirms exact private original',lines:[{id:reading.lines[0].id,orderLine:f.order.lines[0].id}]};
+    await h.command('invoice-reading-confirm',confirm,f.outsider,403);
+    // Revoking the rule preserves capture and review while stopping automatic authority.
+    await h.command('supplier-invoice-rule',{...rule,version:1,enabled:false,reason:'Pause automatic approval'});
+    await h.command('invoice-reading-confirm',confirm,f.buyer);
+    invoice=(await h.state()).data.invoice.find(value=>value.id===invoice.id);assert.equal(invoice.paymentApproval,undefined);
+    await h.command('supplier-invoice-rule',{...rule,version:2});
+    invoice=(await h.state()).data.invoice.find(value=>value.id===invoice.id);
+    assert.equal(invoice.paymentApproval.match,'three-way');assert.equal(invoice.paymentApproval.amountMinor,10000);assert.equal(invoice.paymentApproval.ruleVersion,3);assert.equal(invoice.paymentApproval.documentSha256,invoice.document.sha256);
+    assert.equal((await (await read(url)).json()).invoices[0].status,'approved');
+    await h.command('invoice-reading-confirm',confirm,f.buyer,409);
+    assert.equal((await post(h,url,body)).status,200);
+    assert.equal((await h.state()).data.audit.filter(entry=>entry.action==='supplier-invoice-approved'&&entry.record===invoice.id).length,1,'Replayed capture cannot repeat approval');
+    await h.command('supplier-invoice-schedule',schedule,f.buyer);
+    assert.equal((await (await read(url)).json()).invoices[0].status,'scheduled');
+    await h.command('supplier-invoice-schedule',schedule,f.buyer,409);
+    let rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
+    const forged=structuredClone(rows), changed=forged.find(row=>row.kind==='invoice'&&row.id===invoice.id), value=JSON.parse(changed.value);value.paymentApproval.amountMinor=1;changed.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(forged),/supplier_invoice_payment_approval/);
+    assert.equal((await post(h,url,{...body,reference:'synthetic-purse-4605'})).status,200);
+    const excess=(await h.state()).data.invoice.find(value=>value.reference==='synthetic-purse-4605');
+    for(const code of ['po-balance','duplicate-document','near-duplicate'])assert.ok(excess.flags.some(flag=>flag.code===code),code);
+    assert.equal(excess.paymentApproval,undefined);await h.command('supplier-invoice-schedule',{...schedule,invoice:excess.id},f.buyer,409);
+    assert.equal((await (await read(url)).json()).invoices[1].status,'received');
+    // A later duplicate original holds a historical approval; it cannot retain a current scheduled claim.
+    await h.command('attachment',{kind:'invoice',record:invoice.id,...pdf.document},f.buyer);
+    const held=(await h.state()).data.invoice.find(value=>value.id===invoice.id);assert.ok(held.flags.some(flag=>flag.code==='duplicate-document'));assert.ok(held.paymentApproval,'Historical approval is retained');
+    assert.equal((await (await read(url)).json()).invoices[0].status,'received');
+    const auditRead=await h.send('/api/purse/audit',undefined,h.owner);assert.equal(auditRead.status,200);assert.ok(auditRead.value.events.some(entry=>entry.action==='supplier-invoice-approved'&&entry.record===invoice.id));
+    const auditCsv=await h.send('/api/purse/audit.csv',undefined,h.owner);assert.equal(auditCsv.status,200);assert.ok(auditCsv.value.includes('supplier-invoice-schedule'));
+    assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent',{...grant,enabled:false,reason:'Withdraw supplier access'},h.owner)).status,200);
+    assert.equal((await read(url)).status,410);assert.equal((await post(h,url,body)).status,410);
+});
