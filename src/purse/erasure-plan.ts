@@ -34,7 +34,8 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   // notes. Erasing an approver on the PO must redact both copies together.
   if(row.kind==='order'&&linked.has(row.id)&&!linked.has(row.value.request)){linked.add(row.value.request);changed=true;}
 
-  if(!['invoiceException','crossTeamReview','audit','comment','commentNotice','agentRun','orderChaseEvent','orderThreadMessage','supplierInvoiceSubmission','orderSupplierResponse','orderSend','orderAcknowledgment','travelExpense','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
+  if(row.kind==='supplierTaxReview' && linked.has(row.value.supplier) && !linked.has(row.id)){linked.add(row.id);changed=true;}
+  if(!['invoiceException','supplierTaxReview','crossTeamReview','audit','comment','commentNotice','agentRun','orderChaseEvent','orderThreadMessage','supplierInvoiceSubmission','orderSupplierResponse','orderSend','orderAcknowledgment','travelExpense','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
   const v=row.value;
   if([v.comment,v.request,v.order,v.record,v.source,v.reading,v.emailIntake,v.apInvoiceEmail,v.attachment,v.rfq].some(ref=>linked.has(ref))&&!linked.has(row.id)){linked.add(row.id);changed=true;}
  }}
@@ -53,17 +54,18 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   if(Array.isArray(value))return value.map(item=>visit(item,field,affected));
   if(value&&typeof value==='object') {
    const result=Object.fromEntries(Object.entries(value).map(([name,item])=>[replace(name),name==='logo'?item:visit(item,name,affected)]));
+   if(affected&&value.document&&value.documentVersion&&value.reviewed&&value.eligibility)result.reason=erasedText;
    if(affected&&value.sha256&&typeof value.size==='number')result.name=erasedText;
    return affected&&(typeof value.base64==='string'||typeof value.key==='string'&&value.sha256)?eraseFile(result):result;
   }
   return value;
  };
  for(const [oldKey,row]of before) {
-  if(row.kind==='nativeReviewAuthority')continue;
+  if(['nativeReviewAuthority','nativeTaxAuthority'].includes(row.kind))continue;
   if(row.kind==='erasureReceipt'&&row.value.actor===subject.operator){const value={...row.value,actor:alias};state.set(oldKey,{...row,value});fields.push({kind:row.kind,id:row.id,path:['actor'],before:erasureDigest(row.value.actor),after:erasureDigest(alias)});continue;}
   if(['supplierMatchingKey','invoiceEvidenceKey','erasureReceipt'].includes(row.kind))continue;
   const affected=linked.has(row.id),value=visit(row.value,'',affected);
-  if(['crossTeamReview','comment','orderThreadMessage','orderSend','recurringNoticeSend'].includes(row.kind)&&affected)value.erasure=id;
+  if(['supplierTaxReview','crossTeamReview','comment','orderThreadMessage','orderSend','recurringNoticeSend'].includes(row.kind)&&affected)value.erasure=id;
   if(row.kind==='travelExpense'&&affected)Object.assign(value,{erasure:id,originalStatus:'withdrawn',originalSourceVerified:false,sourceBasis:'Original withdrawn by personal-data erasure; normalized financial evidence retained. The original source cannot be reverified.'});
   if(row.kind==='attachment'&&affected)Object.assign(value,eraseFile(value));
   if(row.kind==='emailIntakeMailEvent'&&value.status==='pending'&&contains(row.value)){value.status='suppressed';}

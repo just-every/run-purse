@@ -40,6 +40,7 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
     if (kind === 'order') return allowed(s, a, 'po.read', record);
     if (['supplierInvoiceSubmission','invoice', 'invoiceSource', 'invoiceReading', 'invoiceReadingEvent'].includes(kind)) return allowed(s, a, 'invoice.read', record);
     if (['rfq', 'rfqResponse', 'rfqMailEvent'].includes(kind)) return allowed(s, a, 'rfq.read', record);
+    if (kind === 'supplierTaxReview') return a.owner;
     if (kind === 'supplier') return true;
     if (kind === 'supplierDocument') return mayReadPrivateSupplier(s, a, get(s, 'supplier', record.supplier));
     if (['agreement', 'agreementReading', 'agreementReadingEvent'].includes(kind)) {
