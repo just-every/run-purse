@@ -1,3 +1,4 @@
+import { AccrualReport } from './accrual-report';
 import { CommentNotices } from './comments';
 import { BudgetAlerts } from './budget-import';
 import { useSeparators } from './separated';
@@ -23,7 +24,7 @@ import { TopBar, workspaceTabs } from './top-bar';
 export function App() { useSeparators(); return new URLSearchParams(window.location.search).has('search') ? <SearchWorkspace/> : <PurchasingApp/>; }
 function firstTab() { const query = new URLSearchParams(window.location.search); return query.has('valueRequest') ? 'Value' : query.has('agreement') ? 'Agreements' : query.has('receipt') ? 'Orders' : query.has('intake') ? 'Requests' : query.get('tab') || 'Requests'; }
 function PurchasingApp() {
-    const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState(firstTab), [notice, setNotice] = useState(''), [performance, setPerformance] = useState(false);
+    const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState(firstTab), [notice, setNotice] = useState(''), [performance, setPerformance] = useState(false), [accrual,setAccrual] = useState(false);
     async function reload() { setState(await call('state')); }
     useEffect(() => { reload().catch(e => setError(e.message)); }, []);
     async function mutate(op: string, b: D) { const result = await call('command/' + op, b); if (op !== 'request-again-preview') setNotice('Saved.'); await reload(); return result; }
@@ -40,7 +41,7 @@ function PurchasingApp() {
             {current === 'Requests' && (business ? <Requests data={data} actor={actor} mutate={mutate}/> : <EmptyWorkspace owner={actor.roles.includes('owner')} onSetUp={() => open('Settings')}/>)}
             {current === 'Value' && <AgentValue data={data} actor={actor} mutate={mutate}/> }
             {current === 'Overview' && <Overview data={data} onSetUp={() => open('Settings')}/>}
-            {current === 'Reports' && <>{actor.permissions.includes('performance.read') && <button className="report-switch" onClick={() => setPerformance(!performance)}>{performance ? 'Spend and commitments' : 'Procurement performance'}</button>}{(performance || !actor.permissions.includes('report.read')) && actor.permissions.includes('performance.read') ? <PerformanceReport data={data}/> : <SpendReport data={data}/>}</>}
+            {current === 'Reports' && <>{actor.permissions.includes('report.read') && <button className="report-switch" onClick={()=>setAccrual(!accrual)}>{accrual?'Spend report':'Received not billed'}</button>}{accrual ? <AccrualReport/> : <>{actor.permissions.includes('performance.read') && <button className="report-switch" onClick={() => setPerformance(!performance)}>{performance ? 'Spend and commitments' : 'Procurement performance'}</button>}{(performance || !actor.permissions.includes('report.read')) && actor.permissions.includes('performance.read') ? <PerformanceReport data={data}/> : <SpendReport data={data}/>}</>}</>}
             {current === 'Orders' && <Orders data={data} actor={actor} mutate={mutate} reload={reload}/>}
             {current === 'Suppliers' && <Suppliers data={data} actor={actor} mutate={mutate} reload={reload}/>}
             {current === 'Agreements' && <Agreements data={data} actor={actor} mutate={mutate}/>}

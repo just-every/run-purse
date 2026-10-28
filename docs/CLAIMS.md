@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002`. Current candidate counts: 54 done, 26 partial, 33 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 REPORT-004`. Current candidate counts: 54 done, 27 partial, 32 missing; 113 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -94,7 +94,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `REPORT-001` | Spend and committed-budget dashboards | done |
 | `REPORT-002` | Saved, scheduled and exported reports | partial |
 | `REPORT-003` | Procurement performance measures | done |
-| `REPORT-004` | Month-end received-not-billed accruals | missing |
+| `REPORT-004` | Month-end received-not-billed accruals | partial |
 | `CONTRACT-001` | Agreements, renewals and contract spend | done |
 | `NOTIFY-001` | Notifications and preferences | missing |
 | `API-001` | Public API, webhooks and automation | partial |
