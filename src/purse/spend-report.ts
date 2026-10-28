@@ -23,7 +23,7 @@ export function spendReport(data: Data, filters: Data = {}) {
     const from = filters.from ? date(filters.from) : '', through = filters.through ? date(filters.through) : '';
     requireThat(!from || !through || from <= through, 'From must precede through');
     const groupBy = filters.groupBy || 'supplier';
-    const customDimensions = [...new Map(data.request.flatMap((request: Data) => ['header', 'line'].flatMap(scope =>
+    const customDimensions = [...new Map([...data.request,...data.revision,...data.order].flatMap((request: Data) => ['header', 'line'].flatMap(scope =>
         (request.intakeFormSnapshot?.[scope + 'Fields'] ?? []).map((field: Data) => ({value:scope + ':' + request.intakeForm + ':' + field.id, label:scope + ' · ' + field.label})))).map((field: Data) => [field.value,field])).values()] as Data[];
     const dimensions: string[] = [...reportDimensions,...customDimensions.map(field=>field.value)];
     requireThat(dimensions.includes(groupBy), 'Choose a supported reporting dimension');
@@ -67,7 +67,7 @@ export function spendReport(data: Data, filters: Data = {}) {
         const revision = data.revision.find((r: Data) => r.request === request.id && r.revision === order.revision) || request;
         for (const allocation of invoice.allocations) {
             const line = order.lines.find((l: Data) => l.id === allocation.line);
-            if (line) rows.push({ ...source(revision, line), kind: 'actual', amountMinor: allocation.amountMinor - (invoice.depositAppliedMinor ? distribute(invoice.depositAppliedMinor, invoice.allocations.map((a: Data) => ({ totalMinor: a.amountMinor })))[invoice.allocations.indexOf(allocation)] : 0), date: (invoice.imported ? invoice.invoiceDate || invoice.at?.slice(0, 10) || order.adoptedAt?.slice(0, 10) : invoice.at.slice(0, 10)), sourceBasis: invoice.imported ? 'Imported invoice evidence; source approval is historical' : 'Recorded invoice evidence',
+            if (line) rows.push({ ...source({...revision,...order}, {...line,...(invoice.intakeForm?{customFields:allocation.customFields}:{})}), kind: 'actual', amountMinor: allocation.amountMinor - (invoice.depositAppliedMinor ? distribute(invoice.depositAppliedMinor, invoice.allocations.map((a: Data) => ({ totalMinor: a.amountMinor })))[invoice.allocations.indexOf(allocation)] : 0), date: (invoice.imported ? invoice.invoiceDate || invoice.at?.slice(0, 10) || order.adoptedAt?.slice(0, 10) : invoice.at.slice(0, 10)), sourceBasis: invoice.imported ? 'Imported invoice evidence; source approval is historical' : 'Recorded invoice evidence',
                 currency: invoice.currency, policy: order.policy, order: order.id, number: order.number, invoice: invoice.id, reference: invoice.reference,
                 exception: data.discrepancies.some((d: Data) => d.invoiceId === invoice.id && (d.priceMismatch || d.quantityMismatch || d.receiptShortfall || d.closedBalance)) });
         }

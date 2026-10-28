@@ -1,3 +1,4 @@
+import { invoiceCustomFields } from './custom-fields';
 import { adoptionDeposits, operationalOrder } from './adoption-position';
 import { publicInvoice } from './invoice-status';
 import { invoiceEvidence, storeInvoiceOriginal } from './invoice-evidence';
@@ -54,6 +55,7 @@ export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: 
         recordAudit('attachment', value.id, { attachment: id });
     };
     requireThat(operationalOrder(s, o), 'Issued or explicitly adopted PO required', 409);
+    const customFields = invoiceCustomFields(o, b);
     const reference = text(b.reference, 'Invoice reference'), source = text(b.source, 'Invoice evidence source');
     requireThat(Array.isArray(b.allocations) && b.allocations.length > 0, 'Allocate invoice lines');
     const seen = new Set();
@@ -61,11 +63,12 @@ export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: 
         const l = o.lines.find((l: Data) => l.id === x.line);
         requireThat(l && !seen.has(l.id), 'Use each PO line once');
         seen.add(l.id);
+        requireThat(x.customFields === undefined || JSON.stringify(x.customFields) === JSON.stringify(l.customFields), 'Bill line fields must match the issued PO');
         const q = quantity(x.quantity);
-        return { line: l.id, quantity: x.quantity, q, amountMinor: moneyInput(x, 'amount', 'amountMinor', 'Invoice amount'),
+        return { ...(o.intakeForm ? { customFields: structuredClone(l.customFields), sourceOrderRevision: o.revision } : {}), line: l.id, quantity: x.quantity, q, amountMinor: moneyInput(x, 'amount', 'amountMinor', 'Invoice amount'),
             orderedMinor: extended(q, l.unitMinor), receivedQ: linePosition(s, o.id, l).accepted };
     });
-    const candidate: Data = { ...(b.release ? { release: text(b.release, 'Blanket release') } : {}), order: o.id, supplier: o.supplier, reference, source, currency: o.currency, allocations, totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total') };
+    const candidate: Data = { ...customFields, ...(b.release ? { release: text(b.release, 'Blanket release') } : {}), order: o.id, supplier: o.supplier, reference, source, currency: o.currency, allocations, totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total') };
     const identityPrior = all(s, 'invoice').find(i => canonicalSupplier(s, get(s, 'order', i.order).supplier) === canonicalSupplier(s, o.supplier) && i.reference === reference);
     const grossMinor = candidate.totalMinor;
     const depositAppliedMinor = b.depositAppliedAmount !== undefined || b.depositAppliedMinor !== undefined ? moneyInput(b, 'depositAppliedAmount', 'depositAppliedMinor', 'Deposit credit') : 0;

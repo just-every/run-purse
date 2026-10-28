@@ -1,3 +1,4 @@
+import { customValue } from './custom-fields';
 import { containsProtectedInput } from './protected-context-fields.mjs';
 import { get, requireThat, text, type Data, type State } from './types';
 
@@ -7,10 +8,12 @@ export function fieldDefinitions(input: unknown) {
     requireThat(Array.isArray(input) && input.length <= 30, 'Use up to 30 fields');
     const fields: Data[] = input.map((f: Data) => {
         const id = text(f.id, 'Field key', 60); requireThat(!containsProtectedInput({field:id}) && !containsProtectedInput({field:f.label}), 'Protected tax, bank and credential fields use their dedicated owner door'); requireThat(/^[a-z][a-z0-9_]*$/.test(id), 'Use lowercase field keys');
-        requireThat(['text', 'choice'].includes(f.type), 'Choose text or choice');
+        requireThat(['text', 'choice', 'number', 'date', 'boolean'].includes(f.type), 'Choose text, choice, number, date or yes or no');
         const options = f.type === 'choice' ? (f.options ?? []).map((v: unknown) => text(v, 'Choice', 200)) : [];
         requireThat(f.type !== 'choice' || options.length > 0 && options.length <= 50 && new Set(options).size === options.length, 'Supply unique choices');
-        return { id, label: text(f.label, 'Field label', 200), type: f.type, options, required: f.required === true, active: f.active !== false,
+        const inactiveOptions = f.type === 'choice' ? (f.inactiveOptions ?? []).map((v: unknown) => text(v, 'Inactive choice', 200)) : [];
+        requireThat(inactiveOptions.length <= 50 && new Set(inactiveOptions).size === inactiveOptions.length && inactiveOptions.every((value: string) => options.includes(value)), 'Inactive choices must belong to this list');
+        return { id, label: text(f.label, 'Field label', 200), type: f.type, options, inactiveOptions, required: f.required === true, active: f.active !== false,
             ...(f.when ? { when: { field: text(f.when.field, 'Conditional field'), equals: text(f.when.equals, 'Conditional answer') } } : {}) };
     });
     requireThat(new Set(fields.map(f => f.id)).size === fields.length, 'Field keys must be unique');
@@ -20,12 +23,13 @@ export function fieldDefinitions(input: unknown) {
 export function fieldValues(fields: Data[], input: Data = {}, required = false) {
     requireThat(input && typeof input === 'object' && !Array.isArray(input), 'Field values must be an object');
     const values: Data = {};
+    for (const key of Object.keys(input)) requireThat(fields.some(field => field.id === key), 'Unknown field: ' + key);
     for (const field of fields) {
-        if (!field.active || !shown(field, input)) continue;
+        if (!field.active) { requireThat(input[field.id] == null || input[field.id] === '', field.label + ' is inactive'); continue; }
+        if (!shown(field, input)) continue;
         const value = input[field.id];
         if (value == null || value === '') { requireThat(!required || !field.required, field.label + ' is required'); continue; }
-        values[field.id] = text(value, field.label);
-        requireThat(field.type !== 'choice' || field.options.includes(values[field.id]), field.label + ' has an inactive or unknown value');
+        values[field.id] = customValue(field, value);
     }
     return values;
 }

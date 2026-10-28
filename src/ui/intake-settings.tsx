@@ -7,8 +7,8 @@ function Definitions({label,value,change}:{label:string;value:D[];change:(value:
     return <fieldset className="wide"><legend>{label}</legend>{value.map((field,index)=><div className="line" key={index}>
         <label>Field key<input required value={field.id} onChange={e=>edit(index,'id',e.target.value)}/></label>
         <label>Label<input required value={field.label} onChange={e=>edit(index,'label',e.target.value)}/></label>
-        <label>Answer type<select aria-label="Answer type" value={field.type} onChange={e=>edit(index,'type',e.target.value)}><option value="text">Text</option><option value="choice">Choice</option></select></label>
-        {field.type==='choice'&&<label>Choices, one per line<textarea required value={(field.options??[]).join('\n')} onChange={e=>edit(index,'options',e.target.value.split('\n'))}/></label>}
+        <label>Answer type<select aria-label="Answer type" value={field.type} onChange={e=>edit(index,'type',e.target.value)}><option value="text">Text</option><option value="choice">Purse list</option><option value="number">Number</option><option value="date">Date</option><option value="boolean">Yes or no</option></select></label>
+        {field.type==='choice'&&<><label>Choices, one per line<textarea required value={(field.options??[]).join('\n')} onChange={e=>edit(index,'options',e.target.value.split('\n'))}/></label><label>Inactive choices, one per line<textarea value={(field.inactiveOptions??[]).join('\n')} onChange={e=>edit(index,'inactiveOptions',e.target.value.split('\n').filter(Boolean))}/></label></>}
         <label>Required<input type="checkbox" checked={field.required} onChange={e=>edit(index,'required',e.target.checked)}/></label>
         <label>Active<input type="checkbox" checked={field.active!==false} onChange={e=>edit(index,'active',e.target.checked)}/></label>
         <label>Show when<select aria-label="Show when" value={field.when?.field??''} onChange={e=>edit(index,'when',e.target.value?{field:e.target.value,equals:''}:undefined)}><option value="">Always</option>{value.slice(0,index).filter(f=>f.type==='choice').map(f=><option value={f.id} key={f.id}>{f.label}</option>)}</select></label>

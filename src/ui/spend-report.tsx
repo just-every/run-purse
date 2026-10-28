@@ -50,7 +50,7 @@ export function SpendReport({ data }: { data: D }) {
             <Table heads={['Request / source', 'Line / coding', 'Date / basis', 'Amount']}>
                 {detail.rows.map((r: D, i: number) => <tr key={i}><td><strong>{r.title}</strong><p>{r.request}</p>{r.order && <a href={`/api/purse/download/order/${r.order}`}>{r.number}</a>}{r.deposit && <p>Imported prepaid deposit {r.reference} · counted once</p>}{r.invoice && <p>Invoice {r.reference} · {r.exception ? 'Exception present' : 'Recorded evidence'}</p>}
                     <details><summary>Source record</summary><ReportSource data={data} row={r}/></details></td>
-                    <td>{r.description}<br/>{r.department} · {r.project} · {r.location}<br/>{r.category} · {r.supplierName}{r.glAccount && <> · GL {r.glAccount}</>}</td><td>{r.date}<br/>{r.kind}{r.sourceBasis && <p>{r.sourceBasis}</p>}</td><td>{money(r.amountMinor, r.currency)}</td></tr>)}
+                    <td>{r.description}<br/>{r.department} · {r.project} · {r.location}<br/>{r.category} · {r.supplierName}{r.glAccount && <> · GL {r.glAccount}</>}{report?.customDimensions.map((field:D)=>r[field.value]!==undefined&&<p key={field.value}>{field.label}: {r[field.value]}</p>)}</td><td>{r.date}<br/>{r.kind}{r.sourceBasis && <p>{r.sourceBasis}</p>}</td><td>{money(r.amountMinor, r.currency)}</td></tr>)}
             </Table><p>Source rows total: {detail.rows.length ? money(detail.rows.reduce((n: number, r: D) => n + r.amountMinor, 0), detail.rows[0].currency) : 'No amount'}</p><button onClick={() => setDetail(undefined)}>Close report detail</button>
         </section>}
     </section>;
