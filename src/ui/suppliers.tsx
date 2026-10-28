@@ -1,3 +1,4 @@
+import { SupplierTax } from './supplier-tax';
 import { Comments } from './comments';
 import { SupplierProtected } from './supplier-protected';
 import { Separated } from './separated';
@@ -51,6 +52,7 @@ export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; 
             {selected.mayReadProtected && <SupplierProtected key={selected.id + ":protected"} supplier={selected} owner={actor.roles.includes('owner')} reload={reload}/>}
             {!selected.mergedInto && <Attachments data={data} kind="supplier" record={selected.id} editable={Boolean(data.mayManageSupplierRegister && selected.mayManagePurchasing)} mutate={mutate}/>}
             {!selected.mergedInto && data.mayManageSupplierRegister && <><SupplierPerformance key={selected.id} supplier={selected} data={data} mutate={mutate}/><SupplierScreening supplier={selected} owner={actor.roles.includes('owner')} mutate={mutate}/><SupplierDocuments key={selected.id + ":documents"} supplier={selected} data={data} mutate={mutate} reload={reload}/><SupplierMerge key={selected.id} supplier={selected} data={data} mutate={mutate} onMerged={() => setDuplicate(undefined)}/></>}
+            {actor.roles.includes('owner') && data.supplierTax?.find((view: D) => view.supplier === (selected.mergedInto ?? selected.id)) && <SupplierTax key={selected.id + ':tax'} supplier={selected} files={data.attachment} view={data.supplierTax.find((view: D) => view.supplier === (selected.mergedInto ?? selected.id))} mutate={mutate}/>}
             <SupplierHistory supplier={selected} data={data}/>
             {data.mayManageSupplierRegister && <button onClick={() => open()}>Add another supplier</button>}
         </>}

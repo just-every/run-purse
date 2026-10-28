@@ -11,6 +11,7 @@ const globalProcurement = new Set([
     'supplier-document', 'review-supplier-document',
 ]);
 const nativeOwner = new Set([
+    'supplier-tax-review',
     'adopt-order-preview', 'adopt-order', 'propose-adopted-cancellation', 'replace-adopted-remainder',
     'review-screening', 'catalogue-grant', 'po-profile', 'agreement', 'agreement-invoice',
     'agreement-extract', 'agreement-reading-edit', 'value-policy', 'protected-context-cleanup',

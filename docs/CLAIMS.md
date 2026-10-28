@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002`. Current candidate counts: 54 done, 30 partial, 29 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 SUPPLIER-006`. Current candidate counts: 54 done, 31 partial, 28 missing; 113 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -39,7 +39,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `SUPPLIER-003` | Duplicate supplier detection | done |
 | `SUPPLIER-004` | Document expiry, compliance refresh and renewal reminders | done |
 | `SUPPLIER-005` | Supplier performance and issues | done |
-| `SUPPLIER-006` | 1099 readiness | missing |
+| `SUPPLIER-006` | 1099 readiness | partial |
 | `SUPPLIER-007` | Restricted-party screening | done |
 | `SUPPLIER-008` | New-supplier requests and vendor approval | missing |
 | `SOURCE-001` | RFQ invitations and supplier responses | done |
