@@ -100,7 +100,7 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "cfb04a63686007b008efd9a0a3974fe9c2796dea097d8e4ac5179e75a5ef4c40",
+      "sha256": "a8e2948391ef67cf9748d698b0fed618523b652f5608f3699abf2fbcebe9def0",
       "executable": false
     },
     "API.md": {
@@ -909,6 +909,10 @@
     },
     "scripts/installer/restore-coding-agent.mjs": {
       "sha256": "c91794b260c44807e737ab97259ebc375f7329afbb527ebf501644e2e294c99e",
+      "executable": false
+    },
+    "scripts/installer/restore-comments.mjs": {
+      "sha256": "c86c6a8c9872ca40bafabbeae1d1dd5e0029e147ea03b36043ea7deec5740f17",
       "executable": false
     },
     "scripts/installer/restore-conversion-variance.mjs": {
@@ -3039,6 +3043,10 @@
       "sha256": "e27909722d3e7571eafc813cb905cc6371b6c4d130f59888b7a8555c4e8b691c",
       "executable": false
     },
+    "src/purse/comments.ts": {
+      "sha256": "2e79b19daee093bd95a94ea924fa2e63f89cf15acf8e62d7054a81efde6cdddc",
+      "executable": false
+    },
     "src/purse/conversion-revision.ts": {
       "sha256": "cfca332959b26332f6e62ea2d07953c17741f1533cce81ff038dc16289a57be1",
       "executable": false
@@ -4147,6 +4155,10 @@
       "sha256": "1d108b89ed64be017316c0591899c81b774137733b5d0b9dde96f1f1d3f5a06f",
       "executable": false
     },
+    "src/ui/comments.tsx": {
+      "sha256": "9511c9fe60bc547fc688965e6fc020679a960dab477d9f5a423abd585af10822",
+      "executable": false
+    },
     "src/ui/conversion-variance.tsx": {
       "sha256": "c6438448708b23fd0d43f0641fd71f43685277036f2cabb17e7a0c09e29ca89b",
       "executable": false
@@ -4587,6 +4599,10 @@
       "sha256": "df45a29c7b199dafc1b0851521128febc651908728e2108c2365ff69fdd2c413",
       "executable": false
     },
+    "tests/browser-comments.mjs": {
+      "sha256": "6a19fe4a62a6bce9fd0764e03af1b4828256e1219bacfdb886dc4f97582128a5",
+      "executable": false
+    },
     "tests/browser-email-intake.mjs": {
       "sha256": "dbcd5611c3f0934209cad18c57c6d68aa68859a81a86076e572185731c679c30",
       "executable": false
@@ -4777,6 +4793,14 @@
     },
     "tests/coding-agent.test.mjs": {
       "sha256": "c1e8e1b7e8bd422490d3b67659451f4e1e0db54627c86f7cf003015d0778f930",
+      "executable": false
+    },
+    "tests/comments-fixture.mjs": {
+      "sha256": "1e49b184275ef7b16966ce462b9963b0fc6b2ae07e9cb9e202275f63952903f9",
+      "executable": false
+    },
+    "tests/comments.test.mjs": {
+      "sha256": "c8fb75651c6037e8861a747bcfac83f00a14e23c050563e10f8942a396d7df07",
       "executable": false
     },
     "tests/document-profile-fixture.mjs": {

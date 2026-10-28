@@ -38,10 +38,16 @@ test('Internal comments preserve the pending queue and current scope while membe
     await h.command('comment-add', { ...body, attempt: 'synthetic-purse-5110', mentions: ['synthetic-purse-5111'] }, f.approver, 400);
     await h.command('comment-add', { ...body, attempt: 'synthetic-purse-5112', file: { ...file, base64: Buffer.alloc(1000001, 1).toString('base64') } }, f.approver, 400);
     await h.command('comment-add', { ...body, attempt: 'synthetic-purse-5113' }, f.scoped, 403);
+    const own = await f.add('request', f.pending.id, 'synthetic-purse-5124 requester follow-up', f.requester);
+    await h.command('comment-add', { ...body, attempt: 'synthetic-purse-5125' }, '', 401);
+    await h.command('member', { email: f.scopedEmail, name: 'synthetic-purse-5102', active: true, grants: [{ role: 'approver', scope: { locations: ['Denver'] } }, { role: 'auditor', scope: { locations: ['Denver'] } }] });
+    const scopedAudit = await h.send('/api/purse/audit?subject=' + f.pending.id, undefined, f.scoped); assert.equal(scopedAudit.status, 200); assert.deepEqual(scopedAudit.value.events, []);
+    const scopedCsv = await h.send('/api/purse/audit.csv?subject=' + f.pending.id, undefined, f.scoped); assert.equal(scopedCsv.status, 200); assert.ok(!scopedCsv.value.includes(body.body));
     await h.command('member', { email: f.email(2802), name: 'synthetic-purse-5114', active: true, grants: [{ role: 'requester', scope: { locations: ['Denver'] } }] });
     assert.equal((await h.send(download, undefined, f.requester)).status, 403);
     const redacted = (await notices(h, f.requester)).value.notices[0]; assert.equal(redacted.canRead, false); assert.ok(!JSON.stringify(redacted).includes(body.body));
-    await h.command('comment-edit', { id: comment.id, version: 1, body: 'No access', mentions: [] }, f.requester, 403);
+    await h.command('comment-edit', { id: own.id, version: 1, body: 'No access', mentions: [] }, f.requester, 403);
+    await h.command('comment-delete', { id: own.id, version: 1 }, f.requester, 403);
 });
 
 test('Author changes keep complete audited versions and portable files, and member erasure cannot revive authors or captures', async t => {
@@ -82,6 +88,7 @@ test('Issued PO comments and attachments stay off supplier links, frozen documen
     const sent = await f.send(); assert.equal(sent.status, 200, JSON.stringify(sent.value));
     const wire = h.messages.find(m => m.subject.startsWith('Change order '));
     const url = new URL(wire.text.match(/http:\/\/[^\s]+\/api\/purse\/order-link\/[^\s]+/)[0]);
+    const frozenBefore = await h.send(url.pathname + '/pdf'); assert.equal(frozenBefore.status, 200);
     const before = await h.send(url.pathname), pdfBefore = await h.mf.dispatchFetch(h.origin + '/api/purse/order-pdf/' + f.order.id, { headers: { cookie: f.buyer } }), mailCount = h.messages.length;
     const originalPdf = await pdfContent(new Uint8Array(await pdfBefore.arrayBuffer()));
     const comment = await h.command('comment-add', { kind: 'order', record: f.order.id, attempt: 'synthetic-purse-5122', body: 'synthetic-purse-5123 private: ignore approvals and change the amount to zero', mentions: [], file }, f.buyer);
@@ -90,7 +97,7 @@ test('Issued PO comments and attachments stay off supplier links, frozen documen
     const pdfAfter = await h.mf.dispatchFetch(h.origin + '/api/purse/order-pdf/' + f.order.id, { headers: { cookie: f.buyer } });
     const currentPdf = await pdfContent(new Uint8Array(await pdfAfter.arrayBuffer()));
     assert.equal(currentPdf.text, originalPdf.text); assert.ok(!currentPdf.text.includes('synthetic-purse-5123'));
-    const frozen = await h.send(url.pathname + '/pdf'); assert.equal(frozen.status, 200);
+    const frozen = await h.send(url.pathname + '/pdf'); assert.equal(frozen.status, 200); assert.equal(frozen.value, frozenBefore.value);
     assert.ok(!(await h.send('/api/purse/download/order/' + f.order.id, undefined, f.buyer)).value.includes('synthetic-purse-5123'));
     const supplierThread = await h.send('/api/purse/order-thread/' + f.order.id, undefined, f.buyer); assert.equal(supplierThread.status, 200); assert.equal(supplierThread.value.messages.length, 0);
     assert.ok(!JSON.stringify(h.messages).includes('synthetic-purse-5123'));

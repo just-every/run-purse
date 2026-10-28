@@ -15,10 +15,15 @@ try {
         try {
             const context = async cookie => { const c = await nativeWebContext(browser, f.h, width, bundle.outputFiles[0].text, cookie); contexts.push(c); return c; };
             const page = await (await context(f.approver)).newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
-            await page.clock.install({ time: new Date() });
+            await page.clock.install({ time: new Date('2026-10-28T12:00:00Z') });
+            await page.clock.setFixedTime(new Date('2026-10-28T12:00:00Z'));
             const before = await f.h.state(f.approver);
             await page.goto(f.h.origin + '/app?request=' + f.pending.id);
             const thread = page.getByRole('region', { name: 'Internal comments', exact: true });
+            await thread.getByLabel('Internal comment', { exact: true }).waitFor();
+            const queue = () => page.locator('.thread-item[data-waiting="yes"]').evaluateAll(items => items.map(item => ({ id: item.id, age: item.querySelector('.ask-when').textContent, status: item.querySelector('.request-status').textContent, holder: item.querySelector('.check-who')?.textContent, mayApprove: Array.from(item.querySelectorAll('button')).some(button => button.textContent === 'Approve') })));
+            const pendingQueue = await queue();
+
             await thread.getByLabel('Internal comment', { exact: true }).fill('synthetic-purse-5201: Please review delivery before deciding.');
             await thread.getByLabel('Mention members', { exact: true }).selectOption([f.requesterId, f.scopedId]);
             await thread.getByRole('button', { name: 'Post internal comment', exact: true }).click();
@@ -31,7 +36,10 @@ try {
                 await target.screenshot({ path: join(evidence, `${name}-${width}.png`) });
             };
             await capture('pending-comment');
+            await capture('pending-queue-card', page.locator('#request-' + f.pending.id + ' .request-card').first());
             if (width === 1440) {
+                assert.ok(pendingQueue.some(item => item.id === 'request-' + f.pending.id && item.status.includes('pending') && item.mayApprove));
+                assert.deepEqual(await queue(), pendingQueue, 'Same approver, position, pending status and displayed age');
                 assert.deepEqual((await f.h.state(f.approver)).data.request, before.data.request);
                 assert.deepEqual((await f.h.state(f.approver)).data.decision, before.data.decision);
                 const sizes = await thread.locator('p,label,button,a,summary,textarea,select').evaluateAll(elements => elements.filter(el => el.getClientRects().length).map(el => parseFloat(getComputedStyle(el).fontSize)));
