@@ -39,7 +39,7 @@ export function savingsReport(data: Data) {
     const used = new Map<string, number>();
     for (const invoice of [...data.invoice].sort((a: Data, b: Data) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id))) {
         const order = orderById.get(invoice.order);
-        if (!order?.issuedAt || order.imported || !paidPlanning.has(invoice.id) || invoice.exception || openInvoiceFlags(invoice).length) continue;
+        if (!order?.issuedAt || order.imported || !paidPlanning.has(invoice.id) || invoice.exception || invoice.disputed || openInvoiceFlags(invoice).length) continue;
         const award = byRevision.get(order.request + ':' + order.revision);
         if (!award || !approved.has(award.request + ':' + award.revision)) continue;
         for (const allocation of invoice.allocations) {

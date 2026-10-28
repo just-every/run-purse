@@ -1,3 +1,4 @@
+import { receivedDates } from './received-dates';
 import { operationalOrder, orderAdoption } from './adoption-position';
 import { mayReceive, receiptVersion } from './receipt-routing';
 import { audit, requirePermission, get, put, requireThat, text, quantity, uid, type Actor, type Data, type State } from './types';
@@ -20,7 +21,7 @@ export function receipt(s: State, a: Actor, b: Data) {
     if (event === 'cancel') requirePermission(s, a, 'procurement.manage', o);
     const id = uid();
     const record = { order: o.id, line: l.id, event, q, quantity: b.quantity,
-        reason: text(b.reason, 'Receipt reason or milestone'), actor: a.id, at: new Date().toISOString() };
+        reason: text(b.reason, 'Receipt reason or milestone'), actor: a.id, ...receivedDates(s, o, b.effectiveDate) };
     put(s, 'receipt', id, record);
     const r = get(s, 'request', o.request), target = remainingValue(s, o), current = commitment(s, r), delta = target - current;
     const held = delta > 0 && (o.replenishmentStatus === 'held' || !reservationAvailable(s, r, delta));
@@ -32,7 +33,7 @@ export function receipt(s: State, a: Actor, b: Data) {
         if (delta) ledger(s, a, r, delta, event === 'return' ? 'return-reservation' : `${event}-release`);
         if (o.replenishmentStatus === 'held') put(s, 'order', o.id, { ...o, replenishmentStatus: 'cancelled', replenishmentMinor: 0 });
     }
-    audit(s, a, 'receipt', o.id, { event, line: l.id, quantity: b.quantity, ownerOverride: a.owner, replenishmentStatus: held ? 'held' : 'authorized' });
+    audit(s, a, 'receipt', o.id, { event, line: l.id, quantity: b.quantity, effectiveDate: record.effectiveDate, recordedDate: record.recordedDate, ownerOverride: a.owner, replenishmentStatus: held ? 'held' : 'authorized' });
     return get(s, 'receipt', id);
 }
 
@@ -52,7 +53,7 @@ export function correctReceipt(s: State, a: Actor, b: Data) {
     requireThat(b.expectedQ === beforeQ, 'Original receipt correction changed; reload', 409);
     const correctedQ = b.quantity === '0' ? 0 : quantity(b.quantity), delta = correctedQ - beforeQ;
     const position = linePosition(s, o.id, line);
-    requireThat(delta !== 0 && position.accepted + delta >= 0 && position.outstanding - delta >= 0,
+    requireThat(correctedQ <= line.q && delta !== 0 && position.accepted + delta >= 0 && position.outstanding - delta >= 0,
         'Correction exceeds current received or outstanding quantity, or changes nothing', 409);
     const attempt = text(b.attempt, 'Correction capture identifier', 100);
     requireThat(![...s.values()].some(r => r.kind === 'receipt' && r.value.correctionAttempt === attempt),

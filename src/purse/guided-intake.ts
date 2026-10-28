@@ -4,8 +4,8 @@ import { proposedSupplier } from './supplier-proposals';
 import { requests, policies } from './requests';
 import { all, audit, get, put, requirePermission, requireThat, uid, type Actor, type Data, type State } from './types';
 
-const headerKeys = ['title','supplier','currency','needDate','location','costCentre','terms','freightAmount','taxAmount','intakeForm','answers','customFields'];
-const lineKeys = ['description','quantity','unitAmount','unitMinor','category','project','catalogue','partNumber','unit','allocations','customFields'];
+const headerKeys = ['title','supplier','currency','needDate','location','costCentre','terms','freightAmount','taxAmount','intakeForm','answers','glAccount','customFields'];
+const lineKeys = ['description','quantity','unitAmount','unitMinor','category','project','catalogue','partNumber','unit','allocations','glAccount','customFields'];
 function partial(input: Data) {
     requireThat(!containsProtectedInput(input), 'Protected tax, bank and credential fields cannot be saved in intake drafts');
     requireThat(input && typeof input === 'object' && !Array.isArray(input) && JSON.stringify(input).length <= 100000, 'Draft fields must fit 100 kB');

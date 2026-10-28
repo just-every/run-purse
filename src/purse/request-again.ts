@@ -1,3 +1,4 @@
+import { customValue } from './custom-fields';
 import { fieldValues, splitValues } from './intake-fields';
 import { supplier } from './admin';
 import { catalogueAllows } from './catalogue-access';
@@ -17,6 +18,7 @@ export async function requestAgain(s: State, a: Actor, op: string, b: Data) {
     let supplierId = source.supplier;
     try { supplier(s, supplierId); } catch { supplierId = ''; flags.push({ field: 'supplier', reason: 'Supplier is unavailable; choose an eligible supplier' }); }
     const draft: Data = {
+        glAccount: source.glAccount,
         title: b.kind === 'order' ? (s.get('revision:' + source.request + ':' + source.revision)?.value.title ?? get(s, 'request', source.request).title) : source.title,
         supplier: supplierId, currency: source.currency, needDate: source.needDate,
         location: source.location, costCentre: source.costCentre, terms: source.terms,
@@ -38,7 +40,7 @@ export async function requestAgain(s: State, a: Actor, op: string, b: Data) {
         if (unitMinor !== original.unitMinor) changes.push({ label, beforeMinor: original.unitMinor, afterMinor: unitMinor });
         draft.lines.push({ description: original.description, quantity: original.quantity,
             unitMinor, category: original.category, project: original.project, catalogue: original.catalogue,
-            partNumber: original.partNumber, unit: original.unit,
+            glAccount: original.glAccount, partNumber: original.partNumber, unit: original.unit,
             shipTo: original.shipTo, allocations: structuredClone(original.allocations ?? []), customFields: structuredClone(original.customFields ?? {}) });
     }
     if (source.intakeForm) {
@@ -50,7 +52,9 @@ export async function requestAgain(s: State, a: Actor, op: string, b: Data) {
                 const values: Data = {};
                 for (const [id, value] of Object.entries(source[key] ?? {})) {
                     const definition = form[definitions].find((field: Data) => field.id === id && field.active);
-                    if (definition && (definition.type !== 'choice' || definition.options.includes(value))) values[id] = value;
+                    let eligible = false;
+                    try { if (definition) { customValue(definition, value); eligible = true; } } catch {}
+                    if (eligible) values[id] = value;
                     else flags.push({ field: key, label: id, reason: 'Field or value is inactive; left out' });
                 }
                 draft[key] = fieldValues(form[definitions], values);
@@ -59,7 +63,9 @@ export async function requestAgain(s: State, a: Actor, op: string, b: Data) {
                 const values: Data = {};
                 for (const [id, value] of Object.entries(line.customFields ?? {})) {
                     const definition = form.lineFields.find((field: Data) => field.id === id && field.active);
-                    if (definition && (definition.type !== 'choice' || definition.options.includes(value))) values[id] = value;
+                    let eligible = false;
+                    try { if (definition) { customValue(definition, value); eligible = true; } } catch {}
+                    if (eligible) values[id] = value;
                     else flags.push({ field: 'line field', label: id, reason: 'Field or value is inactive; left out' });
                 }
                 line.customFields = fieldValues(form.lineFields, values);
