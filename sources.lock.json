@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "8fff13cbb7beab69b0d67231f58068e4e3d0ad77e9f109bd77c90cf16ec88b9d",
+      "sha256": "c59dcba69a84e36b62a6c4af61f9c5da5011d8021daa5bb3ffffdf8794d3861d",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -100,11 +100,11 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "416b1c51bbc3acc1d1499b13023d4c654d4371e49850e58182229d7d97313641",
+      "sha256": "cfb04a63686007b008efd9a0a3974fe9c2796dea097d8e4ac5179e75a5ef4c40",
       "executable": false
     },
     "API.md": {
-      "sha256": "3f5db5d96a777d6e9387b649533e73f64fd7609a8b141cfaca1b4e011604d432",
+      "sha256": "8456b5dbf70cee97dd5c6ce9c72b59171c3900e96ea6e7a75f0207fb74fb3d4c",
       "executable": false
     },
     "base-copies.json": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "e533a12a4f59b57b03b6c8dd69f98ff56b59819137833a9b0c5e7e2a6c8f2b43",
+      "sha256": "1117889d2c0be36edc5c295b3effd0da8966e8b6d6ff87b156f065db766a4efe",
       "executable": false
     },
     "DEMO.md": {
@@ -139,6 +139,10 @@
       "sha256": "279a41120f9e563a8250f08c5ea0e13e828e419a879f8004c562e96561fb5449",
       "executable": false
     },
+    "docs/CLAIMS.md": {
+      "sha256": "364a77027a46cb5676d9c861df0fbbd105244a898f7f8ca25d744d192ae379b7",
+      "executable": false
+    },
     "docs/getting-started.md": {
       "sha256": "6753f6d047e4c005c208be16e359b8c87ff78af870276a726d70cc11f68026c6",
       "executable": false
@@ -148,7 +152,7 @@
       "executable": false
     },
     "docs/invoices.md": {
-      "sha256": "a38ed2514eeb1613dbc5df5ba8d2ba45878723fef885062566879288d880ac2b",
+      "sha256": "c87dcdf3776dbd9fa3e09eb6db8ca97e0292851c84def6529f4fb3cd5b6ac66a",
       "executable": false
     },
     "docs/move-in.md": {
@@ -360,7 +364,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "ea4bc4a3144d481ba77470d347ae579a33e24c3f79a0f697e9e37a502cb09fef",
+      "sha256": "11849075f0e457b39d8656e473e5bf52283e89cff67ca5203e614b89790319ce",
       "executable": false
     },
     "packaging.json": {
@@ -689,6 +693,10 @@
     },
     "scripts/ci/shards.json": {
       "sha256": "c22f60bbc53d3dce136837060743112c392bc32b1ec7a8074783e2bc4ba650e6",
+      "executable": false
+    },
+    "scripts/contract-docs.mjs": {
+      "sha256": "8d2ed0f7517f6dab0982535c6f9b014564e5204152e7a92ba793f0883fc3bce8",
       "executable": false
     },
     "scripts/delivery/base/artifact.mjs": {
@@ -3695,6 +3703,10 @@
       "sha256": "d19413b1542e4c0bb5e01cff1f6c9894081f6a179d28b7c9d34de8f26e85068b",
       "executable": false
     },
+    "src/purse/supplier-invoice-approval.ts": {
+      "sha256": "a4336227ad3b9e333ae3a7551eb243a170f4fe061b8e6b1bba56d0fbfa1d8854",
+      "executable": false
+    },
     "src/purse/supplier-invoice-public.ts": {
       "sha256": "2c9fa575aa0364f08c51d8300fbfa8197bb5da0bb785849099f6182f6c978db1",
       "executable": false
@@ -4383,6 +4395,10 @@
       "sha256": "2f1e464e64409c164ee5cedf94b6aeeab1b6cfa3a67fb5e89f7596e091815a8b",
       "executable": false
     },
+    "src/ui/supplier-invoice-settings.tsx": {
+      "sha256": "18138aab1992f2153bcce7bf22e29e1c3859d23390f9f6051cce6584a5d911a0",
+      "executable": false
+    },
     "src/ui/supplier-merge.tsx": {
       "sha256": "4659f81ec814c4179815989012357152acec8e04e40bcd2104e91b0d9acef265",
       "executable": false
@@ -4736,7 +4752,7 @@
       "executable": false
     },
     "tests/browser-supplier-invoice.mjs": {
-      "sha256": "3d01697b4528499269d6127f1144800ae466addc7574b533ed17177e44a1068c",
+      "sha256": "721bd08a61dc4a4abc3b6ecf4308688e2e2d3fceeda216db9e2f9cb1017dc70e",
       "executable": false
     },
     "tests/browser-supplier-performance.mjs": {
@@ -5008,7 +5024,7 @@
       "executable": false
     },
     "tests/supplier-invoice.test.mjs": {
-      "sha256": "49e403abf34bb36325d2b9cc42816dcfb27535c533f89d6fed9e0ec59713a957",
+      "sha256": "b3e67a5412c74e5ebc1a9a374db2d160d0c8f97ec9ecc659439912075532ac13",
       "executable": false
     },
     "tests/supplier-performance.test.mjs": {

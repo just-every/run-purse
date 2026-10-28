@@ -32,9 +32,10 @@ export async function supplierInvoiceJourney(browser, bundle, width, evidence) {
         assert.equal(await supplier.getByLabel(/remit|bank|routing/i).count(), 0);
         await supplier.screenshot({ path: join(evidence, `INVOICE-005-prefill-${width}.png`), fullPage: true });
         const doc = await PDFDocument.create(), font = await doc.embedFont(StandardFonts.Helvetica), page = doc.addPage([650,790]);
-        const lines = ['Supplier: ' + f.supplier.name, 'Invoice number: synthetic-purse-4552', 'Invoice date: 2026-10-23', 'PO number: ' + f.order.number, 'Currency: USD', 'Item: ' + f.order.lines[0].description, 'Quantity: 1', 'Unit price: 100.00', 'Line amount: 100.00', 'Subtotal: 100.00', 'Freight: 0.00', 'Tax: 0.00', 'Total: 100.00'];
+        const lines = ['Supplier: ' + f.supplier.name, 'Invoice number: synthetic-purse-4552', 'Invoice date: 2026-10-23', 'PO number: ' + f.order.number, 'Currency: USD', 'Item: ' + f.order.lines[0].description, 'Quantity: 1', 'Unit price: 100.00', 'Line amount: 100.00', 'Subtotal: 100.00', 'Freight: 5.00', 'Tax: 0.25', 'Total: 105.25'];
         lines.forEach((text, index) => page.drawText(text, { x: 20, y: 760 - 24 * index, size: 10, font })); const bytes = Buffer.from(await doc.save());
         await supplier.getByLabel('Invoice number', { exact: true }).fill('synthetic-purse-4552'); await supplier.getByLabel('Invoice date', { exact: true }).fill('2026-10-23');
+        await supplier.getByLabel('Freight (USD)',{exact:true}).fill('5.00');await supplier.getByLabel('Tax (USD)',{exact:true}).fill('0.25');
         await supplier.getByLabel('Original invoice PDF (up to 1 MB)', { exact: true }).setInputFiles({ name: 'synthetic-purse-4552.pdf', mimeType: 'application/pdf', buffer: bytes }); await supplier.getByRole('checkbox').check();
         const submission = supplier.waitForResponse(response => response.url() === link.href + '/invoices' && response.request().method() === 'POST'); await supplier.getByRole('button', { name: 'Submit invoice', exact: true }).click(); const received = await submission; assert.equal(received.status(), 200, await received.text());const submittedHeaders=await received.request().allHeaders();assert.ok(!submittedHeaders.referer||new URL(submittedHeaders.referer).pathname==='/', 'Invoice form never exposes its private bearer path in a referrer');
         await supplier.getByRole('heading', { name: 'Invoice received', exact: true }).waitFor(); await supplier.screenshot({ path: join(evidence, `INVOICE-005-received-${width}.png`), fullPage: true });
@@ -54,7 +55,7 @@ export async function supplierInvoiceJourney(browser, bundle, width, evidence) {
         await review.getByRole('button',{name:'Create invoice from reviewed original',exact:true}).click();const confirmedResponse=await confirmed;assert.equal(confirmedResponse.status(),200,await confirmedResponse.text());
         await supplier.reload();
         await supplier.getByRole('heading',{name:'synthetic-purse-4552',exact:true}).locator('..').getByText(/ · approved$/).waitFor();
-        assert.equal((await h.state()).data.invoice.find(value=>value.id===invoice.id).paymentApproval.match,'three-way');
+        const approvedInvoice=(await h.state()).data.invoice.find(value=>value.id===invoice.id);assert.equal(approvedInvoice.paymentApproval.match,'three-way');assert.equal(approvedInvoice.paymentApproval.amountMinor,10525,'Approved goods plus proportionate PO freight and tax');
         await supplier.screenshot({path:join(evidence,`INVOICE-005-approved-${width}.png`),fullPage:true});
         await ownerPage.reload();
         await rules.getByLabel('Scheduled payment date',{exact:true}).fill('2026-11-20');
@@ -67,7 +68,7 @@ export async function supplierInvoiceJourney(browser, bundle, width, evidence) {
         const secondSubmission = supplier.waitForResponse(response => response.url() === link.href + '/invoices' && response.request().method() === 'POST'); await supplier.getByRole('button', { name: 'Submit invoice', exact: true }).click(); const secondResponse = await secondSubmission; assert.equal(secondResponse.status(), 200, await secondResponse.text()); await supplier.getByRole('link', { name: 'View your submissions and remaining quantity', exact: true }).click();
         await supplier.getByRole('heading', { name: 'synthetic-purse-4553', exact: true }).waitFor(); await supplier.screenshot({ path: join(evidence, `INVOICE-005-own-status-${width}.png`), fullPage: true });
         const excess = (await h.state()).data.invoice.find(value => value.reference === 'synthetic-purse-4553'); assert.ok(excess.flags.some(flag => flag.code === 'po-balance')); assert.ok(excess.flags.some(flag => flag.code === 'duplicate-document')); assert.equal(excess.allocations[0].q, 1000);
-        assert.equal(await supplier.getByText(/duplicate-document|riskReviews|approved automatically|paid/i).count(), 0);
+        assert.equal(await supplier.getByText(/duplicate-document|riskReviews|approved automatically|scheduled|paid/i).count(), 0);
         assert.equal((await h.send('/api/purse/command/supplier-invoice-schedule',{invoice:excess.id,version:0,date:'2026-11-20',reason:'Cannot schedule held excess'},f.buyer)).status,409);
         await ownerPage.reload();await rules.screenshot({path:join(evidence,`INVOICE-005-native-instruction-${width}.png`)});
         for (const visible of [supplier, buyer]) assert.equal(await visible.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'No overflow at ' + width);
