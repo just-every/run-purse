@@ -76,6 +76,30 @@ test('Supplier invoice link captures exact private PDF and balance ancestry, hol
     edge.paid=true;const returned=await h.send('/api/purse/pantry/refresh',{invoice:invoice.id},h.owner);assert.equal(returned.status,200,JSON.stringify(returned.value));
     assert.equal((await (await read(url)).json()).invoices[0].status,'paid','Only exact payment evidence returns Paid');
 
+    // A second live order for the same supplier must not share invoice statuses.
+    const foreignRequest = await h.command('request', { ...f.request, id: undefined, revision: undefined, title: 'synthetic-purse-4520', lines: f.request.lines.map(line => ({ ...line, id: undefined })) }, f.requester);
+    await h.command('submit', { id: foreignRequest.id, revision: 1 }, f.requester);
+    await h.command('decision', { id: foreignRequest.id, revision: 1, decision: 'approved', reason: 'Independent second order approval' }, f.approver);
+    await h.command('convert', { id: foreignRequest.id, revision: 1, issue: true }, f.buyer);
+    const foreignRevision = await h.command('need-date-edit', { id: foreignRequest.id, revision: 1, line: foreignRequest.lines[0].id, needDate: '2026-11-09', reason: 'Second exact supplier revision' }, f.requester);
+    const foreignOrder = (await h.state()).data.order.find(order => order.id === foreignRevision.needDateEdit.order);
+    assert.notEqual(foreignOrder.id, f.order.id);
+    assert.equal((await f.send({ order: foreignOrder.id, revision: foreignOrder.revision })).status, 200);
+    const foreignMessage = h.messages.at(-1);
+    assert.ok(foreignMessage.subject.includes(foreignOrder.number));
+    const foreignLink = new URL(foreignMessage.text.match(/http:\/\/[^\s]+\/api\/purse\/order-link\/[^\s]+/)[0]), foreignUrl = foreignLink.href + '/invoices';
+    assert.equal((await post(h, foreignLink, { decision: 'acknowledge', revision: foreignOrder.revision, consent: true, name: 'synthetic-purse-4521' })).status, 200);
+    assert.equal((await h.send('/api/purse/order-send/' + foreignOrder.id + '/invoice-consent', { ...grant, revision: foreignOrder.revision }, h.owner)).status, 200);
+    await h.command('receipt', { order: foreignOrder.id, line: foreignOrder.lines[0].id, event: 'receive', quantity: '1', reason: 'Received second order goods' });
+    const foreignPdf = await original({ ...f, order: foreignOrder }, 'synthetic-purse-4522');
+    const foreignBody = { ...body, revision: foreignOrder.revision, reference: foreignPdf.values.reference, lines: [{ line: foreignOrder.lines[0].id, quantity: '1', unitAmount: '100.00' }], document: foreignPdf.document };
+    assert.equal((await post(h, foreignUrl, foreignBody)).status, 200);
+    assert.deepEqual((await (await read(url)).json()).invoices.map(invoice => ({ reference: invoice.reference, status: invoice.status })), [{ reference: body.reference, status: 'paid' }], 'The first link excludes another live order for the same supplier');
+    assert.deepEqual((await (await read(foreignUrl)).json()).invoices.map(invoice => ({ reference: invoice.reference, status: invoice.status })), [{ reference: foreignBody.reference, status: 'received' }], 'The second link exposes only its own submission');
+    const ownPage = await (await fetch(url)).text(), foreignPage = await (await fetch(foreignUrl)).text();
+    assert.ok(ownPage.includes(body.reference)); assert.ok(!ownPage.includes(foreignBody.reference), 'The supplier page excludes the other order invoice');
+    assert.ok(foreignPage.includes(foreignBody.reference)); assert.ok(!foreignPage.includes(body.reference), 'The other supplier page excludes the paid invoice');
+
     const excess = await post(h, url, { ...body, reference: 'synthetic-purse-4516' }); assert.equal(excess.status, 200, await excess.clone().text());
     data = (await h.state()).data; const second = data.invoice.find(value => value.reference === 'synthetic-purse-4516'); for (const code of ['near-duplicate','duplicate-document','po-balance']) assert.ok(second.flags.some(flag => flag.code === code), code); assert.equal(second.allocations[0].q, 1000, 'Excess quantity remains evidence');
     await h.command('payable-terms', { invoice: second.id, version: 0, invoiceDate: body.invoiceDate, term: 'Net 30', reason: 'synthetic-purse-4517' }, f.buyer, 409);
@@ -91,10 +115,14 @@ test('Supplier invoice link captures exact private PDF and balance ancestry, hol
 test('Owner-consented supplier flip approves only confirmed three-way evidence, schedules once and holds excess or later risk through public doors', async t => {
     const h = await harness(); t.after(() => h.close()); const f = await orderSendFixture(h);
     await f.send(); const link = orderLink(h), url = link.href + '/invoices';
-    await post(h, link, { decision: 'acknowledge', revision: f.order.revision, consent: true, name: 'synthetic-purse-4600' });
     await h.command('receipt', { order: f.order.id, line: f.order.lines[0].id, event: 'receive', quantity: '1', reason: 'Accepted first unit' });
     const grant = { revision: f.order.revision, enabled: true, consent: true, reason: 'Share exact supplier invoice balance' };
     assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent', grant, h.owner)).status, 200);
+    assert.equal((await read(url)).status, 410, 'Owner consent alone cannot replace supplier acknowledgement');
+    const acknowledged = await post(h, link, { decision: 'acknowledge', revision: f.order.revision, consent: true, name: 'synthetic-purse-4600' });
+    assert.equal(acknowledged.status, 200, 'Supplier acknowledgement succeeds after owner invoice consent');
+    const consentedPrefill = await read(url); assert.equal(consentedPrefill.status, 200);
+    assert.equal((await consentedPrefill.json()).order.revision, f.order.revision, 'Acknowledgement unlocks the exact consented revision');
     const rule = { order: f.order.id, revision: f.order.revision, version: 0, enabled: true, consent: true, reason: 'Approve exact matched invoices after private AP review' };
     await h.command('supplier-invoice-rule', rule, f.buyer, 403);
     await h.command('supplier-invoice-rule', {...rule, consent:false}, h.owner, 400);
@@ -128,6 +156,12 @@ test('Owner-consented supplier flip approves only confirmed three-way evidence, 
     await h.command('supplier-invoice-schedule',schedule,f.buyer);
     assert.equal((await (await read(url)).json()).invoices[0].status,'scheduled');
     await h.command('supplier-invoice-schedule',schedule,f.buyer,409);
+    const scheduledInvoice = (await h.state()).data.invoice.find(value => value.id === invoice.id);
+    assert.equal(scheduledInvoice.paymentSchedule.version, 1);
+    await h.command('supplier-invoice-schedule', { ...schedule, version: scheduledInvoice.paymentSchedule.version, date: '2026-11-21', reason: 'A fresh version cannot schedule this invoice again' }, f.buyer, 409);
+    const afterDuplicate = (await h.state()).data;
+    assert.deepEqual(afterDuplicate.invoice.find(value => value.id === invoice.id).paymentSchedule, scheduledInvoice.paymentSchedule, 'A duplicate with the current version preserves the original date instruction');
+    assert.equal(afterDuplicate.audit.filter(entry => entry.action === 'supplier-invoice-schedule' && entry.record === invoice.id).length, 1, 'A duplicate with the current version creates no second schedule event');
     let rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
     const archive=join(h.dir,'synthetic-purse-approval.rer');
     await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);

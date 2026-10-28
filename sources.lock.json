@@ -5024,7 +5024,7 @@
       "executable": false
     },
     "tests/supplier-invoice.test.mjs": {
-      "sha256": "7eb7bbd38268cbe1a1721a105f1488327bdcde118d3776cbd733dd84e51313dc",
+      "sha256": "747c20fb010e7bcdcb2a6eb542bc7ebfa4f2bfb2c708c3b33d680811ae18a9ff",
       "executable": false
     },
     "tests/supplier-performance.test.mjs": {
