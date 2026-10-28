@@ -4,7 +4,7 @@ import {PDFDocument,StandardFonts} from 'pdf-lib'
 import {harness} from './purse-harness.mjs'
 import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
 
-test('CONTRACT-001 REPORT-003 confirmed agreement prices realize exact approved invoice savings, source history and amendment caps through public doors',async t=>{
+test('CONTRACT-003 REPORT-003 confirmed agreement prices realize exact approved invoice savings, source history and amendment caps through public doors',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Canyon Services',currencies:['USD','CAD'],locations:['Denver','Boulder'],costCentres:['Operations','IT'],projects:['Safety']});
  const requester=await h.member('requester@example.test',['requester']),buyer=await h.member('buyer@example.test',['buyer']),approver=await h.member('approver@example.test',['approver']);

@@ -2,7 +2,7 @@
   "schema": 1,
   "seed": "purse-product",
   "old": {
-    "commit": "3bf30301ddc64ce65af2de6543fe938229254b8e",
+    "commit": "307e18f93d730cd31c41d4fdacdb9c4f2dd1a842",
     "files": [
       "CONTRACT.md",
       "ACCEPTANCE.md",
@@ -2815,13 +2815,6 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 423,
-      "cell": "gap",
-      "text": "Internal comments, @mentions, mention notifications and scope-safe mentions not built",
-      "to": "changelog"
-    },
-    {
-      "file": "CONTRACT.md",
       "line": 424,
       "cell": "gap",
       "text": "Dated department/project/location/GL/native-form custom-field combinations, complete ruled budget figures with anonymous hidden-purchase sums, $1,000 to $1,065 and 60/40 reserve/commit/recorded actual, per-share owner routing and exact REPORT-001 sources implemented. Cross-period disposition, fully matched/synced bills/native deposits and CARD-001/002 provider-funded/settled evidence remain; Ramp/Brex partner issuing qualification and authorized ledger connections are not held",
@@ -3174,36 +3167,31 @@
       "file": "ACCEPTANCE.md",
       "line": 5,
       "text": "Journeys run through public doors: the native-session HTTP API, the browser at 1440 and 390 pixels, the RER command path, and the supplier and approver links, email, Slack, Teams and native apps the clauses name. Fakes are allowed only at the paid or network edge (mail delivery, Slack and Teams, PunchOut catalogs, BILL, QuickBooks Online, QuickBooks Desktop Web Connector, Xero, NetSuite, Sage Intacct, Business Central, Ramp, Brex, the Procurify API, carriers, screening and bank-verification providers), and provider journeys pass against each provider's own sandbox before a clause is marked done. SOURCE-001's generic invitation/reminder journey uses a mail-provider fake at the transport edge under ct's 19 October 15:43Z ruling; the real mail adapter and native HTTP doors run, and neither the test nor product claims mailbox delivery. Use synthetic US business data in USD. Do not weaken existing assertions to satisfy a clause; prove one-off fixes with before/after cases outside the permanent suite. CI remains the full verification wall.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 9,
       "text": "`tests/purse.test.mjs` is a business-flow suite, with actual native sign-in and real workerd/D1, no fake application database; its tests are named P01 to P17 after the PUR clauses. `tests/browser.mjs` runs the fresh-install human journey at 1440 and 390 pixels and records screenshots, downloaded PO documents and complete archives in a private evidence directory. Default runs use genuine local Git clones of committed HEAD, without inherited dependencies, settings or data. Uncommitted changes are not included. GitHub Verify runs the integrated wall and these clone journeys from its exact checkout. Exact-commit CI status is recorded by the GitHub run.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 11,
       "text": "Run `pnpm test:purse` and `pnpm typecheck` for focused domain checks. Run `node tests/browser.mjs` for the full browser and CLI proof, optionally setting `PURSE_EVIDENCE` to a private output directory. Its `--source-copy` option explicitly tests precommit author copies, with that qualification in its result; default runs still clone committed HEAD. Its `--archive-only --existing` mode proves only archive operations on an existing fixture installation; its empty journey list must never be presented as fresh-install browser proof. `rer verify` is the final integrated wall and belongs to CI/final review.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 13,
       "text": "Known physical limits are explicit: native request attachments accept 1 MB per file; SOURCE-001 supplier responses and INTAKE-004 email intake each accept three files up to 10 MB (10,000,000 bytes) per file; requests accept 100 lines; reviewed fixture CSV batches accept 300 records, advancing 20 rows per atomic batch and at most two batches per request. Resume is explicit. These are visible limits, not hidden truncation. Imported data is inert and retains original statuses; native approval is required for new purchasing.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
       "line": 15,
       "text": "The owner has not supplied an anonymized purchasing case, an actual Procurify account's Export Data CSVs or API access, or a current-process baseline. All development examples are synthetic test fixtures; IMPORT-001 and pilot economics require real owner input. Existing installations retain applied migrations; the forward upgrade and same-release archive restore path is described in `UPGRADING.md`.",
-      "to": "docs",
-      "path": "docs/verify.md"
+      "to": "changelog"
     },
     {
       "file": "ACCEPTANCE.md",
@@ -3552,13 +3540,6 @@
       "file": "ACCEPTANCE.md",
       "line": 85,
       "text": "**APPROVAL-004 \u2014 Approver edits on a pending request. Status: partial.** As the second approver on a pending $4,000 request, change its class and need date: a new revision shows the difference to the requester, the first approval carries forward, and the step stays with the editing approver, who approves it. On another request, change the department to one with a different budget owner: the reservation moves from the old department's budget to the new one once, the new budget owner's step is added and the first approver is asked again. An approver's attempt to change a quantity through the API is refused. Its approver edits must record the before/after values, actor, exact revision, carried or renewed approvals and policy context in AUDIT-001. Acceptance must assert this obligation through its public door and AUDIT-001 read/export. Evidence: `tests/purse.test.mjs` \u201cAPPROVAL-004 exact pending header edits carry or renew chain approvals and move one reservation\u201d; `tests/access.test.mjs` \u201cNative mutation and value snapshots keep private policies and revisions scoped while edited fields reach former approvers\u201d; `tests/browser-intake.mjs` through `tests/browser-approver-edits.mjs` \u201cpendingApprovalJourney\u201d at 1440/390 and actual archive; `tests/order-send.test.mjs` \u201cExplicit native buyer change send freezes exact numbered PDF and originals, scopes supplier acknowledgment and retains audit/archive custody\u201d and `tests/browser-order-send.mjs` \u201corderSendJourney\u201d approved date-change send/ack. Header/line coding, consistent active suppliers, configurable material controls, carry/renew/reservation moves, delegation/SCIM, ruled field-only earlier-approver visibility and explicit exact-revision supplier change send/ack implemented. Different per-line supplier groups and ACCESS-003 entity/accounting qualification remain; distinct authorized ledger sandbox companies/connections are not held.",
-      "to": "generated",
-      "note": "The contract generator writes this status or count."
-    },
-    {
-      "file": "ACCEPTANCE.md",
-      "line": 86,
-      "text": "**COMMENT-001 \u2014 Internal comments and @mentions. Status: missing.** As an approver, comment on a pending request and @mention the requester: the requester is notified in Slack, replies in the Slack thread, the reply appears on the request, and the step is still pending with the same approver and unchanged age. Comment on an issued PO with an attachment: the supplier's test inbox receives nothing, and the supplier link and PO PDF show no comment. Mention a member outside the request's department scope: they are notified without the request's content, and their API read of the request is refused. Export the audit log and an archive, restore the archive into an empty installation, and see the comments and their edit history. Its comments, edits and deletions must retain every version and actor in AUDIT-001 exports. Acceptance must assert this obligation through its public door and AUDIT-001 read/export.",
       "to": "generated",
       "note": "The contract generator writes this status or count."
     },
@@ -4026,24 +4007,9 @@
     },
     {
       "file": "ACCEPTANCE.md",
-      "line": 3,
-      "text": "Target edition: 17 October 2026. This checklist covers the complete `CONTRACT.md` destination: connected procurement that replaces Procurify for growing US businesses. Clause IDs are stable and match `CONTRACT.md` one for one. Each entry gives the clause's acceptance journey and the status in CONTRACT.md's Status table: the 16 October baseline at `9f201c00eba7aecadf9239e1205f6933a0dd1cb6`, with STOCK-001, PO-010, SUPPLIER-007, SUPPLIER-005, CATALOG-001, SUPPLIER-003, SUPPLIER-004 PO-003, AP-003, AUDIT-001, REPORT-001, PO-009, REPORT-003 and INVOICE-003 completed on 19 October 2026. Done means the bounded local journey passes on the cited code and tests; it does not establish hosted placement, provider receipt, a real owner export or pilot acceptance. Current candidate counts: 54 done, 24 partial, 35 missing; 113 total.",
-      "to": "docs",
-      "path": "docs/verify.md"
-    },
-    {
-      "file": "ACCEPTANCE.md",
       "line": 115,
       "text": "**INVOICE-005 \u2014 Supplier invoice submission from the PO (PO flip). Status: done.** From PO-001's no-account link, a supplier turns an acknowledged PO into an invoice: lines, quantities and prices prefill from the PO's uninvoiced and received balance, the supplier enters the invoice number, date, freight and tax and attaches its own invoice PDF, and the submission arrives as a structured invoice that needs no reading (INVOICE-002) and goes straight to INVOICE-003's checks and MATCH-001. The supplier cannot invoice above the remaining PO balance without the line being flagged, sees the invoice's status (received, approved, scheduled, paid) and cannot change remit-to details from this form. **Acceptance evidence:** Issue and partly receive a PO, open its supplier link, flip it into an invoice for the received quantity with a PDF attached; it matches three-way and is approved automatically, its status shows on the link, and a second flip that exceeds the remaining balance is flagged. Before shipping supplier PO flip, apply INVOICE-003 exact-document, duplicate, remaining-balance and source/remit checks before matching or approval; acceptance must assert that an unresolved flag refuses payment approval. Before shipping new invoice roles, kinds or reading doors, preserve INVOICE-002 private originals, source-bound human confirmation, safe remit retention and INVOICE-003 holds; acceptance must assert these rules through that capability\u2019s public door. Native adoption maps the reviewed source budget once to the selected current native policy without changing its designated approver or limit. Imported approval stays historical; operational custody is a separate owner-reviewed record. Historical invoices need source-bound human confirmation before new cash-planning approval, with absent dates or verification shown honestly. Supplier/currency replacement approves only unreceived supply as a separate native purchase; old receipts, bills, deposits and expected liabilities keep their original supplier and currency. No supplier send follows adoption, generation of a change proposal or native disposition. PO-001/004, PO-011, CODING-001/002, API-001 and future import/provider doors inherit these source, approval, liability and credit boundaries. Evidence by acceptance point: `tests/supplier-invoice.test.mjs` \u2014 \u201cSupplier invoice link captures exact private PDF and balance ancestry, holds source confirmation and duplicate/excess evidence, and exposes only its own authentic statuses\u201d proves exact acknowledged PO prefill, number/date/charges/PDF, private originals, source-bound AP confirmation, no remit override, own received and payment-evidenced paid status through the existing accounting transport edge, excess and duplicate flags, and revocable owner consent. Same file \u2014 \u201cOwner-consented supplier flip approves only confirmed three-way evidence, schedules once and holds excess or later risk through public doors\u201d proves exact live-link standing consent, automatic three-way payment approval, approved and native scheduled return, wrong-permission, stale and replay refusals, later-document holds, audit read and CSV, real archive restoration without bearer authority, revoked buyer access and erased-contact replay refusal. Same file \u2014 \u201cStanding supplier approval refuses price and receipt discrepancies and holds source risk until reasoned review\u201d proves independent price, receipt and unresolved remit holds through confirmation, risk review and scheduling, plus paused approval and supplier access after native owner transfer. `tests/browser-supplier-invoice.mjs` proves Settings consent, supplier prefill and PDF submission, private AP source review, exact goods plus proportionate PO freight and tax approval, approved and native scheduled status, excess hold, private-file refusal and no overflow at 1440 and 390. Native scheduling records an audited date instruction; it claims no provider execution, bank verification or settlement. PO-001/004/008 and future deposit and payment doors retain the existing source, consent and hold duties.",
-      "to": "docs",
-      "path": "docs/verify.md"
-    },
-    {
-      "file": "docs/CLAIMS.md",
-      "line": 3,
-      "text": "Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005`. Current candidate counts: 54 done, 24 partial, 35 missing; 113 total.",
-      "to": "generated",
-      "note": "Clause-status inventory, not homepage claims; projected from the single Status source."
+      "to": "changelog"
     },
     {
       "file": "docs/CLAIMS.md",
@@ -4399,13 +4365,6 @@
       "file": "docs/CLAIMS.md",
       "line": 56,
       "text": "| `APPROVAL-004` | Approver edits on a pending request | partial |",
-      "to": "generated",
-      "note": "Clause-status inventory, not homepage claims; projected from the single Status source."
-    },
-    {
-      "file": "docs/CLAIMS.md",
-      "line": 57,
-      "text": "| `COMMENT-001` | Internal comments and @mentions | missing |",
       "to": "generated",
       "note": "Clause-status inventory, not homepage claims; projected from the single Status source."
     },
@@ -4842,6 +4801,42 @@
       "text": "| `AGENT-011` | Spend questions in plain language | done |",
       "to": "generated",
       "note": "Clause-status inventory, not homepage claims; projected from the single Status source."
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 423,
+      "text": "Native purchase requests and issued native POs implemented. Travel-specific, invoice, MATCH-002 exception, supplier and agreement comment doors and journeys remain. Slack app and test workspace qualification and the Slack Events request URL are not held or confirmed; Slack, Teams and email reply binding through INTAKE-002 and INTAKE-003 remain. NOTIFY-001 email, Slack, Teams and push delivery, dashboard integration, and actual supplier test-inbox silence proof remain unproved. Network-edge assertions prove no outbound attempt caused by native comments, not a live mailbox receipt.",
+      "to": "gap",
+      "cell": "gap",
+      "ids": [
+        "COMMENT-001"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 3,
+      "text": "Target edition: 17 October 2026. This checklist covers the complete `CONTRACT.md` destination: connected procurement that replaces Procurify for growing US businesses. Clause IDs are stable and match `CONTRACT.md` one for one. Each entry gives the clause's acceptance journey and the status in CONTRACT.md's Status table: the 16 October baseline at `9f201c00eba7aecadf9239e1205f6933a0dd1cb6`, with STOCK-001, PO-010, SUPPLIER-007, SUPPLIER-005, CATALOG-001, SUPPLIER-003, SUPPLIER-004 PO-003, AP-003, AUDIT-001, REPORT-001, PO-009, REPORT-003 and INVOICE-003 completed on 19 October 2026. Done means the bounded local journey passes on the cited code and tests; it does not establish hosted placement, provider receipt, a real owner export or pilot acceptance. Current candidate counts: 54 done, 25 partial, 34 missing; 113 total.",
+      "to": "changelog"
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 86,
+      "text": "**COMMENT-001 \u2014 Internal comments and @mentions. Status: partial.** Anyone who can see a request, travel request (INTAKE-006), PO, invoice, MATCH-002 exception, supplier or agreement can add an internal comment, with attachments under PUR-004's file limits and @mentions of members chosen from a picker. Comments are a separate internal thread: they never go to the supplier and never appear on PO-001's or SUPPLIER-001's links, on PO documents (PO-009) or in PO-002's supplier thread, and agents treat them as data, never instructions (AGENT-010). Commenting never changes a record's state: a pending approval step stays with the same approver at the same queue position and age, and only PUR-007's return decision sends a request back. A mention notifies the person through NOTIFY-001's channels (email, Slack, Teams, push and the in-app list, with recent comments and mentions on their dashboard); a reply from that Slack or Teams thread or email posts back onto the record as a comment by the replying member, through the sign-in binding of INTAKE-002 and INTAKE-003. A mention never widens access: a member mentioned on a record outside their ACCESS-001 scope gets a notification saying who mentioned them and that they lack access, with no record title, amount or comment text, and the commenter is told that the member cannot see the record. Authors can edit or delete their own comments, with every version kept in the audit log; comments travel in AUDIT-001 exports and PUR-012's archives, and ERASURE-001 anonymizes their authors while keeping the business record. Its comments, edits and deletions must retain every version and actor in AUDIT-001 exports. Acceptance must assert this obligation through its public door and AUDIT-001 read/export. **Acceptance evidence:** As an approver, comment on a pending request and @mention the requester: the requester is notified in Slack, replies in the Slack thread, the reply appears on the request, and the step is still pending with the same approver and unchanged age. Comment on an issued PO with an attachment: the supplier's test inbox receives nothing, and the supplier link and PO PDF show no comment. Mention a member outside the request's department scope: they are notified without the request's content, and their API read of the request is refused. Export the audit log and an archive, restore the archive into an empty installation, and see the comments and their edit history. Evidence by acceptance point: `tests/comments.test.mjs` \u201cInternal comments preserve the pending queue and current scope while member mentions redact inaccessible content\u201d proves native request comments, member mentions, redacted in-app notices, unchanged pending approver and queue metadata, current-scope bytes and inert replay; \u201cAuthor changes keep complete audited versions and portable files, and member erasure cannot revive authors or captures\u201d proves author changes, complete AUDIT-001 read and CSV versions, archive continuation and anonymous erased history; \u201cIssued PO comments and attachments stay off supplier links, frozen documents and outbound threads\u201d proves native issued-PO attachment custody and supplier-output isolation. `tests/browser-comments.mjs` proves request and PO comments, picker, warnings, in-app mentions and version history at 1440 and 390. Remaining Gap: Native purchase requests and issued native POs implemented. Travel-specific, invoice, MATCH-002 exception, supplier and agreement comment doors and journeys remain. Slack app and test workspace qualification and the Slack Events request URL are not held or confirmed; Slack, Teams and email reply binding through INTAKE-002 and INTAKE-003 remain. NOTIFY-001 email, Slack, Teams and push delivery, dashboard integration, and actual supplier test-inbox silence proof remain unproved. Network-edge assertions prove no outbound attempt caused by native comments, not a live mailbox receipt.",
+      "to": "changelog"
+    },
+    {
+      "file": "docs/CLAIMS.md",
+      "line": 3,
+      "text": "Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001`. Current candidate counts: 54 done, 25 partial, 34 missing; 113 total.",
+      "to": "generated",
+      "note": "Old clause-status inventory is now generated from the single Status table."
+    },
+    {
+      "file": "docs/CLAIMS.md",
+      "line": 57,
+      "text": "| `COMMENT-001` | Internal comments and @mentions | partial |",
+      "to": "generated",
+      "note": "Old clause-status inventory is now generated from the single Status table."
     }
   ]
 }

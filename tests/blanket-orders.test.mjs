@@ -73,7 +73,7 @@ test('blanket orders show billed balances only to readers of every invoice they 
  }
 });
 
-test('PO-005 real release authority, structured service value matching and consented recurring Cron pause at agreement boundaries',async t=>{
+test('PO-005 / PO-013 / PO-014 real release authority, structured service value matching and consented recurring Cron pause at agreement boundaries',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'synthetic-purse-1',currencies:['USD'],locations:['synthetic-purse-2'],costCentres:['synthetic-purse-3'],projects:['synthetic-purse-4']});
  const requester=await h.member('synthetic-purse-5@example.test',['requester']),approver=await h.member('synthetic-purse-6@example.test',['approver']),buyer=await h.member('synthetic-purse-7@example.test',['buyer']),receiver=await h.member('synthetic-purse-8@example.test',['receiver']);

@@ -14,7 +14,7 @@ async function pdf(pages){
  return Buffer.from(await document.save());
 }
 
-test('CONTRACT-001 real PDF proposals retain original/page confidence, corrected Cron dates and complete archive provenance through public doors',async t=>{
+test('CONTRACT-002 real PDF proposals retain original/page confidence, corrected Cron dates and complete archive provenance through public doors',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Canyon Services',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety'],timezone:'America/New_York'});
  const buyer=await h.member('buyer@example.test',['buyer']),requester=await h.member('requester@example.test',['requester']);
