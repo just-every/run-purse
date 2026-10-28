@@ -1,14 +1,15 @@
+import { invoiceReading } from './invoice-reading';
+import { apiRequestSchema } from './public-api-schema';
 import { Hono } from 'hono';
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { readStream } from '../inbound-mail.server.mjs';
 import { accessGrants, allowed, requirePermission } from './access';
 import { unrestrictedPermission } from './access-records';
 import { purchasingProjection } from './access-projection';
-import { guardedBatch } from './integration-tokens';
 import { orderData } from './integration-po';
 import { hashRfqToken, insertRfqRecord } from './rfq-links';
-import { load, readFence, save } from './store';
-import { all, audit, get, requireThat, text, uid, type Actor, type Data, type State } from './types';
+import { load, save } from './store';
+import { all, audit, get, requireThat, text, type Actor, type Data, type State } from './types';
 
 type Execute = (s:State,a:Actor,op:string,b:Data,env:Bindings)=>Promise<Data>;
 const pick=(r:Data,fields:string)=>Object.fromEntries(fields.split(' ').filter(field=>r[field]!==undefined).map(field=>[field,r[field]]));
@@ -45,6 +46,7 @@ const paths:Record<string,Data>={
  '/orders/{id}':{get:{op:'readOrder',scope:'orders:read'}},
  '/receipts':{get:{op:'readReceipts',scope:'receipts:read'},post:{op:'recordReceipt',scope:'receipts:write',fields:'order line event quantity reason valueAmount valueMinor milestone'}},
  '/invoice-sources':{post:{op:'captureInvoiceOriginal',scope:'invoices:write',fields:'order document invoice'}},
+ '/invoice-sources/{id}/instructions':{get:{op:'readInvoiceSourceInstructions',scope:'invoices:read',summary:'Read the exact source descriptor and blank proposal template, without original bytes'}},
  '/invoice-readings':{post:{op:'extractInvoice',scope:'invoices:write',fields:'source'}},
  '/invoice-readings/propose':{post:{op:'proposeInvoiceReading',scope:'invoices:write',fields:'source reader fields'}},
  '/invoice-readings/{id}/edit':{post:{op:'correctInvoiceReading',scope:'invoices:write',fields:'version changes'}},
@@ -53,7 +55,7 @@ const paths:Record<string,Data>={
  '/suppliers':{get:{op:'readSuppliers',scope:'suppliers:read'},post:{op:'createUnprotectedSupplier',scope:'suppliers:write',fields:'name dba address contacts status reason duplicateFingerprint duplicateReason'}},
  '/budgets':{get:{op:'readBudgets',scope:'budgets:read'}},
 };
-export function openApi(origin:string){return {openapi:'3.1.0',info:{title:'Purse scoped API',version:'1.0.0',description:'Allowlisted native purchasing doors. Keys intersect current native membership and record scope. No supplier sending, payment, protected reveal, original download, RFQ or email administration.'},servers:[{url:origin+'/api/purse/v1'}],security:[{scopedKey:[]}],components:{securitySchemes:{scopedKey:{type:'http',scheme:'bearer'}}},paths:Object.fromEntries(Object.entries(paths).map(([path,methods])=>[path,Object.fromEntries(Object.entries(methods).map(([method,d])=>[method,{operationId:d.op,summary:d.summary??d.op,description:'Required key scope: '+d.scope,parameters:[...(path.includes('{id}')?[{name:'id',in:'path',required:true,schema:{type:'string'}}]:[]),...(method==='post'?[{name:'Idempotency-Key',in:'header',required:true,schema:{type:'string',maxLength:200}}]:[]),...(path==='/receipts'&&method==='get'?[{name:'order',in:'query',required:true,schema:{type:'string'}}]:[])],...(method==='post'?{requestBody:{required:true,content:{'application/json':{schema:{type:'object',additionalProperties:false,properties:Object.fromEntries(d.fields.split(' ').map((field:string)=>[field,{}]))}}}}}:{}),responses:{200:{description:'Current authorized resource; repeated writes return the same resource with duplicate=true'},400:{description:'Invalid input'},401:{description:'Missing, expired, rotated or revoked key'},403:{description:'Key scope or current authority refused'},409:{description:'Source, revision, authority or idempotency conflict'},429:{description:'Rate limit exceeded'}}}]))]))};}
+export function openApi(origin:string){return {openapi:'3.1.0',info:{title:'Purse scoped API',version:'1.0.0',description:'Allowlisted native purchasing doors. Keys intersect current native membership and record scope. No supplier sending, payment, protected reveal, original download, RFQ or email administration.'},servers:[{url:origin+'/api/purse/v1'}],security:[{scopedKey:[]}],components:{securitySchemes:{scopedKey:{type:'http',scheme:'bearer'}}},paths:Object.fromEntries(Object.entries(paths).map(([path,methods])=>[path,Object.fromEntries(Object.entries(methods).map(([method,d])=>[method,{operationId:d.op,summary:d.summary??d.op,description:'Required key scope: '+d.scope,'x-required-scope':d.scope,parameters:[...(path.includes('{id}')?[{name:'id',in:'path',required:true,schema:{type:'string'}}]:[]),...(method==='post'?[{name:'Idempotency-Key',in:'header',required:true,schema:{type:'string',maxLength:200}}]:[]),...(path==='/receipts'&&method==='get'?[{name:'order',in:'query',required:true,schema:{type:'string'}}]:[])],...(method==='post'?{requestBody:{required:true,content:{'application/json':{schema:apiRequestSchema(d.op,d.fields)}}}}:{}),responses:{200:{description:'Current authorized resource; repeated writes return the same resource with duplicate=true',content:{'application/json':{schema:{type:'object'}}}},400:{description:'Invalid input'},401:{description:'Missing, expired, rotated or revoked key'},403:{description:'Key scope or current authority refused'},409:{description:'Source, revision, authority or idempotency conflict'},429:{description:'Rate limit exceeded'}}}]))]))};}
 export function publicApi(execute:Execute){
  const app=new Hono<{Bindings:Bindings}>();
  app.get('/api/purse/v1/openapi.json',c=>c.json(openApi(runtimeBindings(c.env).AUTH_ORIGIN)));
@@ -66,6 +68,7 @@ export function publicApi(execute:Execute){
     if(method==='GET'){
         const record=path.match(/^\/(requests|orders|invoices)\/([^/]+)$/);
         if(record){const [,plural,id]=record,kind=plural==='requests'?'request':plural==='orders'?'order':'invoice';need(plural==='orders'?'orders:read':plural+':read');requirePermission(state,a,kind==='order'?'po.read':kind+'.read',get(state,kind,id));result={[kind]:projection(state,a,kind,id)};}
+        else if(/^\/invoice-sources\/[^/]+\/instructions$/.test(path)){need('invoices:read');result={instructions:await invoiceReading(state,a,'invoice-reading-instructions',{source:path.split('/')[2]})};}
         else if(path==='/receipts'){need('receipts:read');const order=get(state,'order',text(c.req.query('order'),'Order'));requirePermission(state,a,'po.read',order);result={receipts:all(state,'receipt').filter(r=>r.order===order.id).map(r=>projection(state,a,'receipt',r.id))};}
         else if(path==='/suppliers'){need('suppliers:read');result={suppliers:all(state,'supplier').filter(r=>supplierVisible(state,a,r)).map(r=>projection(state,a,'supplier',r.id))};}
         else if(path==='/budgets'){need('budgets:read');requirePermission(state,a,'request.read');const data=purchasingProjection(state,a).data;result={budgets:data.policy.map((p:Data)=>pick(p,'id name currency budgetMinor limitMinor budgetPeriod costCentre location project'))};}
@@ -87,7 +90,7 @@ export function publicApi(execute:Execute){
     const idempotency=text(c.req.header('idempotency-key'),'Idempotency-Key',200);requireThat(/^[\x21-\x7e]+$/.test(idempotency),'Use visible ASCII for Idempotency-Key');
     const raw=await readStream(c.req.raw.body,1_600_000),hash=await hashRfqToken(method+' '+path+' '+new TextDecoder('utf-8',{fatal:true}).decode(raw));
     const receipt=await env.DB.prepare('SELECT * FROM p_api_receipts WHERE credential=? AND idempotency_key=?').bind(key.id,idempotency).first<Data>();
-    if(receipt){requireThat(receipt.request_hash===hash,'Idempotency-Key already used for another request',409);requirePermission(state,a,permissionFor[receipt.kind],get(state,receipt.kind,receipt.record));await readFence(env.DB,a,revision);return c.json({[receipt.kind]:projection(state,a,receipt.kind,receipt.record),duplicate:true});}
+    if(receipt){requireThat(receipt.request_hash===hash,'Idempotency-Key already used for another request',409);requirePermission(state,a,permissionFor[receipt.kind],get(state,receipt.kind,receipt.record));const beforeReplay=structuredClone(state);audit(state,a,'api-replay',receipt.record,{operation:op});await save(env.DB,a,beforeReplay,state,revision);return c.json({[receipt.kind]:projection(state,a,receipt.kind,receipt.record),duplicate:true});}
     let body:Data;try{body=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(raw));}catch{requireThat(false,'Invalid request JSON');}
     only(body,fields);if(routeId)body[op==='invoice-risk-review'?'invoice':'id']=routeId;
     const before=structuredClone(state),value=await execute(state,a,op,body,env);

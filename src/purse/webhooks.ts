@@ -5,7 +5,7 @@ import { actor, authority, load, readFence } from './store';
 import { guardedBatch } from './integration-tokens';
 import { insertRfqRecord } from './rfq-links';
 import { newApiSecret } from './public-api-keys';
-import { all, get, requireThat, text, uid, type Data, type State } from './types';
+import { all, Fault, requireThat, text, uid, type Data, type State } from './types';
 
 export const webhookTypes=['request.approved','po.issued'];
 type Envelope={key_id:string;nonce:string;ciphertext:string;tag:string};
@@ -53,8 +53,8 @@ export async function runWebhooks(env:Bindings){
  const result=[];
  for(const subscription of subscriptions){
     if(!await liveOwner(env,subscription))continue;
-    const events=(await env.DB.prepare('SELECT e.* FROM p_webhook_events e WHERE e.at>=? AND NOT EXISTS(SELECT 1 FROM p_webhook_attempts a WHERE a.subscription=? AND a.event=e.id) ORDER BY e.at,e.id LIMIT 50').bind(subscription.created_at,subscription.id).all<Data>()).results;
-    for(const event of events)if(JSON.parse(subscription.events).includes(event.type)){try{result.push(await deliver(env,subscription,event));}catch(error){result.push({event:event.id,status:'held'});}}
+    const events=(await env.DB.prepare('SELECT e.* FROM p_webhook_events e WHERE e.at>=? AND e.type IN (SELECT value FROM json_each(?)) AND NOT EXISTS(SELECT 1 FROM p_webhook_attempts a WHERE a.subscription=? AND a.event=e.id) ORDER BY e.at,e.id LIMIT 50').bind(subscription.created_at,subscription.events,subscription.id).all<Data>()).results;
+    for(const event of events)if(JSON.parse(subscription.events).includes(event.type)){try{result.push(await deliver(env,subscription,event));}catch(error){if(error instanceof Fault&&error.status===410)await env.DB.prepare("INSERT INTO p_webhook_attempts(id,subscription,event,generation,status,at) SELECT ?,?,?,?,'held',? WHERE NOT EXISTS(SELECT 1 FROM p_webhook_attempts WHERE subscription=? AND event=?)").bind(uid(),subscription.id,event.id,subscription.generation,new Date().toISOString(),subscription.id,event.id).run();result.push({event:event.id,status:'held'});}}
  }
  return result;
 }

@@ -35,12 +35,12 @@ export async function eraseNativeCopies(env:Bindings,plan:ErasurePlan,a:Actor) {
  }
  // Installation key metadata is personal data too; revocation keeps replay inert.
  for(const row of (await db.prepare('SELECT * FROM p_api_keys').all<Data>()).results) {
-  const next=plan.scrub({name:row.name,principal:row.principal});
-  if(row.principal===operator || JSON.stringify(next)!==JSON.stringify({name:row.name,principal:row.principal}))statements.push(sql('UPDATE p_api_keys SET name=?,principal=?,revoked_at=? WHERE id=?',next.name,next.principal,new Date().toISOString(),row.id));
+  const metadata={name:row.name,principal:row.principal,recordScope:JSON.parse(row.record_scope)},next=plan.scrub(metadata);
+  if(row.principal===operator || JSON.stringify(next)!==JSON.stringify(metadata)){installationFields.push({store:'scoped API key metadata',id:row.id,fields:['name','native identity','record scope','credential revocation']});statements.push(sql('UPDATE p_api_keys SET name=?,principal=?,record_scope=?,revoked_at=? WHERE id=?',next.name,next.principal,JSON.stringify(next.recordScope),new Date().toISOString(),row.id));}
  }
  for(const row of (await db.prepare('SELECT * FROM p_webhooks').all<Data>()).results) {
-  const next=plan.scrub({name:row.name,endpoint:row.endpoint});
-  if(JSON.stringify(next)!==JSON.stringify({name:row.name,endpoint:row.endpoint}))statements.push(sql('UPDATE p_webhooks SET name=?,endpoint=?,revoked_at=? WHERE id=?',next.name,next.endpoint,new Date().toISOString(),row.id));
+  const metadata={name:row.name,endpoint:row.endpoint,principal:row.principal},next=plan.scrub(metadata);
+  if(JSON.stringify(next)!==JSON.stringify(metadata)){installationFields.push({store:'webhook subscription metadata',id:row.id,fields:['name','receiver','native identity','subscription revocation']});statements.push(sql('UPDATE p_webhooks SET name=?,endpoint=?,principal=?,revoked_at=? WHERE id=?',next.name,next.endpoint,next.principal,new Date().toISOString(),row.id));}
  }
  for(const row of (await db.prepare('SELECT sequence,message FROM rer_mail_development_outbox').all<Data>()).results) {
   if(JSON.stringify(plan.scrub(row.message))!==JSON.stringify(row.message))statements.push(sql('DELETE FROM rer_mail_development_outbox WHERE sequence=?',row.sequence));

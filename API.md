@@ -885,3 +885,121 @@ native actor and personal values through the existing reviewed erasure door.
 Weekly and monthly email scheduling, received matching attachments, scoped
 OData under API-001, the authorized scheduled Google Sheets connection and full
 CODING-001 and CODING-002 qualification remain REPORT-002 gaps.
+
+## Version 1 scoped purchasing API (API-001 native slice)
+
+The current native owner creates keys in **Settings → Public API and webhooks**
+or with `POST /api/purse/api-keys`. This native management door requires a
+current owner session and exact Origin. Supply `{name,principal,scopes,recordScope,
+expiresDays}`. `principal` is an active native member ID from the management
+GET. `recordScope` may restrict `departments`, `locations`, `projects` and
+`entities` to explicit arrays of names. Omitted dimensions retain the member's
+current scope. Every dimension must fit a single complete current native grant.
+A key never combines fragments of different grants.
+
+Scopes are `requests:write`, `requests:read`, `orders:read`, `receipts:write`,
+`receipts:read`, `invoices:write`, `invoices:read`, `invoices:review`,
+`suppliers:write`, `suppliers:read` and `budgets:read`. Scope names are permissions
+on this allowlist; they confer no native member permission. A member without
+invoice review permission still cannot review with an `invoices:review` key.
+Shared supplier creation requires unrestricted current procurement authority.
+
+Keys are shown once, stored only as SHA-256 digests, expire after seven days by
+default (one to thirty days configurable), and are limited to 120 calls per
+minute. Lists expose metadata only. Native owner POSTs to
+`/api/purse/api-keys/:id/rotate`, `/revoke` or `/delete` rotate the secret while
+retaining scope and expiry, revoke it, or delete it. Native identity version,
+owner-role changes, deactivation and current business grants are rechecked on
+use and at transaction settlement. A changed native identity needs a newly
+bound key. Rotation does not revive a revoked key.
+
+`GET /api/purse/v1/openapi.json` describes the versioned allowlist. Send the key
+in the Authorization Bearer header. Server clients need no Origin; a supplied
+Origin must exactly match the installation and cross-site browser requests are
+refused. Native cookies alone do not authenticate version 1. Responses have
+`Cache-Control: no-store`. Use HTTPS for a hosted installation.
+
+| Door under `/api/purse/v1` | Scope | Result and boundary |
+| --- | --- | --- |
+| `POST /requests` | `requests:write` | Ordinary purchase fields create a new draft only. Current member and key dimensions must cover every line. Native human submission, approval and issuance are separate. |
+| `GET /requests/:id` | `requests:read` | Current scoped request terms and lines, without private snapshots or approval internals. |
+| `GET /orders/:id` | `orders:read` | Current scoped PO header, lines, status and amounts. No originals, contacts, approvals or bill data. Invoice reads have their own scope. |
+| `POST /receipts` | `receipts:write` | Native receipt fields and the current receiving assignment; over-receipt and invalid returns are refused by the same handler as the console. |
+| `GET /receipts?order=:id` | `receipts:read` | Receipt history for one PO under current PO-read permission. |
+| `POST /invoice-sources` | `invoices:write` | `{order,document}` stages the actual private original with native document validation. An adopted historical invoice may be selected with `invoice`. No payable is created. |
+| `GET /invoice-sources/:id/instructions` | `invoices:read` | Current native invoice-read permission returns the exact source descriptor and proposal template. It returns no original bytes. |
+| `POST /invoice-readings` | `invoices:write` | `{source}` runs the existing deterministic reader. The response carries IDs, version and status; originals and raw extracted source fields stay private. |
+| `POST /invoice-readings/propose` | `invoices:write` | Existing source-bound `{source,reader,fields}` proposal format; exact source identity and protected-input refusal remain enforced. |
+| `POST /invoice-readings/:id/edit` | `invoices:write` | Current `{version,changes}` corrects a source-bound reading. A native human must still compare the original and confirm in Purse. |
+| `GET /invoices/:id` | `invoices:read` | Scoped invoice identity, amount, date, confirmation state, risk version, flag IDs and codes, and reviewed flag IDs. No remit values, suffixes, originals, source snapshots or evidence keys. |
+| `POST /invoices/:id/reviews` | `invoices:review` | Exact `{flag,version,reason}` disposition under current native invoice-review authority. It does not confirm the original, clear another flag, approve payment or verify bank details. |
+| `GET /suppliers` | `suppliers:read` | Names, address and status for suppliers visible through current purchases or an unrestricted native read grant. No protected values, suffixes, contacts or matching fingerprints. |
+| `POST /suppliers` | `suppliers:write` | New unprotected profile with native screening and duplicate checks. No protected or matching input; no existing supplier edits. |
+| `GET /budgets` | `budgets:read` | Policy budget figures from the current native policy projection. A whole-policy budget is omitted when its source purchases fall outside current scope. |
+
+Every write needs an `Idempotency-Key` of at most 200 visible ASCII characters.
+Repeat the identical method, path and body with that key to receive the same
+resource ID and `duplicate:true`; changing any of those returns 409. Replay
+stores a resource reference, never original bytes or a private snapshot, and
+rechecks current authority on that resource. A revoked, expired or erased
+principal cannot replay. Success, read, replay and refusal audit records identify
+the credential without storing its secret or digest. An invalid or rotated
+secret remains anonymous.
+
+There is no version 1 command dispatcher, submit, approval, PO creation, supplier
+send, payment, protected reveal, protected suffix, legacy-evidence re-entry,
+RFQ, email-source download or email administration door. INTAKE-007 create-only
+tokens and INTAKE-008 supplier-mapped read-only tokens remain separate and
+cannot authenticate version 1. Invoice source confirmation remains an explicit
+native human action and every INVOICE-003 duplicate, sender, remit and unresolved
+risk hold remains effective afterward.
+
+### Signed reference webhooks
+
+The current native owner consents to a named public HTTPS receiver and an
+explicit event set in Settings, or posts `{name,endpoint,events,consent:true}` to
+`/api/purse/webhooks`. Supported events are `request.approved` and `po.issued`.
+The signing secret is shown once, encrypted with a distinct AES-256-GCM context
+under the installation protected-data key, and has no read-back door. Native
+owner rotation, revocation and deletion are available at
+`/api/purse/webhooks/:id/rotate`, `/revoke` and `/delete`. Installation-key rotation
+and acknowledged key-loss recovery include webhook secrets. Do not remove the
+previous installation key until the native rotation check permits it.
+
+A native transition records a stable event ID in the same transaction as the
+purchase. Imported history never becomes a new authorization event. A
+subscription receives only selected events recorded after its creation, under
+the consenting owner's current native identity version. A schedule tick claims
+one attempt before sending. An explicit native owner POST to
+`/api/purse/webhook-deliveries` also delivers currently unattempted events. A
+redirect is not followed; non-success is failed and a transport-unknown outcome
+is uncertain. Neither is retried automatically.
+
+The JSON body is `{id,type,createdAt,data:{kind,id,revision}}`. It contains record
+references only. Read the current record with a separately scoped key if needed;
+no event grants access, approval or execution. Erased source identities are held
+rather than replayed. Webhooks never restore originals or personal snapshots.
+
+The request headers are `purse-event-id`, `purse-timestamp` (Unix seconds) and
+`purse-signature` (`v1=` followed by a lowercase hex HMAC-SHA256). Verify the HMAC
+with the shown signing secret over the timestamp, a period, and the exact raw
+body bytes. Compare signatures in constant time and reject a timestamp outside
+your chosen short window (five minutes is recommended). Commit the event ID
+atomically with the receiver's effect and acknowledge duplicates without
+repeating that effect. A delivery is not an exactly-once guarantee.
+
+`GET /api/purse/webhooks` gives owner-only subscription metadata, events and
+attempt outcomes. An explicit owner replay posts `{event,reason}` to
+`/api/purse/webhooks/:id/replay`. It sends the same event ID and body with a fresh
+signature timestamp, making receiver de-duplication work after a lost response.
+Revoked subscriptions, stale owner authority and erased source identities cannot
+send. Native browser sessions, keys, signing secrets, replay authority, event
+queues and subscriptions are excluded from archives; restore needs fresh consent
+and new credentials. Retained purchasing chronology grants no authority.
+
+The native slice is proven in `tests/public-api.test.mjs` and
+`tests/browser-public-api.mjs`. API-001 remains partial: Zapier developer and test
+accounts and Make scenario credentials are not held; published automation apps,
+their real trigger and action journeys, external Crank and Pier qualification,
+additional event types and broader console, RFQ and email administration remain
+unproved. No supplier-send or payment authority is added.

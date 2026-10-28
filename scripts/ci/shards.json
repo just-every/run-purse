@@ -73,7 +73,8 @@
   ],
   "23": [
     ["tests/browser.mjs", "--width=390", "--journey=payables"],
-    ["tests/browser-integration-tokens.mjs", "--width=1440"]
+    ["tests/browser-integration-tokens.mjs", "--width=1440"],
+    ["tests/browser-public-api.mjs"]
   ],
   "24": [
     ["tests/browser.mjs", "--width=390", "--journey=po-documents"],
