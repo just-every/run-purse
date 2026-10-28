@@ -10,7 +10,10 @@ export function cashRequirements(s: State, a: Actor) {
 }
 /** Arithmetic over an explicitly selected source set; callers authorize that set first. */
 export function cashRequirementsFromRecords(s:State,accepts:(record:Data)=>boolean) {
-    const heldInvoices = new Set(discrepancies(s).filter(d => d.priceMismatch || d.quantityMismatch || d.receiptShortfall || d.closedBalance || d.exception).map(d => d.invoiceId));
+    // Receipt corrections suspend historical cash approval without changing the
+    // existing forecast treatment of other invoices on the same purchase.
+    const correctedOrders = new Set(all(s, 'receipt').filter(r => r.correctionOf).map(r => r.order));
+    const heldInvoices = new Set(discrepancies(s).filter(d => correctedOrders.has(d.orderId)).filter(d => d.priceMismatch || d.quantityMismatch || d.receiptShortfall || d.closedBalance || d.exception).map(d => d.invoiceId));
     const payables = all(s, 'payable').filter(p => accepts(get(s, 'invoice', p.invoice)));
     const eligibleBills = payables.filter(p => p.approvedAt && !heldInvoices.has(p.invoice) && !get(s, 'invoice', p.invoice).disputed && !openInvoiceFlags(get(s, 'invoice', p.invoice)).length).map((p): Data => {
         const invoice = get(s, 'invoice', p.invoice), order = get(s, 'order', invoice.order);

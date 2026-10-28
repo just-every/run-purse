@@ -986,7 +986,10 @@ accrual reduction until resolved; resolution itself never grants approval.
 invoices the session may already read. Each row retains its first recorded time,
 reasoned assignment history, current assignee availability and a source version.
 Candidates are current native members who can already act as the buyer,
-requester or receiver on the current PO. An assignment grants no access.
+requester or receiver on the current PO. An assignment grants no access. Assignees without invoice read permission
+receive a deduplicated PO task with only their existing purchase and aggregate
+receiving context; no invoice identity, amounts, reason or private thread is
+returned. Reassignment removes the previous assignee's task.
 
 `POST /api/purse/command/assign-invoice-exception` requires existing scoped
 invoice review and read permissions, the exception `id`, `version`,
