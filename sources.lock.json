@@ -3144,11 +3144,11 @@
       "executable": false
     },
     "src/purse/email-intake-api.ts": {
-      "sha256": "74349b4556a1af97fb637cef4322e1913acbd862c99e95e91e874d05a11d1825",
+      "sha256": "32279e5ebce6383d71acf656f8bd712fa17359eb3014c1438a0a5141473a3f31",
       "executable": false
     },
     "src/purse/email-intake.ts": {
-      "sha256": "00fb3c1e0a75e365588293db3476739ab110d7bf59984b9fb4e0857b338e13d2",
+      "sha256": "48aa06bcbc53050c82ce2f72c0de01f83a2827df9214e3f36a1360483402fd9b",
       "executable": false
     },
     "src/purse/erasure-api.ts": {
@@ -4840,7 +4840,7 @@
       "executable": false
     },
     "tests/email-intake-flow.mjs": {
-      "sha256": "5153dd80e334eb5a99c85a1531207498ce12f6c49ee93d8ddfdafa887f4a3eb8",
+      "sha256": "4894dd0387002110e38821676284c32576afe4e73cd97afe6cba9dedf0ebbc7c",
       "executable": false
     },
     "tests/emitted-worker.mjs": {
