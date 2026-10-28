@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { harness } from './purse-harness.mjs';
 import { orderSendFixture, orderLink } from './order-send-fixture.mjs';
+import { reauthenticateErasure } from './erasure-flow.mjs';
 import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 
 async function original(f, reference = 'synthetic-purse-4501', quantity = '1') {
@@ -16,7 +17,7 @@ async function original(f, reference = 'synthetic-purse-4501', quantity = '1') {
 const post = (h, url, body, origin = h.origin) => fetch(url, { method: 'POST', headers: { origin, accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const read = url => fetch(url, { headers: { accept: 'application/json' } });
 
-test('Supplier invoice link captures exact private PDF and balance ancestry, holds source confirmation and duplicate/excess evidence, and exposes only its own authentic statuses', async t => {
+test('Supplier invoice link captures exact private PDF and balance ancestry, holds source confirmation and duplicate and excess evidence, and exposes only its own authentic statuses', async t => {
     const h = await harness(); t.after(() => h.close()); const f = await orderSendFixture(h);
     await f.send(); const link = orderLink(h), url = link.href + '/invoices';
     assert.equal((await read(url)).status, 410, 'Unacknowledged links cannot invoice');
@@ -64,25 +65,44 @@ test('Supplier invoice link captures exact private PDF and balance ancestry, hol
 });
 
 test('Owner-consented supplier flips approve exact three-way evidence once, return native schedules, and hold unsafe or revoked paths', async t => {
-    const h = await harness(); t.after(() => h.close()); const f = await orderSendFixture(h);
+    const pantryOrigin='https://synthetic-purse-4620.example.test';let bill,paid=false;
+    const h = await harness({protectedKey:createHash('sha256').update('synthetic-purse-4621').digest('hex'),mailRequest:async request=>{
+        const url=new URL(request.url);if(url.origin!==pantryOrigin)return;
+        assert.equal(request.headers.get('authorization'),'Bearer synthetic-purse-4622');
+        const path=url.pathname.replace('/api/pantry/integration/v1','');
+        if(path==='/contacts/synthetic-purse-4623')return Response.json({id:'synthetic-purse-4623',kind:'vendor',active:true});
+        if(path==='/bills'&&request.method==='POST'){const input=await request.json();bill={id:'synthetic-purse-4624',vendor_id:input.vendorId,reference:input.reference,bill_date:input.billDate,due_date:input.dueDate,status:'posted',total_cents:10000,lines:input.lines.map(line=>({description:line.description,account_id:line.accountId,amount_cents:10000}))};return Response.json({...bill,open_cents:10000});}
+        if(path==='/bills')return Response.json({bills:bill?[{...bill,open_cents:10000}]:[],nextCursor:null});
+        if(path==='/bills/synthetic-purse-4624')return Response.json({...bill,open_cents:paid?0:10000});
+        if(path==='/payments')return Response.json({payments:paid?[{id:'synthetic-purse-4625',journal_id:'synthetic-purse-4626',payment_date:'2026-11-20',amount_cents:10000,direction:'paid',contact_id:bill.vendor_id,allocations:[{id:'synthetic-purse-4627',target_kind:'bill',target_id:bill.id,amount_cents:10000}]}]:[],nextCursor:null});
+        throw new Error('Unexpected synthetic ledger request '+path);
+    }}); t.after(() => h.close()); const f = await orderSendFixture(h);
+    const ap=await h.member(['synthetic-purse-4610','example.test'].join('@'),['ap-clerk']);
     await f.send(); const link=orderLink(h), url=link.href+'/invoices';
     await post(h,link,{decision:'acknowledge',revision:f.order.revision,consent:true,name:'synthetic-purse-4601'});
     const grant={revision:f.order.revision,enabled:true,consent:true,automaticApproval:true,paymentTerm:'Net 30',reason:'Owner authorizes exact three-way matches after AP confirms originals'};
     assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent',grant,f.buyer)).status,403);
     assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent',grant,h.owner)).status,200);
+    await h.command('receipt',{order:f.order.id,line:f.order.lines[0].id,event:'receive',quantity:'1',reason:'Partly received before supplier capture'});
     const pdf=await original(f,'synthetic-purse-4602'), body={revision:f.order.revision,consent:true,reference:pdf.values.reference,invoiceDate:pdf.values.invoiceDate,freightAmount:'0.00',taxAmount:'0.00',lines:[{line:f.order.lines[0].id,quantity:'1',unitAmount:'100.00'}],document:pdf.document};
     assert.equal((await post(h,url,body)).status,200);
     let invoice=(await h.state()).data.invoice.find(row=>row.reference===body.reference);
     await h.command('approve-supplier-invoice',{invoice:invoice.id},f.outsider,403);
     await h.command('approve-supplier-invoice',{invoice:invoice.id},f.buyer,409);
     assert.equal((await h.state()).data.payable.length,0,'Arrival cannot approve an unconfirmed original');
-    const reading=await h.command('supplier-invoice-review',{invoice:invoice.id},f.buyer);
-    assert.equal(reading.parser.startsWith('Structured supplier'),true);
+    await h.command('supplier-invoice-review',{invoice:invoice.id},f.outsider,403);
+    await h.command('receipt',{order:f.order.id,line:f.order.lines[0].id,event:'return',quantity:'1',reason:'Return pending inspection before source confirmation'});
+    let reading=await h.command('supplier-invoice-review',{invoice:invoice.id},ap);
     assert.equal(reading.reference.value,body.reference); assert.equal(reading.lines[0].quantity.value,'1');
-    const confirmation={id:reading.id,version:1,reviewed:true,reason:'AP compares every structured field with the private original',lines:[{id:reading.lines[0].id,orderLine:f.order.lines[0].id}]};
+    reading=await h.command('invoice-reading-edit',{id:reading.id,version:reading.version,changes:[{field:'remitTo',value:'synthetic-purse-4630 postal address'}]},ap);
+    const confirmation={id:reading.id,version:reading.version,reviewed:true,reason:'AP compares every structured field with the private original',lines:[{id:reading.lines[0].id,orderLine:f.order.lines[0].id}]};
     await h.command('invoice-reading-confirm',{...confirmation,reviewed:false},f.buyer,400);
-    await h.command('invoice-reading-confirm',confirmation,f.buyer);
+    await h.command('invoice-reading-confirm',confirmation,ap);
     assert.equal((await h.state()).data.payable.length,0,'A confirmed invoice still waits for receipt');
+    await h.command('receipt',{order:f.order.id,line:f.order.lines[0].id,event:'receive',quantity:'1',reason:'Receipt now satisfies matching but remit hold remains'});
+    await h.command('approve-supplier-invoice',{invoice:invoice.id},ap,409);
+    assert.equal((await h.state()).data.payable.length,0,'Unresolved remit hold alone refuses automatic payment approval');
+    await h.command('receipt',{order:f.order.id,line:f.order.lines[0].id,event:'return',quantity:'1',reason:'Goods returned while AP reviews the remit discrepancy'});
     for(const flag of (await h.state()).data.invoice.find(row=>row.id===invoice.id).flags) {
         const current=(await h.state()).data.invoice.find(row=>row.id===invoice.id);
         await h.command('invoice-risk-review',{invoice:invoice.id,version:current.riskVersion,flag:flag.id,reason:'AP checks the source; actual receipt still required'},f.buyer);
@@ -105,8 +125,18 @@ test('Owner-consented supplier flips approve exact three-way evidence once, retu
     await h.command('schedule-supplier-invoice',schedule);
     assert.equal((await (await read(url)).json()).invoices[0].status,'scheduled');
     assert.equal((await h.state()).data.audit.filter(row=>row.action==='schedule-supplier-invoice').length,1);
-    assert.equal((await post(h,url,body)).status,200,'Capture replay preserves the original decision');
+    assert.equal((await post(h,url,body)).status,409,'Old supplier source replay cannot overwrite AP-confirmed remit evidence');
     assert.equal((await h.state()).data.invoice.length,1);
+    const connection=await h.send('/api/purse/pantry/connection',{origin:pantryOrigin,currency:'USD',token:'synthetic-purse-4622',generation:0,confirmed:true},h.owner);assert.equal(connection.status,200);
+    const input={invoice:invoice.id,payableVersion:payable.version,accountId:'synthetic-purse-4628',vendorId:'synthetic-purse-4623'};
+    const postingPreview=await h.send('/api/purse/pantry/preview',input,h.owner);assert.equal(postingPreview.status,200);
+    const synced=await h.send('/api/purse/pantry/sync',{...input,fingerprint:postingPreview.value.plan.fingerprint,confirmed:true,reason:'Owner confirms exact bill mapping'},h.owner);assert.equal(synced.status,200,JSON.stringify(synced.value));
+    assert.equal((await (await read(url)).json()).invoices[0].status,'scheduled','An unpaid ledger bill is never labelled paid');
+    paid=true;const returned=await h.send('/api/purse/pantry/refresh',{invoice:invoice.id},h.owner);assert.equal(returned.status,200,JSON.stringify(returned.value));
+    assert.equal((await (await read(url)).json()).invoices[0].status,'paid','Only authenticated exact bill payment evidence returns paid');
+    assert.equal((await h.state()).data.cashRequirements.bills.length,0);
+    paid=false;assert.equal((await h.send('/api/purse/pantry/refresh',{invoice:invoice.id},h.owner)).status,200);
+    assert.equal((await (await read(url)).json()).invoices[0].status,'scheduled','Reversed payment evidence removes the paid label');
     const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
     assert.equal(validatePurchasingArchive(rows),true);
     const corrupt=structuredClone(rows), row=corrupt.find(row=>row.kind==='payable'), changed=JSON.parse(row.value);changed.supplierApproval.consentVersion=99;row.value=JSON.stringify(changed);
@@ -115,7 +145,7 @@ test('Owner-consented supplier flips approve exact three-way evidence once, retu
     data=(await h.state()).data;const excess=data.invoice.find(row=>row.reference==='synthetic-purse-4603');
     assert.ok(excess.flags.some(flag=>flag.code==='po-balance'));assert.ok(excess.flags.some(flag=>flag.code==='duplicate-document'));
     const excessReading=await h.command('supplier-invoice-review',{invoice:excess.id},f.buyer);
-    await h.command('invoice-reading-confirm',{...confirmation,id:excessReading.id,lines:[{id:excessReading.lines[0].id,orderLine:f.order.lines[0].id}]},f.buyer);
+    await h.command('invoice-reading-confirm',{...confirmation,id:excessReading.id,version:excessReading.version,lines:[{id:excessReading.lines[0].id,orderLine:f.order.lines[0].id}]},f.buyer);
     await h.command('approve-supplier-invoice',{invoice:excess.id},f.buyer,409);
     assert.equal((await (await read(url)).json()).invoices.find(row=>row.reference===excess.reference).status,'received');
     const heldTerms=await h.command('payable-terms',{invoice:excess.id,version:0,invoiceDate:body.invoiceDate,term:'Net 30',reason:'Record held bill terms'},f.buyer);
@@ -133,4 +163,21 @@ test('Owner-consented supplier flips approve exact three-way evidence once, retu
     assert.equal((await read(url)).status,410);assert.equal((await post(h,url,body)).status,410);
     await h.command('schedule-supplier-invoice',schedule,h.owner,409);
     assert.equal((await h.state()).data.invoice.length,before,'Revoked capture cannot resurrect invoice data');
+    const refused=(await h.send('/api/purse/audit',undefined,h.owner)).value.events;assert.ok(refused.some(row=>row.action==='supplier-invoice-payment-refused'&&row.operation==='schedule-supplier-invoice'&&row.record===invoice.id&&row.status===403));
+    const csv=(await h.send('/api/purse/audit.csv',undefined,h.owner)).value;assert.match(csv,/supplier-invoice-approved/);assert.match(csv,/supplier-invoice-payment-refused/);
+    await h.command('attachment',{kind:'invoice',record:invoice.id,...pdf.document},ap);
+    const heldOriginal=(await h.state()).data.invoice.find(row=>row.id===invoice.id);assert.ok(heldOriginal.flags.some(flag=>flag.code==='duplicate-document'),'A later original can still raise a hold after the supplier link is revoked');
+    assert.ok((await h.state()).data.payable.find(row=>row.invoice===invoice.id).supplierApproval,'Historical approval evidence is retained');
+    const contact=(await h.state()).data.order.find(row=>row.id===f.order.id).supplierSnapshot.contacts[0]?.email ?? (await h.send('/api/purse/order-send/'+f.order.id,undefined,f.buyer)).value.event.recipient;
+    await reauthenticateErasure(h);
+    const meta=await h.send('/api/purse/erasure',undefined,h.owner), preview=await h.send('/api/purse/erasure/preview',{kind:'contact',id:f.supplier.id,email:contact,revision:meta.value.revision},h.owner);
+    assert.equal(preview.status,200,JSON.stringify(preview.value));
+    const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);
+    assert.equal(erased.status,200,JSON.stringify(erased.value));
+    assert.equal((await post(h,url,body)).status,410,'Erased supplier capability cannot recapture an old original');
+    await h.command('approve-supplier-invoice',{invoice:invoice.id},ap,409);
+    await h.command('schedule-supplier-invoice',schedule,h.owner,409);
+    assert.equal((await h.state()).data.cashRequirements.bills.some(row=>row.invoice===invoice.id),false,'Erased originals cannot regain current eligibility');
+    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
+
 });

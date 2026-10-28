@@ -122,3 +122,11 @@ into an empty installation of that release, upgrade that installation’s source
 in place, run `rer install` and `rer setup`, then export again. Keep the original release
 and private export until recovery is verified. Never import an older release’s
 archive directly into the current release.
+
+## Contract documents
+
+CONTRACT.md owns acceptance text and Status rows. Lander-Regenerate: after changing
+a clause, run `node scripts/contract-docs.mjs write <changed-clause-id>` and
+`node scripts/contract-docs.mjs check <changed-clause-id>`. The generator updates
+the selected ACCEPTANCE.md entries, all summary counts and docs/CLAIMS.md. Keep
+other campaigns' entries intact. Regenerate the edition source lock last.

@@ -42,12 +42,12 @@ async function approve(s: State, a: Actor, env: Bindings, invoice: Data) {
         reason: 'Exact PO supplier invoice standing rule', actor: rule.consent.actor, at };
     const approval = { send: rule.event.id, consentVersion: rule.consent.version, orderRevision: order.revision,
         source: invoice.supplierSource, reading: invoice.confirmedReading, documentSha256: invoice.document.sha256,
-        evidenceHash: invoice.evidenceHash, approvedMinor: invoice.totalMinor, riskVersion: invoice.riskVersion,
+        approvedMinor: invoice.totalMinor, riskVersion: invoice.riskVersion,
         receipts: all(s, 'receipt').filter(receipt => receipt.order === order.id).map(receipt => receipt.id),
         actor: rule.consent.actor, operatorVersion: rule.consent.operatorVersion, authorityProofs: rule.proofs, at };
     put(s, 'payable', invoice.id, { ...terms, history: old?.history ?? [terms], version: terms.version + 1,
         approvedAt: at, approvedBy: rule.consent.actor, approvalReason: 'Owner-consented exact three-way supplier invoice rule', approvedMinor: invoice.totalMinor, supplierApproval: approval });
-    audit(s, a, 'supplier-invoice-approved', invoice.id, approval);
+    audit(s, a, 'supplier-invoice-approved', invoice.id, { ...approval, triggeredBy: a.id });
     return get(s, 'payable', invoice.id);
 }
 
