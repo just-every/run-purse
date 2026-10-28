@@ -101,13 +101,15 @@ and `0042_agent_door.sql` retain the corresponding Base schema bytes. Earlier
 migrations are unchanged. This preparation does not expose an MCP endpoint,
 accept Business policy, bind teammates or change native purchasing authority.
 
-Full adoption requires a production-native multi-person conformance lifecycle.
-Purse's invitation and sensitive-action proofs are delivered as one-time email
-links. The pinned verifier's owner initializer receives an application request
-function but no captured-mail reader; its isolated network module can return
-provider receipts but cannot deliver those links to the initializer. Production
-one-click sign-in is unavailable. A test-only verifier mail-capture interface is
-needed to complete real native invitation confirmation and independent purchasing
-approval without direct SQL, demo authority or a production verification route.
-Until that exists and native adapters and the complete specialist journey pass,
-this source preparation is not agent-door adoption or release evidence.
+Full adoption requires production-native invitation and sensitive-action proof
+lifecycles. Purse supports OIDC invitation acceptance, but protected reveal and
+key changes still require a consumed, session-bound native email step-up proof.
+OIDC admission alone does not create that proof. The pinned verifier's owner
+initializer receives an application request function but no captured-mail reader;
+its isolated network module can return provider receipts but cannot deliver
+one-time confirmation links to the initializer. Production one-click sign-in
+is unavailable. A test-only verifier mail-capture interface is needed to complete
+real native email confirmation without direct SQL, demo authority or a production
+verification route. Until that exists and native adapters and the complete
+specialist journey pass, this source preparation is not agent-door adoption or
+release evidence.
