@@ -1,3 +1,4 @@
+import { checkBudgetDisposition, settleBudgetDisposition } from './budget-disposition';
 import { checkAdoptedDisposition, settleAdoptedDisposition } from './adoption-amendments';
 import { operationalOrder } from './adoption-position';
 import { servicePosition, serviceInvoiceMatches, serviceReceipt } from './service-orders';
@@ -31,6 +32,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         currentDecision(s, r);
         for(const line of r.lines)if(line.supplier){supplier(s,line.supplier);documentHold(s,line.supplier);}
         checkAdoptedDisposition(s, r);
+        checkBudgetDisposition(s, r);
         requireThat(!all(s, 'order').some(o => o.request === r.id && o.revision === r.revision), 'Approved lines already allocated to a PO', 409);
         requireThat(all(s, 'decision').some(d => d.request === r.id && d.revision === r.revision && d.decision === 'approved'), 'Approval decision missing', 409);
         const edit = conversionEdits(s, a, r, b.conversionEdits);
@@ -46,7 +48,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         const occupied = new Set(all(s, 'order').map(order => order.number));
         while (occupied.has(`PO-${String(sequence).padStart(6, '0')}`)) sequence++;
         const o = { id, sequence, documentProfile: poProfileSnapshot(s, r, a), ...(r.poDetails ? { poDetails: structuredClone(r.poDetails) } : {}), ...(r.entity ? { entity: r.entity } : {}), location: r.location, costCentre: r.costCentre, approvalActor:approval.actor,approvalVersion:approval.operatorVersion,...(approval.chainProofs ? {approvalProofs:approval.chainProofs} : {}), number: `PO-${String(sequence).padStart(6, '0')}`, request: r.id, policy:r.policy, revision: r.revision, supplier: r.supplier, supplierSnapshot: structuredClone(r.supplierSnapshot), currency: r.currency, lines: face.lines.map((l: Data) => ({ ...l, sourceLine: l.id })), freightMinor: face.freightMinor, taxMinor: face.taxMinor, totalMinor: face.totalMinor, terms: r.terms, needDate: r.needDate, status: 'prepared', generatedAt: new Date().toISOString(), issuedAt: null, ...(conversionVariance ? { conversionVariance } : {}), ...(face.charges ? {charges:structuredClone(face.charges),otherChargesMinor:face.otherChargesMinor??0} : {}) };
-        for (const field of ['glAccount','intakeForm','intakeFormVersion','intakeFormSnapshot','answers','customFields']) if (r[field] !== undefined) (o as Data)[field] = structuredClone(r[field]);
+        for (const field of ['budgetDisposition','glAccount','intakeForm','intakeFormVersion','intakeFormSnapshot','answers','customFields']) if (r[field] !== undefined) (o as Data)[field] = structuredClone(r[field]);
         if (r.cancellation) (o as Data).cancellation = structuredClone(r.cancellation);
         if (r.adoptedDisposition) (o as Data).adoptedDisposition = structuredClone(r.adoptedDisposition);
         if(Object.hasOwn(r,'valuePromise')) (o as Data).valuePromise=structuredClone(r.valuePromise);
@@ -66,19 +68,23 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
         requireThat(policies(s, r).some(p => p.id === r.policy), 'Approval policy changed', 409);
         currentDecision(s, r);
         checkAdoptedDisposition(s, r);
+        checkBudgetDisposition(s, r);
         let conversionSource=o;const ancestry=new Set<string>();
         while(!conversionSource.conversionVariance&&conversionSource.needDateChange){requireThat(!ancestry.has(conversionSource.id),'Invalid date-correction ancestry',409);ancestry.add(conversionSource.id);conversionSource=get(s,'order',conversionSource.needDateChange.priorOrder);}
         const conversionLimit = conversionSource.conversionVariance ? requireConversionSource(s, a, r, conversionSource) : undefined;
         const issuedFace = o.conversionVariance ? { ...r, lines: o.lines, freightMinor:o.freightMinor,taxMinor:o.taxMinor,totalMinor: o.totalMinor } : r;
         if (o.conversionVariance) requireThat(policies(s, issuedFace).some(p => p.id === r.policy), 'Edited PO exceeds current approval policy; amend and renew approval', 409);
         requireBlanketValidity(s, o);
+        const movedBudget=settleBudgetDisposition(s,a,r);
         if (r.amends) {
             const prior = get(s, 'order', r.amends);
             requireThat(prior.status === 'amendment-pending', 'Prior order changed', 409);
             put(s, 'order', prior.id, { ...prior, status: 'amended', amendedBy: o.id, ...(prior.replenishmentStatus === 'held' ? { replenishmentStatus: 'reviewed', replenishmentMinor: 0 } : {}) });
+            if(!movedBudget) {
             const groups=new Map<string,Data>();for(const e of all(s,'commitment').filter(e=>e.request===r.id)){const k=e.policy+':'+e.currency;const g=groups.get(k)??{policy:e.policy,currency:e.currency,amount:0};g.amount+=e.amountMinor;groups.set(k,g)}for(const g of groups.values())if(g.amount&&(g.policy!==r.policy||g.currency!==r.currency))ledger(s,a,{...r,policy:g.policy,currency:g.currency},-g.amount,'amendment-policy-release');const target = approvalAmount(issuedFace,s), current = commitment(s, r);
             if (target !== current)
                 ledger(s, a, r, target - current, 'amendment-issued-adjustment');
+            }
         }
         else if (o.conversionVariance) {
             const delta = approvalAmount(issuedFace, s) - commitment(s, r);

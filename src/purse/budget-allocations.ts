@@ -52,6 +52,7 @@ export function requestBudgetShares(s: State, request: Data, amount: number, his
     return [...result].map(([policy, amountMinor]) => ({ policy, amountMinor }));
 }
 export function budgetPortion(s: State, request: Data, amount: number, policy: string) {
+    if(request.budgetDisposition) {const shares=request.budgetDisposition.destination;return budgetApportion(amount,shares.map((share:Data)=>share.amountMinor))[shares.findIndex((share:Data)=>share.policy===policy)]??0;}
     const ids=new Set<string>(all(s,'commitment').filter(event=>event.request===(request.request??request.id)&&event.revision===request.revision&&event.amountMinor>0).flatMap(event=>(event.budgetAllocations??[]).map((share:Data)=>share.policy)));
     return requestBudgetShares(s, request, amount, ids).find(share => share.policy === policy)?.amountMinor ?? 0;
 }

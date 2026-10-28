@@ -1,3 +1,4 @@
+import {dispositionFixture} from './budget-disposition-fixture.mjs';
 import {readFile} from 'node:fs/promises'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -95,6 +96,15 @@ test('PO-009 real HTTP PDF/HTML carry location profiles, frozen identity, line s
  assert.ok(conversionAudit.some(event=>event.action==='buyer-conversion-edit'&&event.sourceRequest===percentRequest.id&&event.before.totalMinor===100000&&event.after.totalMinor===104000&&event.limit.percent===10));
  assert.ok(conversionAudit.some(event=>event.action==='issue'&&event.conversionLimit.percent===10));
  const conversionCsv=await h.send('/api/purse/audit.csv?subject='+percentOrder.id,undefined,h.owner);assert.equal(conversionCsv.status,200);assert.ok(conversionCsv.value.includes('buyer-conversion-edit'));assert.ok(conversionCsv.value.includes('104000'));
+ const quarter=await harness();try {
+  const f=await dispositionFixture(quarter);
+  const original=await quarter.mf.dispatchFetch(quarter.origin+'/api/purse/order-pdf/'+f.o.id,{headers:{cookie:quarter.owner}});assert.equal(original.status,200);const originalPdf=await pdfContent(new Uint8Array(await original.arrayBuffer()));
+  const amendment=await f.amend(await f.preview());await f.approveMove(amendment);const changedOrder=await f.cmd('convert',{id:f.r.id,revision:2,issue:true},f.buyer);
+  const unchanged=await quarter.mf.dispatchFetch(quarter.origin+'/api/purse/order-pdf/'+f.o.id,{headers:{cookie:quarter.owner}});const originalAgain=await pdfContent(new Uint8Array(await unchanged.arrayBuffer()));assert.deepEqual(originalAgain.text.split('\n').slice(2),originalPdf.text.split('\n').slice(2),'Quarter disposition preserves every original document term and original evidence; its state label follows amendment');assert.ok(originalAgain.text.includes('AMENDED · Revision 1'));
+  const changedPdf=await quarter.mf.dispatchFetch(quarter.origin+'/api/purse/order-pdf/'+changedOrder.id,{headers:{cookie:quarter.owner}});const changedText=(await pdfContent(new Uint8Array(await changedPdf.arrayBuffer()))).text;
+  for(const expected of ['Change order 1','2027-05-15','USD 1000.00'])assert.ok(changedText.includes(expected),expected);assert.ok(originalAgain.text.includes('2027-02-15'));assert.ok(!originalAgain.text.includes('2027-05-15'));
+  assert.deepEqual(changedOrder.documentProfile,f.o.documentProfile,'Budget amendment retains the reviewed document profile and originals');
+ }finally{await quarter.close();}
 });
 
 test('PO-012 native freight, tax, unit and SKU conversion keeps current limits, exact documents and one commitment',async t=>{
