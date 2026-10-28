@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "0eaedf70a292c7b9f3ae07d8e2e906453d0f3b14d865050c9e2ca2ae93a4344a",
+      "sha256": "b4767fab67e463e0545d12a7ddcfef6b1def5af3a4b4fce8af6600d466a245f5",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -100,7 +100,7 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "bdc536f0d3fbe77fa22c02a851c1d9f73b784e00b48e92d6e3839c8ef8c8c2dd",
+      "sha256": "3b4090efd9f55f28b164301469917d14d0635dbec515ff441cb696b07a690b7e",
       "executable": false
     },
     "API.md": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "e3b47d4cc8478e5df25a002ed136a1ba9544727555aa65bc73ccdfd3dbe65b08",
+      "sha256": "8848f842fdb8a7c85d93a609c507df8f758f12b424b8d1b7bc341347fa1773e3",
       "executable": false
     },
     "DEMO.md": {
@@ -140,7 +140,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "80b8cb14b64ef1cff83db20836693b5c81ea50474355f5333f215656f4125320",
+      "sha256": "aaa70b09428531e3b5726203c326e5aa04c37531593c65c001511a413e016d4b",
       "executable": false
     },
     "docs/getting-started.md": {
@@ -376,7 +376,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "7cdfb806c19a3767174ffff5a826cc696f4e2b05702859046e805f41373a37fb",
+      "sha256": "cd0643267e063901495bf5865729ec9ec94c9013394fa1667f5bad13cd5f44a3",
       "executable": false
     },
     "packaging.json": {
@@ -4680,7 +4680,7 @@
       "executable": false
     },
     "tests/browser.mjs": {
-      "sha256": "0b0e0601b101bbfb38ff9668fb478641bd22d108ece66f5b9c440e141e69e9fa",
+      "sha256": "8c8efe86bab8c4db1718535e73098f9e735050bf01174637ca0113e7ec34c642",
       "executable": false
     },
     "tests/budget-import-fixture.mjs": {
@@ -4968,7 +4968,7 @@
       "executable": false
     },
     "tests/recovery.mjs": {
-      "sha256": "27a635ca9c934a19524217423869645e007e958ce27ea2a6159228f301b6d59d",
+      "sha256": "fd90be17970aa3f63d4e14dc3a55fe9792eab56e5f8ebfd1bde4c400907fa910",
       "executable": false
     },
     "tests/recurring-scenario-fixture.mjs": {

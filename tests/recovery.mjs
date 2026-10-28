@@ -23,8 +23,11 @@ try{
  let response=await fetch(server.origin+'/api/purse/command/business',{method:'POST',headers:{origin:server.origin,cookie,'content-type':'application/json'},body:JSON.stringify({name:'Recovery business',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety']})});assert.equal(response.status,200,await response.text());
  let before=await (await fetch(server.origin+'/api/purse/state',{headers:{cookie}})).json();assert.equal(before.data.business[0].name,'Recovery business');
  await server.close();server=undefined;
+ // Preview serves the emitted Worker under the same native session boundary.
+ server=await start(source,port,'preview');assert.equal((await fetch(server.origin+'/health')).status,200);assert.equal((await fetch(server.origin+'/api/purse/state')).status,401);await server.close();server=undefined;
  // The supported in-place upgrade path reruns install/setup without losing private state.
  await command(source,['install']);await command(source,['setup','--owner-email','owner@example.test','--port',String(port),'--non-interactive'],{env:{PURSE_PREBUILT_ROOT:process.cwd()}});
+ await command(source,['deploy','--dry-run'],{expected:3,env:{PURSE_PREBUILT_ROOT:process.cwd()}});
  await mkdir(join(source,'exports'),{recursive:true});await command(source,['export','--output','exports/recovery.rer']);
  await command(source,['import','--input','exports/recovery.rer','--journal','exports/recovery.rer','--yes'],{expected:4});
  const destination=await installation(),nextPort=await freePort();
