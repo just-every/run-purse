@@ -164,7 +164,7 @@ test('Owner-consented supplier flip approves only confirmed three-way evidence, 
 
 
 test('Standing supplier approval refuses price and receipt discrepancies and holds source risk until reasoned review', async t => {
-    for (const [unitAmount,received,remitTo] of [['90.00','1',null],['100.00','0',null],['100.00','1','synthetic-purse-4655']]) {
+    for (const [unitAmount,received,remitTo,ownerChanged] of [['90.00','1',null,false],['100.00','0',null,false],['100.00','1','synthetic-purse-4655',false],['100.00','1',null,true]]) {
         const h=await harness();t.after(()=>h.close());const f=await orderSendFixture(h);await f.send();const link=orderLink(h),url=link.href+'/invoices';
         await post(h,link,{decision:'acknowledge',revision:f.order.revision,consent:true,name:'synthetic-purse-4650'});
         if(received!=='0')await h.command('receipt',{order:f.order.id,line:f.order.lines[0].id,event:'receive',quantity:received,reason:'Accepted goods'});
@@ -175,7 +175,17 @@ test('Standing supplier approval refuses price and receipt discrepancies and hol
         const field=value=>({value,confidence:value===null?0:1,page:value===null?null:1,excerpt:value});
         const instructions=await h.command('invoice-reading-instructions',{source:invoice.supplierSource},f.buyer);
         const reading=await h.command('invoice-reading-propose',{source:instructions.source,reader:{provider:'synthetic-purse-4652',model:'synthetic-purse-4653',runReference:'synthetic-purse-4654'},fields:{...Object.fromEntries(Object.entries(pdf.values).map(([key,value])=>[key,field(value)])),lines:[{description:field(f.order.lines[0].description),quantity:field('1'),unitAmount:field(unitAmount),amount:field(unitAmount)}]}},f.buyer);
+        let viewer=h.owner;
+        if(ownerChanged){const current=await h.state(),nextOwner=current.data.member.find(member=>member.roles.includes('requester'));viewer=await h.member(nextOwner.email.replace('@','-owner@'),['requester'],'owner');const demoted=await h.send('/auth/operator/role',{operatorId:current.actor.id,role:'member'},h.owner);assert.equal(demoted.status,200,JSON.stringify(demoted.value));}
         await h.command('invoice-reading-confirm',{id:reading.id,version:1,reviewed:true,reason:'Exact source reviewed without overriding matching',lines:[{id:reading.lines[0].id,orderLine:f.order.lines[0].id}]},f.buyer);
+        if(ownerChanged){
+            invoice=(await h.state(viewer)).data.invoice.find(value=>value.id===invoice.id);
+            assert.equal(invoice.sourceConfirmation,'confirmed');assert.equal(invoice.paymentApproval,undefined,'An owner change pauses the previous standing authority');
+            await h.command('supplier-invoice-schedule',{invoice:invoice.id,version:0,date:'2026-11-20',reason:'Previous owner authority cannot schedule'},f.buyer,409);
+            await h.command('supplier-invoice-rule',{order:f.order.id,revision:f.order.revision,version:1,enabled:true,consent:true,reason:'Must renew exact invoice access as the new owner'},viewer,409);
+            assert.equal((await read(url)).status,410,'A previous owner consent cannot keep the supplier capability live');continue;
+        }
+
         invoice=(await h.state()).data.invoice.find(value=>value.id===invoice.id);
         assert.equal(invoice.paymentApproval,undefined,'Unresolved source risk or a match discrepancy refuses automatic approval');
         await h.command('supplier-invoice-schedule',{invoice:invoice.id,version:0,date:'2026-11-20',reason:'Unresolved risk cannot schedule'},f.buyer,409);
