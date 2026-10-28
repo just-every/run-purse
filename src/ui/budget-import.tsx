@@ -15,10 +15,10 @@ export function BudgetImport({data,mutate}:{data:D;mutate:(op:string,b:D)=>Promi
         <Form label="Read budget file" onSubmit={async b => {
             const file=b.file as File;
             if(file.size>1000000)throw Error('Choose a CSV of at most 1 MB');
-            const csv=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());
+            const csv=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(await file.arrayBuffer());
             const parsed=await call('budget-import/columns',{csv});
             setSource({...parsed,csv});setColumns(Object.fromEntries(Object.keys(labels).map(field => [field,parsed.columns.includes(field)?field:''])));setReview(undefined);setResult(undefined);
-        }}><label className="field">Budget CSV file<input name="file" type="file" accept=".csv,text/csv" required/></label></Form>
+        }}><label className="field">Budget CSV file<input name="file" type="file" accept=".csv,text/csv" required onChange={() => {setSource(undefined);setColumns({});setReview(undefined);setResult(undefined);}}/></label></Form>
         {source && <div onChange={() => {setReview(undefined);setResult(undefined);}}><Form label="Preview budget import" onSubmit={async b => {const payload=input(b);setReview({input:payload,...await call('budget-import/preview',payload)});}}>
             {Object.entries(labels).map(([field,label]) => <label className="field" key={field}>{String(label)} column<select aria-label={String(label)+' column'} required value={columns[field] ?? ''} onChange={event => setColumns({...columns,[field]:event.target.value})}><option value="">Choose…</option>{source.columns.map((name:string) => <option key={name} value={name}>{name}</option>)}</select></label>)}
             {values('budget').map((value,index) => <Field key={'budget-'+value} label={'Target budget for '+value} name={'budget-'+index} options={options(policies)}/>)}
@@ -31,7 +31,7 @@ export function BudgetImport({data,mutate}:{data:D;mutate:(op:string,b:D)=>Promi
             <p>Alert percentages are whole numbers separated by semicolons. Leave a source cell empty to disable alerts. The assigned member needs current report access to the budget; assignment adds no purchase approval authority.</p>
         </Form></div>}
         {review && <section aria-label="Reviewed budget changes"><h3>Review before writing</h3><p>{review.changes} changed budget{review.changes===1?'':'s'}. No budget has been written.</p><Table heads={['Budget','Coding','Current','Imported','Owner','Alerts']} figures={['Current','Imported']}>{review.rows.map((row:D) => <tr key={row.policy}><td>{row.name}<br/>{row.period.from} through {row.period.through}</td><td>{[row.costCentre,row.location,row.project,row.glAccount].join(' · ')}</td><td>{money(row.beforeMinor,row.currency)}</td><td>{money(row.amountMinor,row.currency)}</td><td>{data.member.find((member:D) => member.email===row.ownerEmail)?.name ?? 'Current member'}</td><td>{row.thresholds.length?row.thresholds.map((percent:number) => percent+'%').join(', '):'Off'}</td></tr>)}</Table>
-            <Form label="Commit reviewed budgets" onSubmit={async b => {if(b.consent!=='on')throw Error('Confirm the reviewed changes');const outcome=await mutate('budget-import-commit',{...review.input,fingerprint:review.fingerprint,review:review.review,consent:true});setResult(outcome);setReview(undefined);}}><label className="field"><span><input type="checkbox" name="consent" required/> I reviewed these amounts, mappings, owners and alerts</span></label></Form>
+            <Form key={review.fingerprint} label="Commit reviewed budgets" onSubmit={async b => {if(b.consent!=='on')throw Error('Confirm the reviewed changes');const outcome=await mutate('budget-import-commit',{...review.input,fingerprint:review.fingerprint,review:review.review,consent:true});setResult(outcome);setReview(undefined);}}><label className="field"><span><input type="checkbox" name="consent" required/> I reviewed these amounts, mappings, owners and alerts</span></label></Form>
         </section>}
         {result && <p role="status">Budget import complete: {result.changes} changed budget{result.changes===1?'':'s'}.</p>}
     </section>;

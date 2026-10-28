@@ -16,7 +16,7 @@ function mapped(values: unknown, source: string, label: string): string {
 function plan(s: State, a: Actor, b: Data) {
     can(s, a, 'owner');
     requireThat(typeof b.csv === 'string' && new TextEncoder().encode(b.csv).length <= 1000000, 'Choose a UTF-8 CSV of at most 1 MB');
-    const rows = csv(b.csv), mapping = b.mapping;
+    const rows = csv(b.csv.replace(/^\uFEFF/,'')), mapping = b.mapping;
     requireThat(rows.length > 0 && rows.length <= 500, 'Import 1–500 budget rows');
     requireThat(mapping && fields.every(field => typeof mapping.columns?.[field] === 'string' && Object.hasOwn(rows[0], mapping.columns[field])), 'Map every budget column');
     requireThat(new Set(fields.map(field => mapping.columns[field])).size === fields.length, 'Map each column only once');
@@ -60,7 +60,7 @@ function reviewToken(env: Bindings, fingerprint: string) {
 export function budgetImportColumns(s: State, a: Actor, b: Data) {
     can(s,a,'owner');
     requireThat(typeof b.csv === 'string' && new TextEncoder().encode(b.csv).length <= 1000000,'Choose a UTF-8 CSV of at most 1 MB');
-    const rows = csv(b.csv);
+    const rows = csv(b.csv.replace(/^\uFEFF/,''));
     requireThat(rows.length > 0 && rows.length <= 500,'Import 1–500 budget rows');
     return {columns:Object.keys(rows[0]),rows};
 }
