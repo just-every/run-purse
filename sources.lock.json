@@ -3648,7 +3648,7 @@
       "executable": false
     },
     "src/purse/requests.ts": {
-      "sha256": "fb74802092244b626a9458c86eb4d173717b2834d52af97e6be511a3d1ed7f73",
+      "sha256": "ca00f7a7df442ba3d35147193a18b07185f4c5c56a9204c79c00bd42a54f984e",
       "executable": false
     },
     "src/purse/restored-imports.d.mts": {
@@ -4964,7 +4964,7 @@
       "executable": false
     },
     "tests/budget-disposition.test.mjs": {
-      "sha256": "8e19d1de81679efcfc7fee8aa698968c2adfc298de5b5ce5108dff4f1a126a8e",
+      "sha256": "05911226d169a64108c8e39b66b41edf91781aff04dcb4ce2791e9be7805a8d9",
       "executable": false
     },
     "tests/budget-import-fixture.mjs": {
