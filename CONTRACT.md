@@ -1481,7 +1481,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 | `purse.pur.manage_exact_revision_policy_and_concurrent_budgets` | Exact-revision policy and concurrent budgets | PUR-006 | money · commitment | Planned MCP adapter; native evidence is in Status |
 
-| `purse.pur.manage_decisions_and_scoped_delegation` | Decisions and scoped delegation | PUR-007 | commitment | Planned MCP adapter; native evidence is in Status |
+| `purse.pur.manage_decisions_and_scoped_delegation` | Decisions and scoped delegation | PUR-007 | standard or money (+ commitment) | Planned MCP adapter; native evidence is in Status |
 
 | `purse.pur.manage_approved_lines_become_numbered_pos_once` | Approved lines become numbered POs once | PUR-008 | standard | Planned MCP adapter; native evidence is in Status |
 
@@ -1497,11 +1497,11 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 | `purse.access.manage_procurement_roles_and_buyer_limits` | Procurement roles and buyer limits | ACCESS-001 | access (+ security) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.access.manage_scoped_procurement_reports_and_cash_access` | Scoped procurement reports and cash access | ACCESS-004 | access (+ security) | Planned MCP adapter; native evidence is in Status |
+| `purse.access.manage_scoped_procurement_reports_and_cash_access` | Scoped procurement reports and cash access | ACCESS-004 | standard or access | Planned MCP adapter; native evidence is in Status |
 
-| `purse.access.manage_scoped_procurement_sources_and_protected_fields` | Scoped procurement sources and protected fields | ACCESS-005 | access (+ security) | Planned MCP adapter; native evidence is in Status |
+| `purse.access.manage_scoped_procurement_sources_and_protected_fields` | Scoped procurement sources and protected fields | ACCESS-005 | standard or external (+ access) (+ security) (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.access.manage_single_sign_on_and_provisioning` | Single sign-on and provisioning | ACCESS-002 | access (+ security) | Planned MCP adapter; native evidence is in Status |
+| `purse.access.manage_single_sign_on_and_provisioning` | Single sign-on and provisioning | ACCESS-002 | access · security (+ external) (+ accounts) (+ gated) | Planned MCP adapter; native evidence is in Status |
 
 | `purse.access.manage_multiple_entities_and_subsidiaries` | Multiple entities and subsidiaries | ACCESS-003 | access (+ security) | Planned MCP adapter; native evidence is in Status |
 
@@ -1515,11 +1515,11 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 | `purse.intake.manage_cross_team_review_orchestration` | Cross-team review orchestration | INTAKE-005 | standard | Planned MCP adapter; native evidence is in Status |
 
-| `purse.intake.manage_travel_pre_approval_requests` | Travel pre-approval requests | INTAKE-006 | standard | Planned MCP adapter; native evidence is in Status |
+| `purse.intake.manage_travel_pre_approval_requests` | Travel pre-approval requests | INTAKE-006 | standard or money (+ commitment) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.intake.manage_integration_purchase_request_tokens` | Integration purchase-request tokens | INTAKE-007 | standard | Planned MCP adapter; native evidence is in Status |
+| `purse.intake.manage_integration_purchase_request_tokens` | Integration purchase-request tokens | INTAKE-007 | access · security | Planned MCP adapter; native evidence is in Status |
 
-| `purse.intake.manage_read_only_po_data_integration_tokens` | Read-only PO-data integration tokens | INTAKE-008 | standard | Planned MCP adapter; native evidence is in Status |
+| `purse.intake.manage_read_only_po_data_integration_tokens` | Read-only PO-data integration tokens | INTAKE-008 | access · security | Planned MCP adapter; native evidence is in Status |
 
 | `purse.supplier.manage_self_service_supplier_onboarding` | Self-service supplier onboarding | SUPPLIER-001 | standard or external (+ sensitive) (+ money) (+ security) | Planned MCP adapter; native evidence is in Status |
 
@@ -1612,33 +1612,33 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 | `purse.invoice.manage_non_po_invoices_and_invoice_approval` | Non-PO invoices and invoice approval | INVOICE-004 | standard or external (+ sensitive) (+ money) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.invoice.manage_supplier_invoice_submission_from_the_po_po_flip` | Supplier invoice submission from the PO (PO flip) | INVOICE-005 | standard or external (+ sensitive) (+ money) | Planned MCP adapter; native evidence is in Status |
+| `purse.invoice.manage_supplier_invoice_submission_from_the_po_po_flip` | Supplier invoice submission from the PO (PO flip) | INVOICE-005 | standard or external (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.ap.manage_bill_handoff` | BILL handoff | AP-001 | money (+ external) (+ gated) | Planned MCP adapter; native evidence is in Status |
+| `purse.ap.manage_bill_handoff` | BILL handoff | AP-001 | money (+ external) (+ gated) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.ap.manage_ledger_and_ach_payment_handoff` | Ledger and ACH payment handoff | AP-002 | money (+ external) (+ gated) | Planned MCP adapter; native evidence is in Status |
+| `purse.ap.manage_ledger_and_ach_payment_handoff` | Ledger and ACH payment handoff | AP-002 | money (+ external) (+ gated) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.ap.manage_terms_due_dates_and_cash_requirements` | Terms, due dates and cash requirements | AP-003 | money (+ external) (+ gated) | Planned MCP adapter; native evidence is in Status |
+| `purse.ap.manage_terms_due_dates_and_cash_requirements` | Terms, due dates and cash requirements | AP-003 | money (+ external) (+ gated) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.card.manage_card_funding_for_approved_purchases` | Card funding for approved purchases | CARD-001 | money (+ external) (+ accounts) (+ gated) | Planned MCP adapter; native evidence is in Status |
+| `purse.card.manage_card_funding_for_approved_purchases` | Card funding for approved purchases | CARD-001 | money (+ external) (+ accounts) (+ gated) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.card.manage_card_transaction_reconciliation_closes_the_purchase` | Card transaction reconciliation closes the purchase | CARD-002 | money (+ external) (+ accounts) (+ gated) | Planned MCP adapter; native evidence is in Status |
+| `purse.card.manage_card_transaction_reconciliation_closes_the_purchase` | Card transaction reconciliation closes the purchase | CARD-002 | money (+ external) (+ accounts) (+ gated) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.sync.manage_quickbooks_online` | QuickBooks Online | SYNC-001 | standard or external (+ money) | Planned MCP adapter; native evidence is in Status |
+| `purse.sync.manage_quickbooks_online` | QuickBooks Online | SYNC-001 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.sync.manage_xero` | Xero | SYNC-002 | standard or external (+ money) | Planned MCP adapter; native evidence is in Status |
+| `purse.sync.manage_xero` | Xero | SYNC-002 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.sync.manage_netsuite` | NetSuite | SYNC-003 | standard or external (+ money) | Planned MCP adapter; native evidence is in Status |
+| `purse.sync.manage_netsuite` | NetSuite | SYNC-003 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.sync.manage_pantry` | Pantry | SYNC-004 | standard or external (+ money) | Planned MCP adapter; native evidence is in Status |
+| `purse.sync.manage_pantry` | Pantry | SYNC-004 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.sync.manage_sync_status_errors_and_tie_out` | Sync status, errors and tie-out | SYNC-005 | standard or external (+ money) | Planned MCP adapter; native evidence is in Status |
+| `purse.sync.manage_sync_status_errors_and_tie_out` | Sync status, errors and tie-out | SYNC-005 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.sync.manage_sage_intacct` | Sage Intacct | SYNC-006 | standard or external (+ money) | Planned MCP adapter; native evidence is in Status |
+| `purse.sync.manage_sage_intacct` | Sage Intacct | SYNC-006 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.sync.manage_microsoft_dynamics_365_business_central` | Microsoft Dynamics 365 Business Central | SYNC-007 | standard or external (+ money) | Planned MCP adapter; native evidence is in Status |
+| `purse.sync.manage_microsoft_dynamics_365_business_central` | Microsoft Dynamics 365 Business Central | SYNC-007 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
 
-| `purse.sync.manage_quickbooks_desktop` | QuickBooks Desktop | SYNC-008 | standard or external (+ money) | Planned MCP adapter; native evidence is in Status |
+| `purse.sync.manage_quickbooks_desktop` | QuickBooks Desktop | SYNC-008 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
 
 | `purse.report.manage_spend_and_committed_budget_dashboards` | Spend and committed-budget dashboards | REPORT-001 | standard or external | Planned MCP adapter; native evidence is in Status |
 
@@ -1656,7 +1656,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 | `purse.notify.manage_notifications_and_preferences` | Notifications and preferences | NOTIFY-001 | standard or external | Planned MCP adapter; native evidence is in Status |
 
-| `purse.api.manage_public_api_webhooks_and_automation` | Public API, webhooks and automation | API-001 | standard or access (+ security) | Planned MCP adapter; native evidence is in Status |
+| `purse.api.manage_public_api_webhooks_and_automation` | Public API, webhooks and automation | API-001 | standard or access (+ security) (+ external) (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
 
 | `purse.search.manage_search_across_purchasing_records` | Search across purchasing records | SEARCH-001 | standard | Planned MCP adapter; native evidence is in Status |
 
