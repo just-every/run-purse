@@ -45,7 +45,7 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
     }
     if (kind === 'comment') {
         const parent = s.get(record.kind + ':' + record.record)?.value;
-        return Boolean(parent && canReadRecord(s, a, record.kind, parent, visited));
+        return Boolean(parent && canReadCommentParent(s, a, record.kind, parent, visited));
     }
     if (kind === 'attachment') {
         const parent = s.get(record.kind + ':' + record.record)?.value;
@@ -98,4 +98,17 @@ export function protectedReadCapabilities(s:State,a:Actor,supplier:Data){
   || all(s,'request').some(request=>request.supplier===supplier.id&&grantAllows(s,a,grant,'request.read',request))
   || all(s,'invoice').some(invoice=>(invoice.supplier===supplier.id||s.get('order:'+invoice.order)?.value.supplier===supplier.id)&&grantAllows(s,a,grant,'invoice.read',invoice))));
  return buyer?['buyer']:[];
+}
+
+/** Assigned agreement owners see current terms, not private originals. Their
+ * internal thread follows that existing current-identity projection. An award
+ * for a historical version never grants the unversioned current thread. */
+export function canReadCommentParent(s: State, a: Actor, kind: string, record: Data, visited = new Set<string>()): boolean {
+    if (kind === 'agreement') {
+        if (!resolvedPermissions(s, a).length) return false;
+        if (unrestrictedPermission(s, a, 'procurement.manage') || record.owner === a.id
+            && record.ownerEmail?.toLowerCase() === a.email.toLowerCase()) return true;
+        return Boolean(performanceAgreementSources(s, a).versions.get(record.id)?.has(record.version));
+    }
+    return canReadRecord(s, a, kind, record, visited);
 }

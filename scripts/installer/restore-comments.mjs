@@ -1,6 +1,6 @@
 export function validateComments(all, get, check, same) {
     for (const comment of all('comment')) {
-        check(['request', 'order'].includes(comment.kind), 'comment_parent');
+        check(['request', 'order', 'invoice', 'supplier', 'agreement'].includes(comment.kind), 'comment_parent');
         get(comment.kind, comment.record);
         check(['active', 'deleted'].includes(comment.status) && Array.isArray(comment.versions) && comment.versions.length === comment.version && comment.version > 0, 'comment_versions');
         check(typeof comment.author === 'string' && typeof comment.authorEmail === 'string' && typeof comment.authorName === 'string' && typeof comment.attempt === 'string' && /^[a-f0-9]{64}$/.test(comment.captureHash), 'comment_author');

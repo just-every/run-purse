@@ -43,12 +43,12 @@ export function Comments({ kind, record, mutate }: { kind: string; record: strin
         </>}
     </section>;
 }
-export function CommentNotices({ refresh }: { refresh: D }) {
-    const [notices, setNotices] = useState<D[]>([]), [error, setError] = useState('');
-    useEffect(() => { call('comments/notices').then(r => { setNotices(r.notices); setError(''); }).catch(e => { setNotices([]); setError(e.message); }); }, [refresh]);
-    if (!notices.length && !error) return null;
-    return <section aria-label="Comment mentions"><Details label={`Comment mentions · ${notices.length}`}>
+export function CommentNotices({ refresh, dashboard = false }: { refresh: D; dashboard?: boolean }) {
+    const [notices, setNotices] = useState<D[]>([]), [recent, setRecent] = useState<D[]>([]), [error, setError] = useState('');
+    useEffect(() => { call('comments/notices').then(r => { setNotices(r.notices); setRecent(r.recent); setError(''); }).catch(e => { setNotices([]); setRecent([]); setError(e.message); }); }, [refresh]);
+    if (!notices.length && !error && !dashboard) return null;
+    return <>{dashboard && <section aria-label="Recent internal comments"><Details label="Recent internal comments"><ul className="ruled-list">{recent.map(n => <li key={n.id}><p>{n.author} · {when(n.at)}</p><a href={n.url}>{n.title}</a><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{n.body}</p></li>)}</ul>{!recent.length && <p>No recent comments in your current scope.</p>}</Details></section>}<section aria-label="Comment mentions"><Details label={`Comment mentions · ${notices.length}`}>
         {error && <p role="alert">{error}</p>}
-        <ul className="ruled-list">{notices.map(n => <li key={n.id}><p>{n.mentionedBy} mentioned you · {when(n.at)}</p>{n.canRead ? <><a href={n.kind === 'request' ? `/app?request=${n.record}` : `/app?tab=Orders&receipt=${n.record}`}>{n.title}</a><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{n.body}</p></> : <p>{n.message}</p>}</li>)}</ul>
-    </Details></section>;
+        <ul className="ruled-list">{notices.map(n => <li key={n.id}><p>{n.mentionedBy} mentioned you · {when(n.at)}</p>{n.canRead ? <><a href={n.url}>{n.title}</a><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{n.body}</p></> : <p>{n.message}</p>}</li>)}</ul>
+    </Details></section></>;
 }

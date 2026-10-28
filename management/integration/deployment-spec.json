@@ -238,6 +238,12 @@
       "name": "0038_restore_history.sql",
       "sha256": "fdf35888513e6de5042f1799c697bf6faa733ad213acb42da2c82c7f731eca27",
       "sql": "-- Installation-local report of how erasure history was established for a restore;\n-- excluded from portable archives, so it never travels to another installation.\nCREATE TABLE p_restore_history (\n id TEXT PRIMARY KEY CHECK(id = 'main'),\n acknowledged_by TEXT,\n acknowledged_at TEXT,\n acknowledgment TEXT,\n journal_supplied INTEGER CHECK(journal_supplied IN (0, 1)),\n archive_at TEXT,\n source_identity TEXT,\n restored_at TEXT\n);\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0039_comment_search.sql",
+      "sha256": "bdc6308e473019cde10bb38d1ac297fa99344a356d396b207fc4f877a7155885",
+      "sql": "-- Internal comment search is derived and excluded from archives. Current\n-- source history rebuilds it before a query; neither the index nor a restore\n-- grants access to its parent.\nCREATE TABLE p_comment_search (\n    business TEXT NOT NULL,\n    comment TEXT NOT NULL,\n    parent_kind TEXT NOT NULL,\n    parent_record TEXT NOT NULL,\n    body TEXT NOT NULL,\n    PRIMARY KEY (business, comment)\n);\nCREATE INDEX p_comment_search_parent ON p_comment_search(business, parent_kind, parent_record);\nCREATE TRIGGER p_comment_search_update AFTER UPDATE ON p_records WHEN old.kind='comment' BEGIN\n    DELETE FROM p_comment_search WHERE business=old.business AND comment=old.id;\nEND;\nCREATE TRIGGER p_comment_search_delete AFTER DELETE ON p_records WHEN old.kind='comment' BEGIN\n    DELETE FROM p_comment_search WHERE business=old.business AND comment=old.id;\nEND;\n"
     }
   ],
   "compatibilityDate": "2026-09-08",
