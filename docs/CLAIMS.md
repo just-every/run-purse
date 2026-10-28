@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001`. Current candidate counts: 54 done, 25 partial, 34 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001`. Current candidate counts: 53 done, 26 partial, 34 missing; 113 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -77,7 +77,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `MATCH-001` | Automatic two- and three-way matching with tolerances | partial |
 | `MATCH-002` | Exception queue and resolution | partial |
 | `INVOICE-004` | Non-PO invoices and invoice approval | missing |
-| `INVOICE-005` | Supplier invoice submission from the PO (PO flip) | done |
+| `INVOICE-005` | Supplier invoice submission from the PO (PO flip) | partial |
 | `AP-001` | BILL handoff | missing |
 | `AP-002` | Ledger and ACH payment handoff | missing |
 | `AP-003` | Terms, due dates and cash requirements | done |
