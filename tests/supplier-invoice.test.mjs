@@ -123,6 +123,10 @@ test('Owner-consented supplier flip approves only confirmed three-way evidence, 
     assert.equal(acknowledged.status, 200, 'Supplier acknowledgement succeeds after owner invoice consent');
     const consentedPrefill = await read(url); assert.equal(consentedPrefill.status, 200);
     assert.equal((await consentedPrefill.json()).order.revision, f.order.revision, 'Acknowledgement unlocks the exact consented revision');
+    const afterAcknowledgement = await h.send('/api/purse/order-send/' + f.order.id, undefined, h.owner);
+    assert.equal(afterAcknowledgement.status, 200);
+    assert.equal(afterAcknowledgement.value.event.invoiceConsent.version, 1, 'Acknowledgement preserves the owner consent already granted');
+    assert.equal(afterAcknowledgement.value.event.invoiceConsent.enabled, true);
     const rule = { order: f.order.id, revision: f.order.revision, version: 0, enabled: true, consent: true, reason: 'Approve exact matched invoices after private AP review' };
     await h.command('supplier-invoice-rule', rule, f.buyer, 403);
     await h.command('supplier-invoice-rule', {...rule, consent:false}, h.owner, 400);
