@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "320ff2201a9ce6865bfd43078a0c084ddb482b7843165572f1b86d8858cdcbe5",
+      "sha256": "2e3faf23b189ab87b599d84ee11cec58dc1d6d826d0c25b6d0d64c8a0539bfeb",
       "executable": false
     },
     "DEMO.md": {
@@ -376,7 +376,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "9dfa47a8fa880c2fff301429f9b6fb21a632e98c7e520284c76c84480233a5a9",
+      "sha256": "7fadf58f0b03e34ea484fd0af12afa9beebd2aee8840d9cf6e4816fa1e3cd7c1",
       "executable": false
     },
     "packaging.json": {
@@ -4768,7 +4768,7 @@
       "executable": false
     },
     "tests/browser.mjs": {
-      "sha256": "0b0e0601b101bbfb38ff9668fb478641bd22d108ece66f5b9c440e141e69e9fa",
+      "sha256": "8c8efe86bab8c4db1718535e73098f9e735050bf01174637ca0113e7ec34c642",
       "executable": false
     },
     "tests/budget-import-fixture.mjs": {
@@ -5076,7 +5076,7 @@
       "executable": false
     },
     "tests/recovery.mjs": {
-      "sha256": "27a635ca9c934a19524217423869645e007e958ce27ea2a6159228f301b6d59d",
+      "sha256": "fd90be17970aa3f63d4e14dc3a55fe9792eab56e5f8ebfd1bde4c400907fa910",
       "executable": false
     },
     "tests/recurring-scenario-fixture.mjs": {

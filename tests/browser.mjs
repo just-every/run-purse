@@ -9,7 +9,8 @@ const width=Number(process.argv.find(x=>x.startsWith('--width='))?.slice(8)??144
 const evidence=resolve(process.env.PURSE_EVIDENCE??'.cache/browser-proof');await mkdir(evidence,{recursive:true});
 const worker=await emittedWorker();let browser;
 try{
- assert.equal((await worker.call('/health')).status,200);
+ const healthy=await worker.call('/health');assert.equal(healthy.status,200);const health=await healthy.json();assert.equal(health.ok,true);assert.equal(health.status,'ok');assert.ok(health.deployment);
+ for(const route of ['/missing','/health/extra','/api','/api/missing'])assert.equal((await worker.call(route)).status,404,route);
  assert.equal((await worker.call('/api/purse/state')).status,401);
  browser=await chromium.launch({headless:true,executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH||undefined,args:['--no-sandbox']});
  const owner=await session(browser,worker,worker.origin,'owner',width);
