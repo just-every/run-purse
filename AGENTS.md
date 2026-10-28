@@ -111,8 +111,8 @@ src/modules/operator-auth; src/server.ts shows HTTP ownership and native named
 exports. Follow the session and same-origin checks in src/purse/store.ts for
 private HTTP handlers. For Start handlers, import server-only code dynamically
 inside the handler and perform the same current-session authorization there.
-Use tests/purse-harness.mjs and tests/purse.test.mjs for direct unauthenticated
-transport proof; tests/email-link.mjs covers ordinary sign-in to the emitted
+Use tests/purse-harness.mjs and tests/purchasing-journey.test.mjs for direct unauthenticated
+transport proof; tests/browser.mjs covers ordinary sign-in to the emitted
 Worker. No private donor checkout is required to run or maintain this source.
 
 ## Backup and upgrade

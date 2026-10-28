@@ -1,0 +1,63 @@
+
+import assert from 'node:assert/strict';
+import {join} from 'node:path';
+import {createPortability} from '@runeditrun/rer/modules/portability';
+import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import portability from '../scripts/installer/portability.mjs';
+import {harness} from './purse-harness.mjs';
+import {reauthenticateErasure} from './erasure-flow.mjs';
+import {catalogueFixture,email} from './catalogue-import-fixture.mjs';
+
+export async function catalogue_importFlow(){
+{
+ // Hosted catalogue review atomically imports exact identities and dated currency prices under current authority, preserving purchases and archive continuation
+ const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
+ try {
+ const h=await harness();t.after(()=>h.close());const f=await catalogueFixture(h);
+ const rows=async db=>(await db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results;
+ const before=await rows(h.db),meta=(await h.db.prepare('SELECT revision FROM p_meta').all()).results;
+ await f.preview(f.input,401,'');await f.preview(f.input,403,f.requester);
+ const cross=await h.mf.dispatchFetch(h.origin+'/api/purse/catalogue-import/preview',{method:'POST',headers:{origin:'https://synthetic-purse-3010.invalid',cookie:f.buyer,'content-type':'application/json'},body:JSON.stringify(f.input)});assert.equal(cross.status,403);
+ const review=await f.preview();assert.deepEqual(await rows(h.db),before);assert.deepEqual((await h.db.prepare('SELECT revision FROM p_meta').all()).results,meta);
+ assert.deepEqual(review.rows.map(row=>[row.next.partNumber,row.next.currency,row.next.unitMinor,row.availability]),[['synthetic-purse-3007','USD',12345,'Current price'],['synthetic-purse-3007','EUR',9876,'Current price'],['synthetic-purse-3008','USD',12345,'Future price']]);
+ await f.commit(review,{csv:f.input.csv.replace('123.45','123.46')},409);await f.commit(review,{csv:'\uFEFF'+f.input.csv},409);await f.commit(review,{review:'0'.repeat(64)},409);await f.commit(review,{consent:false},400);await f.commit(review,{},403,f.requester);
+ for(const input of [f.csv([{}, {sku:'synthetic-purse-3011',validUntil:'2000-01-01'}]),f.csv([{},{}]),f.csv([{unitPrice:'12.345'}]),f.csv([{validFrom:'2099-12-31',validUntil:'2099-01-01'}]),f.csv([{supplierId:' '+f.vendor.id}]),f.csv([{supplierId:f.vendor.id.toUpperCase()}]),f.input.csv.replace('unitPrice','unsupported')]) {
+  const response=await h.send('/api/purse/catalogue-import/preview',{csv:input},f.buyer);assert.ok(response.status>=400,JSON.stringify(response.value));
+  const attempt=await h.send('/api/purse/command/catalogue-import-commit',{csv:input,consent:true,fingerprint:review.fingerprint,review:review.review},f.buyer);assert.ok(attempt.status>=400);assert.deepEqual(await rows(h.db),before,'Invalid rows refuse the entire batch without audit or item writes');
+ }
+ await h.command('catalogue',{description:'Unrelated item',supplier:f.vendor.id,currency:'USD',unitMinor:100,category:'Equipment',approved:true});await f.commit(review,{},409);
+ const limited=await h.member(email(3015),['requester']);await h.command('member',{email:email(3015),name:'Scoped catalogue buyer',active:true,grants:[{role:'buyer',scope:{locations:['Denver']}}]});await f.preview(f.input,403,limited);
+ const imported=await f.commit(await f.preview());assert.equal(imported.changes,3);
+ const items=(await h.state()).data.catalogue,usd=items.find(row=>row.partNumber==='synthetic-purse-3007'&&row.currency==='USD'),eur=items.find(row=>row.partNumber==='synthetic-purse-3007'&&row.currency==='EUR'),future=items.find(row=>row.partNumber==='synthetic-purse-3008');assert.notEqual(usd.id,eur.id);
+ const repeat=await f.preview(),snapshot=await rows(h.db),revision=(await h.db.prepare('SELECT revision FROM p_meta').all()).results;assert.equal((await f.commit(repeat)).changes,0);assert.deepEqual(await rows(h.db),snapshot);assert.deepEqual((await h.db.prepare('SELECT revision FROM p_meta').all()).results,revision);
+ const alternate=await h.command('supplier',{name:'synthetic-purse-3016',status:'active',reason:'Separate exact supplier identity'}),alternateInput={csv:f.csv([{supplierId:alternate.id}])};const alternateResult=await f.commit(await f.preview(alternateInput),alternateInput);assert.equal(alternateResult.changes,1);assert.notEqual(alternateResult.items[0],usd.id);assert.equal((await h.state()).data.catalogue.find(row=>row.id===alternateResult.items[0]).supplier,alternate.id);
+ const stateBefore=(await h.state()).data;await f.purchase(future).then(()=>assert.fail('Future price became requestable'),error=>assert.match(error.message,/409/));assert.deepEqual((await h.state()).data,stateBefore);
+ const request=await f.purchase(usd);await h.command('submit',{id:request.id,revision:1},f.requester);await h.command('decision',{id:request.id,revision:1,decision:'approved',reason:'Reviewed exact imported price'},f.approver);
+ const approved=(await h.state()).data,changed={csv:f.input.csv.replaceAll('123.45','150.01').replace('Imported desk','Changed desk')};await f.commit(await f.preview(changed),changed);
+ const current=(await h.state()).data;assert.equal(current.catalogue.find(row=>row.id===usd.id).unitMinor,15001);assert.deepEqual(current.revision,approved.revision);assert.deepEqual(current.decision,approved.decision);
+ const order=await h.command('convert',{id:request.id,revision:1},f.buyer);assert.equal(order.lines[0].unitMinor,12345);assert.equal(order.lines[0].description,'Imported desk');assert.equal(order.totalMinor,24690);
+ await h.command('catalogue-grant',{email:email(3003),departments:['Operations']});await h.command('catalogue',{...current.catalogue.find(row=>row.id===usd.id),access:{departments:['Operations']},requiredAttachments:['synthetic-purse-3012.pdf']},f.buyer);
+ await f.commit(await f.preview(changed),changed);const restricted=(await h.state()).data.catalogue.find(row=>row.id===usd.id);assert.deepEqual(restricted.access.departments,['Operations']);assert.deepEqual(restricted.requiredAttachments,['synthetic-purse-3012.pdf']);
+ const pending=await f.preview(changed);await h.command('member',{email:email(3002),name:'Revoked buyer',active:true,roles:['requester']});await f.commit(pending,changed,403);await f.preview(changed,403);
+ const ownerReview=await f.preview(changed,200,h.owner);await h.command('supplier',{...f.vendor,status:'blocked',reason:'Supplier suspended after review'});await f.commit(ownerReview,changed,409,h.owner);
+ await h.command('supplier',{...f.vendor,status:'active',reason:'Supplier cleared'});
+ const service=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive=join(h.dir,'synthetic-purse-3013.rer');await exportArchive(service,archive,[]);
+ const restored=await harness();t.after(()=>restored.close());await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
+ assert.deepEqual((await restored.state()).data.catalogue,(await h.state()).data.catalogue);
+ await restored.command('catalogue-import-commit',{...changed,consent:true,fingerprint:ownerReview.fingerprint,review:ownerReview.review},restored.owner,409);
+ const restoredReview=await restored.send('/api/purse/catalogue-import/preview',changed,restored.owner);assert.equal(restoredReview.status,200,JSON.stringify(restoredReview.value));assert.equal((await restored.command('catalogue-import-commit',{...changed,consent:true,fingerprint:restoredReview.value.fingerprint,review:restoredReview.value.review})).changes,0);
+ const continued={csv:f.csv([{sku:'synthetic-purse-3014',unitPrice:'17.11'}])},continuedReview=await restored.send('/api/purse/catalogue-import/preview',continued,restored.owner);assert.equal(continuedReview.status,200);assert.equal((await restored.command('catalogue-import-commit',{...continued,consent:true,fingerprint:continuedReview.value.fingerprint,review:continuedReview.value.review})).changes,1);assert.equal((await restored.state()).data.catalogue.find(row=>row.partNumber==='synthetic-purse-3014').unitMinor,1711);
+ const personal=await h.member(email(3017),['requester']),personalInput={csv:f.csv([{sku:'synthetic-purse-3018',description:'Desk requested by '+email(3017)}])};
+ const personalReview=await f.preview(personalInput,200,h.owner);await f.commit(personalReview,personalInput,200,h.owner);const preEraseReview=await f.preview(personalInput,200,h.owner);
+ await h.command('member',{email:email(3017),name:'synthetic-purse-3017',roles:['requester'],active:false});await reauthenticateErasure(h);
+ const erasureMeta=(await h.send('/api/purse/erasure',undefined,h.owner)).value,erasureReview=await h.send('/api/purse/erasure/preview',{kind:'member',id:email(3017),revision:erasureMeta.revision},h.owner);assert.equal(erasureReview.status,200,JSON.stringify(erasureReview.value));assert.ok(erasureReview.value.fields.some(field=>field.kind==='catalogue'));
+ const erased=await h.send('/api/purse/erasure/execute',{...erasureReview.value.subject,revision:erasureReview.value.revision,review:erasureReview.value.review,fingerprint:erasureReview.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
+ assert.equal((await h.send('/api/purse/state',undefined,personal)).status,401);const afterErasure=await rows(h.db);assert.ok(!JSON.stringify(afterErasure).includes(email(3017)));
+ await f.commit(preEraseReview,personalInput,409,h.owner);await f.preview(personalInput,409,h.owner);await f.preview({csv:personalInput.csv.replaceAll('\n','\r\n')},409,h.owner);assert.deepEqual(await rows(h.db),afterErasure,'Capture replay cannot restore erased catalogue or audit fields');
+ const sanitized={csv:f.csv([{sku:'synthetic-purse-3018',description:'Desk with personal data removed',unitPrice:'17.15'}])};assert.equal((await f.commit(await f.preview(sanitized,200,h.owner),sanitized,200,h.owner)).changes,1);
+ const {id: duplicateSourceId,...duplicateFields}=usd;const duplicate=await h.command('catalogue',{...duplicateFields,description:'Ambiguous duplicate'},h.owner),beforeAmbiguous=await rows(h.db);await f.preview(f.input,409,h.owner);assert.deepEqual(await rows(h.db),beforeAmbiguous);assert.notEqual(duplicate.id,undefined);
+ const audit=await restored.send('/api/purse/audit.csv',undefined,restored.owner);assert.equal(audit.status,200);assert.ok(audit.value.includes('catalogue-import'));assert.ok(audit.value.includes(review.sourceHash));
+
+ } finally {for(const close of cleanups.reverse())await close();}
+}
+}

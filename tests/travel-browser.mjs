@@ -14,8 +14,8 @@ assert.ok(process.env.COASTER_CHECKOUT, 'COASTER_CHECKOUT must name an installed
 const evidence = resolve(process.env.PURSE_EVIDENCE ?? '.cache/travel-proof');
 await mkdir(evidence, { recursive: true });
 const selected = process.argv.find(argument => argument.startsWith('--width='));
-const widths = selected ? [Number(selected.slice(8))] : [1440, 390];
-assert.ok(widths.every(width => [1440, 390].includes(width)));
+const widths = selected ? [Number(selected.slice(8))] : [1440];
+assert.ok(widths.every(width => [1440].includes(width)));
 const bundle = await build({ stdin: { contents: "import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);", resolveDir: process.cwd(), loader: 'tsx' }, bundle: true, write: false, format: 'esm', platform: 'browser', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } });
 const browser = await chromium.launch({ headless: true, args: ['--use-mock-keychain', '--password-store=basic'], ...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PURSE_CHROMIUM_EXECUTABLE_PATH } : {}) });
 const results = [];

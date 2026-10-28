@@ -26,14 +26,3 @@ export async function searchPurchasing(h) {
  const preview=await h.send('/api/purse/import/preview',{csv,filename:'historical.csv',mapping},h.owner);assert.equal(preview.status,200,JSON.stringify(preview.value));const imported=await h.send('/api/purse/import/commit',{csv,filename:'historical.csv',mapping,fingerprint:preview.value.plan.fingerprint},h.owner);assert.equal(imported.status,200,JSON.stringify(imported.value));
  return {requester,other,approver,buyer,receiver,supplier,request,outside,order,invoice,reading,source,received,catalogue};
 }
-
-/** Scale fixture in the actual D1 database: projection triggers run for every real row. No application responses or storage are faked. */
-export async function addSearchScale(h,count=100000) {
- const current=await h.db.prepare('SELECT COUNT(*) n FROM p_records').first(),amount=Math.max(0,count-current.n);
- const statement=h.db.prepare("INSERT INTO p_records(business,kind,id,revision,value) VALUES('main','supplier',?,?,?)");
- for(let start=0;start<amount;start+=500){const batch=[];for(let i=start;i<Math.min(start+500,amount);i++){const id='scale-'+String(i).padStart(6,'0');batch.push(statement.bind(id,id,JSON.stringify({id,name:'Scale supplier '+i,dba:'',contacts:[],status:'pending_review',reason:'Synthetic scale fixture',contractRef:'',renewal:'',documents:[]})));}await h.db.batch(batch);}
- assert.equal((await h.db.prepare('SELECT COUNT(*) n FROM p_records').first()).n,count);
-}
-export async function prepareSearchArchive(path,{scale=true}={}) {
- const h=await harness();try{const fixture=await searchPurchasing(h);for(const role of ['requester','approver','buyer','receiver'])await h.command('member',{email:role+'@dev.localhost',name:'Dev '+role,roles:[role],active:true});if(scale)await addSearchScale(h);const service=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});await exportArchive(service,path,[]);return fixture;}finally{await h.close();}
-}
