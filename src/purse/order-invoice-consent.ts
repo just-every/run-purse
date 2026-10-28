@@ -1,4 +1,5 @@
 import type { Bindings } from '../auth.server';
+import { termDates } from './payment-terms';
 import { currentDecision } from './approval';
 import { currentOrderSender } from './order-response';
 import { authority,load } from './store';
@@ -11,8 +12,10 @@ export async function orderInvoiceConsent(env:Bindings,a:Actor,id:string,b:Data)
  const {state,revision}=await load(env.DB),order=get(state,'order',id),event=get(state,'orderSend','order-send:'+id);
  requireThat(order.status==='issued' && !order.imported && !order.adoption && order.revision===b.revision && event.revision===order.revision
   && !event.erasure && !event.revokedAt && Date.parse(event.expiresAt)>Date.now() && await currentOrderSender(env,state,event),'Choose this exact current available native supplier link',409);
+ requireThat(b.automaticApproval===undefined || typeof b.automaticApproval==='boolean','Choose whether to authorize automatic approval');
+ if(b.automaticApproval===true){requireThat(b.enabled===true,'Automatic approval requires supplier invoice access');termDates('2026-01-01',b.paymentTerm);}
  const reason=text(b.reason,'Invoice capability reason'),at=new Date().toISOString();
- const entry={version:(event.invoiceConsent?.version??0)+1,enabled:b.enabled,actor:a.id,operatorVersion:a.version,owner:true,at,reason,revision:order.revision,pdfSha256:event.pdf.sha256};
+ const entry={version:(event.invoiceConsent?.version??0)+1,enabled:b.enabled,actor:a.id,operatorVersion:a.version,owner:true,automaticApproval:b.automaticApproval===true,paymentTerm:b.automaticApproval===true?b.paymentTerm:null,at,reason,revision:order.revision,pdfSha256:event.pdf.sha256};
  const before=new Map(state);put(state,'orderSend',event.id,{...event,invoiceSubmission:b.enabled,invoiceConsent:entry,invoiceConsentHistory:[...(event.invoiceConsentHistory??[]),entry]});
  audit(state,a,'order-invoice-consent',order.id,{send:event.id,...entry});
  const auth=authority(a,true),decision=currentDecision(state,get(state,'request',order.request));

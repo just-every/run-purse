@@ -23,7 +23,7 @@ export function visibleInvoiceReadings(s: State, a: Actor) {
             .map(record => ({ ...record, mayCapture: allowed(s, a, 'invoice.capture', get(s, 'order', record.order)) }))]));
 }
 export async function invoiceReading(s: State, a: Actor, op: string, b: Data): Promise<Data | undefined> {
-    if (!['invoice-source','invoice-extract','invoice-reading-instructions','invoice-reading-propose','invoice-reading-edit','invoice-reading-confirm'].includes(op)) return;
+    if (!['invoice-source','invoice-extract','invoice-reading-instructions','invoice-reading-propose','invoice-reading-edit','invoice-reading-confirm','supplier-invoice-review'].includes(op)) return;
     const permission = op === 'invoice-reading-instructions' ? 'invoice.read' : 'invoice.capture';
     requirePermission(s, a, permission);
     if (op === 'invoice-source') {
@@ -47,7 +47,21 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
         put(s,'attachment',attachment,{ ...metadata, kind:'invoiceSource', record:id, base64:document.base64, actor:a.id, at });
         audit(s,a,'attachment',id,{attachment}); audit(s,a,op,order.id,{source:id}); return get(s,'invoiceSource',id);
     }
-    const prior = ['invoice-reading-edit','invoice-reading-confirm'].includes(op)?get(s,'invoiceReading',b.id):null;
+    if(op==='supplier-invoice-review') {
+        const invoice=get(s,'invoice',b.invoice),order=get(s,'order',invoice.order);
+        requirePermission(s,a,'invoice.capture',order);
+        requireThat(invoice.supplierSubmission && invoice.sourceConfirmation==='pending','Choose a pending supplier invoice',409);
+        const submitted=get(s,'supplierInvoiceSubmission',invoice.supplierSubmission), source=get(s,'invoiceSource',submitted.source), attachment=get(s,'attachment',source.attachment);
+        requireThat(attachment.base64 && !attachment.erasure && attachment.sha256===invoice.document.sha256 && source.orderRevision===order.revision,'Exact private supplier original required',409);
+        const descriptor={id:source.id,...await quoteSourceDescriptor(attachment,s.get('attachment:'+attachment.id)!.revision)};
+        const field=(value:string|null)=>({value,confidence:0,source:value===null?null:{attachment:attachment.id,method:'structured supplier submission',submission:submitted.id}});
+        const values:Data={supplier:order.supplierSnapshot.name,reference:invoice.reference,invoiceDate:invoice.invoiceDate,poNumber:order.number,currency:order.currency,
+            subtotalAmount:(submitted.subtotalMinor/100).toFixed(2),freightAmount:(submitted.freightMinor/100).toFixed(2),taxAmount:(submitted.taxMinor/100).toFixed(2),totalAmount:(submitted.totalMinor/100).toFixed(2)};
+        const reading:Data={id:uid(),source:source.id,order:order.id,sourceDescriptor:descriptor,version:1,status:'review',actor:a.id,at:new Date().toISOString(),parser:'Structured supplier submission; no extraction; compare every value with the private original',
+            ...Object.fromEntries(invoiceHeaders.map(key=>[key,field(values[key]??null)])),lines:submitted.lines.map((line:Data)=>({id:uid(),description:field(line.description),quantity:field(line.quantity),unitAmount:field((line.invoiceUnitMinor/100).toFixed(2)),amount:field((line.amountMinor/100).toFixed(2))}))};
+        put(s,'invoiceReading',reading.id,reading);event(s,a,reading,'supplier-invoice-review',{snapshot:structuredClone(reading)});return reading;
+    }
+    const prior = ['invoice-reading-edit','invoice-reading-confirm','supplier-invoice-review'].includes(op)?get(s,'invoiceReading',b.id):null;
     const source = get(s,'invoiceSource',prior?.source ?? (typeof b.source==='string'?b.source:b.source?.id));
     const order = get(s,'order',source.order); requirePermission(s, a, permission, order); requireThat(operationalOrder(s, order) && order.revision===source.orderRevision && ['issued','adopted','closed','cancelled'].includes(order.status),'Invoice source belongs to a superseded or unavailable PO',409);
     const attachment = get(s,'attachment',source.attachment), descriptor: Data = { id:source.id, ...await quoteSourceDescriptor(attachment,s.get('attachment:'+attachment.id)!.revision) };

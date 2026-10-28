@@ -1,3 +1,4 @@
+import { supplierPaymentEligible } from './supplier-invoice-approval';
 import { adoptionDeposits, currentOperationalOrder, operationalOrder } from './adoption-position';
 import { openInvoiceFlags } from './invoice-status';
 import { all, extended, get, type Actor, type Data, type State } from './types';
@@ -11,7 +12,7 @@ export function cashRequirements(s: State, a: Actor) {
 /** Arithmetic over an explicitly selected source set; callers authorize that set first. */
 export function cashRequirementsFromRecords(s:State,accepts:(record:Data)=>boolean) {
     const payables = all(s, 'payable').filter(p => accepts(get(s, 'invoice', p.invoice)));
-    const eligibleBills = payables.filter(p => p.approvedAt && !openInvoiceFlags(get(s, 'invoice', p.invoice)).length).map((p): Data => {
+    const eligibleBills = payables.filter(p => p.approvedAt && !openInvoiceFlags(get(s, 'invoice', p.invoice)).length && (!p.supplierApproval || supplierPaymentEligible(s,get(s,'invoice',p.invoice)))).map((p): Data => {
         const invoice = get(s, 'invoice', p.invoice), order = get(s, 'order', invoice.order);
         const amountMinor = invoice.pantry?.status === 'posted' ? invoice.pantry.openMinor : p.approvedMinor;
         return { ...p, reference: invoice.reference, order: order.id, number: order.number, currency: invoice.currency, amountMinor, dueDate: invoice.pantry?.dueDate ?? p.dueDate, discountDate: invoice.pantry?.discountDate ?? p.discountDate, week: weekOf(invoice.pantry?.dueDate ?? p.dueDate), discountMinor: Number((BigInt(amountMinor) * BigInt(p.discountPercent) + 50n) / 100n) };
