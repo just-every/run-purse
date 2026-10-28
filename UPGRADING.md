@@ -28,3 +28,13 @@ and private export until recovery is verified. Never import an older release’s
 archive directly into the current release.
 
 Provider deployment remains a separate owner action.
+
+## Reserved Business and agent storage
+
+Migrations 0040–0042 add shared Business settings, durable Business person
+bindings and agent policy/audit storage. They are additive and do not change
+existing purchasing records, sessions or grants. The runtime integration is not
+enabled in this preparation; the current native procurement doors and agent
+controls remain authoritative. See SOURCE.md for the exact source pin and the
+native invitation-verification prerequisite. Do not advertise company-agent MCP
+support until the native registry and conformance journey have been completed.
