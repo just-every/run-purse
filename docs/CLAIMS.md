@@ -77,7 +77,7 @@ Generated from `CONTRACT.md`. Status describes the clause boundary and its cited
 | MATCH-001 | partial | Automatic two- and three-way matching with tolerances |
 | MATCH-002 | partial | Exception queue and resolution |
 | INVOICE-004 | missing | Non-PO invoices and invoice approval |
-| INVOICE-005 | partial | Supplier invoice submission from the PO (PO flip) |
+| INVOICE-005 | done | Supplier invoice submission from the PO (PO flip) |
 | AP-001 | missing | BILL handoff |
 | AP-002 | missing | Ledger and ACH payment handoff |
 | AP-003 | done | Terms, due dates and cash requirements |

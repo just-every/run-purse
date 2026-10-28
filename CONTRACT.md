@@ -356,7 +356,7 @@ archive directly into the current release.
 
 ## Status
 
-Judged from the code and tests at commit `7cdc33d5c1de9b78e5512776d25560cb8a9aae91` (28 October 2026).
+Judged from the code and tests at commit `d69b56e37be54d3dc329a465129fc88a661422f2` (28 October 2026).
 
 The INTAKE-001 category, private draft, copy, route and pending-supplier flows are assessed in this round against that landing-main baseline.
 
@@ -365,8 +365,8 @@ STOCK-001, PO-010, SUPPLIER-007, SUPPLIER-005, CATALOG-001, SUPPLIER-003, SUPPLI
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 17 | 0 | 0 | 17 |
-| Target and push further | 36 | 25 | 35 | 96 |
-| All | 53 | 25 | 35 | 113 |
+| Target and push further | 37 | 24 | 35 | 96 |
+| All | 54 | 24 | 35 | 113 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -443,7 +443,7 @@ STOCK-001, PO-010, SUPPLIER-007, SUPPLIER-005, CATALOG-001, SUPPLIER-003, SUPPLI
 | `MATCH-001` | Automatic two- and three-way matching with tolerances | target | partial | `src/purse/orders.ts`; `tests/purse.test.mjs` P11 | Automatic matching on arrival, tolerances, unplanned-charge tolerance and two-way deposit matching absent |
 | `MATCH-002` | Exception queue and resolution | target | partial | `src/purse/orders.ts`; `src/purse/documents.ts`; `tests/purse.test.mjs` P11 | Assignment and resolution workflow absent |
 | `INVOICE-004` | Non-PO invoices and invoice approval | target | missing |  | Non-PO invoice coding, splits and approval routing not built |
-| `INVOICE-005` | Supplier invoice submission from the PO (PO flip) | target | partial | (1) `tests/supplier-invoice.test.mjs` — “Supplier invoice link captures exact private PDF and balance ancestry, holds source confirmation and duplicate and excess evidence, and exposes only its own authentic statuses” proves exact acknowledgment, owner access consent, received and unbilled prefills, structured amounts and original PDF, scope, override refusals, source privacy and bound AP confirmation. (2) The same file — “Owner-consented supplier flips approve exact three-way evidence once, return native schedules, and hold unsafe or revoked paths” proves automatic approval after AP confirmation under the exact owner rule, receipt and remit holds independently, approved and scheduled status, authenticated paid status and reversal, the second over-balance flip, unresolved-flag payment refusal, replay, audited owner scheduling, archive validation and erasure. (3) `tests/browser-supplier-invoice.mjs` — `supplierInvoiceJourney` proves partial receipt, structured review without extraction, automatic approval, supplier approved and scheduled status, owner schedule, private original and excess hold at 1440 and 390 pixels. Native scheduling records an instruction only and sends no funds; paid requires authenticated returned payment evidence. PO-001, PO-004, PO-008 and future deposit and payment doors retain the exact source, consent and hold duties. | Exact candidate qualification pending for the implemented native matching, payment approval and supplier status return; no provider execution is claimed. |
+| `INVOICE-005` | Supplier invoice submission from the PO (PO flip) | target | done | (1) `tests/supplier-invoice.test.mjs` — “Supplier invoice link captures exact private PDF and balance ancestry, holds source confirmation and duplicate and excess evidence, and exposes only its own authentic statuses” proves exact acknowledgment, owner access consent, received and unbilled prefills, structured amounts and original PDF, scope, override refusals, source privacy and bound AP confirmation. (2) The same file — “Owner-consented supplier flips approve exact three-way evidence once, return native schedules, and hold unsafe or revoked paths” proves automatic approval after AP confirmation under the exact owner rule, receipt and remit holds independently, approved and scheduled status, authenticated paid status and reversal, the second over-balance flip, unresolved-flag payment refusal, replay, audited owner scheduling, archive validation and erasure. (3) `tests/browser-supplier-invoice.mjs` — “supplierInvoiceJourney” proves partial receipt, structured review without extraction, automatic approval, supplier approved and scheduled status, owner schedule, private original and excess hold at 1440 and 390 pixels. Native scheduling records an instruction only and sends no funds; paid requires authenticated returned payment evidence. PO-001, PO-004, PO-008 and future deposit and payment doors retain the exact source, consent and hold duties. |  |
 | `AP-001` | BILL handoff | target | missing |  | BILL handoff and payment status return not built |
 | `AP-002` | Ledger and ACH payment handoff | target | missing |  | Ledger payment status return and ACH provider handoff not built |
 | `AP-003` | Terms, due dates and cash requirements | target | done | `src/purse/payment-terms.ts`; `src/purse/payables.ts`; `src/purse/cash-requirements.ts`; `src/ui/payables.tsx`; `tests/payables.test.mjs`; `tests/browser-payables.mjs`; `scripts/installer/restore-payables.mjs` |  |
