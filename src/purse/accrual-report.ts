@@ -1,5 +1,5 @@
 import { allowed, requirePermission } from './access';
-import { operationalOrder } from './adoption-position';
+import { operationalOrder, orderAdoption } from './adoption-position';
 import { budgetApportion } from './budget-allocations';
 import { openInvoiceFlags } from './invoice-status';
 import { closureAt } from './order-closure';
@@ -42,11 +42,12 @@ export function accrualReport(s: State, a: Actor, filters: Data = {}) {
             || !allowed(s, a, 'invoice.read', order) || bills.some(invoice => !allowed(s, a, 'invoice.read', invoice))) {
             warnings.add('Some purchase sources are outside your current scope and are omitted.'); continue;
         }
-        if (order.imported || order.adoption) warnings.add(order.number + ': adopted historical receipt dates and bill approvals are not fully qualified; historical balances are omitted.');
+        const adoption = orderAdoption(s, order);
+        if (order.imported || adoption) warnings.add(order.number + ': adopted historical receipt dates and bill approvals are not fully qualified; historical balances are omitted.');
         const revision = s.get('revision:' + order.request + ':' + order.revision)?.value ?? order;
         const identity = { order: order.id, number: order.number, supplier: order.supplier, supplierName: order.supplierSnapshot?.name ?? s.get('supplier:' + order.supplier)?.value.name ?? order.supplier, currency: order.currency };
         for (const deposit of all(s, 'deposit').filter(deposit => ids.has(deposit.order))) {
-            if (!order.adoption || day(order.adoptedAt) > cutoff) continue;
+            if (!adoption || day(adoption.at) > cutoff) continue;
             const applied = bills.filter(invoice => !invoice.imported && invoice.invoiceDate && invoice.invoiceDate <= cutoff).reduce((n, invoice) => n + (invoice.depositAppliedMinor ?? 0), 0);
             // Imported deposits remain source evidence, separate from accrual and from native payments.
             deposits.push({ ...identity, department: order.costCentre ?? '', location: order.location ?? '', entity: order.entity ?? '', glAccount: revision.glAccount ?? '', deposit: deposit.id, reference: deposit.reference, amountMinor: deposit.amountMinor, appliedMinor: deposit.appliedMinor ?? 0,
@@ -69,8 +70,12 @@ export function accrualReport(s: State, a: Actor, filters: Data = {}) {
             sources.sort((a,b) => a.recordedAt.localeCompare(b.recordedAt) || a.receipt.localeCompare(b.receipt));
             const receivedQ = Math.max(0, sum(sources, 'q')), receivedMinor = Math.max(0, sum(sources, 'valueMinor'));
             const closed = family.reduce((n, source) => n + closureAt(s, source.id, line.id, cutoff, day), 0);
-            // Closed receiving balances are never returned as open accrual lines at that cutoff.
-            if (closed && receivedQ + closed >= line.q) continue;
+            const cancelled = receipts.filter(receipt => ids.has(receipt.order) && receipt.line === line.id && receipt.event === 'cancel' && day(receipt.at) <= cutoff);
+            // Match receiving authority: goods include cancellations; services close the remaining value rounded down to receiving quantity.
+            const outstanding = line.service
+                ? Number(BigInt(Math.max(0, line.totalMinor - receivedMinor)) * BigInt(line.q) / BigInt(line.totalMinor))
+                : Math.max(0, line.q - receivedQ - sum(cancelled, 'q'));
+            if (closed && closed >= outstanding) continue;
             const approved: Data[] = [], excluded: Data[] = [];
             for (const invoice of bills.filter(invoice => invoice.allocations.some((allocation: Data) => allocation.line === line.id))) {
                 const allocation = invoice.allocations.find((allocation: Data) => allocation.line === line.id);

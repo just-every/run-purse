@@ -21,6 +21,7 @@ test('Native period-end accrual reconciles dated goods and services, genuine app
     const cad=await f.issue({title:'synthetic-purse-4724',currency:'CAD',quantity:'1',unitMinor:5011});
     const hidden=await f.issue({title:'synthetic-purse-4725',department:'Research',quantity:'1',unitMinor:9900});
     const closed=await f.issue({title:'synthetic-purse-4726'}),cash=await f.issue({title:'synthetic-purse-4727'});
+    const cancelledClosed=await f.issue({title:'synthetic-purse-4732'}),closedService=await f.issue({title:'synthetic-purse-4733',quantity:'1',unitMinor:100000,service:{mode:'amount'}});
     const before=(await h.state()).data;
     for(const effectiveDate of ['2026-06-26','2026-06-28','2026-02-30'])await cmd('receipt',{order:f.order.id,line:f.order.lines[0].id,event:'receive',quantity:'1',effectiveDate,reason:'Invalid date refused'},h.owner,effectiveDate==='2026-02-30'?400:409);
     await cmd('receipt',{order:f.order.id,line:f.order.lines[0].id,event:'receive',quantity:'1',reason:'Unassigned member refused'},f.people.outsider,403);
@@ -31,6 +32,16 @@ test('Native period-end accrual reconciles dated goods and services, genuine app
     }
     for(const order of [split,cad,hidden])await f.receive(order,'1','2026-06-28');
     await f.receive(closed,'2','2026-06-28');await cmd('close-order',{id:closed.id,version:0,reason:'Close the remaining balance'});
+    await f.receive(cancelledClosed,'2','2026-06-28');
+    await cmd('receipt',{order:cancelledClosed.id,line:cancelledClosed.lines[0].id,event:'cancel',quantity:'3',reason:'Cancel three unreceived units'});
+    assert.equal(mainRow(await f.report('2026-06-30'),cancelledClosed).accrualMinor,20000,'Cancellation alone does not close the received balance');
+    await cmd('close-order',{id:cancelledClosed.id,version:0,reason:'Close five remaining units'});
+    const serviceState=(await h.state()).data.order.find(row=>row.id===closedService.id);
+    await cmd('service-receipt',{order:closedService.id,line:closedService.lines[0].id,receiptVersion:serviceState.receiptVersion,valueMinor:33333,effectiveDate:'2026-06-28',reason:'Accept exact service value'});
+    await cmd('close-order',{id:closedService.id,version:0,line:closedService.lines[0].id,quantity:'0.1',reason:'Close part of the remaining service'});
+    assert.equal(mainRow(await f.report('2026-06-30'),closedService).accrualMinor,33333,'A partially open service retains its received value');
+    await cmd('close-order',{id:closedService.id,version:1,reason:'Close the remaining service balance'});
+    assert.ok(!(await f.report('2026-06-30')).rows.some(row=>[cancelledClosed.id,closedService.id].includes(row.order)),'Fully closed goods and service balances are excluded despite cancellation or rounded service quantities');
     await f.receive(cash,'3','2026-06-28');
     const cashBill=await cmd('invoice',{order:cash.id,reference:'synthetic-purse-4728',source:'Native source evidence',invoiceDate:'2026-06-28',allocations:[{line:cash.lines[0].id,quantity:'1',amountMinor:10000}]});
     const terms=await cmd('payable-terms',{invoice:cashBill.id,version:0,invoiceDate:'2026-06-28',term:'Net 30',reason:'Cash forecast only'});await cmd('approve-payable',{invoice:cashBill.id,version:terms.version,reason:'Cash planning is not bill approval'});
@@ -104,17 +115,37 @@ test('Native period-end accrual reconciles dated goods and services, genuine app
     await f.receive(f.order,'1','2026-06-29');
     const late=await f.report('2026-06-30');assert.equal(mainRow(late,f.order).accrualMinor,70000);assert.equal(mainRow(late,f.order).lateEntered,true);assert.deepEqual(mainRow(late,f.order).receipts.map(row=>[row.effectiveDate,row.recordedAt]),[['2026-06-28','2026-06-28T12:00:00.000Z'],['2026-06-29','2026-08-03T12:00:00.000Z']]);
     await cmd('reopen-order',{id:closed.id,version:1,reason:'Reopen after period end'});assert.ok(!(await f.report('2026-06-30')).rows.some(row=>row.order===closed.id),'Later reopening preserves historical exclusion');assert.ok((await f.report('2026-08-31')).rows.some(row=>row.order===closed.id));
+    for(const [order,version] of [[cancelledClosed,1],[closedService,2]]) {
+        await cmd('reopen-order',{id:order.id,version,reason:'Reopen the closed balance after period end'});
+        assert.ok(!(await f.report('2026-06-30')).rows.some(row=>row.order===order.id),'Historical exclusion survives reopening');
+        assert.equal(mainRow(await f.report('2026-08-31'),order).accrualMinor,order.id===cancelledClosed.id?20000:33333,'Reopened balances are included at the later cutoff');
+    }
     const csv=await h.send('/api/purse/accrual-report/csv?cutoff=2026-06-30',undefined,f.people.finance),xlsx=await h.mf.dispatchFetch(h.origin+'/api/purse/accrual-report/xlsx?cutoff=2026-06-30',{headers:{cookie:f.people.finance}});assert.equal(csv.status,200);assert.equal(xlsx.status,200);await assertAccrualDownloads(csv.value,Buffer.from(await xlsx.arrayBuffer()),late);
     const fixture=adoptionFixture({base:4800,number:'synthetic-purse-4800'}),input=importInput(fixture),preview=await h.send('/api/purse/import/preview',input,h.owner);assert.equal(preview.status,200,JSON.stringify(preview.value));assert.equal((await h.send('/api/purse/import/commit',{...input,fingerprint:preview.value.plan.fingerprint},h.owner)).status,200);await cmd('screen-supplier',{id:fixture.ids.supplier});
     const policy=await cmd('policy',{name:'synthetic-purse-4731',currency:'USD',category:'Equipment',project:'Fitout',approver:accrualMail(4702),limitMinor:100000,budgetMinor:100000}),selection={id:fixture.ids.order,policy:policy.id,budget:fixture.ids.budget,location:'Denver',costCentre:'Operations',receiver:accrualMail(4703)};
     // Adoption requires a current receiver grant and retains imported approvals as evidence only.
     await cmd('member',{email:accrualMail(4703),name:'Controller and receiver',active:true,roles:['finance-viewer','receiver']});const review=await cmd('adopt-order-preview',selection);await cmd('adopt-order',{...selection,fingerprint:review.fingerprint,reviewed:true,reason:'Reviewed source custody'});
     const historical=await f.report('2026-08-31');assert.ok(historical.warnings.some(warning=>warning.includes('historical')));assert.equal(historical.deposits.find(row=>row.order===fixture.ids.order).unappliedMinor,1000);assert.ok(!historical.rows.some(row=>row.order===fixture.ids.order));
+    const adopted=(await h.state()).data.order.find(row=>row.id===fixture.ids.order),request=(await h.state()).data.request.find(row=>row.id===adopted.request);
+    const amendment=await cmd('amend',{...request,lines:request.lines.map(line=>({...line,quantity:'11'})),reason:'Increase the adopted purchase'});
+    await cmd('submit',{id:amendment.id,revision:amendment.revision});
+    await cmd('decision',{id:amendment.id,revision:amendment.revision,decision:'approved',reason:'Review exact amended purchase'},f.people.approver);
+    const reissued=await cmd('convert',{id:amendment.id,revision:amendment.revision,issue:true}),amendedReport=await f.report('2026-08-31');
+    assert.deepEqual(amendedReport.deposits.map(row=>[row.order,row.deposit,row.amountMinor,row.unappliedMinor]),[[reissued.id,fixture.ids.deposit,1000,1000]],'Amendment retains the original deposit exactly once and separately from accrual');
+    assert.ok(amendedReport.warnings.some(warning=>warning.includes(reissued.number)&&warning.includes('historical')),'The amendment retains the historical completeness warning');
+    assert.ok(!amendedReport.rows.some(row=>row.order===reissued.id),'Unsupported historical receipts do not become native accrual');
+    assert.equal((await f.report('2026-07-31')).deposits.length,0,'Adoption after cutoff does not backdate deposit evidence');
+    const amendedCsv=await h.send('/api/purse/accrual-report/csv?cutoff=2026-08-31',undefined,f.people.finance),amendedXlsx=await h.mf.dispatchFetch(h.origin+'/api/purse/accrual-report/xlsx?cutoff=2026-08-31',{headers:{cookie:f.people.finance}});
+    assert.equal(amendedCsv.status,200);assert.equal(amendedXlsx.status,200);
+    const csvDeposit=parse(amendedCsv.value,{columns:true}).filter(row=>row.recordType==='Deposits');
+    assert.deepEqual(csvDeposit.map(row=>[row.deposit,Number(row.unappliedMinor)]),[[fixture.ids.deposit,1000]]);
+    await assertAccrualDownloads(amendedCsv.value,Buffer.from(await amendedXlsx.arrayBuffer()),amendedReport);
     const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
     const altered=structuredClone(rows),receipt=altered.find(row=>row.kind==='receipt'&&row.id===timeline.first.id),value=JSON.parse(receipt.value);value.effectiveDate='2026-06-01';receipt.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(altered),/received_date_range/);
     const archive=join(h.dir,'synthetic-purse-4730.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
     const restored=await harness({worker:'tests/accrual-worker.ts',clock:'2026-08-03T12:00:00.000Z'});t.after(()=>restored.close());await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
     const restoredReport=await restored.send('/api/purse/accrual-report/view?cutoff=2026-06-30',undefined,restored.owner);assert.equal(restoredReport.status,200,JSON.stringify(restoredReport.value));assert.deepEqual(mainRow(restoredReport.value,f.order),mainRow(late,f.order));
+    const restoredAmendment=await restored.send('/api/purse/accrual-report/view?cutoff=2026-08-31',undefined,restored.owner);assert.equal(restoredAmendment.status,200);assert.deepEqual(restoredAmendment.value.deposits,amendedReport.deposits);
     for(const format of ['view','csv','xlsx','xero'])assert.equal((await restored.send('/api/purse/accrual-report/'+format+'?cutoff=2026-06-30',undefined,f.people.finance)).status,401);
     await cmd('member',{email:accrualMail(4703),name:'Report authority revoked',active:true,roles:['receiver']});
     for(const format of ['view','csv','xlsx','xero']){const response=await h.send('/api/purse/accrual-report/'+format+'?cutoff=2026-06-30&currency=USD&liabilityAccount=2100',undefined,f.people.finance);assert.equal(response.status,403);assert.equal(response.headers.get('cache-control'),'no-store');}

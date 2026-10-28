@@ -2936,7 +2936,7 @@
       "executable": false
     },
     "src/purse/accrual-report.ts": {
-      "sha256": "a60f8ac9f67d8b35e818e03951bbc6733936f207d4baf05c51c9373e4a7d5992",
+      "sha256": "e82a3a5597b197dd65929c8e455d88dcd71ca9c5f5500ce6f0c545a46b8cece2",
       "executable": false
     },
     "src/purse/admin.ts": {
@@ -4576,7 +4576,7 @@
       "executable": false
     },
     "tests/accrual-report.test.mjs": {
-      "sha256": "9084e5047a1daa3683342baab6e5dd7b4e6bcdd9196f0029b6547a9696d08824",
+      "sha256": "75f7e7a8b0cdba3cac73afc799500949fec2c4197ac5112d49016f3c4a18fe8b",
       "executable": false
     },
     "tests/accrual-worker.ts": {
