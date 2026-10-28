@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import { Hono } from 'hono';
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { canReadCommentParent } from './access-records';
-import { purchasingSearchText } from './search-text';
 import { actor, load, readFence } from './store';
 import { all, audit, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
@@ -61,7 +60,7 @@ export async function comments(s: State, a: Actor, op: string, b: Data, env?: Bi
         audit(s, a, 'attachment', id, { attachment, comment: id, parentKind: kind, parentRecord: recordId });
     }
     const snapshot = { version, action: op, body, mentions, files, actor: a.id, email: a.email, at };
-    const comment = { id, kind, record: recordId, author: a.id, authorEmail: a.email, authorName: existing?.authorName ?? directory.find(m => m.id === a.id)?.name ?? 'Member', attempt, captureHash: existing?.captureHash ?? captureHash, commentSearchText: purchasingSearchText(body.split('\n').map(text => ({ text }))), version, status: op === 'comment-delete' ? 'deleted' : 'active', at: existing?.at ?? at, versions: [...(existing?.versions ?? []), snapshot] };
+    const comment = { id, kind, record: recordId, author: a.id, authorEmail: a.email, authorName: existing?.authorName ?? directory.find(m => m.id === a.id)?.name ?? 'Member', attempt, captureHash: existing?.captureHash ?? captureHash, version, status: op === 'comment-delete' ? 'deleted' : 'active', at: existing?.at ?? at, versions: [...(existing?.versions ?? []), snapshot] };
     put(s, 'comment', id, comment);
     audit(s, a, op, recordId, { comment: id, parentKind: kind, version, snapshot });
     for (const recipient of mentions) if (!(existing?.versions.at(-1).mentions ?? []).includes(recipient)) {

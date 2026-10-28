@@ -794,3 +794,38 @@ to the supplier link that submitted the invoice; Paid still requires the existin
 exact accounting payment evidence. Original source documents and internal risk
 and consent records stay private. Archives retain history without supplier bearer
 or native identity authority.
+
+### Internal purchasing comments
+
+Native sessions read a thread with
+`GET /api/purse/comments/:kind/:record`. The parent kind is `request` (including
+travel), `order`, `invoice` (including its matching discrepancies), `supplier`
+or `agreement`. Every read, change and attachment download checks current parent
+visibility. Current assigned agreement owners may use their thread without
+reading private agreement originals. Reassignment withdraws that thread access.
+
+`comment-add` takes `{kind,record,attempt,body,mentions:[],file?}` through the
+ordinary command door. Choose native member IDs returned by the thread picker;
+a mention never grants record access. Repeating an author's exact capture is
+inert, while changing its content under the same capture is refused.
+`comment-edit` takes `{id,version,body,mentions:[],file?}` and `comment-delete`
+takes `{id,version}`. Only the current author with current record visibility
+may change a comment. Each version, actor, timestamp and file reference remains
+in internal history and audit exports. A file is `{name,mediaType,base64}` with
+at most 1 MB of decoded bytes; comment text is bounded to 10,000 characters and
+each version may mention up to 20 distinct current members.
+
+`GET /api/purse/comments/notices` returns the current member's mention notices
+and up to 20 recent active comments in their present record scope. An inaccessible
+mention includes only who mentioned the member, the time and a no-access
+message. The Overview dashboard shows recent comments and mentions with links
+back to their current records. Search matches current active comment text through
+its parent result, using the same protected-identifier exclusions as document
+text. Its derived index is excluded from archives and rebuilt from restored
+history before search.
+
+Comments cannot change approval state, queue position or age. They never enter
+supplier messages, supplier links or PO documents. Complete archives retain
+comment history and files without restoring identity authority; reviewed erasure
+anonymizes authors and withdraws affected originals. External mention delivery,
+provider reply binding and live supplier-inbox qualification remain unavailable.

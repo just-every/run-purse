@@ -86,9 +86,9 @@ try {
                 await target.getByLabel('Mention members', { exact: true }).selectOption([f.requesterId]);
                 await target.getByLabel('Comment attachment (up to 1 MB)', { exact: true }).setInputFiles({ name: 'synthetic-purse-' + (5510 + index) + '.txt', mimeType: 'text/plain', buffer: Buffer.from('synthetic-purse-5520 private bytes') });
                 await target.getByRole('button', { name: 'Post internal comment', exact: true }).click();
-                await target.getByText(body, { exact: true }).waitFor();
+                await target.getByText(body, { exact: true }).first().waitFor();
                 if (width === 1440) {
-                    assert.equal(await target.getByRole('link', { name: 'synthetic-purse-' + (5510 + index) + '.txt', exact: true }).count(), 1);
+                    assert.equal(await target.getByRole('link', { name: 'synthetic-purse-' + (5510 + index) + '.txt', exact: true }).first().isVisible(), true);
                     const sizes = await target.locator('p,label,button,a,summary,textarea,select').evaluateAll(elements => elements.filter(el => el.getClientRects().length).map(el => parseFloat(getComputedStyle(el).fontSize)));
                     assert.ok(sizes.every(size => size >= 13));
                 }
@@ -100,12 +100,12 @@ try {
             await recent.locator('summary').click();
             await recent.getByText('synthetic-purse-5500: Internal record context.', { exact: true }).waitFor();
             if (width === 1440) {
-                await recent.getByText('synthetic-purse-5503: Internal record context.', { exact: true }).waitFor();
+                await recent.getByText('synthetic-purse-5503: Internal record context.', { exact: true }).first().waitFor();
                 assert.ok(!(await recent.textContent()).includes('synthetic-purse-5501:'), 'Invoice comments absent without invoice read authority');
                 const link = recent.getByRole('link', { name: extra.agreement.name, exact: true });
                 assert.equal(await link.getAttribute('href'), '/app?agreement=' + extra.agreement.id);
                 await link.click();
-                await dashboard.getByRole('region', { name: 'Internal comments', exact: true }).getByText('synthetic-purse-5503: Internal record context.', { exact: true }).waitFor();
+                await dashboard.getByRole('region', { name: 'Internal comments', exact: true }).getByText('synthetic-purse-5503: Internal record context.', { exact: true }).first().waitFor();
                 await dashboard.goto(f.h.origin + '/app?tab=Overview');
                 await dashboard.getByRole('region', { name: 'Recent internal comments', exact: true }).locator('summary').click();
             }

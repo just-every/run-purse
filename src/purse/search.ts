@@ -60,13 +60,12 @@ function queryParts(filters: SearchFilters, current: SearchContext) {
 
     if (filters.q) {
         const alternatives: string[] = [], expression=searchExpression(filters.q);
-        alternatives.push(`EXISTS(SELECT 1 FROM p_records comment WHERE comment.business=s.business AND comment.kind='comment'
-            AND json_extract(comment.value,'$.kind')=s.kind AND json_extract(comment.value,'$.record')=s.id
-            AND json_extract(comment.value,'$.status')='active'
-            AND json_extract(comment.value,'$.commentSearchText') LIKE ${bind(likeText(filters.q))} ESCAPE '\\' COLLATE NOCASE)`);
+        alternatives.push(`EXISTS(SELECT 1 FROM p_comment_search comment WHERE comment.business=s.business
+            AND comment.parent_kind=s.kind AND comment.parent_record=s.id
+            AND instr(lower(comment.body),lower(${bind(filters.q)}))>0)`);
         if(expression)alternatives.push(`s.rowid IN (SELECT rowid FROM p_search_fts WHERE p_search_fts MATCH ${bind(expression)})`);
-        alternatives.push(`s.number LIKE ${bind(likeText(filters.q))} ESCAPE '\\' COLLATE NOCASE`);
-        if(current.normalized){const match=likeText(current.normalized);alternatives.push(`s.namesKey LIKE ${bind(match)} ESCAPE '\\'`);alternatives.push(`supplier.namesKey LIKE ${bind(match)} ESCAPE '\\'`);}
+        alternatives.push(`instr(lower(s.number),lower(${bind(filters.q)}))>0`);
+        if(current.normalized){const match=current.normalized;alternatives.push(`instr(s.namesKey,${bind(match)})>0`);alternatives.push(`instr(supplier.namesKey,${bind(match)})>0`);}
         clauses.push('('+alternatives.join(' OR ')+')');
     }
     const from = `FROM p_search s

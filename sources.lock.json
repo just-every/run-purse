@@ -104,7 +104,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "8456b5dbf70cee97dd5c6ce9c72b59171c3900e96ea6e7a75f0207fb74fb3d4c",
+      "sha256": "bfe42ecf95ca87ea6d5b65a42cce0df2d94588c605fb046dcb8cb169598944fe",
       "executable": false
     },
     "base-copies.json": {
@@ -196,7 +196,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "1d7040697dbdfe6422fc8dc98dbbf787777d304033e22b74e810700c4ccf9cc2",
+      "sha256": "da96c30a4a1c57ef733debe8ce2712629a7c4215e1176b367fc78c50433eb1cc",
       "executable": false
     },
     "migrations/core/0001_operator_auth.sql": {
@@ -349,6 +349,10 @@
     },
     "migrations/core/0038_restore_history.sql": {
       "sha256": "fdf35888513e6de5042f1799c697bf6faa733ad213acb42da2c82c7f731eca27",
+      "executable": false
+    },
+    "migrations/core/0039_comment_search.sql": {
+      "sha256": "bdc6308e473019cde10bb38d1ac297fa99344a356d396b207fc4f877a7155885",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -872,7 +876,7 @@
       "executable": false
     },
     "scripts/installer/portability.mjs": {
-      "sha256": "997d7bcdf08093a5ba63a0abb0531c61cea42171a3eb6e4740dfcf2dd4536e4e",
+      "sha256": "9f2da93d7b335013ba7391c15d4d6aa8a0ed48c03e53b5bee9bb7dc28e5c60ac",
       "executable": false
     },
     "scripts/installer/restore-access.mjs": {
@@ -3044,7 +3048,7 @@
       "executable": false
     },
     "src/purse/comments.ts": {
-      "sha256": "2c838336f9826349fd428b07d6fa21b99d87c1211c98e2d1d35e58f0f90538c9",
+      "sha256": "4c173ffa5c39cea8918092d50dc2acd6213017718db33fe9b251bbeec43b60b7",
       "executable": false
     },
     "src/purse/conversion-revision.ts": {
@@ -3120,7 +3124,7 @@
       "executable": false
     },
     "src/purse/erasure-plan.ts": {
-      "sha256": "1c7d27e7a2e4f58e2bb9fe9df17bf5f2316797389c605d9ff07c876f088aeeb2",
+      "sha256": "c830d929d0d549627824ad7f5664563ae566f8a1cd3e3be8eb8ee46ceb0718d9",
       "executable": false
     },
     "src/purse/erasure-refusal.ts": {
@@ -3664,7 +3668,7 @@
       "executable": false
     },
     "src/purse/search-storage.ts": {
-      "sha256": "f0f912fffa6a32f0869f59fdd83bc244596c3a52d7863cb967e1e1150c025dec",
+      "sha256": "9939b9654de23ebadf3534bb18d0bcdd102a3292504aba6a096bc92d81276e67",
       "executable": false
     },
     "src/purse/search-text.ts": {
@@ -3672,7 +3676,7 @@
       "executable": false
     },
     "src/purse/search.ts": {
-      "sha256": "87bf0c5a22a5933814de59140e11887f84584bbef77454a5292ca7d886949988",
+      "sha256": "14f83589f4e0844ea01e51651366e4bcf8211aec733dfbf906514d16958bfa81",
       "executable": false
     },
     "src/purse/service-orders.ts": {
@@ -4600,7 +4604,7 @@
       "executable": false
     },
     "tests/browser-comments.mjs": {
-      "sha256": "74ecf2837033cf7f3644fda045ea469b01f776f5802311a402672a4d980dfcbe",
+      "sha256": "9d3fe80ee25c665745ea11f401ef0f8827f69384795262d7ff2e1d820c52bcc2",
       "executable": false
     },
     "tests/browser-email-intake.mjs": {
@@ -4800,7 +4804,7 @@
       "executable": false
     },
     "tests/comments.test.mjs": {
-      "sha256": "d69bc9ac6f055d6a44debce96a4ec32c531f2efb3a82b6fa6c95d00652790d20",
+      "sha256": "4e89aabff59fb5cc7c279049270c9f4a090d3d15e4fcc97f3fc7d7c4a60e6f61",
       "executable": false
     },
     "tests/document-profile-fixture.mjs": {

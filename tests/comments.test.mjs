@@ -64,7 +64,7 @@ test('Author changes keep complete audited versions and portable files, and memb
     assert.deepEqual(commentEvents.map(e => e.snapshot), deleted.versions);
     const csv = await h.send('/api/purse/audit.csv?subject=' + f.pending.id, undefined, h.owner); assert.equal(csv.status, 200);
     for (const value of ['synthetic-purse-5116 original', 'synthetic-purse-5117 corrected', 'comment-delete', deleted.author]) assert.ok(csv.value.includes(value), value);
-    const extra = await additionalCommentRecords(f), added = [];
+    const extra = await additionalCommentRecords(f), added = [], eraseAcross = [];
     const beforeRecords = (await h.state()).data, edgeCount = h.messages.length;
     for (const [index, row] of extra.records.entries()) {
         const body = 'synthetic-purse-' + (5400 + index) + ' internal shared context';
@@ -87,6 +87,8 @@ test('Author changes keep complete audited versions and portable files, and memb
         assert.ok(dashboard.value.recent.find(r => r.id === created.id).url.startsWith('/app?'));
         const search = await h.send('/api/purse/search?' + new URLSearchParams({ q: body, kind: row.kind }), undefined, f.buyer);
         assert.equal(search.status, 200, JSON.stringify(search.value)); assert.deepEqual(search.value.results.map(r => r.id), [row.record]);
+        await h.command('comment-edit', { id: created.id, version: current.version, body: 'Not the author', mentions: [] }, h.owner, 403);
+        await h.command('comment-delete', { id: created.id, version: current.version }, h.owner, 403);
         added.push({ ...row, created, current });
     }
     assert.equal(h.messages.length, edgeCount, 'Comments on every kind cause no supplier or provider send');
@@ -96,6 +98,12 @@ test('Author changes keep complete audited versions and portable files, and memb
     const privateCapture = await h.command('comment-add', { kind: 'request', record: f.pending.id, attempt: 'synthetic-purse-5420', body: 'Bank account 7654321098765432', mentions: [] }, f.requester);
     assert.equal((await h.send('/api/purse/search?q=7654321098765432', undefined, h.owner)).value.total, 0, 'Protected identifier lines are excluded from comment search');
     await h.command('comment-delete', { id: privateCapture.id, version: 1 }, f.requester);
+    for (const [index, row] of extra.records.entries()) {
+        const body = 'synthetic-purse-' + (5600 + index) + ' retained author context';
+        const created = await h.command('comment-add', { kind: row.kind, record: row.record, attempt: 'synthetic-purse-' + (5610 + index), body, mentions: [], file }, f.buyer);
+        await h.command('comment-edit', { id: created.id, version: 1, body: body + ' revised', mentions: [] }, f.buyer);
+        eraseAcross.push({ ...row, created, body });
+    }
     const reassigned = await h.command('agreement', { ...extra.agreementInput, id: extra.agreement.id, version: 1, ownerMember: (await h.state()).actor.email });
     const assignedComment = added.find(r => r.kind === 'agreement');
     assert.equal((await h.send('/api/purse/download/attachment/' + assignedComment.created.versions[0].files[0], undefined, f.requester)).status, 403);
@@ -112,6 +120,9 @@ test('Author changes keep complete audited versions and portable files, and memb
         assert.equal(download.value, 'synthetic-purse-5106 internal bytes');
         const csv = await restored.h.send('/api/purse/audit.csv?subject=' + row.record, undefined, restored.cookie);
         assert.ok(csv.value.includes(row.current.versions[0].body));
+        const search = await restored.h.send('/api/purse/search?' + new URLSearchParams({ q: row.current.versions.at(-1).body, kind: row.kind }), undefined, restored.cookie);
+        assert.equal(search.status, 200, JSON.stringify(search.value));
+        assert.deepEqual(search.value.results.map(r => r.id), [row.record], 'Comment search rebuilds from restored history');
     }
     const continuation = await restored.h.send('/api/purse/command/comment-add', { kind: 'request', record: f.pending.id, attempt: 'synthetic-purse-5119', body: 'synthetic-purse-5120 restored continuation', mentions: [] }, restored.cookie); assert.equal(continuation.status, 200, JSON.stringify(continuation.value));
     await h.command('member', { email: f.email(2803), name: f.email(2803), roles: ['approver'], active: false });
@@ -123,6 +134,27 @@ test('Author changes keep complete audited versions and portable files, and memb
     assert.equal((await h.send('/api/purse/download/attachment/' + created.versions[0].files[0], undefined, h.owner)).status, 410);
     const erasedCsv = await h.send('/api/purse/audit.csv?subject=' + f.pending.id, undefined, h.owner); assert.ok(!erasedCsv.value.includes(deleted.author)); assert.ok(erasedCsv.value.includes(anonymous.author));
     assert.notEqual((await h.send('/api/purse/command/comment-add', { kind: 'request', record: f.pending.id, attempt: 'synthetic-purse-5115', body: 'synthetic-purse-5116 original', mentions: [] }, f.approver)).status, 200);
+    const buyerId = (await h.state(f.buyer)).actor.id;
+    await h.command('member', { email: f.email(2804), name: f.email(2804), roles: ['buyer'], active: false });
+    await reauthenticateErasure(h);
+    const buyerInventory = await h.send('/api/purse/erasure', undefined, h.owner);
+    const buyerPreview = await h.send('/api/purse/erasure/preview', { kind: 'member', id: f.email(2804), revision: buyerInventory.value.revision }, h.owner);
+    assert.equal(buyerPreview.status, 200, JSON.stringify(buyerPreview.value));
+    const buyerErased = await h.send('/api/purse/erasure/execute', { ...buyerPreview.value.subject, revision: buyerPreview.value.revision, review: buyerPreview.value.review, fingerprint: buyerPreview.value.fingerprint, consent: true }, h.owner);
+    assert.equal(buyerErased.status, 200, JSON.stringify(buyerErased.value));
+    for (const row of eraseAcross) {
+        const thread = await history(h, row.kind, row.record, h.owner), comment = thread.find(c => c.id === row.created.id);
+        assert.match(comment.author, /^erased-/); assert.equal(comment.mayEdit, false); assert.equal(comment.versions.length, 2);
+        for (const version of comment.versions) { assert.equal(version.actor, comment.author); assert.ok(!version.body.includes(row.body)); }
+        assert.equal((await h.send('/api/purse/download/attachment/' + row.created.versions[0].files[0], undefined, h.owner)).status, 410);
+        const csv = await h.send('/api/purse/audit.csv?subject=' + row.record, undefined, h.owner);
+        assert.ok(csv.value.includes(comment.author)); assert.ok(!csv.value.includes(buyerId)); assert.ok(!csv.value.includes(f.email(2804)));
+        assert.equal((await h.send('/api/purse/search?' + new URLSearchParams({ q: row.body, kind: row.kind }), undefined, h.owner)).value.total, 0, 'Erasure rebuilds comment search without retained prose');
+    }
+    const projected = (await h.db.prepare('SELECT body FROM p_comment_search').all()).results;
+    for (const row of eraseAcross) assert.ok(!JSON.stringify(projected).includes(row.body));
+    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results), true);
+    assert.notEqual((await h.send('/api/purse/comments/notices', undefined, f.buyer)).status, 200);
     const latest = await archive(h, 'synthetic-purse-5121'), erasedRestore = await restore(t, latest);
     assert.deepEqual((await history(erasedRestore.h, 'request', f.pending.id, erasedRestore.cookie))[0].versions, anonymous.versions);
     const destination = await harness({ empty: true }); t.after(() => destination.close());
