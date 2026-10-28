@@ -33,6 +33,15 @@ export async function eraseNativeCopies(env:Bindings,plan:ErasurePlan,a:Actor) {
  for(const row of (await db.prepare('SELECT * FROM p_integration_tokens').all<Data>()).results) {
   const next=plan.scrub(row);if(JSON.stringify(next)!==JSON.stringify(row))statements.push(sql('UPDATE p_integration_tokens SET requester=?,requester_email=?,name=?,revoked_at=? WHERE id=?',next.requester,next.requester_email,next.name,new Date().toISOString(),row.id));
  }
+ // Installation key metadata is personal data too; revocation keeps replay inert.
+ for(const row of (await db.prepare('SELECT * FROM p_api_keys').all<Data>()).results) {
+  const next=plan.scrub({name:row.name,principal:row.principal});
+  if(row.principal===operator || JSON.stringify(next)!==JSON.stringify({name:row.name,principal:row.principal}))statements.push(sql('UPDATE p_api_keys SET name=?,principal=?,revoked_at=? WHERE id=?',next.name,next.principal,new Date().toISOString(),row.id));
+ }
+ for(const row of (await db.prepare('SELECT * FROM p_webhooks').all<Data>()).results) {
+  const next=plan.scrub({name:row.name,endpoint:row.endpoint});
+  if(JSON.stringify(next)!==JSON.stringify({name:row.name,endpoint:row.endpoint}))statements.push(sql('UPDATE p_webhooks SET name=?,endpoint=?,revoked_at=? WHERE id=?',next.name,next.endpoint,new Date().toISOString(),row.id));
+ }
  for(const row of (await db.prepare('SELECT sequence,message FROM rer_mail_development_outbox').all<Data>()).results) {
   if(JSON.stringify(plan.scrub(row.message))!==JSON.stringify(row.message))statements.push(sql('DELETE FROM rer_mail_development_outbox WHERE sequence=?',row.sequence));
  }

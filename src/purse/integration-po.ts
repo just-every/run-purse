@@ -8,7 +8,7 @@ import { all, extended, requireThat, uid, type Data } from './types';
 export const integrationPoApi = new Hono<{ Bindings: Bindings }>();
 
 /** Explicit financial projection. Never spread source, request, approval or supplier records. */
-function orderData(order: Data, invoices: Data[]) {
+export function orderData(order: Data, invoices: Data[]) {
     return {
         id: order.id, number: order.number, revision: order.revision, 
         supplier: order.supplier, currency: order.currency, status: order.status,

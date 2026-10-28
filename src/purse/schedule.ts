@@ -1,3 +1,4 @@
+import { runWebhooks } from './webhooks';
 import {runPoGeneration} from './po-generation-schedule';
 import { runRecurringOrders } from './recurring-schedule';
 import { runValueCheckins } from './agent-value-checkins';
@@ -23,5 +24,6 @@ export async function runPurchasingSchedule(env: Bindings, now: number) {
     const discovery = await runRecurringDiscoverySchedule(env, now);
     const agreements = await runAgreementReminders(env, now);
     const travelReleases = await runTravelReleases(env, now);
-    return { generation, recurring, documents, orders, receipts, rfqs, agreements, values, travelReleases, discovery };
+    const webhooks=await runWebhooks(env);
+    return { webhooks, generation, recurring, documents, orders, receipts, rfqs, agreements, values, travelReleases, discovery };
 }

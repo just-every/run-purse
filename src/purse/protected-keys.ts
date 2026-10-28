@@ -1,3 +1,4 @@
+import { webhookKeyState, rotateWebhookKeys, discardUnreadableWebhookKeys } from './webhook-key-rotation';
 import { pantryKeyState, rotatePantryKeys, discardUnreadablePantryKeys } from './pantry-key-rotation';
 import { Hono } from 'hono';
 import { runtimeBindings, type Bindings } from '../auth.server';
@@ -16,9 +17,9 @@ protectedKeysApi.get('/api/purse/protected-keys', async c => {
         for (const row of stored) {
             try { decryptProtected(env, row); if (!usesActiveKey(env, row)) awaitingRotation++; } catch { unreadable++; }
         }
-        const pantry = await pantryKeyState(env); unreadable += pantry.unreadable; awaitingRotation += pantry.awaitingRotation;
+        const pantry = await pantryKeyState(env), webhooks = await webhookKeyState(env); unreadable += pantry.unreadable + webhooks.unreadable; awaitingRotation += pantry.awaitingRotation + webhooks.awaitingRotation;
         await readFence(env.DB, a, revision);
-        return c.json({ revision, activeKeyAvailable: active, stored: stored.length + pantry.stored, unreadable, awaitingRotation,
+        return c.json({ revision, activeKeyAvailable: active, stored: stored.length + pantry.stored + webhooks.stored, unreadable, awaitingRotation,
             previousKeyMayBeRemoved: active && unreadable === 0 && awaitingRotation === 0,
             recovery: 'Lost keys cannot be recovered. Restore the installation secret privately, or explicitly discard unreadable values and re-enter them. No escrow or plaintext copies exist.' });
     } catch (error) { return protectedRefusal(env, c.req.raw, 'key-status', error, a); }
@@ -39,17 +40,17 @@ protectedKeysApi.post('/api/purse/protected-keys/:operation', async c => {
             const payloads = stored.map(row => ({ row, payload: decryptProtected(env, row) }));
             const encrypted = payloads.map(({row, payload}) => encryptProtected(env, row.supplier, row.field, payload));
             for (let i = 0; i < encrypted.length; i++) requireThat(JSON.stringify(decryptProtected(env, encrypted[i])) === JSON.stringify(payloads[i].payload), 'Protected rotation check failed', 503);
-            const pantry = await rotatePantryKeys(env), checked = encrypted.length + pantry.checked;
+            const pantry = await rotatePantryKeys(env), webhooks = await rotateWebhookKeys(env), checked = encrypted.length + pantry.checked + webhooks.checked;
             audit(state, a, 'protected-key-rotation', 'supplier-protected', { reason: 'Owner requested rotation; private reason supplied', checked, result: 'All values reencrypted and authenticated under the active key' });
-            await save(env.DB, a, before, state, revision, { statements: [...encrypted.map(row => writeProtected(env, row)), ...pantry.statements], proofSince: since });
+            await save(env.DB, a, before, state, revision, { statements: [...encrypted.map(row => writeProtected(env, row)), ...pantry.statements, ...webhooks.statements], proofSince: since });
             return c.json({ checked, result: 'Rotation complete. Every protected value was reencrypted and checked. The previous Worker secret may now be removed privately.' });
         }
         requireThat(body.acknowledge === 'discard-unreadable-and-reenter', 'Explicit loss acknowledgement required');
         const unreadable = stored.filter(row => { try { decryptProtected(env, row); return false; } catch { return true; } });
-        const pantry = await discardUnreadablePantryKeys(env), discarded = unreadable.length + pantry.discarded;
+        const pantry = await discardUnreadablePantryKeys(env), webhooks = await discardUnreadableWebhookKeys(env), discarded = unreadable.length + pantry.discarded + webhooks.discarded;
         requireThat(discarded > 0, 'No unreadable protected values to discard', 409);
         const statements = unreadable.map(row => env.DB.prepare("DELETE FROM p_supplier_protected WHERE business='main' AND supplier=? AND field=?").bind(row.supplier, row.field));
-        statements.push(...pantry.statements);
+        statements.push(...pantry.statements, ...webhooks.statements);
         // protectedOnFile remains: every cleared field is explicitly Not restored – re-enter.
         audit(state, a, 'protected-key-loss', 'supplier-protected', { reason: 'Owner acknowledged irreversible key loss; private reason supplied', discarded, result: 'Unreadable values discarded; owner reentry required' });
         await save(env.DB, a, before, state, revision, { statements, proofSince: since });

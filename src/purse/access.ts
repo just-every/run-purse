@@ -2,7 +2,7 @@ import { all, requireThat, type Actor, type Data, type State } from './types';
 import { builtinPermissions, permissions, scopeDimensions, type AccessGrant, type AccessScope, type BuyerLimit } from './access-permissions';
 export { builtinRoles, permissions, type Permission, type AccessScope, type AccessGrant, type BuyerLimit } from './access-permissions';
 
-export function accessGrants(s: State, a: Actor): AccessGrant[] {
+function nativeGrants(s: State, a: Actor): AccessGrant[] {
     if (a.owner) return [{ role: 'owner', permissions: [...permissions], scope: {} }];
     const member = all(s, 'member').find(m => m.active && m.email?.toLowerCase() === a.email.toLowerCase());
     if (!member) return [];
@@ -15,6 +15,17 @@ export function accessGrants(s: State, a: Actor): AccessGrant[] {
         return [{ role: grant.role, permissions: granted.filter((p: string) => permissions.includes(p as typeof permissions[number])), scope: grant.scope ?? {},
             ...(custom?.scope ? { roleScope: custom.scope } : {}), departmentRead: grant.departmentRead === true,
             ...(grant.limits ? { limits: grant.limits } : {}) }];
+    });
+}
+/** A key can only intersect the current native grants, never widen them. */
+export function accessGrants(s: State, a: Actor): AccessGrant[] {
+    return nativeGrants(s,a).map(grant => {
+        const scope = {...grant.scope};
+        for (const [dimension, values] of Object.entries(a.apiKey?.scope ?? {})) {
+            const name = dimension as keyof AccessScope;
+            scope[name] = scope[name] ? scope[name]!.filter(value=>values.includes(value)) : values;
+        }
+        return {...grant,scope};
     });
 }
 type Context = { dimensions: Record<string, string[]>; requester?: string; requesterEmail?: string; known: boolean };
