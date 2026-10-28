@@ -25,9 +25,9 @@ export function AccrualReport() {
             {detail&&<section aria-label="Accrual source records"><h3>{detail.label} · source records</h3>{detail.rows.map((row:D,index:number)=><article className="record" key={index}>
                 <h4><a href={'/app?tab=Orders&receipt='+row.order}>{row.number}</a> · {row.description}</h4><p>{row.supplierName} · {row.department} · {row.glAccount||'No GL'} · {money(row.accrualMinor,row.currency)} accrual</p>
                 <p>Received {row.receivedQ/1000} · {money(row.receivedMinor,row.currency)}; approved billed {row.billedQ/1000} · {money(row.billedMinor,row.currency)} · {row.mode}</p>
-                {row.receipts.map((receipt:D)=><p key={receipt.receipt}>Receipt {receipt.receipt} · {receipt.event} · effective {receipt.effectiveDate} · recorded {when(receipt.recordedAt)} · {money(receipt.valueMinor,row.currency)}{receipt.lateEntered&&<strong> · Late-entered</strong>}</p>)}
+                {row.receipts.map((receipt:D)=><p key={receipt.receipt}><a href={'/app?tab=Orders&receipt='+receipt.order+'#receipt-'+receipt.receipt}>Receipt {receipt.receipt}</a> · {receipt.event} · effective {receipt.effectiveDate} · recorded {when(receipt.recordedAt)} · {money(receipt.valueMinor,row.currency)}{receipt.lateEntered&&<strong> · Late-entered</strong>}</p>)}
                 {row.bills.map((bill:D)=><p key={bill.invoice}><a href={'/app?tab=Orders&receipt='+bill.order+'#invoice-'+bill.invoice}>Bill {bill.reference}</a> · {bill.invoiceDate} · eligible approval · {money(bill.amountMinor,row.currency)}</p>)}
-                {row.excludedBills.map((bill:D)=><p key={bill.invoice}>Bill {bill.reference} · {bill.invoiceDate||'Date unavailable'} · excluded: {bill.reason}</p>)}
+                {row.excludedBills.map((bill:D)=><p key={bill.invoice}><a href={'/app?tab=Orders&receipt='+bill.order+'#invoice-'+bill.invoice}>Bill {bill.reference}</a> · {bill.invoiceDate||'Date unavailable'} · excluded: {bill.reason}</p>)}
             </article>)}<button onClick={()=>setDetail(undefined)}>Close accrual sources</button></section>}
         </>}
     </section>;

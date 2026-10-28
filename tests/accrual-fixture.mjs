@@ -9,7 +9,7 @@ export async function accrualFixture() {
         await cmd('business',{name:'synthetic-purse-4700',currencies:['USD','CAD'],locations:['Denver'],costCentres:['Operations','Research'],projects:['General','Fitout'],timezone:'UTC'});
         const people={requester:await h.member(accrualMail(4701),['requester']),approver:await h.member(accrualMail(4702),['approver']),finance:await h.member(accrualMail(4703),['finance-viewer']),outsider:await h.member(accrualMail(4704),['requester'])};
         await cmd('member',{email:accrualMail(4703),name:'Scoped controller',active:true,grants:[{role:'finance-viewer',scope:{departments:['Operations']}}]});
-        const supplier=await cmd('supplier',{name:'=synthetic-purse-4705',status:'preferred',reason:'Reviewed native supplier'});
+        const supplier=await cmd('supplier',{name:'=synthetic-purse-4705',status:'preferred',contacts:[{name:'synthetic-purse-4709',email:accrualMail(4708)}],reason:'Reviewed native supplier'});
         for(const currency of ['USD','CAD'])await cmd('policy',{name:'synthetic-purse-4706-'+currency,currency,category:'*',project:'*',approver:accrualMail(4702),limitMinor:100000000,budgetMinor:100000000});
         async function issue({title='synthetic-purse-4707',currency='USD',department='Operations',quantity='10',unitMinor=10000,service,glAccount='6100',allocations}={}) {
             const draft={title,supplier:supplier.id,currency,needDate:'2026-06-28',location:'Denver',costCentre:department,glAccount,terms:'Net 30',freightMinor:0,taxMinor:0,lines:[{description:title+' item',quantity,unitMinor,category:'goods',project:'General',glAccount,...(service?{service}:{}),...(allocations?{allocations}:{})}]};

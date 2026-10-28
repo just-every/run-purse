@@ -3,6 +3,7 @@ import { operationalOrder } from './adoption-position';
 import { budgetApportion } from './budget-allocations';
 import { openInvoiceFlags } from './invoice-status';
 import { closureAt } from './order-closure';
+import { discrepancies } from './orders';
 import { receiptDay } from './receipt-routing';
 import { all, date, extended, type Actor, type Data, type State } from './types';
 
@@ -24,6 +25,7 @@ export function accrualReport(s: State, a: Actor, filters: Data = {}) {
     requirePermission(s, a, 'report.read');
     const cutoff = date(filters.cutoff, 'Period end'), day = (at: string) => receiptDay(s, Date.parse(at));
     const orders = all(s, 'order'), invoices = all(s, 'invoice'), receipts = all(s, 'receipt');
+    const exceptions = new Set(discrepancies(s).filter(row => row.quantityMismatch || row.priceMismatch || row.receiptShortfall || row.closedBalance || row.exception).map(row => row.invoiceId));
     const warnings = new Set<string>(), rows: Data[] = [], deposits: Data[] = [];
     const permitted = orders.filter(order => allowed(s, a, 'report.read', order) && allowed(s, a, 'po.read', order));
     if (permitted.some(order => order.imported && !operationalOrder(s,order))) warnings.add('Unadopted imported orders are omitted; historical dates and approvals are not qualified.');
@@ -64,6 +66,7 @@ export function accrualReport(s: State, a: Actor, filters: Data = {}) {
                     valueMinor: (receipt.event === 'return' ? -1 : 1) * (receipt.valueMinor ?? extended(receipt.q, sourceLine.unitMinor)),
                     unitMinor: sourceLine.unitMinor, basis: receipt.effectiveDate ? 'Effective received date' : 'Recorded date fallback' });
             }
+            sources.sort((a,b) => a.recordedAt.localeCompare(b.recordedAt) || a.receipt.localeCompare(b.receipt));
             const receivedQ = Math.max(0, sum(sources, 'q')), receivedMinor = Math.max(0, sum(sources, 'valueMinor'));
             const closed = family.reduce((n, source) => n + closureAt(s, source.id, line.id, cutoff, day), 0);
             // Closed receiving balances are never returned as open accrual lines at that cutoff.
@@ -71,7 +74,7 @@ export function accrualReport(s: State, a: Actor, filters: Data = {}) {
             const approved: Data[] = [], excluded: Data[] = [];
             for (const invoice of bills.filter(invoice => invoice.allocations.some((allocation: Data) => allocation.line === line.id))) {
                 const allocation = invoice.allocations.find((allocation: Data) => allocation.line === line.id);
-                const qualifies = approvedBill(invoice) && invoice.invoiceDate && invoice.invoiceDate <= cutoff;
+                const qualifies = approvedBill(invoice) && !exceptions.has(invoice.id) && invoice.invoiceDate && invoice.invoiceDate <= cutoff;
                 if (!invoice.invoiceDate) warnings.add(order.number + ': invoice dates are missing; undated bills do not reduce this report.');
                 const proof = { invoice: invoice.id, order: invoice.order, reference: invoice.reference, invoiceDate: invoice.invoiceDate ?? null,
                     q: allocation.q, amountMinor: allocation.amountMinor, approvalAt: invoice.paymentApproval?.at ?? null };

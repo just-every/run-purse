@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "94cf4de02e59decfd7b0fc916e23fa0b41d2c62ff56c48221bf33c53bb65b0be",
+      "sha256": "cc173838a45408e309cdfc977465324dd1ed4c3b2d3436fcba7ac1fa494ff663",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -104,7 +104,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "0f4646fda19c91c50fa1fce2b25c83ee61f49f0ca322dc01c3fe03ae6fe17df8",
+      "sha256": "5b67c33a5fbc7d9d52cf7ba9503ae201cd3672b91d8e797aa466ea6416bacd70",
       "executable": false
     },
     "base-copies.json": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "57fb2f279a3996b874218d3ab69a26b7a5e958e512f9993cddf4e4429fed97de",
+      "sha256": "b5e0c220fcc221e65a5e8806506df5978c4abf77f20bd604e9baf94346d1c7f1",
       "executable": false
     },
     "DEMO.md": {
@@ -960,7 +960,7 @@
       "executable": false
     },
     "scripts/installer/restore-invoice-risk.mjs": {
-      "sha256": "987c6bd94255dadb1d844b75835e5fe32c1bd7331254b27d860bc5421ad2eab8",
+      "sha256": "fc447f4fe0b41d6ca57a099628d04a1601879f16a1ed0f8d16a257a5fae2173d",
       "executable": false
     },
     "scripts/installer/restore-order-adoption.mjs": {
@@ -2936,7 +2936,7 @@
       "executable": false
     },
     "src/purse/accrual-report.ts": {
-      "sha256": "540d3f61d96409d2b76db0f9b3e564df90c8183284f0f14e011204a521b803b5",
+      "sha256": "a60f8ac9f67d8b35e818e03951bbc6733936f207d4baf05c51c9373e4a7d5992",
       "executable": false
     },
     "src/purse/admin.ts": {
@@ -3312,7 +3312,7 @@
       "executable": false
     },
     "src/purse/invoice-review.ts": {
-      "sha256": "640dd1cce34aaebcc75140d4bc28d91fd374b7ecf1d2f3c2b58cae772e69c021",
+      "sha256": "116a31f8f9b72f26de5a77409e73e5656b8fb37e4659e1300a5119dcc37f6ba3",
       "executable": false
     },
     "src/purse/invoice-risk.ts": {
@@ -3432,7 +3432,7 @@
       "executable": false
     },
     "src/purse/payables.ts": {
-      "sha256": "07a4602f1408385f29aa00eda58f0de8eefaca99bf55bdcd27a980c2f66bdd57",
+      "sha256": "bb32f49939f1ecccf8eea4ad10db7538cd45828415bb0000b7e400aaf5aa6e7b",
       "executable": false
     },
     "src/purse/payment-terms.ts": {
@@ -3772,7 +3772,7 @@
       "executable": false
     },
     "src/purse/supplier-invoice-approval.ts": {
-      "sha256": "a4336227ad3b9e333ae3a7551eb243a170f4fe061b8e6b1bba56d0fbfa1d8854",
+      "sha256": "bee21c28fd42dd545df5ea00a5ed28bcc620b811be3eb259d20bf861f85d1689",
       "executable": false
     },
     "src/purse/supplier-invoice-public.ts": {
@@ -4128,7 +4128,7 @@
       "executable": false
     },
     "src/ui/accrual-report.tsx": {
-      "sha256": "468f174de858c042d9d48f1b90e1b5f996f61e257a159b09a8b611484ccf97fe",
+      "sha256": "ae6ee1f0f6d63f0670ce7d8789ec3cb010cb97a60ba19123ea97bbcde6316b35",
       "executable": false
     },
     "src/ui/adopted-changes.tsx": {
@@ -4292,7 +4292,7 @@
       "executable": false
     },
     "src/ui/invoice-risk.tsx": {
-      "sha256": "11cb4f985bb22a63305f8d1e6af4f9ccee8c2c5136a399acb24183048100ec25",
+      "sha256": "d4e13a31c82f3b1935f4af91e73d5f58e1c1fac789fff3067aa1f3a0b6542ff6",
       "executable": false
     },
     "src/ui/late-order-resolution.tsx": {
@@ -4320,7 +4320,7 @@
       "executable": false
     },
     "src/ui/orders.tsx": {
-      "sha256": "326ec135fe9b5b0c7f7d8888fc3adb4cb1759048fbe486701736862853f611c5",
+      "sha256": "ca615885548e83d1ce712e1ccba0dfadf4d2ee60f2581129776d2afdc17b1a42",
       "executable": false
     },
     "src/ui/overview.tsx": {
@@ -4568,15 +4568,15 @@
       "executable": false
     },
     "tests/accrual-fixture.mjs": {
-      "sha256": "b0af16dd77c140da0e87c485779f75000bc15baac6fe273a42ab2da53094d6cc",
+      "sha256": "c0af1d8ee0da1e3f66c86bdf265c063865d3bb8f4ddb9583abce0fde414f4e25",
       "executable": false
     },
     "tests/accrual-proof.mjs": {
-      "sha256": "218fc3fa9ab7eca5802ac9e0267eb7092dd55ce234db326b0c173b23832563a5",
+      "sha256": "ff698577a0974d9ef850376feb46a83a5544f011d7792f121e8243152492c313",
       "executable": false
     },
     "tests/accrual-report.test.mjs": {
-      "sha256": "2b8e59e5ea6e8af08d5dd8cf2bdf1c3cf46aafa1a5694fb819a4d3d016b9b4b7",
+      "sha256": "13bb7fa224d169e2b7db688c381445b5c60caad2e0a807a03034d3afa02226af",
       "executable": false
     },
     "tests/accrual-worker.ts": {
@@ -4636,7 +4636,7 @@
       "executable": false
     },
     "tests/browser-accrual-report.mjs": {
-      "sha256": "0fe20fdc8507aecdc27de14667a26525b99b908de6cf252154f8533c78c01b96",
+      "sha256": "72efc517d0c7c36ec9eda7fc2ce22143143228bd447acde5a04b526aebf9022a",
       "executable": false
     },
     "tests/browser-agent-governance.mjs": {

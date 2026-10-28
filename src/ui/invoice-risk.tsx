@@ -11,6 +11,9 @@ export function InvoiceRisk({ invoice, data, actor, mutate }: { invoice: D; data
         {invoice.remit?.supplied && <p>Remit comparison {invoice.remit.comparison} · {invoice.remit.baseline === 'matching-only' ? 'Buyer-recorded identity, not bank verification' : 'No bank identity baseline'}</p>}
         {invoice.document && <p>Original {invoice.document.name} · {invoice.document.size} bytes · exact-byte duplicate check</p>}
         {open.length > 0 && <p role="alert">Cash-planning hold · {open.length} unresolved risk {open.length === 1 ? 'flag' : 'flags'}</p>}
+        {invoice.disputed && <p role="alert">Invoice disputed · {invoice.disputeHistory?.at(-1)?.reason}</p>}
+        {invoice.mayReview && <Form key={invoice.disputeVersion ?? 0} label={invoice.disputed ? 'Resolve invoice dispute' : 'Dispute invoice'} initial={{ invoice: invoice.id, version: invoice.disputeVersion ?? 0, disputed: !invoice.disputed }} onSubmit={b => mutate('invoice-dispute', b)}><Field label="Dispute decision reason" name="reason"/></Form>}
+        {(invoice.disputeHistory ?? []).map((entry: D) => <p key={entry.version}>{entry.disputed ? 'Disputed' : 'Dispute resolved'} · {entry.reason} · {when(entry.at)}</p>)}
         {(invoice.flags ?? []).map((flag: D) => {
             const review = invoice.riskReviews?.find((r: D) => r.flag === flag.id), related = data.invoice.find((i: D) => i.id === flag.relatedInvoice);
             return <section className="invoice" key={flag.id} aria-label={'Risk '+flag.code+' '+invoice.reference}><h5>{labels[flag.code] || flag.code} · {review ? 'Reviewed' : 'Open'}</h5><p>{flag.reason}</p>{related && <p>Related invoice {related.reference}</p>}

@@ -11,7 +11,7 @@ const bundle=await build({stdin:{contents:"import React from 'react';import{crea
 const browser=await chromium.launch({headless:true,args:['--no-sandbox','--use-mock-keychain','--password-store=basic'],...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{})});
 const f=await accrualFixture();let context;
 try {
-    await accrualTimeline(f);await f.advance('2026-08-03',true);
+    const timeline=await accrualTimeline(f);await f.advance('2026-08-03',true);
     context=await nativeWebContext(browser,f.h,1440,bundle.outputFiles[0].text,f.h.owner);const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
     await page.goto(f.h.origin+'/app?tab=Reports');await page.getByRole('button',{name:'Received not billed',exact:true}).click();
     const region=page.getByRole('region',{name:'Received not billed report'});
@@ -19,6 +19,22 @@ try {
         await region.getByLabel('Period end',{exact:true}).fill(cutoff);const pending=page.waitForResponse(response=>response.url().includes('/accrual-report/view?')&&response.status()===200);await region.getByRole('button',{name:'Run accrual report',exact:true}).click();const report=await (await pending).json();assert.equal(mainRow(report,f.order).accrualMinor,expected);await region.getByRole('button',{name:'$'+(expected/100).toFixed(2),exact:true}).first().waitFor();return report;
     }
     await run('2026-06-30',60000);await run('2026-07-31',20000);
+    const bill=timeline.approved.invoice;
+    async function dispute(disputed,reason) {
+        await page.goto(f.h.origin+'/app?tab=Orders&receipt='+f.order.id);
+        const invoice=page.locator('[id="invoice-'+bill.id+'"]'),label=disputed?'Dispute invoice':'Resolve invoice dispute';
+        const form=invoice.locator('form').filter({has:page.getByRole('button',{name:label,exact:true})});
+        await form.getByLabel('Dispute decision reason',{exact:true}).fill(reason);
+        const decision=page.waitForResponse(response=>response.url().endsWith('/command/invoice-dispute'));
+        await form.getByRole('button',{name:label,exact:true}).click();assert.equal((await decision).status(),200);
+        await invoice.getByText(reason,{exact:false}).first().waitFor();
+        if(disputed)for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await invoice.scrollIntoViewIfNeeded();await page.screenshot({path:join(evidence,'REPORT-004-disputed-bill-'+width+'.png'),fullPage:true});}
+        await page.setViewportSize({width:1440,height:1000});
+        await page.goto(f.h.origin+'/app?tab=Reports');await page.getByRole('button',{name:'Received not billed',exact:true}).click();
+        await run('2026-07-31',disputed?60000:20000);
+    }
+    await dispute(true,'Supplier quantities need review');
+    await dispute(false,'Confirmed source quantities reconciled');
     await page.goto(f.h.origin+'/app?tab=Orders&receipt='+f.order.id);
     const receiving=page.locator('form').filter({has:page.getByRole('button',{name:'Record receiving event',exact:true})});
     await receiving.getByLabel('Effective received date',{exact:true}).waitFor();assert.equal(await receiving.getByLabel('Effective received date').inputValue(),'2026-08-03');
@@ -29,6 +45,7 @@ try {
     await receiving.getByLabel('Effective received date',{exact:true}).fill('2026-06-29');const saved=page.waitForResponse(response=>response.url().endsWith('/command/receipt')&&response.status()===200);await receiving.getByRole('button',{name:'Record receiving event',exact:true}).click();await saved;
     await page.getByText('Late receiving evidence',{exact:false}).first().waitFor();
     for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.screenshot({path:join(evidence,'REPORT-004-effective-receiving-'+width+'.png'),fullPage:true});}
+    await page.setViewportSize({width:1440,height:1000});
     await page.goto(f.h.origin+'/app?tab=Reports');await page.getByRole('button',{name:'Received not billed',exact:true}).click();const report=await run('2026-06-30',70000);
     await region.getByRole('button',{name:'$700.00',exact:true}).first().click();const sources=page.getByRole('region',{name:'Accrual source records'});await sources.getByText('Late-entered',{exact:false}).waitFor();
     await sources.getByText('Bill synthetic-purse-4713',{exact:false}).waitFor();await sources.getByText('2026-06-29',{exact:false}).waitFor();

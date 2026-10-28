@@ -971,3 +971,11 @@ pending. Downloading never posts a journal or creates a reversal. All ledger
 posting, additional entities, card-paid exclusions and unsupported historical
 approval and deposit cases remain in REPORT-004's Gap. Archives preserve dated
 source evidence without granting restored identities or supplier links authority.
+
+
+A current scoped invoice reviewer can use `invoice-dispute` with
+`{invoice, version, disputed, reason}` to open or resolve a dispute. The first
+version is zero. Each changed decision retains its reason, actor and time in
+invoice history and the audit export. A dispute holds both genuine bill
+approval and cash-planning approval and excludes a historical approval from
+accrual reduction until resolved; resolution itself never grants approval.

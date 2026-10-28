@@ -9,6 +9,7 @@ import { validatePurchasingArchive } from '../scripts/installer/restore-validati
 import { harness } from './purse-harness.mjs';
 import { accrualFixture, accrualTimeline, accrualMail } from './accrual-fixture.mjs';
 import { mainRow, assertAccrualDownloads } from './accrual-proof.mjs';
+import { reauthenticateErasure } from './erasure-flow.mjs';
 import { adoptionFixture, importInput } from './order-adoption-fixture.mjs';
 
 test('Native period-end accrual reconciles dated goods and services, genuine approvals, scoped exports and restored source history without restoring authority',async t=>{
@@ -47,6 +48,47 @@ test('Native period-end accrual reconciles dated goods and services, genuine app
     assert.equal((await h.send('/api/purse/accrual-report/view?cutoff=2026-06-30')).status,401);
     assert.equal((await h.send('/api/purse/accrual-report/xero?cutoff=2026-06-30',undefined,f.people.finance)).status,400);
     const xero=await h.send('/api/purse/accrual-report/xero?cutoff=2026-06-30&currency=USD&liabilityAccount=2100',undefined,f.people.finance);assert.equal(xero.status,200,JSON.stringify(xero.value));const journal=parse(xero.value,{columns:true});assert.equal(journal.reduce((n,row)=>n+Math.round(Number(row.Amount)*100),0),0);assert.equal(journal.filter(row=>row.AccountCode==='2100').reduce((n,row)=>n+Math.round(Number(row.Amount)*100),0),-june.totals.find(row=>row.currency==='USD').accrualMinor);assert.ok(journal.every(row=>row.Date==='30/06/2026'));
+    // A historical genuine approval stays evidence, but current disputes and risk holds stop reductions.
+    const bill=timeline.approved.invoice, dispute={invoice:bill.id,version:0,disputed:true,reason:'Supplier quantity under review'};
+    const unchanged=(await h.state()).data;
+    await cmd('invoice-dispute',dispute,f.people.finance,403);
+    await cmd('invoice-dispute',{...dispute,version:1},h.owner,409);
+    assert.deepEqual((await h.state()).data,unchanged,'Refused dispute decisions change nothing');
+    await cmd('member',{email:accrualMail(4704),name:'Reviewer in another department',active:true,grants:[{role:'ap-clerk',scope:{departments:['Research']}}]});
+    const outside=(await h.state()).data;
+    await cmd('invoice-dispute',dispute,f.people.outsider,403);
+    assert.deepEqual((await h.state()).data,outside,'Review permission in another department grants no access');
+    await cmd('invoice-dispute',dispute);
+    assert.equal(mainRow(await f.report('2026-07-31'),f.order).accrualMinor,60000,'A disputed genuine approval cannot reduce accrual');
+    const disputedTerms=await cmd('payable-terms',{invoice:bill.id,version:0,invoiceDate:'2026-07-02',term:'Net 30',reason:'Recorded terms do not resolve a dispute'});
+    await cmd('approve-payable',{invoice:bill.id,version:disputedTerms.version,reason:'Unsafe disputed payment'},h.owner,409);
+    await cmd('supplier-invoice-schedule',{invoice:bill.id,version:0,date:'2026-07-15',reason:'Unsafe disputed schedule'},h.owner,409);
+    await cmd('invoice-dispute',{...dispute,version:1,disputed:false,reason:'Source quantities reconciled'});
+    assert.equal(mainRow(await f.report('2026-07-31'),f.order).accrualMinor,20000);
+    await cmd('attachment',{kind:'invoice',record:bill.id,...timeline.pending.body.document});
+    const riskHeld=(await h.state()).data.invoice.find(row=>row.id===bill.id);
+    assert.ok(riskHeld.paymentApproval,'Risk review does not delete historical approval');
+    assert.ok(riskHeld.flags.some(flag=>flag.code==='duplicate-document'));
+    assert.equal(mainRow(await f.report('2026-07-31'),f.order).accrualMinor,60000,'A risk-held genuine approval cannot reduce accrual');
+    for(const flag of riskHeld.flags){const current=(await h.state()).data.invoice.find(row=>row.id===bill.id);if(!current.riskReviews.some(review=>review.flag===flag.id))await cmd('invoice-risk-review',{invoice:bill.id,flag:flag.id,version:current.riskVersion,reason:'Separate invoice original reviewed'});}
+    assert.equal(mainRow(await f.report('2026-07-31'),f.order).accrualMinor,20000);
+    await cmd('receipt',{order:f.order.id,line:f.order.lines[0].id,event:'return',quantity:'2',effectiveDate:'2026-07-02',reason:'Return creates a current receiving exception'});
+    assert.equal(mainRow(await f.report('2026-07-31'),f.order).billedMinor,0,'A current matching exception holds a historical approval');
+    await f.receive(f.order,'2','2026-07-02');
+    assert.equal(mainRow(await f.report('2026-07-31'),f.order).accrualMinor,20000);
+    const audit=await h.send('/api/purse/audit?subject='+bill.id,undefined,h.owner),auditCsv=await h.send('/api/purse/audit.csv?subject='+bill.id,undefined,h.owner);
+    assert.equal(audit.status,200);assert.equal(auditCsv.status,200);
+    assert.deepEqual(audit.value.events.filter(event=>event.action==='invoice-dispute').sort((a,b)=>a.version-b.version).map(event=>event.disputed),[true,false]);
+    assert.ok(auditCsv.value.includes('Supplier quantity under review'));assert.ok(auditCsv.value.includes('Source quantities reconciled'));
+    await reauthenticateErasure(h);
+    const meta=await h.send('/api/purse/erasure',undefined,h.owner),erasurePreview=await h.send('/api/purse/erasure/preview',{kind:'contact',id:f.supplier.id,email:accrualMail(4708),revision:meta.value.revision},h.owner);
+    assert.equal(erasurePreview.status,200,JSON.stringify(erasurePreview.value));
+    const erased=await h.send('/api/purse/erasure/execute',{...erasurePreview.value.subject,revision:erasurePreview.value.revision,review:erasurePreview.value.review,fingerprint:erasurePreview.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
+    assert.equal((await timeline.approved.replay()).status,410,'Erased supplier capture cannot replay');
+    const anonymous=(await h.state()).data.invoice.find(row=>row.id===bill.id);assert.ok(anonymous.sourceValuesErased);
+    const original=(await h.state()).data.attachment.find(row=>row.record===anonymous.supplierSource);
+    assert.ok(original);assert.equal((await h.send('/api/purse/download/attachment/'+original.id,undefined,h.owner)).status,410);
+    assert.equal(mainRow(await f.report('2026-07-31'),f.order).billedMinor,40000,'Anonymous approved financial evidence remains counted');
     await f.advance('2026-08-03',true);
     await f.receive(f.order,'1','2026-06-29');
     const late=await f.report('2026-06-30');assert.equal(mainRow(late,f.order).accrualMinor,70000);assert.equal(mainRow(late,f.order).lateEntered,true);assert.deepEqual(mainRow(late,f.order).receipts.map(row=>[row.effectiveDate,row.recordedAt]),[['2026-06-28','2026-06-28T12:00:00.000Z'],['2026-06-29','2026-08-03T12:00:00.000Z']]);
