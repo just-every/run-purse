@@ -35,6 +35,13 @@ test('Native period-end accrual reconciles dated goods and services, genuine app
     const cashBill=await cmd('invoice',{order:cash.id,reference:'synthetic-purse-4728',source:'Native source evidence',invoiceDate:'2026-06-28',allocations:[{line:cash.lines[0].id,quantity:'1',amountMinor:10000}]});
     const terms=await cmd('payable-terms',{invoice:cashBill.id,version:0,invoiceDate:'2026-06-28',term:'Net 30',reason:'Cash forecast only'});await cmd('approve-payable',{invoice:cashBill.id,version:terms.version,reason:'Cash planning is not bill approval'});
     const held=await cmd('invoice',{order:cash.id,reference:'synthetic-purse-4729',source:'Held invoice evidence',invoiceDate:'2026-06-28',allocations:[{line:cash.lines[0].id,quantity:'10',amountMinor:100000}]});assert.ok(held.flags.length);
+    assert.ok((await h.state()).data.cashRequirements.bills.some(row=>row.invoice===cashBill.id));
+    await cmd('invoice-dispute',{invoice:cashBill.id,version:0,disputed:true,reason:'Previously approved forecast is held for review'});
+    const cashHeld=(await h.state()).data;
+    assert.ok(!cashHeld.cashRequirements.bills.some(row=>row.invoice===cashBill.id),'A disputed historical cash approval is not a current approved bill');
+    assert.equal(cashHeld.cashRequirements.commitments.find(row=>row.order===cash.id).amountMinor,100000,'Held bills return to expected liability without double counting');
+    await cmd('invoice-dispute',{invoice:cashBill.id,version:1,disputed:false,reason:'Forecast source review complete'});
+    assert.ok((await h.state()).data.cashRequirements.bills.some(row=>row.invoice===cashBill.id));
     const timeline=await accrualTimeline(f),june=await f.report('2026-06-30'),july=await f.report('2026-07-31');
     assert.equal(mainRow(june,f.order).accrualMinor,60000);assert.equal(mainRow(july,f.order).accrualMinor,20000);
     assert.equal((await timeline.approved.replay()).status,200);assert.equal(mainRow(await f.report('2026-07-31'),f.order).billedMinor,40000,'Replayed capture has one approved reduction');

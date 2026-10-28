@@ -11,7 +11,10 @@ const bundle=await build({stdin:{contents:"import React from 'react';import{crea
 const browser=await chromium.launch({headless:true,args:['--no-sandbox','--use-mock-keychain','--password-store=basic'],...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{})});
 const f=await accrualFixture();let context;
 try {
-    const timeline=await accrualTimeline(f);await f.advance('2026-08-03',true);
+    const timeline=await accrualTimeline(f);
+    const terms=await f.cmd('payable-terms',{invoice:timeline.approved.invoice.id,version:0,invoiceDate:'2026-07-02',term:'Net 30',reason:'Reviewed cash planning terms'});
+    await f.cmd('approve-payable',{invoice:timeline.approved.invoice.id,version:terms.version,reason:'Reviewed forecast only'});
+    await f.advance('2026-08-03',true);
     context=await nativeWebContext(browser,f.h,1440,bundle.outputFiles[0].text,f.h.owner);const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
     await page.goto(f.h.origin+'/app?tab=Reports');await page.getByRole('button',{name:'Received not billed',exact:true}).click();
     const region=page.getByRole('region',{name:'Received not billed report'});
@@ -28,6 +31,9 @@ try {
         const decision=page.waitForResponse(response=>response.url().endsWith('/command/invoice-dispute'));
         await form.getByRole('button',{name:label,exact:true}).click();assert.equal((await decision).status(),200);
         await invoice.getByText(reason,{exact:false}).first().waitFor();
+        assert.equal((await f.h.state()).data.cashRequirements.bills.some(row=>row.invoice===bill.id),!disputed,'Current cash forecast follows the dispute hold');
+        await page.getByText('Record bill terms and cash-planning approval',{exact:true}).click();
+        await page.getByText(disputed?'Historical approval held':'Approved for cash planning',{exact:false}).waitFor();
         if(disputed)for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await invoice.scrollIntoViewIfNeeded();await page.screenshot({path:join(evidence,'REPORT-004-disputed-bill-'+width+'.png'),fullPage:true});}
         await page.setViewportSize({width:1440,height:1000});
         await page.goto(f.h.origin+'/app?tab=Reports');await page.getByRole('button',{name:'Received not billed',exact:true}).click();
