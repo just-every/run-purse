@@ -14,8 +14,9 @@ test('Invoice exception assignment and receiver correction preserve age, source 
     const raw = async kind => (await h.db.prepare('SELECT value FROM p_records WHERE kind=? ORDER BY id').bind(kind).all()).results.map(r => JSON.parse(r.value));
     const beforeInvoice = await raw('invoice'), beforeReceipt = (await raw('receipt')).find(r => r.id === f.receipt.id);
     const originalFiles = await raw('attachment'), nativeAuthority = await raw('member'), messages = h.messages.length;
+    assert.equal((await h.send('/api/purse/invoice-exceptions', undefined, '')).status, 401);
     let item = (await f.queue())[0]; assert.equal(item.reference, f.invoice.reference);
-    const openedAt = item.openedAt; assert.equal(openedAt, f.invoice.at);
+    const openedAt = item.openedAt; assert.ok(Date.parse(openedAt) >= Date.parse(f.invoice.at)); assert.equal(item.ageBasis, 'Exception detected');
     assert.deepEqual(item.context.map(c => [c.orderedQuantity, c.acceptedQuantity, c.invoiceQuantity, c.receiptShortfall]), [['10', 8, '10', true]]);
     assert.ok(item.candidates.some(m => m.id === f.ids.requester));
     assert.ok(!item.candidates.some(m => m.id === f.ids.outsider));
@@ -40,6 +41,7 @@ test('Invoice exception assignment and receiver correction preserve age, source 
     const terms = await h.command('payable-terms', { invoice: f.invoice.id, version: 0, invoiceDate: '2026-10-28', term: 'Net 30', reason: 'Reviewed source date and terms' }, f.buyer);
     await h.command('approve-payable', { invoice: f.invoice.id, version: terms.version, reason: 'Still short' }, f.buyer, 409);
     const correction = await f.correction(), beforeDenied = await raw('receipt');
+    await h.command('receipt-correction', correction, '', 401);
     for (const cookie of [f.approver, f.outsider]) await h.command('receipt-correction', correction, cookie, 403);
     await h.command('receipt-correction', { ...correction, receiptVersion: 'stale' }, f.receiver, 409);
     await h.command('receipt-correction', { ...correction, expectedQ: 7000 }, f.receiver, 409);
@@ -83,12 +85,27 @@ test('Invoice exception assignment and receiver correction preserve age, source 
     const approved = await h.command('approve-payable', { invoice: held.id, version: terms.version, reason: 'Independent AP review after all holds clear' }, f.buyer);
     assert.equal(approved.approvedMinor, 100000);
     assert.equal((await h.state()).data.cashRequirements.bills.filter(b => b.invoice === held.id).length, 1);
+    const down = await h.command('receipt-correction', { ...await f.correction(), expectedQ: 10000, quantity: '9', attempt: 'synthetic-purse-6225', reason: 'Independent recount establishes nine' }, f.second);
+    assert.equal(down.correctionSequence, 2);
+    const suspended = (await h.state()).data;
+    assert.equal(suspended.invoice.find(i => i.id === held.id).receiptMatch, 'Held for receipt');
+    assert.equal(suspended.cashRequirements.bills.some(b => b.invoice === held.id), false, 'Open receipt exception suspends current cash eligibility');
+    assert.equal(suspended.payable.find(p => p.invoice === held.id).approvedAt, approved.approvedAt, 'Historical approval is retained');
+    await h.command('receipt-correction', { ...await f.correction(), expectedQ: 9000, quantity: '10', attempt: 'synthetic-purse-6226', reason: 'Final count includes the separately packed tenth unit' }, f.second);
+    assert.equal((await h.state()).data.cashRequirements.bills.filter(b => b.invoice === held.id).length, 1, 'Restored matching context includes the historical approval once');
+    assert.equal((await f.queue()).find(i => i.id === held.id).openedAt, openedAt, 'Reopening an exception never resets age');
     // Current scope, rather than historical assignment, governs subsequent actions.
     await h.command('member', { email: address(6206), name: 'synthetic-purse-6206', roles: ['receiver'], active: false });
     const receiptCount = (await raw('receipt')).length;
     await h.command('receipt-correction', { ...await f.correction({}, f.receiver), expectedQ: 10000, quantity: '9', attempt: 'synthetic-purse-6219' }, f.second, 403);
     assert.equal((await raw('receipt')).length, receiptCount);
     assert.equal((await f.queue())[0].assigneeCurrent, false);
+    const beforeRevoked = await raw('invoiceException');
+    await h.command('member', { email: address(6204), name: 'synthetic-purse-6204', active: true, grants: [{ role: 'buyer', scope: { locations: ['Austin'] } }] });
+    assert.deepEqual(await f.queue(), []);
+    await h.command('assign-invoice-exception', assign(item, f.ids.receiver), f.buyer, 403);
+    assert.equal((await h.send('/api/purse/comments/invoiceException/' + item.id, undefined, f.buyer)).status, 403);
+    assert.deepEqual(await raw('invoiceException'), beforeRevoked);
     assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results), true);
 });
 

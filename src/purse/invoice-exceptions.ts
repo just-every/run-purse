@@ -1,4 +1,4 @@
-import { operationalOrder } from './adoption-position';
+import { exceptionOrder, mayReadInvoiceException } from './invoice-exception-access';
 import { Hono } from 'hono';
 import { type Bindings } from '../auth.server';
 import { allowed } from './access';
@@ -10,21 +10,13 @@ import { all, audit, get, put, requireThat, text, type Actor, type Data, type St
 const isException = (d: Data) => d.priceMismatch || d.quantityMismatch || d.receiptShortfall || d.closedBalance || d.exception;
 
 /** Keep the first occurrence even after receiving clears and later reopens it. */
-export function synchronizeInvoiceExceptions(s: State) {
+export function synchronizeInvoiceExceptions(s: State, detectedAt?: string) {
     for (const row of discrepancies(s).filter(isException)) {
         if (s.has('invoiceException:' + row.invoiceId)) continue;
         const invoice = get(s, 'invoice', row.invoiceId);
         put(s, 'invoiceException', invoice.id, { invoice: invoice.id, order: invoice.order,
-            openedAt: invoice.at, version: 0, history: [] });
+            openedAt: detectedAt ?? invoice.at ?? null, ageBasis: detectedAt ? 'Exception detected' : 'Invoice capture; earlier exception onset unavailable', version: 0, history: [] });
     }
-}
-export function mayReadInvoiceException(s: State, a: Actor, record: Data) {
-    const invoice = s.get('invoice:' + record.invoice)?.value;
-    return Boolean(invoice && allowed(s, a, 'invoice.read', invoice));
-}
-function currentOrder(s: State, order: Data) {
-    return all(s, 'order').filter(o => o.request === order.request && o.revision >= order.revision && operationalOrder(s, o))
-        .reduce((latest, o) => o.revision > latest.revision ? o : latest, order);
 }
 function responsible(s: State, a: Actor, order: Data) {
     const request = get(s, 'request', order.request);
@@ -41,7 +33,7 @@ async function directory(env: Bindings, s: State) {
     });
 }
 function sourceVersion(s: State, record: Data) {
-    const order = currentOrder(s, get(s, 'order', record.order));
+    const order = exceptionOrder(s, record);
     return [record.version, s.get('invoice:' + record.invoice)?.revision,
         receiptVersion(s, order)].join(':');
 }
@@ -49,19 +41,19 @@ export async function invoiceExceptionQueue(s: State, a: Actor, env: Bindings) {
     synchronizeInvoiceExceptions(s);
     const members = await directory(env, s), rows = discrepancies(s);
     return all(s, 'invoiceException').filter(record => mayReadInvoiceException(s, a, record)).map((record): Data => {
-        const invoice = get(s, 'invoice', record.invoice), order = currentOrder(s, get(s, 'order', record.order));
+        const invoice = get(s, 'invoice', record.invoice), order = exceptionOrder(s, record);
         const context = rows.filter(d => d.invoiceId === invoice.id), open = context.some(isException);
         const candidates = members.filter(member => responsible(s, member, order));
         const assigned = candidates.find(member => member.id === record.assignee && member.version === record.assigneeVersion);
         return { ...record, reference: invoice.reference, number: order.number, currentOrder: order.id,
             status: open ? 'open' : 'clear', sourceVersion: sourceVersion(s, record),
             assigneeName: assigned?.name ?? (record.assignee ? 'Unavailable assignee; reassign' : 'Unassigned'),
-            assigneeCurrent: Boolean(assigned), mayAssign: open && allowed(s, a, 'invoice.review', invoice),
-            candidates: allowed(s, a, 'invoice.review', invoice) ? candidates.map(m => ({ id: m.id, name: m.name })) : [],
+            assigneeCurrent: Boolean(assigned), mayAssign: open && allowed(s, a, 'invoice.review', invoice) && allowed(s, a, 'invoice.review', order),
+            candidates: allowed(s, a, 'invoice.review', invoice) && allowed(s, a, 'invoice.review', order) ? candidates.map(m => ({ id: m.id, name: m.name })) : [],
             context: context.map(d => ({ ...d, orderedQuantity: order.lines.find((l: Data) => l.id === d.lineId)?.quantity,
                 acceptedQuantity: linePosition(s, order.id, order.lines.find((l: Data) => l.id === d.lineId)).accepted / 1000,
                 invoiceQuantity: invoice.allocations.find((l: Data) => l.line === d.lineId)?.quantity })) };
-    }).sort((x, y) => x.openedAt.localeCompare(y.openedAt) || x.id.localeCompare(y.id));
+    }).sort((x, y) => (x.openedAt ?? '').localeCompare(y.openedAt ?? '') || x.id.localeCompare(y.id));
 }
 export async function invoiceExceptions(s: State, a: Actor, op: string, b: Data, env?: Bindings): Promise<Data | undefined> {
     if (op !== 'assign-invoice-exception') return;
@@ -71,7 +63,9 @@ export async function invoiceExceptions(s: State, a: Actor, op: string, b: Data,
     requireThat(mayReadInvoiceException(s, a, record) && allowed(s, a, 'invoice.review', invoice), 'Invoice review scope required', 403);
     requireThat(record.version === b.version && b.sourceVersion === sourceVersion(s, record), 'Exception context changed; reload before assigning', 409);
     requireThat(discrepancies(s).some(d => d.invoiceId === invoice.id && isException(d)), 'Matching context is already clear', 409);
-    const order = currentOrder(s, get(s, 'order', record.order)), candidates = await directory(env, s);
+    const order = exceptionOrder(s, record);
+    requireThat(allowed(s, a, 'invoice.review', order), 'Current receiving context outside invoice review scope', 403);
+    const candidates = await directory(env, s);
     const assignee = candidates.find(member => member.id === b.assignee);
     requireThat(assignee && responsible(s, assignee, order), 'Choose a currently authorized buyer, requester or receiver', 403);
     const event = { version: record.version + 1, assignee: assignee.id, assigneeVersion: assignee.version,

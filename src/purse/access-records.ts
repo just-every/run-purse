@@ -1,3 +1,4 @@
+import { mayReadInvoiceException } from './invoice-exception-access';
 import { codingAgentRunVisible } from './coding-agent';
 import { accessGrants, allowed, grantAllows, resolvedPermissions } from './access';
 import { all, get, requireThat, type Actor, type Data, type State } from './types';
@@ -31,10 +32,7 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
         const parent = s.get('request:' + record.request)?.value, source = s.get('revision:' + record.request + ':' + record.revision)?.value;
         return Boolean(parent && source && allowed(s,a,'request.read',parent) && allowed(s,a,'request.read',source));
     }
-    if (kind === 'invoiceException') {
-        const invoice = s.get('invoice:' + record.invoice)?.value;
-        return Boolean(invoice && allowed(s, a, 'invoice.read', invoice));
-    }
+    if (kind === 'invoiceException') return mayReadInvoiceException(s, a, record);
     if (kind === 'intakeDraft') return record.requester === a.id && record.requesterEmail === a.email && allowed(s,a,'request.create');
     if (kind === 'travelExpense') return a.owner && allowed(s,a,'request.read',get(s,'request',record.request));
     if (kind === 'quote') return allowed(s,a,'request.read',record);
