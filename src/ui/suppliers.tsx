@@ -1,4 +1,5 @@
 import { SupplierTax } from './supplier-tax';
+import { SupplierCreditBalances } from './supplier-credits';
 import { Comments } from './comments';
 import { SupplierProtected } from './supplier-protected';
 import { Separated } from './separated';
@@ -47,7 +48,7 @@ export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; 
         </>}
         {data.mayManageSupplierRegister && duplicate && <DuplicateSupplierReview review={duplicate.review} input={duplicate.input} mutate={mutate} onSaved={s => open(s.id)} onOpen={async id => { try { await reload(); open(id); setOpenError(''); } catch (e) { setOpenError((e as Error).message); } }}/>}
         {openError && <p role="alert">{openError}</p>}
-        {selected && <>
+        {selected && <><SupplierCreditBalances data={data} supplier={selected.id}/>
             <Comments key={selected.id} kind="supplier" record={selected.id} mutate={mutate}/>
             {selected.mayReadProtected && <SupplierProtected key={selected.id + ":protected"} supplier={selected} owner={actor.roles.includes('owner')} reload={reload}/>}
             {!selected.mergedInto && <Attachments data={data} kind="supplier" record={selected.id} editable={Boolean(data.mayManageSupplierRegister && selected.mayManagePurchasing)} mutate={mutate}/>}
