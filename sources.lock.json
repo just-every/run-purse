@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "6887605d4648b5ef811240a60cde852905a0cc3564b2e394e8dd651ee48515ae",
+      "sha256": "46506a5412042eb8bbb65f51845c41b94444d5f9d7a846e700101104d5750157",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "ac0a91d2c3c241bd0f06ed727c36df5476435fc09fbfa1ee8302f33e8204f715",
+      "sha256": "d7f52dec45e67bafdf1d3a9d4da5d92586ac3cff5a1838fd3efd1059867d6f55",
       "executable": false
     },
     "DEMO.md": {
@@ -140,7 +140,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "364a77027a46cb5676d9c861df0fbbd105244a898f7f8ca25d744d192ae379b7",
+      "sha256": "e2f4b246bcf889c8c726f28ec6f019f5530565ba7b4c9639496ef78760d654a8",
       "executable": false
     },
     "docs/getting-started.md": {
@@ -364,7 +364,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "11849075f0e457b39d8656e473e5bf52283e89cff67ca5203e614b89790319ce",
+      "sha256": "b5549deb83cf2a0f972f0f7f0b03c99a202622863b89842496d84a28a144c29a",
       "executable": false
     },
     "packaging.json": {
@@ -372,7 +372,7 @@
       "executable": false
     },
     "pnpm-lock.yaml": {
-      "sha256": "5a212bffe70bda2c877ef7035a09a5030c2def87705676518990ca4ea8786563",
+      "sha256": "53c9a9972d58f6385c301adf383ddfcd8e436c6ccc185d5817daaa0116feb794",
       "executable": false
     },
     "public/brand/apple-touch-icon.png": {
@@ -692,7 +692,7 @@
       "executable": false
     },
     "scripts/ci/shards.json": {
-      "sha256": "c22f60bbc53d3dce136837060743112c392bc32b1ec7a8074783e2bc4ba650e6",
+      "sha256": "3e1ebb475a89538e2979f1eae1fe96e651efda868ef3b505e4b79eb062d3b335",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
@@ -1019,6 +1019,10 @@
       "sha256": "6cbcaa55dd17704898a46b57402443e883d643d1da5366d82ac13944f83b89ef",
       "executable": false
     },
+    "scripts/installer/restore-saved-reports.mjs": {
+      "sha256": "f4927a03001500b23087ea11f7b47e3eb5933af64c3d0262d0834b48c3d37906",
+      "executable": false
+    },
     "scripts/installer/restore-scim.mjs": {
       "sha256": "2658490326dac4f50960291640ebfac4b0a72a8846753861b0fba3eb67aeeaab",
       "executable": false
@@ -1048,7 +1052,7 @@
       "executable": false
     },
     "scripts/installer/restore-validation.mjs": {
-      "sha256": "79ede404d0322c1eb79ffbf58d369ab5372f67e16532d4fae1d7257c69c84768",
+      "sha256": "dabf872c8481d3c5f2a027f8863228ac972a54c917117c9068fe333b249cc738",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -2964,7 +2968,7 @@
       "executable": false
     },
     "src/purse/api.ts": {
-      "sha256": "54d55e5c6d361eaaa6c84d1c00efc2c40d9861b4c1761b262dac54b30ee48502",
+      "sha256": "13899d73971934c855bf627c9ce8831fb807679b9dde428a255aa279e13e7c26",
       "executable": false
     },
     "src/purse/approval-chain-authority.ts": {
@@ -3551,6 +3555,10 @@
       "sha256": "6681918bd66c24f99e8e747b2709521c913db8deefea6c44bdf685857190609b",
       "executable": false
     },
+    "src/purse/report-exports.ts": {
+      "sha256": "54527ed01b7f7f707cb5c4597564eb04c82f04667e2ae1ece1f6000b919c2fec",
+      "executable": false
+    },
     "src/purse/request-again.ts": {
       "sha256": "6a8f34cb44a3447250e509b86514736afdbef3932d1a9df4f250e095e9948201",
       "executable": false
@@ -3601,6 +3609,10 @@
     },
     "src/purse/rfq.ts": {
       "sha256": "987d007c225bb492068650c125a53cb4da90b44917191a33c5a850373a9bc044",
+      "executable": false
+    },
+    "src/purse/saved-reports.ts": {
+      "sha256": "c32c2b242efa0ad1339b810cbdbe8123670d664fe93525578f611bc9f92561c9",
       "executable": false
     },
     "src/purse/savings-report.ts": {
@@ -4380,7 +4392,7 @@
       "executable": false
     },
     "src/ui/spend-report.tsx": {
-      "sha256": "0565f40f90808c3901fd08ab84be00e37b927f53e2daecce04b42e1e175abad4",
+      "sha256": "1fad3a12d89e231b162038e71a94552e618a2d3a9c43b77bc883967dd6fa6c8c",
       "executable": false
     },
     "src/ui/stockroom.tsx": {
@@ -4711,6 +4723,10 @@
       "sha256": "4d6a704f9f69d50da277be5bb352b6b5f94a64cd5289093c4642b8ad280d96fb",
       "executable": false
     },
+    "tests/browser-saved-reports.mjs": {
+      "sha256": "6a591c3b8a4f42d12cc14cd2a4e49153a426f5d07a7d25424a462a13da454942",
+      "executable": false
+    },
     "tests/browser-scim.mjs": {
       "sha256": "bf4528337b662d5f6b6f9b1ec55f1a5642bcb0cb767a30d0c46948ddb70cddd9",
       "executable": false
@@ -4985,6 +5001,18 @@
     },
     "tests/runtime.mjs": {
       "sha256": "e3e494855c986ec9f610c62f0dae8db244e6a0d91194323862bfeaf12aad4488",
+      "executable": false
+    },
+    "tests/saved-report-fixture.mjs": {
+      "sha256": "b4d7d61155eb1b4bb22c304d5280b45e3714cf45cd2b59eaf87dfa65f9778745",
+      "executable": false
+    },
+    "tests/saved-report-proof.mjs": {
+      "sha256": "539f8b2ff2163040a5a067410ca0886f789d2cc13c30c1bb45017b5082f432ef",
+      "executable": false
+    },
+    "tests/saved-reports.test.mjs": {
+      "sha256": "08655a3e1ea28dd65691728dcdc19df34474db8f73994cf7fa104e779208193b",
       "executable": false
     },
     "tests/scim.test.mjs": {

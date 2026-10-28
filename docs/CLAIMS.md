@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005`. Current candidate counts: 54 done, 24 partial, 35 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write REPORT-002`. Current candidate counts: 54 done, 24 partial, 35 missing; 113 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
