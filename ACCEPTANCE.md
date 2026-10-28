@@ -444,7 +444,7 @@ Core · target · **done** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-0
 
 #### MOBILE-001 — Responsive web requesting, approval and receiving
 
-Core · target · **done** · Cites BASE-ACCESSIBILITY-001, BASE-PUBLIC-003 · Register R-1, R-2
+Core · target · **done** · Cites BASE-PUBLIC-003, BASE-ACCESSIBILITY-001 · Register R-1, R-2
 
 **Requirement.** Requesting, approval status, approval and receiving work in the browser at phone width with readable records and no horizontal scroll.
 
@@ -1842,10 +1842,10 @@ Core · push-further · **done** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-A
 
 Agent surface · target · **missing** · From new · Cites BASE-AGENT-002, BASE-AGENT-006
 
-**Requirement.** Purse offers purchasing registry and native-action parity for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers purchasing registry and native-action parity for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
-1. The registry covers every Core clause in the tool and not-tool lists below, including split parts.
+1. The registry covers every Core clause in this area’s tool and not-tool lists, including split parts.
 2. A request draft, exact-revision decision, PO conversion, receipt, supplier invoice and ledger posting through their tools produce the same purchasing record and event type as their native actions.
 3. The registry exposes the declared input and output shape for each purchasing job and reports the native purchasing refusal code.
 
@@ -1856,7 +1856,7 @@ Agent surface · target · **missing** · From new · Cites BASE-AGENT-002, BASE
 
 Agent surface · target · **missing** · From new · Cites BASE-AGENT-003
 
-**Requirement.** Purse offers purchasing record resources for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers purchasing record resources for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. Resource templates cover requests and revisions, suppliers and their safe projections, catalogue items, POs, receipts, invoice evidence, agreements, budgets and agent runs.
@@ -1870,7 +1870,7 @@ Agent surface · target · **missing** · From new · Cites BASE-AGENT-003
 
 Agent surface · target · **missing** · From new · Cites BASE-AGENT-006
 
-**Requirement.** Purse offers internal work and external exposure classes for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers internal work and external exposure classes for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. Creating an internal reversible draft is standard with its item count; exposing its selected records to a supplier is external with recipient count and known, new or public counterparty.
@@ -1884,7 +1884,7 @@ Agent surface · target · **missing** · From new · Cites BASE-AGENT-006
 
 Agent surface · target · **missing** · From new · Cites BASE-AGENT-006
 
-**Requirement.** Purse offers money and binding purchasing decisions for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers money and binding purchasing decisions for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. A payment, card funding, changed charge or purchasing price carries money with exact amount, currency and counterparty.
@@ -1898,7 +1898,7 @@ Agent surface · target · **missing** · From new · Cites BASE-AGENT-006
 
 Agent surface · target · **missing** · From new · Cites BASE-AGENT-006, BASE-AGENT-008
 
-**Requirement.** Purse offers outside resources and provider-kept steps for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers outside resources and provider-kept steps for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. Creating an outside card, account or paid provider resource carries accounts with its provider.
@@ -1912,7 +1912,7 @@ Agent surface · target · **missing** · From new · Cites BASE-AGENT-006, BASE
 
 Agent surface · target · **missing** · From new · Cites BASE-AGENT-005, BASE-AGENT-006
 
-**Requirement.** Purse offers authority, protection and irreversible effects for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers authority, protection and irreversible effects for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. Membership, roles, buyer limits, integration grants or device changes carry access with affected people and widening or narrowing direction.
@@ -1927,7 +1927,7 @@ Agent surface · target · **missing** · From new · Cites BASE-AGENT-005, BASE
 
 Agent surface · target · **missing** · From new · Cites BASE-AGENT-007
 
-**Requirement.** Purse offers policy across procurement workflows for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers policy across procurement workflows for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. Run the request-to-order and invoice-exception jobs under an all-autonomous company policy and the held company policy, with classes computed from their current purchasing records.
@@ -1941,7 +1941,7 @@ Agent surface · target · **missing** · From new · Cites BASE-AGENT-007
 
 Agent surface · target · **missing** · From new · Cites BASE-AGENT-008
 
-**Requirement.** Purse offers purchasing decisions and attribution for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers purchasing decisions and attribution for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. An agent-created purchase, supplier message, invoice action and binding notice retain the agent as preparer or actor and the sponsoring person in records, activity, downloads and outside sender identity.
@@ -1954,7 +1954,7 @@ Agent surface · target · **missing** · From new · Cites BASE-AGENT-008
 
 Agent surface · target · **missing** · From new · Cites BASE-AGENT-009
 
-**Requirement.** Purse offers procurement activity by class for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers procurement activity by class for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. A seeded week’s requests, supplier contact, order issues, receipts, invoice reviews and ledger actions reconcile with the Agents view by computed class and policy decision.
@@ -1967,10 +1967,10 @@ Agent surface · target · **missing** · From new · Cites BASE-AGENT-009
 
 Agent surface · target · **missing** · From new · Cites BASE-AGENT-010
 
-**Requirement.** Purse offers procurement events and specialist handoffs for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers procurement events and specialist handoffs for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
-1. Request, approval, supplier, PO, receipt, invoice, payment-return, agreement and source-risk changes expose the event types listed below with their exact purchasing record links.
+1. Request, approval, supplier, PO, receipt, invoice, payment-return, agreement and source-risk changes expose this area’s listed event types with their exact purchasing record links.
 2. Pier replenishment and Linen asset needs arrive as request drafts; Pantry bill and payment events reconcile to their original Purse invoice.
 3. A late-order event reaches the procurement specialist with the PO evidence and a bill-created event can ask Chest for a missing W-9 without inventing purchasing authority.
 
@@ -1981,7 +1981,7 @@ Agent surface · target · **missing** · From new · Cites BASE-AGENT-010
 
 Agent surface · target · **missing** · From new · Cites BASE-AGENT-011
 
-**Requirement.** Purse offers purchasing capacity and company limits for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers purchasing capacity and company limits for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. An over-size purchasing attachment or response returns its declared capacity refusal without truncation.
@@ -1995,7 +1995,7 @@ Agent surface · target · **missing** · From new · Cites BASE-AGENT-011
 
 Agent surface · target · **missing** · From new · Cites BASE-AGENT-012
 
-**Requirement.** Purse offers once-only purchasing actions and conflicts for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers once-only purchasing actions and conflicts for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. Retry an order issue, receipt, supplier-invoice submission and ledger post after an interrupted response; each retains one native effect and its source lineage.
@@ -2008,7 +2008,7 @@ Agent surface · target · **missing** · From new · Cites BASE-AGENT-012
 
 Agent surface · target · **missing** · From new · Cites BASE-AGENT-001, BASE-AGENT-013 · Register R-7
 
-**Requirement.** Purse offers procurement specialist seeded week for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers procurement specialist seeded week for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. A stranger agent given only the installation URL creates a sourced request, obtains its applicable purchasing decision, issues and chases the PO, records a partial receipt, resolves an invoice exception, posts the approved bill and reads returned payment status through MCP.

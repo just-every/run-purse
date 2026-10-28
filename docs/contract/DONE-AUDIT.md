@@ -1,4 +1,5 @@
 Old reference: `307e18f93d730cd31c41d4fdacdb9c4f2dd1a842`.
+
 | Clause | Point | Outcome | Asserting test | Result |
 | --- | --- | --- | --- | --- |
 | PUR-001 | 1. | Configured receiver capabilities survive a native state read. | `tests/purse.test.mjs:7` | asserted |

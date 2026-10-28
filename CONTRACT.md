@@ -36,93 +36,49 @@ The primary journey: Request a purchase, approve its exact budgeted revision, se
 
 | Base duty | Duty | Delta clauses | Base journey |
 | --- | --- | --- | --- |
-
 | BASE-ACCESS-001 | Sign-in | none | not run |
-
 | BASE-ACCESS-002 | Sessions | PUR-001, PUR-013, PUR-017, ACCESS-001, ACCESS-005, ACCESS-002, INTAKE-009, INTAKE-002, INTAKE-003, INTAKE-004, MOBILE-002, SOURCE-001, STOCK-001, COMMENT-001, RECEIVE-001, SEARCH-001, SECURITY-001, AGENT-005 | not run |
-
 | BASE-ACCESS-003 | Public endpoints | none | not run |
-
 | BASE-ACCESS-004 | Server-side authorisation | PUR-001, PUR-013, PUR-017, ACCESS-001, ACCESS-005, ACCESS-002, INTAKE-009, INTAKE-002, INTAKE-003, INTAKE-004, MOBILE-002, SOURCE-001, STOCK-001, COMMENT-001, RECEIVE-001, SEARCH-001, SECURITY-001, AGENT-005 | not run |
-
 | BASE-INPUT-001 | Validation | PUR-009, PUR-013, PUR-014, INTAKE-001, INTAKE-007, SUPPLIER-001, SUPPLIER-003, SOURCE-002, CODING-002, PO-009, INVOICE-001, INVOICE-002, INVOICE-003, CONTRACT-001, API-001, SECURITY-001, SECURITY-003, SECURITY-004, AGENT-005, AGENT-010 | not run |
-
 | BASE-INPUT-002 | HTML | none | not run |
-
 | BASE-INPUT-003 | Uploads | PUR-003, PUR-004, PUR-013, ACCESS-005, ACCESS-003, INTAKE-001, INTAKE-009, INTAKE-010, INTAKE-004, INTAKE-006, INTAKE-007, INTAKE-008, SUPPLIER-003, SUPPLIER-004, SOURCE-001, SOURCE-002, CATALOG-001, PUNCHOUT-001, PUNCHOUT-002, APPROVAL-002, COMMENT-001, PO-001, PO-002, PO-004, PO-007, PO-009, PO-011, PO-012, INVOICE-001, INVOICE-002, INVOICE-003, MATCH-001, AP-001, AP-002, AP-003, SYNC-001, SYNC-002, SYNC-003, SYNC-004, SYNC-006, SYNC-007, REPORT-001, REPORT-002, CONTRACT-002, CONTRACT-003, SEARCH-001, IMPORT-001, IMPORT-003, SECURITY-004, ERASURE-001, AGENT-001, AGENT-002, AGENT-005, AGENT-006, AGENT-008 | not run |
-
 | BASE-SECRET-001 | No leakage | PUR-013, ACCESS-005, ACCESS-002, INTAKE-004, INTAKE-007, INTAKE-008, SUPPLIER-003, SOURCE-001, SOURCE-002, STOCK-001, INVOICE-002, INVOICE-003, AP-001, AP-002, SYNC-001, SYNC-002, SYNC-003, SYNC-004, SYNC-005, SYNC-006, SYNC-007, SYNC-008, REPORT-002, API-001, IMPORT-001, SECURITY-002, SECURITY-003, SECURITY-004, AGENT-004 | not run |
-
 | BASE-SECRET-002 | Startup | none | not run |
-
 | BASE-DATA-001 | Export and import | PUR-012, ACCESS-001, ACCESS-002, INTAKE-004, INTAKE-006, INTAKE-007, SUPPLIER-004, SOURCE-001, SOURCE-002, COMMENT-001, PO-002, PO-009, INVOICE-002, INVOICE-003, AP-001, AP-002, AP-003, SYNC-001, SYNC-002, SYNC-003, SYNC-004, SYNC-005, SYNC-006, SYNC-007, SYNC-008, REPORT-003, CONTRACT-001, SEARCH-001, IMPORT-001, IMPORT-002, SECURITY-002, SECURITY-003, SECURITY-004, ERASURE-001, AGENT-005, AGENT-006 | not run |
-
 | BASE-DATA-002 | Retention | none | not run |
-
 | BASE-DATA-003 | Erasure | ACCESS-005, ACCESS-002, INTAKE-004, INTAKE-006, INTAKE-007, INTAKE-008, SOURCE-001, COMMENT-001, PO-004, INVOICE-001, CONTRACT-001, IMPORT-001, AUDIT-001, SECURITY-003, ERASURE-001, AGENT-005, AGENT-006 | not run |
-
 | BASE-DATA-004 | Outbound flows | none | not run |
-
 | BASE-DATA-005 | Independence | PUR-015 | not run |
-
 | BASE-PUBLIC-001 | Privacy | none | not run |
-
-| BASE-PUBLIC-003 | Accessibility | none | not run |
-
+| BASE-PUBLIC-003 | Accessibility | MOBILE-001 | not run |
 | BASE-OPS-001 | Health | none | not run |
-
 | BASE-OPS-002 | Migrations | PUR-015 | not run |
-
 | BASE-OPS-003 | Idempotency | none | not run |
-
 | BASE-OPS-004 | Failure is visible | none | not run |
-
 | BASE-OPS-005 | Audit | none | not run |
-
 | BASE-ROLE-001 | Roles through every door | PUR-001, PUR-007, PUR-010, PUR-013, PUR-014, PUR-017, ACCESS-001, ACCESS-004, ACCESS-005, ACCESS-002, ACCESS-003, INTAKE-004, INTAKE-006, INTAKE-007, INTAKE-008, SUPPLIER-004, SOURCE-001, SOURCE-002, CATALOG-001, STOCK-001, CODING-002, APPROVAL-002, APPROVAL-004, COMMENT-001, BUDGET-001, PO-001, PO-003, PO-004, PO-014, PO-009, PO-012, RECEIVE-001, INVOICE-001, INVOICE-002, INVOICE-003, AP-003, SYNC-002, SYNC-004, REPORT-001, REPORT-002, REPORT-003, REPORT-004, CONTRACT-001, CONTRACT-002, API-001, SEARCH-001, IMPORT-001, IMPORT-003, AUDIT-001, SECURITY-001, SECURITY-003, AGENT-005, AGENT-006, AGENT-008, AGENT-010, AGENT-011 | not run |
-
 | BASE-AUDIT-001 | Searchable, durable audit | PUR-016, ACCESS-001, ACCESS-004, ACCESS-005, ACCESS-002, INTAKE-007, INTAKE-008, SUPPLIER-002, SUPPLIER-008, SOURCE-001, CODING-001, APPROVAL-001, APPROVAL-004, COMMENT-001, PO-001, PO-002, PO-010, PO-012, RECEIVE-001, INVOICE-001, INVOICE-002, INVOICE-003, AP-001, AP-002, AP-003, SYNC-001, SYNC-002, SYNC-003, SYNC-004, SYNC-005, SYNC-006, SYNC-007, SYNC-008, REPORT-004, SEARCH-001, AUDIT-001, SECURITY-001, SECURITY-002, SECURITY-004, ERASURE-001, AGENT-004, AGENT-005, AGENT-006, AGENT-008 | not run |
-
 | BASE-BACKUP-001 | Independent backup, restore and rollback | none | not run |
-
 | BASE-DATA-006 | Erasure respects retention and legal hold | ACCESS-005, ACCESS-002, INTAKE-004, INTAKE-006, INTAKE-007, INTAKE-008, SOURCE-001, COMMENT-001, PO-004, INVOICE-001, CONTRACT-001, IMPORT-001, AUDIT-001, SECURITY-003, ERASURE-001, AGENT-005, AGENT-006 | not run |
-
 | BASE-SIGNIN-001 | Standards-based SSO and lifecycle | ACCESS-005, ACCESS-002, APPROVAL-001, APPROVAL-004, AGENT-005 | not run |
-
 | BASE-SIGNIN-002 | Native multi-factor authentication | none | not run |
-
 | BASE-INSTALL-001 | Free self-host and removal | PUR-015 | not run |
-
 | BASE-MAIL-001 | Truthful mail outcomes | PUR-005, PUR-009, ACCESS-005, ACCESS-002, ACCESS-003, INTAKE-010, INTAKE-002, INTAKE-004, INTAKE-006, INTAKE-007, MOBILE-002, SUPPLIER-001, SUPPLIER-002, SUPPLIER-003, SUPPLIER-004, SUPPLIER-005, SUPPLIER-008, SOURCE-001, SOURCE-002, PUNCHOUT-001, PUNCHOUT-002, STOCK-001, CODING-002, APPROVAL-001, APPROVAL-002, APPROVAL-003, APPROVAL-004, COMMENT-001, PO-001, PO-002, PO-003, PO-004, PO-014, PO-006, PO-007, PO-008, PO-009, PO-010, PO-011, PO-012, RECEIVE-001, INVOICE-001, INVOICE-002, INVOICE-003, MATCH-001, AP-001, AP-002, AP-003, SYNC-006, REPORT-002, REPORT-003, CONTRACT-001, NOTIFY-001, API-001, IMPORT-002, IMPORT-003, AUDIT-001, SECURITY-001, ERASURE-001, AGENT-001, AGENT-002, AGENT-005, AGENT-006, AGENT-007, AGENT-010 | not run |
-
-| BASE-ACCESSIBILITY-001 | One accessibility bar | none | not run |
-
+| BASE-ACCESSIBILITY-001 | One accessibility bar | MOBILE-001 | not run |
 | BASE-DOCS-001 | On-site docs from one contract | none | not run |
-
 | BASE-AGENT-001 | One MCP door per seed | API-001, SURFACE-013 | not run |
-
 | BASE-AGENT-002 | The seed's jobs are tools, through the UI's own actions | PUR-014, INTAKE-006, INTAKE-007, INTAKE-008, SOURCE-001, COMMENT-001, INVOICE-004, REPORT-003, CONTRACT-001, IMPORT-001, SECURITY-001, SECURITY-003, ERASURE-001, AGENT-001, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006, AGENT-007, AGENT-008, AGENT-009, AGENT-010, AGENT-011, SURFACE-001 | not run |
-
 | BASE-AGENT-003 | Records are resources | SURFACE-002 | not run |
-
 | BASE-AGENT-004 | Business identity and short-lived, audience-bound tokens | none | not run |
-
 | BASE-AGENT-005 | An agent acts as a person in a role, never more | PUR-014, INTAKE-006, INTAKE-007, INTAKE-008, SOURCE-001, COMMENT-001, INVOICE-004, REPORT-003, CONTRACT-001, IMPORT-001, SECURITY-001, SECURITY-003, ERASURE-001, AGENT-001, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006, AGENT-007, AGENT-008, AGENT-009, AGENT-010, AGENT-011, SURFACE-006 | not run |
-
 | BASE-AGENT-006 | Every action declares its risk class | PUR-014, INTAKE-006, INTAKE-007, INTAKE-008, SOURCE-001, COMMENT-001, INVOICE-004, REPORT-003, CONTRACT-001, IMPORT-001, SECURITY-001, SECURITY-003, ERASURE-001, AGENT-001, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006, AGENT-007, AGENT-008, AGENT-009, AGENT-010, AGENT-011, SURFACE-001, SURFACE-003, SURFACE-004, SURFACE-005, SURFACE-006 | not run |
-
 | BASE-AGENT-007 | The company's policy decides, at one chokepoint | PUR-014, INTAKE-006, INTAKE-007, INTAKE-008, SOURCE-001, COMMENT-001, INVOICE-004, REPORT-003, CONTRACT-001, IMPORT-001, SECURITY-001, SECURITY-003, ERASURE-001, AGENT-001, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006, AGENT-007, AGENT-008, AGENT-009, AGENT-010, AGENT-011, SURFACE-007 | not run |
-
 | BASE-AGENT-008 | Truthful attribution | PUR-014, INTAKE-006, INTAKE-007, INTAKE-008, SOURCE-001, COMMENT-001, INVOICE-004, REPORT-003, CONTRACT-001, IMPORT-001, SECURITY-001, SECURITY-003, ERASURE-001, AGENT-001, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006, AGENT-007, AGENT-008, AGENT-009, AGENT-010, AGENT-011, SURFACE-005, SURFACE-008 | not run |
-
 | BASE-AGENT-009 | Every agent action is audited with its class and decision | SURFACE-009 | not run |
-
 | BASE-AGENT-010 | Agents can follow changes | SURFACE-010 | not run |
-
 | BASE-AGENT-011 | Limits are policy, and Pause stops everything | PUR-014, INTAKE-006, INTAKE-007, INTAKE-008, SOURCE-001, COMMENT-001, INVOICE-004, REPORT-003, CONTRACT-001, IMPORT-001, SECURITY-001, SECURITY-003, ERASURE-001, AGENT-001, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006, AGENT-007, AGENT-008, AGENT-009, AGENT-010, AGENT-011, SURFACE-011 | not run |
-
 | BASE-AGENT-012 | Writes are idempotent and conflict-safe | SURFACE-012 | not run |
-
 | BASE-AGENT-013 | Manifest, docs and the conformance journey | SURFACE-013 | not run |
 
 ## Published clauses
@@ -444,7 +400,7 @@ The primary journey: Request a purchase, approve its exact budgeted revision, se
 
 #### MOBILE-001 — Responsive web requesting, approval and receiving
 
-*Tier:* Core · *Register:* R-1, R-2 · *Cites:* BASE-ACCESSIBILITY-001, BASE-PUBLIC-003
+*Tier:* Core · *Cites:* BASE-PUBLIC-003, BASE-ACCESSIBILITY-001 · *Register:* R-1, R-2
 
 **Requirement.** Requesting, approval status, approval and receiving work in the browser at phone width with readable records and no horizontal scroll.
 
@@ -1466,234 +1422,122 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 - **sensitive:** regulated tax, bank or card data is touched; count records and name the data kind.
 
 | Tool | Does | Core clauses | Risk class | Today |
-
 | --- | --- | --- | --- | --- |
-
 | `purse.pur.manage_business_setup_and_scoped_capabilities` | Business setup and scoped capabilities | PUR-001 | standard or access | Planned MCP adapter; native evidence is in Status |
-
 | `purse.pur.manage_supplier_register_with_blocking` | Supplier register with blocking | PUR-002 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.pur.manage_approved_catalog_prices` | Approved catalog prices | PUR-003 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.pur.manage_durable_exact_request_revisions` | Durable exact request revisions | PUR-004 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.pur.manage_quotation_comparison` | Quotation comparison | PUR-005 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.pur.manage_exact_revision_policy_and_concurrent_budgets` | Exact-revision policy and concurrent budgets | PUR-006 | money · commitment | Planned MCP adapter; native evidence is in Status |
-
 | `purse.pur.manage_decisions_and_scoped_delegation` | Decisions and scoped delegation | PUR-007 | standard or money (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.pur.manage_approved_lines_become_numbered_pos_once` | Approved lines become numbered POs once | PUR-008 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.pur.manage_issuance_and_amendments_under_renewed_authority` | Issuance and amendments under renewed authority | PUR-009 | money · commitment | Planned MCP adapter; native evidence is in Status |
-
 | `purse.pur.manage_receiving_returns_and_commitments` | Receiving, returns and commitments | PUR-010 | standard or money | Planned MCP adapter; native evidence is in Status |
-
 | `purse.pur.manage_invoice_evidence_discrepancies_and_accounting_csv` | Invoice evidence, discrepancies and accounting CSV | PUR-011 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.pur.manage_commitments_overdue_and_renewals_visible_complete_restore` | Commitments, overdue and renewals visible; complete restore | PUR-012 | security · destructive | Planned MCP adapter; native evidence is in Status |
-
 | `purse.pur.manage_governed_human_preparation_and_proposed_actions` | Governed human preparation and proposed actions | PUR-014 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.access.manage_procurement_roles_and_buyer_limits` | Procurement roles and buyer limits | ACCESS-001 | access (+ security) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.access.manage_scoped_procurement_reports_and_cash_access` | Scoped procurement reports and cash access | ACCESS-004 | standard or access | Planned MCP adapter; native evidence is in Status |
-
 | `purse.access.manage_scoped_procurement_sources_and_protected_fields` | Scoped procurement sources and protected fields | ACCESS-005 | standard or external (+ access) (+ security) (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.access.manage_single_sign_on_and_provisioning` | Single sign-on and provisioning | ACCESS-002 | access · security (+ external) (+ accounts) (+ gated) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.access.manage_multiple_entities_and_subsidiaries` | Multiple entities and subsidiaries | ACCESS-003 | access (+ security) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.intake.manage_guided_intake_forms_and_supplier_proposals` | Guided intake forms and supplier proposals | INTAKE-001 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.intake.manage_private_unfinished_request_drafts` | Private unfinished request drafts | INTAKE-009 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.intake.manage_request_again_from_a_previous_purchase` | Request again from a previous purchase | INTAKE-010 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.intake.manage_email_intake` | Email intake | INTAKE-004 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.intake.manage_cross_team_review_orchestration` | Cross-team review orchestration | INTAKE-005 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.intake.manage_travel_pre_approval_requests` | Travel pre-approval requests | INTAKE-006 | standard or money (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.intake.manage_integration_purchase_request_tokens` | Integration purchase-request tokens | INTAKE-007 | access · security | Planned MCP adapter; native evidence is in Status |
-
 | `purse.intake.manage_read_only_po_data_integration_tokens` | Read-only PO-data integration tokens | INTAKE-008 | access · security | Planned MCP adapter; native evidence is in Status |
-
 | `purse.supplier.manage_self_service_supplier_onboarding` | Self-service supplier onboarding | SUPPLIER-001 | standard or external (+ sensitive) (+ money) (+ security) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.supplier.manage_bank_detail_change_controls` | Bank-detail change controls | SUPPLIER-002 | standard or external (+ sensitive) (+ money) (+ security) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.supplier.manage_duplicate_supplier_detection` | Duplicate supplier detection | SUPPLIER-003 | standard or external (+ sensitive) (+ money) (+ security) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.supplier.manage_document_expiry_compliance_refresh_and_renewal_reminders` | Document expiry, compliance refresh and renewal reminders | SUPPLIER-004 | standard or external (+ sensitive) (+ money) (+ security) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.supplier.manage_supplier_performance_and_issues` | Supplier performance and issues | SUPPLIER-005 | standard or external (+ sensitive) (+ money) (+ security) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.supplier.manage_1099_readiness` | 1099 readiness | SUPPLIER-006 | standard or external (+ sensitive) (+ money) (+ security) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.supplier.manage_restricted_party_screening` | Restricted-party screening | SUPPLIER-007 | standard or external (+ sensitive) (+ money) (+ security) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.supplier.manage_new_supplier_requests_and_vendor_approval` | New-supplier requests and vendor approval | SUPPLIER-008 | standard or external (+ sensitive) (+ money) (+ security) | Planned MCP adapter; native evidence is in Status |
 | `purse.supplier.manage_vendor_routing_from_import_and_ledger_sources` | Vendor routing from import and ledger sources | SUPPLIER-009 | standard or external (+ sensitive) (+ money) (+ security) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.source.manage_rfq_invitations_and_supplier_responses` | RFQ invitations and supplier responses | SOURCE-001 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.source.manage_quote_document_processing` | Quote document processing | SOURCE-002 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.catalog.manage_catalog_items_bundles_and_access` | Catalog items, bundles and access | CATALOG-001 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.stock.manage_stockroom_consumables` | Stockroom consumables | STOCK-001 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.coding.manage_split_allocations_across_codings` | Split allocations across codings | CODING-001 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.coding.manage_custom_header_and_line_fields` | Custom header and line fields | CODING-002 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.approval.manage_multi_step_conditional_approval_chains` | Multi-step conditional approval chains | APPROVAL-001 | money · commitment | Planned MCP adapter; native evidence is in Status |
-
 | `purse.approval.manage_approval_reminders_escalation_and_out_of_office` | Approval reminders, escalation and out-of-office | APPROVAL-002 | money · commitment | Planned MCP adapter; native evidence is in Status |
-
 | `purse.approval.manage_approve_from_any_channel` | Approve from any channel | APPROVAL-003 | money · commitment | Planned MCP adapter; native evidence is in Status |
-
 | `purse.approval.manage_approver_edits_on_a_pending_request` | Approver edits on a pending request | APPROVAL-004 | money · commitment | Planned MCP adapter; native evidence is in Status |
-
 | `purse.comment.manage_internal_comments_and_mentions` | Internal comments and @mentions | COMMENT-001 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.budget.manage_budgets_and_live_budget_position` | Budgets and live budget position | BUDGET-001 | standard or money | Planned MCP adapter; native evidence is in Status |
-
 | `purse.budget.manage_budget_import_and_ownership` | Budget import and ownership | BUDGET-002 | standard or money | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_pos_sent_to_suppliers_and_acknowledged` | POs sent to suppliers and acknowledged | PO-001 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_supplier_messaging_on_the_po` | Supplier messaging on the PO | PO-002 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_overdue_acknowledgment_and_delivery_chasing` | Overdue acknowledgment and delivery chasing | PO-003 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_change_orders_and_cancellations_sent` | Change orders and cancellations sent | PO-004 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_blanket_purchase_orders_and_releases` | Blanket purchase orders and releases | PO-005 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_service_receiving_by_value` | Service receiving by value | PO-013 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_recurring_order_generation_and_renewal_checks` | Recurring order generation and renewal checks | PO-014 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_shipment_tracking` | Shipment tracking | PO-006 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_us_sales_and_use_tax_on_purchases` | US sales and use tax on purchases | PO-007 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_automatic_po_creation_and_sending_after_approval` | Automatic PO creation and sending after approval | PO-008 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_po_document_content_labels_and_terms` | PO document content, labels and terms | PO-009 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_manual_po_close_and_reopen` | Manual PO close and reopen | PO-010 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_deposit_terms_and_two_way_payment_handoff` | Deposit terms and two-way payment handoff | PO-011 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
 | `purse.po.manage_deposit_credits_and_remaining_liabilities` | Deposit credits and remaining liabilities | PO-015 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
 | `purse.po.manage_frozen_deposit_documents_and_supplier_links` | Frozen deposit documents and supplier links | PO-016 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.po.manage_buyer_conversion_edits_within_variance_limits` | Buyer conversion edits within variance limits | PO-012 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
 | `purse.po.manage_issued_line_need_date_changes` | Issued line need-date changes | PO-017 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
 | `purse.po.manage_invoice_balance_after_buyer_conversion_edits` | Invoice balance after buyer conversion edits | PO-018 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.receive.manage_receiver_prompts_and_invoice_holds` | Receiver prompts and invoice holds | RECEIVE-001 | standard or money | Planned MCP adapter; native evidence is in Status |
-
 | `purse.receive.manage_credit_memos_rmas_and_supplier_balances` | Credit memos, RMAs and supplier balances | RECEIVE-002 | standard or money | Planned MCP adapter; native evidence is in Status |
-
 | `purse.invoice.manage_supplier_invoice_email_inbox` | Supplier invoice email inbox | INVOICE-001 | standard or external (+ sensitive) (+ money) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.invoice.manage_invoice_reading_with_confidence` | Invoice reading with confidence | INVOICE-002 | standard or external (+ sensitive) (+ money) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.invoice.manage_duplicate_and_fraud_checks` | Duplicate and fraud checks | INVOICE-003 | standard or external (+ sensitive) (+ money) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.match.manage_automatic_two_and_three_way_matching_with_tolerances` | Automatic two- and three-way matching with tolerances | MATCH-001 | standard or money (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.match.manage_exception_queue_and_resolution` | Exception queue and resolution | MATCH-002 | standard or money (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.invoice.manage_non_po_invoices_and_invoice_approval` | Non-PO invoices and invoice approval | INVOICE-004 | standard or external (+ sensitive) (+ money) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.invoice.manage_supplier_invoice_submission_from_the_po_po_flip` | Supplier invoice submission from the PO (PO flip) | INVOICE-005 | standard or external (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.ap.manage_bill_handoff` | BILL handoff | AP-001 | money (+ external) (+ gated) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.ap.manage_ledger_and_ach_payment_handoff` | Ledger and ACH payment handoff | AP-002 | money (+ external) (+ gated) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.ap.manage_terms_due_dates_and_cash_requirements` | Terms, due dates and cash requirements | AP-003 | money (+ external) (+ gated) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.card.manage_card_funding_for_approved_purchases` | Card funding for approved purchases | CARD-001 | money (+ external) (+ accounts) (+ gated) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.card.manage_card_transaction_reconciliation_closes_the_purchase` | Card transaction reconciliation closes the purchase | CARD-002 | money (+ external) (+ accounts) (+ gated) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.sync.manage_quickbooks_online` | QuickBooks Online | SYNC-001 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.sync.manage_xero` | Xero | SYNC-002 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.sync.manage_netsuite` | NetSuite | SYNC-003 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.sync.manage_pantry` | Pantry | SYNC-004 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.sync.manage_sync_status_errors_and_tie_out` | Sync status, errors and tie-out | SYNC-005 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.sync.manage_sage_intacct` | Sage Intacct | SYNC-006 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.sync.manage_microsoft_dynamics_365_business_central` | Microsoft Dynamics 365 Business Central | SYNC-007 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.sync.manage_quickbooks_desktop` | QuickBooks Desktop | SYNC-008 | standard or external (+ money) (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.report.manage_spend_and_committed_budget_dashboards` | Spend and committed-budget dashboards | REPORT-001 | standard or external | Planned MCP adapter; native evidence is in Status |
-
 | `purse.report.manage_saved_scheduled_and_exported_reports` | Saved, scheduled and exported reports | REPORT-002 | standard or external | Planned MCP adapter; native evidence is in Status |
-
 | `purse.report.manage_procurement_performance_measures` | Procurement performance measures | REPORT-003 | standard or external | Planned MCP adapter; native evidence is in Status |
-
 | `purse.report.manage_month_end_received_not_billed_accruals` | Month-end received-not-billed accruals | REPORT-004 | standard or external | Planned MCP adapter; native evidence is in Status |
-
 | `purse.contract.manage_agreement_terms_and_renewal_reminders` | Agreement terms and renewal reminders | CONTRACT-001 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.contract.manage_agreement_reading_and_source_confirmation` | Agreement reading and source confirmation | CONTRACT-002 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.contract.manage_agreement_awards_and_source_backed_savings` | Agreement awards and source-backed savings | CONTRACT-003 | standard or external (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.notify.manage_notifications_and_preferences` | Notifications and preferences | NOTIFY-001 | standard or external | Planned MCP adapter; native evidence is in Status |
-
 | `purse.api.manage_public_api_webhooks_and_automation` | Public API, webhooks and automation | API-001 | standard or access (+ security) (+ external) (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.search.manage_search_across_purchasing_records` | Search across purchasing records | SEARCH-001 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.import.manage_adopting_open_pos_without_re_sending` | Adopting open POs without re-sending | IMPORT-003 | standard or money | Planned MCP adapter; native evidence is in Status |
-
 | `purse.audit.manage_audit_log_and_approval_evidence` | Audit log and approval evidence | AUDIT-001 | standard | Planned MCP adapter; native evidence is in Status |
-
 | `purse.security.manage_protected_supplier_storage_and_role_projections` | Protected supplier storage and role projections | SECURITY-001 | security (+ sensitive) (+ destructive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.security.manage_credential_custody_and_encryption_key_rotation` | Credential custody and encryption-key rotation | SECURITY-002 | security (+ sensitive) (+ destructive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.security.manage_protected_data_export_and_restore` | Protected-data export and restore | SECURITY-003 | security (+ sensitive) (+ destructive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.security.manage_legacy_invoice_evidence_verification` | Legacy invoice-evidence verification | SECURITY-004 | security (+ sensitive) (+ destructive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.erasure.manage_personal_data_erasure_with_financial_retention` | Personal data erasure with financial retention | ERASURE-001 | destructive (+ sensitive) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.agent.manage_requirements_intake_agent` | Requirements intake agent | AGENT-001 | standard or external (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.agent.manage_quote_collection_and_normalization_agent` | Quote collection and normalization agent | AGENT-002 | standard or external (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.agent.manage_late_order_resolution_agent` | Late-order resolution agent | AGENT-003 | standard or external (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.agent.manage_invoice_exception_agent` | Invoice exception agent | AGENT-004 | standard or external (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.agent.manage_value_realization_tracking` | Value realization tracking | AGENT-005 | standard or external (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.agent.manage_recurring_spend_consolidation_renegotiation_and_cancellation_proposals` | Recurring-spend consolidation, renegotiation and cancellation proposals | AGENT-006 | standard or external (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.agent.manage_supplier_onboarding_and_compliance_agent` | Supplier onboarding and compliance agent | AGENT-007 | standard or external (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.agent.manage_coding_and_policy_agent` | Coding and policy agent | AGENT-008 | standard or external (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.agent.manage_price_benchmark_and_negotiation_brief` | Price benchmark and negotiation brief | AGENT-009 | standard or external (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.agent.manage_agent_governance` | Agent governance | AGENT-010 | standard or external (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
-
 | `purse.agent.manage_spend_questions_in_plain_language` | Spend questions in plain language | AGENT-011 | standard or external (+ sensitive) (+ money) (+ commitment) | Planned MCP adapter; native evidence is in Status |
 
 **Resources.** `purse://requests/{id}/revisions/{revision}`, `purse://suppliers/{id}`, `purse://catalogue/{id}`, `purse://orders/{id}`, `purse://receipts/{id}`, `purse://invoices/{id}`, `purse://agreements/{id}`, `purse://budgets/{id}`, `purse://runs/{id}`.
@@ -1712,10 +1556,10 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 *Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-002, BASE-AGENT-006
 
-**Requirement.** Purse offers purchasing registry and native-action parity for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers purchasing registry and native-action parity for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
-1. The registry covers every Core clause in the tool and not-tool lists below, including split parts.
+1. The registry covers every Core clause in this area’s tool and not-tool lists, including split parts.
 2. A request draft, exact-revision decision, PO conversion, receipt, supplier invoice and ledger posting through their tools produce the same purchasing record and event type as their native actions.
 3. The registry exposes the declared input and output shape for each purchasing job and reports the native purchasing refusal code.
 
@@ -1723,7 +1567,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 *Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-003
 
-**Requirement.** Purse offers purchasing record resources for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers purchasing record resources for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. Resource templates cover requests and revisions, suppliers and their safe projections, catalogue items, POs, receipts, invoice evidence, agreements, budgets and agent runs.
@@ -1734,7 +1578,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 *Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-006
 
-**Requirement.** Purse offers internal work and external exposure classes for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers internal work and external exposure classes for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. Creating an internal reversible draft is standard with its item count; exposing its selected records to a supplier is external with recipient count and known, new or public counterparty.
@@ -1745,7 +1589,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 *Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-006
 
-**Requirement.** Purse offers money and binding purchasing decisions for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers money and binding purchasing decisions for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. A payment, card funding, changed charge or purchasing price carries money with exact amount, currency and counterparty.
@@ -1756,7 +1600,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 *Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-006, BASE-AGENT-008
 
-**Requirement.** Purse offers outside resources and provider-kept steps for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers outside resources and provider-kept steps for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. Creating an outside card, account or paid provider resource carries accounts with its provider.
@@ -1767,7 +1611,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 *Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-005, BASE-AGENT-006
 
-**Requirement.** Purse offers authority, protection and irreversible effects for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers authority, protection and irreversible effects for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. Membership, roles, buyer limits, integration grants or device changes carry access with affected people and widening or narrowing direction.
@@ -1779,7 +1623,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 *Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-007
 
-**Requirement.** Purse offers policy across procurement workflows for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers policy across procurement workflows for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. Run the request-to-order and invoice-exception jobs under an all-autonomous company policy and the held company policy, with classes computed from their current purchasing records.
@@ -1790,7 +1634,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 *Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-008
 
-**Requirement.** Purse offers purchasing decisions and attribution for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers purchasing decisions and attribution for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. An agent-created purchase, supplier message, invoice action and binding notice retain the agent as preparer or actor and the sponsoring person in records, activity, downloads and outside sender identity.
@@ -1800,7 +1644,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 *Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-009
 
-**Requirement.** Purse offers procurement activity by class for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers procurement activity by class for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. A seeded week’s requests, supplier contact, order issues, receipts, invoice reviews and ledger actions reconcile with the Agents view by computed class and policy decision.
@@ -1810,10 +1654,10 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 *Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-010
 
-**Requirement.** Purse offers procurement events and specialist handoffs for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers procurement events and specialist handoffs for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
-1. Request, approval, supplier, PO, receipt, invoice, payment-return, agreement and source-risk changes expose the event types listed below with their exact purchasing record links.
+1. Request, approval, supplier, PO, receipt, invoice, payment-return, agreement and source-risk changes expose this area’s listed event types with their exact purchasing record links.
 2. Pier replenishment and Linen asset needs arrive as request drafts; Pantry bill and payment events reconcile to their original Purse invoice.
 3. A late-order event reaches the procurement specialist with the PO evidence and a bill-created event can ask Chest for a missing W-9 without inventing purchasing authority.
 
@@ -1821,7 +1665,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 *Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-011
 
-**Requirement.** Purse offers purchasing capacity and company limits for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers purchasing capacity and company limits for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. An over-size purchasing attachment or response returns its declared capacity refusal without truncation.
@@ -1832,7 +1676,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 *Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-012
 
-**Requirement.** Purse offers once-only purchasing actions and conflicts for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers once-only purchasing actions and conflicts for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. Retry an order issue, receipt, supplier-invoice submission and ledger post after an interrupted response; each retains one native effect and its source lineage.
@@ -1842,7 +1686,7 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company’s policy decides every 
 
 *Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-001, BASE-AGENT-013 · *Register:* R-7
 
-**Requirement.** Purse offers procurement specialist seeded week for its procurement specialist, using the purchasing records and jobs below.
+**Requirement.** Purse offers procurement specialist seeded week for its procurement specialist, using the purchasing records and jobs in this area.
 
 **Acceptance.**
 1. A stranger agent given only the installation URL creates a sourced request, obtains its applicable purchasing decision, issues and chases the PO, records a partial receipt, resolves an invoice exception, posts the approved bill and reads returned payment status through MCP.
