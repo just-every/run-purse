@@ -8,7 +8,7 @@ import { all, audit, date, get, put, requireThat, text, type Actor, type Data, t
 
 /** A native approval and date instruction never claims that a provider moved funds. */
 export function supplierInvoiceMatched(s: State, invoice: Data): boolean {
-    if (!invoice.supplierSubmission || invoice.sourceConfirmation !== 'confirmed' || invoice.sourceValuesErased || invoice.erasure || invoice.exception || openInvoiceFlags(invoice).length) return false;
+    if (!invoice.supplierSubmission || invoice.sourceConfirmation !== 'confirmed' || invoice.sourceValuesErased || invoice.erasure || invoice.exception || invoice.disputed || openInvoiceFlags(invoice).length) return false;
     const source = get(s, 'supplierInvoiceSubmission', invoice.supplierSubmission);
     const attachment = all(s, 'attachment').find(file => file.record === source.source && file.sha256 === invoice.document?.sha256 && file.base64 && !file.erasure && !file.erased);
     const order = get(s, 'order', invoice.order), subtotal = order.lines.reduce((sum: number, line: Data) => sum + line.totalMinor, 0);
