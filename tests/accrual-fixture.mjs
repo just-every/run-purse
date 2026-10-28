@@ -29,14 +29,17 @@ export async function accrualFixture() {
             const body={revision:1,consent:true,reference,invoiceDate,freightAmount:'0.00',taxAmount:'0.00',lines:[{line:order.lines[0].id,quantity,unitAmount}],document};
             const response=await supplierPost('/invoices',body);assert.equal(response.status,200,await response.clone().text());
             let invoice=(await h.state(h.owner)).data.invoice.find(invoice=>invoice.reference===reference);
-            if(approve) {
-                await cmd('supplier-invoice-rule',{order:order.id,revision:1,version:0,enabled:true,consent:true,reason:'Approve genuine exact matches after AP source confirmation'});
+            async function confirm() {
                 const instructions=await cmd('invoice-reading-instructions',{source:invoice.supplierSource});const field=value=>({value,confidence:value===null?0:1,page:value===null?null:1,excerpt:value});
                 const reading=await cmd('invoice-reading-propose',{source:instructions.source,reader:{provider:'synthetic-purse-4710',model:'synthetic-purse-4711',runReference:'synthetic-purse-4712'},fields:{...Object.fromEntries(Object.entries(values).map(([key,value])=>[key,field(value)])),lines:[{description:field(order.lines[0].description),quantity:field(quantity),unitAmount:field(unitAmount),amount:field(amount)}]}});
                 await cmd('invoice-reading-confirm',{id:reading.id,version:1,reviewed:true,reason:'AP verifies exact source',lines:[{id:reading.lines[0].id,orderLine:order.lines[0].id}]});
-                invoice=(await h.state(h.owner)).data.invoice.find(row=>row.id===invoice.id);assert.equal(invoice.paymentApproval?.amountMinor,Number(amount)*100);
+                invoice=(await h.state(h.owner)).data.invoice.find(row=>row.id===invoice.id);return invoice;
             }
-            return {invoice,body,replay:()=>supplierPost('/invoices',body)};
+            if(approve) {
+                await cmd('supplier-invoice-rule',{order:order.id,revision:1,version:0,enabled:true,consent:true,reason:'Approve genuine exact matches after AP source confirmation'});
+                await confirm();assert.equal(invoice.paymentApproval?.amountMinor,Number(amount)*100);
+            }
+            return {invoice,body,confirm,replay:()=>supplierPost('/invoices',body)};
         }
         const report=async(cutoff,cookie=people.finance,filters={})=>{const result=await h.send('/api/purse/accrual-report/view?'+new URLSearchParams({cutoff,...filters}),undefined,cookie);assert.equal(result.status,200,JSON.stringify(result.value));return result.value;};
         async function signIn(email) {

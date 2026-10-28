@@ -76,6 +76,10 @@ test('Native period-end accrual reconciles dated goods and services, genuine app
     assert.equal(mainRow(await f.report('2026-07-31'),f.order).billedMinor,0,'A current matching exception holds a historical approval');
     await f.receive(f.order,'2','2026-07-02');
     assert.equal(mainRow(await f.report('2026-07-31'),f.order).accrualMinor,20000);
+    await cmd('invoice-dispute',{invoice:timeline.pending.invoice.id,version:0,disputed:true,reason:'Pending supplier quantities are disputed'});
+    const confirmedDispute=await timeline.pending.confirm();
+    assert.equal(confirmedDispute.sourceConfirmation,'confirmed');assert.equal(confirmedDispute.paymentApproval,undefined,'AP source confirmation cannot auto-approve a disputed invoice');
+    assert.equal(mainRow(await f.report('2026-07-31'),f.order).accrualMinor,20000);
     const audit=await h.send('/api/purse/audit?subject='+bill.id,undefined,h.owner),auditCsv=await h.send('/api/purse/audit.csv?subject='+bill.id,undefined,h.owner);
     assert.equal(audit.status,200);assert.equal(auditCsv.status,200);
     assert.deepEqual(audit.value.events.filter(event=>event.action==='invoice-dispute').sort((a,b)=>a.version-b.version).map(event=>event.disputed),[true,false]);

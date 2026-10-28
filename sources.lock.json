@@ -4568,7 +4568,7 @@
       "executable": false
     },
     "tests/accrual-fixture.mjs": {
-      "sha256": "c0af1d8ee0da1e3f66c86bdf265c063865d3bb8f4ddb9583abce0fde414f4e25",
+      "sha256": "08b074b76c738e14488790398bfe9f6ec065982ba421d0857af062293b06060a",
       "executable": false
     },
     "tests/accrual-proof.mjs": {
@@ -4576,7 +4576,7 @@
       "executable": false
     },
     "tests/accrual-report.test.mjs": {
-      "sha256": "13bb7fa224d169e2b7db688c381445b5c60caad2e0a807a03034d3afa02226af",
+      "sha256": "c30f1de3bd18db34cf2f7970f1c68cf2ca182fb9ad4ea9dad0e3276c32d07b98",
       "executable": false
     },
     "tests/accrual-worker.ts": {
