@@ -1,3 +1,4 @@
+import { invoiceCreditApplied } from './invoices';
 import { createHash } from 'node:crypto';
 import { discrepancies } from './orders';
 import { openInvoiceFlags } from './invoice-status';
@@ -7,6 +8,7 @@ export const pantryFingerprint = (value: Data) => createHash('sha256').update(JS
 export function pantryPlan(state: State, input: Data, connection: Data) {
     const invoice = get(state, 'invoice', input.invoice), order = get(state, 'order', invoice.order);
     const supplier = get(state, 'supplier', order.supplier), payable = get(state, 'payable', invoice.id);
+    requireThat(invoiceCreditApplied(state, invoice.id) === 0, 'Native credit applications need ledger credit transport before syncing this bill',409);
     requireThat(invoice.currency === connection.currency, 'Invoice currency must match the owner-confirmed Pantry book currency', 409);
     requireThat(payable.approvedAt && payable.version === input.payableVersion && payable.approvedMinor === invoice.totalMinor, 'Current cash-planning approval and version required', 409);
     requireThat(!invoice.imported && !invoice.depositAppliedMinor, 'Imported and deposit bills need their own ledger identity and prepaid reconciliation before sync', 409);

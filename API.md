@@ -1043,3 +1043,40 @@ version is zero. Each changed decision retains its reason, actor and time in
 invoice history and the audit export. A dispute holds both genuine bill
 approval and cash-planning approval and excludes a historical approval from
 accrual reduction until resolved; resolution itself never grants approval.
+
+## Native supplier credits
+
+The native command door accepts `rma-prepare` with `{receipt,reason}` for a
+recorded return or rejection on an issued native PO. Current scoped procurement
+management prepares at most one RMA per receipt. `rma-record` takes
+`{id,version,status,reference,reason}` to record a human-observed authorized,
+declined or closed outcome. These records send no supplier request or message. `service-receipt` also
+accepts `{order,line,receiptVersion,event:'reject',valueAmount,reason}` for
+outstanding service value, without accepting it or releasing its commitment.
+
+`supplier-credit-capture` takes `{rma,reference,creditDate,currency,amount,
+source,document}` under current invoice capture and read scope. The actual
+original uses `{name,mediaType,base64}`, up to 1 MB. Capture retains immutable
+facts and a private original; it creates no usable credit yet. Repeating the
+exact source is inert. Conflicting supplier references or reused original bytes
+are refused. `supplier-credit-review` takes `{id,version,sourceHash,consent:true,
+reason}` under invoice review scope, after a person checks the exact original
+against all retained facts. Human review does not authenticate a provider.
+
+`supplier-credit-apply` takes `{credit,version,invoice,invoiceVersion,amount,
+reason}` under current payable approval and invoice read scope on both sources.
+Use the credit version and the invoice `creditVersion` from current state.
+An open reviewed credit applies once to each later bill, in the same supplier
+and currency, within both remaining amounts. Stale state, withdrawn evidence,
+unresolved matching or risk holds and unapproved planning terms refuse the
+application. Synced, imported, paid and deposit bills require their separate
+qualification. Bills with native credit applications cannot post to Pantry
+until ledger credit transport exists.
+
+Applications are append-only financial evidence. Gross invoice amounts, original
+bytes, commitment events and payment status stay intact. Native cash-plan due
+subtracts applications once, and supplier balances remain separated by currency
+and limited to the reader's current scope. Archives retain validated RMA,
+credit, application and audit history without restoring sessions or grants.
+Reviewed erasure withdraws affected originals, preserves anonymous financial
+amounts and refuses new applications or capture replays from erased evidence.

@@ -17,10 +17,11 @@ export function validatePoKinds(all,get,check,same) {
   const milestones=new Set(line.carriedMilestones??[]);
   const receipts=all('receipt').filter(r=>r.order===order.id&&r.line===line.id).sort((a,b)=>a.serviceSequence-b.serviceSequence);
   for(const [index,r]of receipts.entries()){
-   check(r.serviceSequence===index+1&&r.mode===line.service.mode&&money(r.valueMinor)&&r.valueMinor>0&&['receive','return'].includes(r.event),'service_receipt');
+   check(r.serviceSequence===index+1&&r.mode===line.service.mode&&money(r.valueMinor)&&r.valueMinor>0&&['receive','return','reject'].includes(r.event),'service_receipt');
    const q=Math.max(1,Number((BigInt(r.valueMinor)*BigInt(line.q)+BigInt(line.totalMinor)/2n)/BigInt(line.totalMinor)));
    check(q===r.q,'service_receipt_quantity');
-   if(r.event==='return')check(r.valueMinor<=accepted&&r.mode!=='milestone','service_return');
+   if(r.event==='reject')check(r.valueMinor<=line.totalMinor-accepted-(line.carriedCancelledMinor??0),'service_rejection');
+   else if(r.event==='return')check(r.valueMinor<=accepted&&r.mode!=='milestone','service_return');
    else if(r.mode==='percentage'){
     check(typeof r.percentage==='string'&&/^(?:100(?:\.0{1,2})?|\d{1,2}(?:\.\d{1,2})?)$/.test(r.percentage),'service_percentage');
     check(Number((BigInt(line.totalMinor)*BigInt(Math.round(Number(r.percentage)*100))+5000n)/10000n)===accepted+r.valueMinor,'service_percentage_value');
@@ -28,7 +29,7 @@ export function validatePoKinds(all,get,check,same) {
     const m=line.service.milestones.find(m=>m.id===r.milestone);
     check(m&&!milestones.has(m.id)&&m.valueMinor===r.valueMinor,'service_milestone_receipt');milestones.add(m.id);
    }
-   accepted+=r.event==='return'?-r.valueMinor:r.valueMinor;check(accepted>=0&&accepted<=line.totalMinor-(line.carriedCancelledMinor??0),'service_receipt_value');
+   accepted+=r.event==='return'?-r.valueMinor:r.event==='receive'?r.valueMinor:0;check(accepted>=0&&accepted<=line.totalMinor-(line.carriedCancelledMinor??0),'service_receipt_value');
   }
   const revision=get('revision',order.request+':'+order.revision);
   if(revision.amends){

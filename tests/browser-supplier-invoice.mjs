@@ -68,7 +68,11 @@ export async function supplierInvoiceJourney(browser, bundle, width, evidence) {
         const secondSubmission = supplier.waitForResponse(response => response.url() === link.href + '/invoices' && response.request().method() === 'POST'); await supplier.getByRole('button', { name: 'Submit invoice', exact: true }).click(); const secondResponse = await secondSubmission; assert.equal(secondResponse.status(), 200, await secondResponse.text()); await supplier.getByRole('link', { name: 'View your submissions and remaining quantity', exact: true }).click();
         await supplier.getByRole('heading', { name: 'synthetic-purse-4553', exact: true }).waitFor(); await supplier.screenshot({ path: join(evidence, `INVOICE-005-own-status-${width}.png`), fullPage: true });
         const excess = (await h.state()).data.invoice.find(value => value.reference === 'synthetic-purse-4553'); assert.ok(excess.flags.some(flag => flag.code === 'po-balance')); assert.ok(excess.flags.some(flag => flag.code === 'duplicate-document')); assert.equal(excess.allocations[0].q, 1000);
-        assert.equal(await supplier.getByText(/duplicate-document|riskReviews|approved automatically|scheduled|paid/i).count(), 0);
+        assert.equal(await supplier.getByText(/duplicate-document|riskReviews|approved automatically/i).count(), 0);
+        const heldStatus = supplier.getByRole('heading', { name: 'synthetic-purse-4553', exact: true }).locator('..');
+        await heldStatus.getByText(/ · received$/).waitFor();
+        assert.equal(await heldStatus.getByText(/scheduled|paid/i).count(), 0, 'The held overbill never claims a scheduled or paid status');
+        await supplier.getByRole('heading', { name: 'synthetic-purse-4552', exact: true }).locator('..').getByText(/ · scheduled$/).waitFor();
         assert.equal((await h.send('/api/purse/command/supplier-invoice-schedule',{invoice:excess.id,version:0,date:'2026-11-20',reason:'Cannot schedule held excess'},f.buyer)).status,409);
         await ownerPage.reload();await rules.screenshot({path:join(evidence,`INVOICE-005-native-instruction-${width}.png`)});
         for (const visible of [supplier, buyer]) assert.equal(await visible.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'No overflow at ' + width);

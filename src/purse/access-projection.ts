@@ -1,3 +1,4 @@
+import { creditInvoiceVersion, invoiceCreditApplied } from './invoices';
 import { mayAmendTravel } from './travel';
 import { requestBudgetReview } from './budget-allocations';
 import { projectApprovalEdit } from './approval-edit-view';
@@ -53,7 +54,7 @@ export function purchasingProjection(s: State, a: Actor) {
             mayManageReceipt: allowed(s, a, 'procurement.manage', order), mayReassignReceipt: ['issued','adopted'].includes(order.status) && mayReceive(s, a, order) && allowed(s, a, 'receive', order),
             mayManagePurchasing: allowed(s, a, 'procurement.manage', order),
             mayAuthorizeSupplierInvoices:a.owner, mayReadSupplierThread: allowed(s,a,'procurement.manage',order) || (s.get('request:'+order.request)?.value.requester === a.id && allowed(s,a,'po.read',order)), mayIssue: allowed(s, a, 'po.issue', order), supplierInitial: Boolean(!order.imported && !order.adoption && order.issuedAt && !s.get('revision:'+order.request+':'+order.revision)?.value.amends && !order.cancellation), supplierChange: Boolean(!order.imported && !order.adoption && (s.get('revision:'+order.request+':'+order.revision)?.value.amends || order.cancellation)), positions: order.lines.map((line: Data) => ({ line: line.id, ...linePosition(s, order.id, line), ...(line.service ? servicePosition(s, order, line) : {}) })) })),
-        invoice: invoices.map(invoice => ({ ...publicEvidence(invoice), receiptMatch: receiptMatch(s, invoice), matchingException: discrepancies(s).find(d => d.invoiceId === invoice.id && d.exception === 'Invoice exceeds received service value')?.exception,
+        invoice: invoices.map(invoice => ({ ...publicEvidence(invoice), creditVersion: creditInvoiceVersion(s,invoice), creditAppliedMinor: invoiceCreditApplied(s,invoice.id), receiptMatch: receiptMatch(s, invoice), matchingException: discrepancies(s).find(d => d.invoiceId === invoice.id && d.exception === 'Invoice exceeds received service value')?.exception,
             maySetTerms: allowed(s, a, 'payable.terms', invoice), mayApprove: allowed(s, a, 'payable.approve', invoice),
             mayReview: allowed(s, a, 'invoice.review', invoice), mayCapture: allowed(s, a, 'invoice.capture', invoice),
             flags: invoice.flags?.map((flag: Data) => !flag.relatedInvoice || invoiceIds.has(flag.relatedInvoice) ? flag : { ...flag, relatedInvoice: undefined }) })),
@@ -105,6 +106,7 @@ export function scopeAuditRows(s: State, a: Actor, data: Data) {
     return all(s, 'audit').filter(event => {
         const action = typeof event.action === 'string' ? event.action : '';
         if(['amend','approver-edit'].includes(action)&&event.revision){const prior=s.get('revision:'+event.record+':'+(event.revision-1))?.value;if(prior&&!allowed(s,a,'request.read',prior))return false;}
+        if (action.startsWith('supplier-credit-') && !allowed(s,a,'invoice.read',event)) return false;
         if ((action.startsWith('invoice') || event.invoice) && !allowed(s, a, 'invoice.read', event)) return false;
         if (action.startsWith('cross-review-') && event.review) { const review=s.get('crossTeamReview:'+event.review)?.value; if(!review || !canReadRecord(s,a,'crossTeamReview',review))return false; }
         if (action.startsWith('cash-') && !allowed(s, a, 'cash.read', event)) return false;
