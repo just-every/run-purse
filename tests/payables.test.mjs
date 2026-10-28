@@ -1,3 +1,4 @@
+import { supplierCreditsJourney } from './supplier-credits.test.mjs';
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {harness} from './purse-harness.mjs'
@@ -82,4 +83,5 @@ test('AP-003 terms, ordered due bills, expiring discount and weekly cash obligat
  for(const [op,body]of [['invoice',{order:outsideOrder.id,reference:'SYNTHETIC-OUTSIDE',source:'Out of scope',allocations:[{line:outsideOrder.lines[0].id,quantity:'1',amountMinor:4321}]}],['invoice-source',{order:outsideOrder.id,document}],['invoice-extract',{source:outsideSource.id}],['invoice-risk-review',{invoice:outsideInvoice.id,flag:'synthetic-flag',version:1,reason:'Out of scope'}],['payable-terms',{invoice:outsideInvoice.id,version:0,invoiceDate:'2026-10-19',term:'Net 30',reason:'Out of scope'}],['approve-payable',{invoice:outsideInvoice.id,version:1,reason:'Out of scope'}],['cash-expectation',{order:outsideOrder.id,version:0,expectedDate:'2026-12-01',reason:'Out of scope'}]])await cmd(op,body,ap,403);
  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true,'AP-003 planning evidence survives portable graph validation');
  assert.ok((await state()).data.audit.some(a=>a.action==='approve-payable'&&a.record===i.id&&a.approvedMinor===60000));
+ await supplierCreditsJourney(t);
 });

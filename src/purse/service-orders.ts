@@ -37,10 +37,10 @@ export function serviceReceipt(s: State, a: Actor, b: Data) {
     requireThat(o.replenishmentStatus !== 'held', 'Replenishment is held; amend and renew approval', 409);
     const position = servicePosition(s, o, line), mode = line.service.mode;
     const event = b.event ?? 'receive';
-    requireThat(['receive', 'return'].includes(event), 'Choose service acceptance or return');
+    requireThat(['receive', 'return', 'reject'].includes(event), 'Choose service acceptance, return or rejection');
     requireThat(event !== 'return' || mode !== 'milestone', 'Named milestones retain their acceptance; amend the approved schedule for corrections',409);
     let valueMinor: number, milestone: string | undefined, percentage: string | undefined;
-    if (event === 'return' || mode === 'amount') valueMinor = moneyInput(b, 'valueAmount', 'valueMinor', 'Received service value');
+    if (event === 'return' || event === 'reject' || mode === 'amount') valueMinor = moneyInput(b, 'valueAmount', 'valueMinor', 'Received or rejected service value');
     else if (mode === 'percentage') {
         requireThat(typeof b.percentage === 'string' && /^(?:100(?:\.0{1,2})?|\d{1,2}(?:\.\d{1,2})?)$/.test(b.percentage), 'Percentage must be 0–100 with up to two decimal places');
         const basisPoints = Math.round(Number(b.percentage) * 100);

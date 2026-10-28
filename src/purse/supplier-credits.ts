@@ -78,7 +78,7 @@ export function supplierCredits(s: State, a: Actor, op: string, b: Data): Data |
     requireThat(credit.status === 'open', 'Confirm the private credit original before applying it', 409);
     const invoice = get(s, 'invoice', b.invoice), order = nativeOrder(s, invoice.order), payable = s.get('payable:' + invoice.id)?.value;
     requirePermission(s, a, 'payable.approve', invoice); requirePermission(s, a, 'invoice.read', invoice);
-    requireThat(!invoice.imported && !invoice.pantry && !invoice.sourcePayment && !invoice.depositAppliedMinor && !invoice.erasure
+    requireThat(!invoice.imported && !invoice.pantry && !s.has('pantrySync:' + invoice.id) && !invoice.sourcePayment && !invoice.depositAppliedMinor && !invoice.erasure
         && (!invoice.supplierSubmission || invoice.sourceConfirmation === 'confirmed') && invoice.document && !invoice.document.erasure,
     'Use a source-confirmed native bill; synced, paid, imported and deposit bills need separate qualification', 409);
     requireThat(canonicalSupplier(s, order.supplier) === canonicalSupplier(s, credit.supplier) && invoice.currency === credit.currency, 'Credit and bill must have the same supplier and currency', 409);

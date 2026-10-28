@@ -942,7 +942,9 @@ The native command door accepts `rma-prepare` with `{receipt,reason}` for a
 recorded return or rejection on an issued native PO. Current scoped procurement
 management prepares at most one RMA per receipt. `rma-record` takes
 `{id,version,status,reference,reason}` to record a human-observed authorized,
-declined or closed outcome. These records send no supplier request or message.
+declined or closed outcome. These records send no supplier request or message. `service-receipt` also
+accepts `{order,line,receiptVersion,event:'reject',valueAmount,reason}` for
+outstanding service value, without accepting it or releasing its commitment.
 
 `supplier-credit-capture` takes `{rma,reference,creditDate,currency,amount,
 source,document}` under current invoice capture and read scope. The actual
