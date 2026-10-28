@@ -522,7 +522,7 @@ Old reference: `307e18f93d730cd31c41d4fdacdb9c4f2dd1a842`.
 | INVOICE-002 | 2. | line field has confidence. | `tests/invoice-reading.test.mjs:24` | asserted |
 | INVOICE-002 | 2. | its attachment/page. | `tests/invoice-reading.test.mjs:24` | asserted |
 | INVOICE-002 | 2. | Missing fields remain null with zero confidence. | `tests/invoice-reading.test.mjs:30` | asserted |
-| INVOICE-002 | 2. | Low-confidence cases stay in review before creation. | none | none |
+| INVOICE-002 | 2. | Under the held company policy, low-confidence cases stay in review before creation. | none | none |
 | INVOICE-002 | 2. | Instructions cannot create or approve an invoice. | `tests/invoice-reading.test.mjs:25` | asserted |
 | INVOICE-002 | 3. | Field correction retains the before. | `tests/invoice-reading.test.mjs:42` | asserted |
 | INVOICE-002 | 3. | after value. | `tests/invoice-reading.test.mjs:42` | asserted |
