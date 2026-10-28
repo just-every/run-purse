@@ -136,7 +136,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             const originalLiability=approvalAmount({...issued,lines:originalLines},s);
             const groups=new Map<string,Data>();for(const e of all(s,'commitment').filter(e=>e.request===id)){const k=e.policy+':'+e.currency;const g=groups.get(k)??{policy:e.policy,currency:e.currency,amount:0};g.amount+=e.amountMinor;groups.set(k,g)}
             // A draft can release authority, never grant unapproved replenishment.
-            for(const g of groups.values()){const target=g.policy===issued.policy&&g.currency===issued.currency?Math.min(originalLiability,g.amount):0;if(g.amount!==target)ledger(s,a,{...old,...issued,id:old!.id,policy:g.policy,currency:g.currency},target-g.amount,'unissued-amendment-release')}
+            for(const g of groups.values()){const target=g.policy===issued.policy&&g.currency===issued.currency?Math.min(originalLiability,g.amount):0;if(g.amount!==target)ledger(s,a,{...old,policy:g.policy,currency:g.currency},target-g.amount,'unissued-amendment-release')}
             put(s, 'order', issued.id, { ...issued, status: 'amendment-pending' });
         }
         else if (old?.status === 'approved' || old?.approvalRoute) {
