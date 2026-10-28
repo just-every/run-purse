@@ -829,6 +829,7 @@ supplier messages, supplier links or PO documents. Complete archives retain
 comment history and files without restoring identity authority; reviewed erasure
 anonymizes authors and withdraws affected originals. External mention delivery,
 provider reply binding and live supplier-inbox qualification remain unavailable.
+
 ## Native budget review
 
 The current native owner uses `POST /api/purse/budget-import/columns` to read
