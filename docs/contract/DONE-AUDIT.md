@@ -723,8 +723,8 @@ Old reference: `307e18f93d730cd31c41d4fdacdb9c4f2dd1a842`.
 | SECURITY-001 | 1. | Authorized reauthenticated owner reveals each exact field. | `tests/supplier-duplicates.test.mjs:162` | asserted |
 | SECURITY-001 | 1. | Refused writes preserve the protected snapshot. | `tests/supplier-duplicates.test.mjs:137` | asserted |
 | SECURITY-001 | 1. | Missing reason. | `tests/supplier-duplicates.test.mjs:164` | asserted |
-| SECURITY-001 | 1. | invalid fields. | `tests/supplier-duplicates.test.mjs:164` | asserted |
-| SECURITY-001 | 1. | stale revision are refused. | `tests/supplier-duplicates.test.mjs:164` | asserted |
+| SECURITY-001 | 1. | invalid fields. | `tests/supplier-duplicates.test.mjs:163` | asserted |
+| SECURITY-001 | 1. | stale revision are refused. | `tests/supplier-duplicates.test.mjs:165` | asserted |
 | SECURITY-001 | 1. | Cross-origin refusal preserves all protected values. | `tests/supplier-duplicates.test.mjs:182` | asserted |
 | SECURITY-001 | 1. | Revoked authority is refused. | `tests/supplier-duplicates.test.mjs:189` | asserted |
 | SECURITY-001 | 2. | Owner. | `tests/supplier-duplicates.test.mjs:150` | asserted |
