@@ -1,0 +1,80 @@
+import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+import { build } from 'esbuild';
+import { nativeWebContext } from './native-web-fixture.mjs';
+import { invoiceExceptionsFixture } from './invoice-exceptions-fixture.mjs';
+const { chromium } = await import(process.env.PURSE_PLAYWRIGHT_MODULE || '@playwright/test');
+const selector = process.argv.find(a => a.startsWith('--width='));
+const widths = selector ? [Number(selector.split('=')[1])] : [1440, 390];
+const evidence = resolve(process.env.PURSE_EVIDENCE || '.cache/invoice-exceptions');
+await mkdir(evidence, { recursive: true });
+const bundle = await build({ stdin: { contents: "import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);", resolveDir: process.cwd(), loader: 'tsx' }, bundle: true, write: false, format: 'esm', platform: 'browser', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } });
+const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-mock-keychain', '--password-store=basic'], ...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PURSE_CHROMIUM_EXECUTABLE_PATH } : {}) });
+try {
+    for (const width of widths) {
+        const f = await invoiceExceptionsFixture(), contexts = [];
+        try {
+            const context = async cookie => { const c = await nativeWebContext(browser, f.h, width, bundle.outputFiles[0].text, cookie); contexts.push(c); return c; };
+            const buyer = await (await context(f.buyer)).newPage(), receiver = await (await context(f.second)).newPage();
+            const errors = []; for (const page of [buyer, receiver]) page.on('pageerror', e => errors.push(e.message));
+            const screenshot = async (page, name) => {
+                assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'The changed screen fits ' + width);
+                await page.screenshot({ path: join(evidence, name + '-' + width + '.png'), fullPage: true });
+            };
+            await buyer.goto(f.h.origin + '/app?tab=Orders');
+            const queue = buyer.getByRole('region', { name: 'Invoice exception work queue', exact: true });
+            const item = queue.getByRole('region', { name: 'Exception ' + f.invoice.reference, exact: true });
+            await item.getByText('Receipt shortfall', { exact: true }).waitFor();
+            const originalAge = await item.getByText('First recorded', { exact: false }).innerText();
+            const assignment = item.locator('details').filter({ has: buyer.locator('summary').filter({ hasText: 'Assign exception' }) });
+            await assignment.locator('summary').click();
+            await assignment.getByLabel('Responsible member', { exact: true }).selectOption(f.ids.receiver);
+            await assignment.getByLabel('Assignment reason', { exact: true }).fill('Receiver checks the original count sheet');
+            await assignment.getByRole('button', { name: 'Save assignment', exact: true }).click();
+            await item.getByText('Responsible member: ' + (await f.queue())[0].candidates.find(m => m.id === f.ids.receiver).name, { exact: true }).waitFor();
+            const reassign = item.locator('details').filter({ has: buyer.locator('summary').filter({ hasText: 'Reassign exception' }) });
+            if (await reassign.getAttribute('open') === null) await reassign.locator('summary').click();
+            await reassign.getByLabel('Responsible member', { exact: true }).selectOption(f.ids.second);
+            await reassign.getByLabel('Assignment reason', { exact: true }).fill('Second receiver independently checks the signed count');
+            await reassign.getByRole('button', { name: 'Save reassignment', exact: true }).click();
+            await item.getByText('Responsible member: ' + (await f.queue())[0].candidates.find(m => m.id === f.ids.second).name, { exact: true }).waitFor();
+            assert.equal(await item.getByText('First recorded', { exact: false }).innerText(), originalAge);
+            await screenshot(buyer, 'exception-assigned');
+            const thread = item.getByRole('region', { name: 'Internal comments', exact: true });
+            await thread.getByLabel('Internal comment', { exact: true }).fill('Review the private invoice original without widening receiver access');
+            await thread.getByRole('button', { name: 'Post internal comment', exact: true }).click();
+            await thread.getByText('Review the private invoice original without widening receiver access', { exact: true }).first().waitFor();
+            await receiver.goto(f.h.origin + '/app?receipt=' + f.order.id);
+            await receiver.getByRole('heading', { name: f.order.number + ' · issued', exact: true }).waitFor();
+            await receiver.getByText('Held for receipt', { exact: true }).waitFor();
+            assert.equal(await receiver.getByText(f.invoice.reference, { exact: false }).count(), 0);
+            await receiver.getByText('Correct a recorded receipt', { exact: true }).click();
+            const corrections = receiver.getByRole('region', { name: 'Receipt corrections', exact: true });
+            await corrections.getByLabel('Original receipt', { exact: true }).selectOption(f.receipt.id);
+            await corrections.getByLabel('Corrected receipt quantity', { exact: true }).fill('11');
+            await corrections.getByLabel('Receiver correction reason', { exact: true }).fill('Count sheet correction');
+            await corrections.getByRole('button', { name: 'Record receipt correction', exact: true }).click();
+            await corrections.getByRole('alert').filter({ hasText: 'Correction exceeds current received' }).waitFor();
+            assert.equal((await f.current(f.second)).positions[0].accepted, 8000);
+            await screenshot(receiver, 'receipt-excess-refused');
+            await corrections.getByLabel('Corrected receipt quantity', { exact: true }).fill('10');
+            await corrections.getByLabel('Receiver correction reason', { exact: true }).fill('Count sheet confirms ten; eight was a transcription error');
+            await corrections.getByRole('button', { name: 'Record receipt correction', exact: true }).click();
+            await receiver.getByText('Ready for matching', { exact: true }).waitFor();
+            await receiver.getByText('Receipt corrected from 8 to 10', { exact: false }).waitFor();
+            assert.equal((await f.current(f.second)).positions[0].accepted, 10000);
+            assert.deepEqual((await f.h.state(f.second)).data.invoice, []);
+            await screenshot(receiver, 'receipt-corrected');
+            await buyer.reload();
+            await buyer.getByText('Matching context clear', { exact: false }).waitFor();
+            const matched = (await f.queue())[0];
+            assert.equal(matched.context[0].acceptedQuantity, 10); assert.equal(matched.context[0].receiptShortfall, false);
+            assert.equal(matched.openedAt, f.invoice.at);
+            assert.equal((await f.h.state(f.buyer)).data.invoice[0].paymentApproval, undefined);
+            await screenshot(buyer, 'exception-context-clear');
+            assert.deepEqual(errors, []);
+            console.log('Invoice exception assignment and receipt correction journey passed at ' + width);
+        } finally { for (const context of contexts) await context.close(); await f.h.close(); }
+    }
+} finally { await browser.close(); }

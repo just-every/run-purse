@@ -34,7 +34,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   // notes. Erasing an approver on the PO must redact both copies together.
   if(row.kind==='order'&&linked.has(row.id)&&!linked.has(row.value.request)){linked.add(row.value.request);changed=true;}
 
-  if(!['crossTeamReview','audit','comment','commentNotice','agentRun','orderChaseEvent','orderThreadMessage','supplierInvoiceSubmission','orderSupplierResponse','orderSend','orderAcknowledgment','travelExpense','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
+  if(!['invoiceException','crossTeamReview','audit','comment','commentNotice','agentRun','orderChaseEvent','orderThreadMessage','supplierInvoiceSubmission','orderSupplierResponse','orderSend','orderAcknowledgment','travelExpense','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
   const v=row.value;
   if([v.comment,v.request,v.order,v.record,v.source,v.reading,v.emailIntake,v.apInvoiceEmail,v.attachment,v.rfq].some(ref=>linked.has(ref))&&!linked.has(row.id)){linked.add(row.id);changed=true;}
  }}

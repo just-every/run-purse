@@ -11,7 +11,7 @@ import { lapsedSupplierDocuments } from './supplier-documents';
 const documentHold = (s: State, id: string) => requireThat(!lapsedSupplierDocuments(s, id).length, 'Required supplier document has lapsed; refresh and review it before a new PO', 409);
 import { ledger, policies, approvalAmount, reservationAvailable } from './requests';
 import { invoice } from './invoices';
-import { receipt } from './receiving';
+import { receipt, correctReceipt } from './receiving';
 import { requirePermission } from './access';
 import { conversionEdits, requireConversionSource } from './conversion-variance';
 import { reviseForConversion } from './conversion-revision';
@@ -91,6 +91,7 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
     }
     if (op === 'service-receipt') return serviceReceipt(s, a, b);
     if (op === 'receipt') return receipt(s, a, b);
+    if (op === 'receipt-correction') return correctReceipt(s, a, b);
     if (op === 'invoice') return invoice(s, a, b);
 }
 // An issued amendment continues the same request-line purchase. Earlier orders

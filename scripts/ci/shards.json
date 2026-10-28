@@ -17,7 +17,8 @@
     ["tests/browser-catalogue-import.mjs"]
   ],
   "5": [
-    ["tests/browser.mjs", "--width=390", "--journey=audit-log"]
+    ["tests/browser.mjs", "--width=390", "--journey=audit-log"],
+    ["tests/browser-invoice-exceptions.mjs"]
   ],
   "6": [
     ["tests/browser.mjs", "--width=1440", "--journey=supplier-duplicates"]

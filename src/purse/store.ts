@@ -13,6 +13,7 @@ if (protectedWrite?.proofSince !== undefined) q.push(db.prepare(`INSERT INTO p_g
 if (protectedWrite) q.push(...protectedWrite.statements);
 for (const [k, r] of after) {
     if(r.kind === 'nativeReviewAuthority') continue;
+    if(r.kind === 'invoiceException' && r.value.version > (before.get(k)?.value.version ?? 0)) q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(r.value.assignee,r.value.assigneeVersion));
     if (before.get(k)?.revision === r.revision)
         continue;
     if(r.kind==='crossTeamReview' && r.value.version > (before.get(k)?.value.version ?? 0)) { const event = r.value.events.at(-1); q.push(db.prepare('INSERT INTO p_cross_review_authority(review,version,actor,operator_version) VALUES(?,?,?,?) ON CONFLICT(review) DO UPDATE SET version=excluded.version,actor=excluded.actor,operator_version=excluded.operator_version').bind(r.id,r.value.version,event.actor,event.operatorVersion)); }
