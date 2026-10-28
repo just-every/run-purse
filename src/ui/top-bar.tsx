@@ -1,6 +1,7 @@
 import type { D } from './shared';
 /** The workspace screens a person can open, in top-bar order; the Requests thread is home. */
 export function workspaceTabs(actor: D) {
+    const catalogueManager = actor.grants?.some((grant: D) => grant.permissions.includes('procurement.manage') && Object.keys(grant.scope).length === 0 && Object.keys(grant.roleScope ?? {}).length === 0);
     const has = (...permissions: string[]) => permissions.some(permission => actor.permissions.includes(permission));
     return [...(has('request.read','request.create','request.approve') ? ['Requests'] : []),
         ...(has('request.read','po.read','invoice.read') ? ['Overview'] : []),
@@ -10,7 +11,7 @@ export function workspaceTabs(actor: D) {
         ...(has('procurement.manage') ? ['Catalogue'] : []), ...(has('procurement.manage','performance.read') || actor.mayReadAssignedAgreement ? ['Agreements'] : []),
         ...(has('request.create','procurement.manage','payable.approve') || actor.mayReviewRecurring ? ['Preparation'] : []),
         ...(has('request.approve') ? ['Authority'] : []),
-        ...(has('access.manage') ? ['Settings'] : []),
+        ...(has('access.manage') || catalogueManager ? ['Settings'] : []),
         ...(actor.roles.includes('owner') ? ['Imports'] : []), ...(has('audit.read') ? ['Audit'] : [])];
 }
 /** One white top bar: the mark and slab wordmark, the business, search, and Ask Purse; under a hairline,

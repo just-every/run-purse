@@ -13,7 +13,8 @@
     ["tests/browser-cross-team-reviews.mjs"]
   ],
   "4": [
-    ["tests/browser.mjs", "--width=1440", "--journey=catalogue"]
+    ["tests/browser.mjs", "--width=1440", "--journey=catalogue"],
+    ["tests/browser-catalogue-import.mjs"]
   ],
   "5": [
     ["tests/browser.mjs", "--width=390", "--journey=audit-log"]

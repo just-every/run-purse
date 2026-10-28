@@ -7,7 +7,7 @@ import { get, requireThat, text, type Actor, type Data, type State } from './typ
 // inferred from a caller-supplied location, supplier or requester field.
 const globalProcurement = new Set([
     'supplier', 'screen-supplier', 'supplier-matching-setup', 'supplier-duplicates',
-    'preview-supplier-merge', 'merge-suppliers', 'catalogue', 'catalogue-bundle',
+    'preview-supplier-merge', 'merge-suppliers', 'catalogue', 'catalogue-bundle', 'catalogue-import-commit',
     'supplier-document', 'review-supplier-document',
 ]);
 const nativeOwner = new Set([

@@ -922,3 +922,15 @@ current members before purchasing. Owner-reviewed erasure anonymizes review
 identities, withdraws affected files and removes their local authority. Erased
 captures cannot be replayed. Jira, ServiceNow, Linen, OneTrust and Locket review
 connections are not implemented by this native door.
+
+## Hosted catalogue CSV
+
+`POST /api/purse/catalogue-import/preview` accepts `{csv}` and returns reviewed
+rows, currency-specific before and after prices, availability, source hash,
+fingerprint and a session-bound review token. It writes nothing and requires
+current unrestricted procurement management. `catalogue-import-commit` on the
+native command route accepts the same `csv`, `fingerprint`, `review` and
+`consent:true`. It rechecks current authority, exact bytes and state, validates
+all rows before any writes, and returns `changes`, `sourceHash` and item IDs.
+An unchanged import writes nothing. The column format and supplier identity
+rules are documented in IMPORTING.md. There is no outbound supplier action.

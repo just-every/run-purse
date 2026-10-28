@@ -196,3 +196,37 @@ appear in the signed-in workspace; this door sends no email or provider message.
 Only the source digest and mapping digest are retained, with before and after
 amounts and assignments in the audit. CSV originals are not retained. Spreadsheet,
 Easel and ledger budget qualification remain unproved in BUDGET-002.
+
+
+## Hosted catalogue prices
+
+In Settings, open Hosted catalogue CSV. An unrestricted catalogue manager can
+preview and explicitly commit 1–500 UTF-8 rows, within 1 MB. Preview writes
+nothing. Commit binds the exact bytes, reviewing session and current purchasing
+state; changed bytes, supplier eligibility or state require a fresh preview.
+Prices are approved only by the reviewed commit. This imports catalogue items,
+never requests, approvals, orders or supplier connections.
+
+Required columns are `supplierId`, `sku`, `currency`, `description`, `unit`,
+`unitPrice`, `category`, `validFrom` and `validUntil`. Optional columns are
+`project`, `location` and `costCentre`; any supplied coding must already be
+configured. Use both ISO dates and nonnegative currency text with a decimal
+point and at most two decimal places. An expired row refuses the entire batch.
+A future price is retained but cannot be selected for a request before its start.
+
+Use the exact supplier ID shown in Settings and a nonempty exact SKU; neither
+case nor surrounding whitespace is normalized for identity. Supplier ID, SKU
+and currency together identify an item. The supplier must already be active or
+preferred, screened and unmerged. Duplicate source identities or ambiguous
+existing identities refuse the batch. Different currencies remain separate
+items. Existing access restrictions and required attachment filenames remain.
+An identical reviewed re-import writes nothing, including no new audit event.
+Changed terms update only the catalogue: approved revisions and POs retain their
+frozen lines and prices. Catalogue items and change audit continue in ordinary
+portable archives; a restored installation requires a new current-session review.
+Replaying source bytes whose imported terms were erased is refused. Reintroducing
+a previously erased item field is also refused after a formatting change; submit
+a corrected file with personal data removed.
+
+This native CSV door does not connect a PunchOut supplier, return carts, transmit
+POs or receive supplier confirmations. PUNCHOUT-002 retains those qualifications.
