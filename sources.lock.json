@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "a932f843ab842b84dba3bb88592d5e47e889428c9a8ea6c84dd7e1a3256f8453",
+      "sha256": "a6b68288ac616931c96646fef781fad42fe15413e83050610ad44b7b7c23a0f8",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "9091a3649d3e5b9bea31a0027d7b29ee4a48ac8575bc09755cc54162367bcff6",
+      "sha256": "99b11bac9a1159243c7e57dcf902ec790673c7b2151917d0ac3413f2eb7c4864",
       "executable": false
     },
     "DEMO.md": {
@@ -140,7 +140,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "0200228f7d7331c056c562ee8f1b0d5ba004b359424bbd3c3b3e817bbd5ac3aa",
+      "sha256": "59118efbe29732cecb3c271a5b327ec60a0f7016f1177eda66268a236501a684",
       "executable": false
     },
     "docs/getting-started.md": {
@@ -368,7 +368,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "d2eefc5514c2ef14b0ac48018c7e28c299d3ffe77c49f94a8ab3745b32ee41c9",
+      "sha256": "67fb56ed8d2a5719e954a3f18eddbac18d5641ce8e647b45c2f87456308b6991",
       "executable": false
     },
     "packaging.json": {
@@ -696,7 +696,7 @@
       "executable": false
     },
     "scripts/ci/shards.json": {
-      "sha256": "39cc103432373ea19c36dd7780bc43f966b534fc597d0a445fc9894ed010dc62",
+      "sha256": "3a17bd9458ed6977e3cb619417d0af1e2f38905beee585104b4e423337f83a6e",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
@@ -876,7 +876,7 @@
       "executable": false
     },
     "scripts/installer/portability.mjs": {
-      "sha256": "9f2da93d7b335013ba7391c15d4d6aa8a0ed48c03e53b5bee9bb7dc28e5c60ac",
+      "sha256": "c4a7f0447c455806394e5cdc4d95054a6ab4baae2410a8ecf67d32a4109e6fb7",
       "executable": false
     },
     "scripts/installer/restore-access.mjs": {
@@ -1060,7 +1060,7 @@
       "executable": false
     },
     "scripts/installer/restore-validation.mjs": {
-      "sha256": "6a2045b6497649f3fad263981490b925da900b8336c3e2c901853d70563c1440",
+      "sha256": "0d094b1ed25104343e51c3c00d9320394c7cd7b050d0227729a1806ef596fa02",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -2904,7 +2904,7 @@
       "executable": false
     },
     "src/purse/access-records.ts": {
-      "sha256": "36c1570f44c7a3ce34f725a6152203a3e1bc3e587315c5ac57d41b09a22ebe5b",
+      "sha256": "b9181eca7854e762174414ee689067b36dd8c7ba3bc687618bba256d137446a6",
       "executable": false
     },
     "src/purse/access-zero.ts": {
@@ -2976,7 +2976,7 @@
       "executable": false
     },
     "src/purse/api.ts": {
-      "sha256": "5bb423e36238712ca504d5a3668fe0e002c696bc64262495887245ce0ec5339f",
+      "sha256": "4c559883f231cacc5c3a226cb40a28afd606c757e33a012ddee184fe4ddb3382",
       "executable": false
     },
     "src/purse/approval-chain-authority.ts": {
@@ -2984,7 +2984,7 @@
       "executable": false
     },
     "src/purse/approval-chain.ts": {
-      "sha256": "fb8cfdaf786fa5d0476bd8c245da7bd9ec39894f71f6c98e9cff92cbc34c3802",
+      "sha256": "853dbe9c5975b7b011b1e783a2d28bda73e351da97c229ae08939738dd9ac75a",
       "executable": false
     },
     "src/purse/approval-edit-view.ts": {
@@ -2992,7 +2992,7 @@
       "executable": false
     },
     "src/purse/approval.ts": {
-      "sha256": "dca73fc5187891877f3696771cedf9b7a88a15c83f357514d18adc2ca0140b5e",
+      "sha256": "4116b8642de5307eadd3cf787736e6e7011fd0c908f3d5491192262ada322b23",
       "executable": false
     },
     "src/purse/approver-corrections.ts": {
@@ -3076,7 +3076,7 @@
       "executable": false
     },
     "src/purse/documents.ts": {
-      "sha256": "13938393ec720581fae81041e5e71a66f4789db2e78c3963105b0c615e4de487",
+      "sha256": "d1038dcb561d856a338525fe4678c504bf8781bc3443d48fa42ecc15ad3e76b4",
       "executable": false
     },
     "src/purse/email-intake-api.ts": {
@@ -3132,11 +3132,11 @@
       "executable": false
     },
     "src/purse/erasure-native.ts": {
-      "sha256": "287397b7d6cb51a4482df7b4cd18a9948298b8acec7901b9e1ffb79583004b55",
+      "sha256": "d4be13c93faeea203701be21300f8feba79469c57a9ff120f1ee1334c8750f2d",
       "executable": false
     },
     "src/purse/erasure-plan.ts": {
-      "sha256": "c830d929d0d549627824ad7f5664563ae566f8a1cd3e3be8eb8ee46ceb0718d9",
+      "sha256": "effe40a5a47cd9bb1ec73a6ca60ca4196d02a1a3348ddfde7aced9f43ab1f928",
       "executable": false
     },
     "src/purse/erasure-refusal.ts": {
@@ -3208,7 +3208,7 @@
       "executable": false
     },
     "src/purse/intake-forms.ts": {
-      "sha256": "0473a1bdde76f035b3f6643078130e11c91cb374b067a7aa7caf4ec0a363d608",
+      "sha256": "ea2bd28b39096436aec5af6e139c5fa5c5f88b70645196ebab7830061ff9173e",
       "executable": false
     },
     "src/purse/integration-audit.ts": {
@@ -3584,7 +3584,7 @@
       "executable": false
     },
     "src/purse/requests.ts": {
-      "sha256": "2e38abc0806b584334f2e5bf7ea3709ac06f4a7ea90aa510ff7bcc557b76df5d",
+      "sha256": "e4f0a4723f1c300033bd4bff5b111a9f5ff22ff951018baa76242955ce614ec6",
       "executable": false
     },
     "src/purse/restored-imports.d.mts": {
@@ -3720,7 +3720,7 @@
       "executable": false
     },
     "src/purse/store.ts": {
-      "sha256": "c45febeb6c4b067e03549501411829ade556613970b4830cb49ff816284d1bba",
+      "sha256": "9cf20d661f3390ca60b193807fc29065555fca343508a3e420bc2b3077c19ac3",
       "executable": false
     },
     "src/purse/supplier-csv-custody.ts": {
@@ -4220,7 +4220,7 @@
       "executable": false
     },
     "src/ui/intake-settings.tsx": {
-      "sha256": "b3d5e5121ed2cff63e3a41e7eaf0c84c0db12424f8202efd381bce9326ed088d",
+      "sha256": "4497e8699f9b2898cfdba86a9edf26bc5267dc6deabb0909d55a0e75372ee0ac",
       "executable": false
     },
     "src/ui/intake-values.tsx": {
@@ -4360,7 +4360,7 @@
       "executable": false
     },
     "src/ui/request-record.tsx": {
-      "sha256": "c1fa608f50744b0578c93e5b44ed7e945fac723dac078225331d5c1c7b9da37e",
+      "sha256": "baa7c2de367809a50527ee133ac419983ea6f08211643d5afc10f1c12d2e54fa",
       "executable": false
     },
     "src/ui/requests.tsx": {

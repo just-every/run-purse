@@ -27,6 +27,7 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
     const identity = kind + ':' + record.id;
     if (visited.has(identity)) return false;
     visited.add(identity);
+    if (kind === 'crossTeamReview') { const parent = s.get('request:' + record.request)?.value; return Boolean(parent && allowed(s,a,'request.read',parent)); }
     if (kind === 'intakeDraft') return record.requester === a.id && record.requesterEmail === a.email && allowed(s,a,'request.create');
     if (kind === 'travelExpense') return a.owner && allowed(s,a,'request.read',get(s,'request',record.request));
     if (kind === 'quote') return allowed(s,a,'request.read',record);

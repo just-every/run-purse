@@ -1,3 +1,4 @@
+import { openReviews, requireReviews } from './cross-team-reviews';
 import { normalizePurchaseCharges } from './purchase-charges';
 import { eventBudgetPortion, requestBudgetShares } from './budget-allocations';
 import { budgetRoom } from './budget-position';
@@ -141,12 +142,14 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             requireThat(p, 'No amount/category/project authority policy covers this request', 409);
             requireThat(!all(s, 'scimUser').some(user => user.userName === p.approver && user.active === false), 'The designated approver was deactivated; the owner must select a current approval policy before submission', 409);
             startChain(s,a,r,p) ?? put(s, 'request', r.id, { ...r, status: 'pending', policy: p.id });
+            openReviews(s,a,get(s,'request',r.id));
             audit(s, a, op, r.id, { revision: get(s,'request',r.id).revision });
             return get(s, 'request', r.id);
         }
         const priorStep = b.chainStep && all(s,'decision').find(decision => decision.request === r.id && decision.revision === r.revision && decision.chainStep === b.chainStep && decision.approvalAttempt === r.approvalAttempt);
         requireThat(!priorStep, `Step already decided by ${priorStep?.email ?? ''} at ${priorStep?.at ?? ''}`,409);
         requireThat(r.status === 'pending' && !r.imported, 'Request is not pending native authority', 409);
+        if(b.decision === 'approved') requireReviews(s,r);
         const chained=chainDecision(s,a,r,b); if(chained) return chained;
         const { p, delegated, assignment } = authorizedApproval(s, a, r);
         const decision = b.decision;

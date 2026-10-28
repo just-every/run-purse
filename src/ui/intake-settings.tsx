@@ -1,3 +1,4 @@
+import { ReviewConfiguration } from './request-reviews';
 import { useState } from 'react';
 import { Form, Field, type D } from './shared';
 
@@ -23,17 +24,18 @@ export function SplitEditor({value,change,business}:{value:D[];change:(value:D[]
     </div>)}<button type="button" onClick={()=>change([...value,{costCentre:'',project:'',basisPoints:10000}])}>Add split share</button></fieldset>;
 }
 export function IntakeSettings({data,mutate}:{data:D;mutate:(op:string,b:D)=>Promise<any>}) {
-    const [selected,setSelected]=useState<D>({}),[questions,setQuestions]=useState<D[]>([]),[header,setHeader]=useState<D[]>([]),[line,setLine]=useState<D[]>([]),[split,setSplit]=useState<D[]>([]),[serial,setSerial]=useState(0);
-    const select=(form:D)=>{setSelected(form);setQuestions(form.questions??[]);setHeader(form.headerFields??[]);setLine(form.lineFields??[]);setSplit(form.defaults?.allocations??[]);setSerial(serial+1);};
+    const [reviews,setReviews]=useState<D[]>([]),[selected,setSelected]=useState<D>({}),[questions,setQuestions]=useState<D[]>([]),[header,setHeader]=useState<D[]>([]),[line,setLine]=useState<D[]>([]),[split,setSplit]=useState<D[]>([]),[serial,setSerial]=useState(0);
+    const select=(form:D)=>{setSelected(form);setReviews(form.reviews??[]);setQuestions(form.questions??[]);setHeader(form.headerFields??[]);setLine(form.lineFields??[]);setSplit(form.defaults?.allocations??[]);setSerial(serial+1);};
     if(!data.mayConfigureIntake)return null;
     const business=data.business[0];if(!business)return null;
     return <section className="panel" aria-label="Category form configuration"><h2>Category forms</h2><p>Publish a short form with conditional questions, required files and default coding. Existing submitted answers remain on their revision.</p>
         <label>Existing form<select aria-label="Existing form" value={selected.id??''} onChange={e=>select(data.intakeForm.find((f:D)=>f.id===e.target.value)??{})}><option value="">New form</option>{data.intakeForm.map((f:D)=><option key={f.id} value={f.id}>{f.name}</option>)}</select></label>
-        <Form key={serial} label="Publish category form" onSubmit={async b=>{const result=await mutate('intake-form',{id:selected.id,version:selected.version,name:b.name,purchaseType:b.purchaseType,active:b.active==='on',consent:b.consent==='on',questions,headerFields:header,lineFields:line,requiredFiles:b.files.split('\n').map((v:string)=>v.trim()).filter(Boolean),defaults:{category:b.category,location:b.location,costCentre:b.costCentre,project:b.project,currency:b.currency,allocations:split}});select(result);}}>
+        <Form key={serial} label="Publish category form" onSubmit={async b=>{const result=await mutate('intake-form',{id:selected.id,version:selected.version,name:b.name,purchaseType:b.purchaseType,active:b.active==='on',consent:b.consent==='on',reviews,questions,headerFields:header,lineFields:line,requiredFiles:b.files.split('\n').map((v:string)=>v.trim()).filter(Boolean),defaults:{category:b.category,location:b.location,costCentre:b.costCentre,project:b.project,currency:b.currency,allocations:split}});select(result);}}>
             <Field label="Form name" name="name" defaultValue={selected.name}/><Field label="Purchase type" name="purchaseType" defaultValue={selected.purchaseType??'goods'} options={['goods','software','services','contractors','equipment'].map(value=>({value,label:value}))}/>
             <Field label="Default category" name="category" defaultValue={selected.defaults?.category}/>
             {Object.entries({currency:'currencies',location:'locations',costCentre:'costCentres',project:'projects'}).map(([key,list])=><Field key={key} label={'Default '+(key==='costCentre'?'cost centre':key)} name={key} defaultValue={selected.defaults?.[key]} required={false} options={business[list].map((value:string)=>({value,label:value}))}/>)}
             <SplitEditor value={split} change={setSplit} business={business}/>
+            <ReviewConfiguration value={reviews} change={setReviews} members={data.member??[]}/>
             <Definitions label="Questions" value={questions} change={setQuestions}/><Definitions label="Header fields" value={header} change={setHeader}/><Definitions label="Line fields" value={line} change={setLine}/>
             <Field label="Required filename contains, one per line" name="files" type="textarea" required={false} defaultValue={selected.requiredFiles?.join('\n')}/>
             <label>Active<input type="checkbox" name="active" defaultChecked={selected.active!==false}/></label><label>Publish for requesters<input type="checkbox" name="consent" required/></label>

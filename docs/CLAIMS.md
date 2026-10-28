@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002`. Current candidate counts: 54 done, 26 partial, 33 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 INTAKE-005`. Current candidate counts: 54 done, 27 partial, 32 missing; 113 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -28,7 +28,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `INTAKE-002` | Slack intake, approvals and updates | missing |
 | `INTAKE-003` | Microsoft Teams intake, approvals and updates | missing |
 | `INTAKE-004` | Email intake | done |
-| `INTAKE-005` | Cross-team review orchestration | missing |
+| `INTAKE-005` | Cross-team review orchestration | partial |
 | `INTAKE-006` | Travel pre-approval requests | partial |
 | `INTAKE-007` | Integration purchase-request tokens | done |
 | `INTAKE-008` | Read-only PO-data integration tokens | done |

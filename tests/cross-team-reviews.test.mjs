@@ -1,0 +1,105 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {join} from 'node:path';
+import {createPortability} from '@runeditrun/rer/modules/portability';
+import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import portability from '../scripts/installer/portability.mjs';
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
+import {harness} from './purse-harness.mjs';
+import {reauthenticateErasure} from './erasure-flow.mjs';
+import {crossTeamFixture,reviewFile,reviewEmail} from './cross-team-reviews-fixture.mjs';
+
+const download=id=>'/api/purse/download/attachment/'+id;
+const decide=(f,status=200)=>f.h.command('decision',{id:f.request.id,revision:f.request.revision,decision:'approved',reason:'Independent purchase approval'},f.approver,status);
+async function archived(h,name) {const path=join(h.dir,name+'.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),path,[]);return path;}
+async function restored(t,path) {const h=await harness({empty:true});t.after(()=>h.close());await importArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),path,[]);const r=await h.send('/auth/bootstrap',{token:'synthetic-local-test-bootstrap-token-0123456789',displayName:'synthetic-purse-6141'});assert.equal(r.status,303);return {h,cookie:r.cookie};}
+
+test('Native cross-team reviews order questions, files and decisions before independent purchase approval, conversion and issuance',async t=>{
+    const f=await crossTeamFixture(t),{h}=f;
+    assert.deepEqual((await f.rows()).map(row=>row.type).sort(),['it','legal','privacy','security']);
+    const before=(await h.state()).data;
+    await decide(f,409);
+    await h.command('convert',{id:f.request.id,revision:1,issue:true},f.buyer,409);
+    await f.record('it','approved',{},409);
+    const security=await f.record('security','question',{file:reviewFile});
+    assert.equal(security.events[0].body,'synthetic-purse-6140 security question');
+    await decide(f,409);
+    await h.command('cross-review-record',{id:security.id,revision:1,version:0,decision:'approved',body:'Stale capture'},f.reviewers.security.cookie,409);
+    await h.command('cross-review-record',{id:security.id,revision:1,version:1,decision:'approved',body:'Wrong reviewer'},f.reviewers.privacy.cookie,403);
+    const file=security.events[0].files[0];
+    assert.equal((await h.send(download(file),undefined,f.requester)).value,'synthetic-purse-6102 private review evidence');
+    assert.equal((await h.send(download(file))).status,401);
+    await f.record('security','approved',{file:{...reviewFile,base64:Buffer.alloc(1000001,1).toString('base64')}},400);
+    await f.record('privacy');await f.record('it','approved',{},409);
+    await f.record('security');
+    await f.record('legal','rejected');await decide(f,409);
+    await f.record('it');await f.record('legal');
+    const after=(await h.state()).data;
+    assert.deepEqual(after.decision,before.decision,'Reviews create no purchase approval');
+    assert.deepEqual(after.commitment,before.commitment,'Reviews reserve no money');
+    assert.equal(after.request.find(r=>r.id===f.request.id).status,'pending');
+    await h.command('decision',{id:f.request.id,revision:1,decision:'approved',reason:'Review assignment grants no approval'},f.reviewers.security.cookie,403);
+    await decide(f);
+    const order=await h.command('convert',{id:f.request.id,revision:1},f.buyer);
+    await h.command('member',{email:f.reviewers.security.email,name:'synthetic-purse-6120',active:true,grants:[{role:'reviewer',scope:{locations:['Denver']}}]});
+    assert.equal((await h.send(download(file),undefined,f.reviewers.security.cookie)).status,403);
+    assert.ok(!(await h.state(f.reviewers.security.cookie)).data.request.some(r=>r.id===f.request.id),'Assignment grants no wider scope');
+    await h.command('issue',{id:order.id,revision:1,reason:'Revoked review cannot authorize issuance'},f.buyer,409);
+    await h.command('member',{email:f.reviewers.security.email,name:'synthetic-purse-6120',active:true,grants:[{role:'reviewer',scope:{locations:['Austin']}}]});
+    assert.equal((await h.command('issue',{id:order.id,revision:1,reason:'All exact reviews and independent approval remain current'},f.buyer)).status,'issued');
+    const audit=await h.send('/api/purse/audit?subject='+f.request.id,undefined,h.owner),csv=await h.send('/api/purse/audit.csv?subject='+f.request.id,undefined,h.owner);
+    for(const row of await f.rows()) {const events=audit.value.events.filter(event=>event.review===row.id&&event.action==='cross-review-record').sort((a,b)=>a.version-b.version);assert.deepEqual(events.map(event=>event.snapshot),row.events);}
+    for(const text of ['cross-review-open','cross-review-record','synthetic-purse-6140 security question','rejected'])assert.ok(csv.value.includes(text));
+    const revised=await h.command('amend',{...f.request,id:f.request.id,revision:1,reason:'Changed request terms',terms:'Net 45'},f.requester);f.request=revised;
+    await h.command('submit',{id:revised.id,revision:revised.revision},f.requester);await decide(f,409);
+    await h.command('cross-review-record',{id:security.id,revision:1,version:2,decision:'approved',body:'Old review replay'},f.reviewers.security.cookie,409);
+    for(const type of ['security','privacy','it','legal'])await f.record(type);
+    await decide(f);
+    const prepared=await h.command('convert',{id:revised.id,revision:2},f.buyer);
+    await h.command('intake-form',{...f.config,id:f.form.id,version:1});
+    await h.command('issue',{id:prepared.id,revision:2,reason:'Changed configuration cannot reuse decisions'},f.buyer,409);
+    // A direct request cannot omit the form to escape a purchase type's reviews.
+    const unformed=await h.command('request',{...f.draft,intakeForm:undefined},f.requester);
+    await h.command('submit',{id:unformed.id,revision:1},f.requester);
+    assert.equal((await h.state()).data.request.find(r=>r.id===unformed.id).crossTeamReviews.required,4);
+    await h.command('decision',{id:unformed.id,revision:1,decision:'approved',reason:'Bypass refused'},f.approver,409);
+    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
+});
+
+test('Cross-team review archives retain audited history and scoped files without restoring authority; erasure fences identities and replay',async t=>{
+    const f=await crossTeamFixture(t),{h}=f;
+    const security=await f.record('security','approved',{body:'synthetic-purse-6150 private security questions',file:reviewFile});
+    for(const type of ['privacy','it','legal'])await f.record(type);
+    await decide(f);
+    const saved=await archived(h,'synthetic-purse-6151'),copy=await restored(t,saved);
+    const current=(await copy.h.send('/api/purse/state',undefined,copy.cookie)).value.data.request.find(r=>r.id===f.request.id);
+    assert.deepEqual(current.crossTeamReviews.rows.find(row=>row.type==='security').events,security.events);
+    assert.equal(current.crossTeamReviews.complete,false,'Restored approved history is inert');
+    assert.equal((await copy.h.send(download(security.events[0].files[0]),undefined,copy.cookie)).value,'synthetic-purse-6102 private review evidence');
+    await copy.h.send('/api/purse/command/convert',{id:f.request.id,revision:1,issue:true},copy.cookie).then(r=>assert.equal(r.status,409));
+    assert.equal((await copy.h.db.prepare('SELECT count(*) AS n FROM p_cross_review_authority').first()).n,0);
+    // Native revocation fences an approval even while the product membership remains.
+    const actor=(await h.state(f.reviewers.privacy.cookie)).actor.id;
+    await h.db.prepare("UPDATE oa_operators SET status='inactive',version=version+1 WHERE id=?").bind(actor).run();
+    await h.command('convert',{id:f.request.id,revision:1,issue:true},f.buyer,409);
+    const row=(await f.rows()).find(row=>row.type==='privacy');
+    assert.notEqual((await h.send('/api/purse/command/cross-review-record',{id:row.id,revision:1,version:row.version,decision:'approved',body:'Revoked'},f.reviewers.privacy.cookie)).status,200);
+    await h.command('member',{email:f.reviewers.security.email,name:'synthetic-purse-6120',active:false,grants:[{role:'reviewer',scope:{locations:['Austin']}}]});
+    await reauthenticateErasure(h);
+    const inventory=await h.send('/api/purse/erasure',undefined,h.owner);
+    const preview=await h.send('/api/purse/erasure/preview',{kind:'member',id:f.reviewers.security.email,revision:inventory.value.revision},h.owner);
+    assert.equal(preview.status,200,JSON.stringify(preview.value));
+    const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);
+    assert.equal(erased.status,200,JSON.stringify(erased.value));
+    const erasedRows=(await h.state()).data.request.find(r=>r.id===f.request.id).crossTeamReviews.rows;
+    const anonymous=erasedRows.find(row=>row.id===security.id);assert.ok(anonymous.erasure);assert.notEqual(anonymous.reviewer,f.reviewers.security.email);
+    assert.ok(!JSON.stringify(anonymous).includes('synthetic-purse-6150 private security questions'));
+    assert.equal((await h.send(download(security.events[0].files[0]),undefined,h.owner)).status,410);
+    assert.notEqual((await h.send('/api/purse/command/cross-review-record',{id:security.id,revision:1,version:1,decision:'approved',body:'Replay erased capture'},f.reviewers.security.cookie)).status,200);
+    const csv=await h.send('/api/purse/audit.csv?subject='+f.request.id,undefined,h.owner);assert.ok(!csv.value.includes(f.reviewers.security.email));
+    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
+    const latest=await archived(h,'synthetic-purse-6152'),erasedCopy=await restored(t,latest);
+    assert.ok((await erasedCopy.h.send('/api/purse/state',undefined,erasedCopy.cookie)).value.data.request.find(r=>r.id===f.request.id).crossTeamReviews.rows.find(row=>row.id===security.id).erasure);
+    const destination=await harness({empty:true});t.after(()=>destination.close());
+    await assert.rejects(importArchive(await createPortability({db:destination.db,buckets:{ORIGINALS:destination.originals},policy:portability}),saved,[],latest),/erasure|journal/i);
+});

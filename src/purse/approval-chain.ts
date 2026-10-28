@@ -1,3 +1,4 @@
+import { openReviews, requireReviews } from './cross-team-reviews';
 import { currentScimAssignment } from './scim-approvals';
 import { budgetDimensionInput } from './budget-dimensions';
 import { budgetOwnerSteps } from './budget-position';
@@ -142,6 +143,7 @@ export function startChain(s: State, a: Actor, request: Data, policy: Data) {
 }
 export function chainDecision(s: State, a: Actor, request: Data, input: Data) {
     if (!request.approvalRoute) return;
+    if(input.decision === 'approved') requireReviews(s,request);
     const policy = currentRoute(s,request);
     const previous = input.chainStep && all(s,'decision').find(decision => decision.request === request.id && decision.revision === request.revision && decision.chainStep === input.chainStep && decision.approvalAttempt === request.approvalAttempt);
     requireThat(!previous, `Step already decided by ${previous?.email ?? ''} at ${previous?.at ?? ''}`,409);
@@ -164,6 +166,7 @@ export function chainDecision(s: State, a: Actor, request: Data, input: Data) {
     return get(s,'request',request.id);
 }
 export function chainApproval(s: State, request: Data) {
+    requireReviews(s,request);
     currentRoute(s,request);
     const proofs = request.approvalRoute.map((step: Data) => {
         const decision=stepDecision(s,request,step);
@@ -203,6 +206,7 @@ export function approverEdits(s: State, a: Actor, op: string, input: Data): Data
     reserve(s,a,next,destination);
     next.approverEdit={rule:structuredClone(rule),sourcePolicy:structuredClone(policy),actor:a.id,email:a.email,at:new Date().toISOString(),fromRevision:request.revision,toRevision:next.revision,differences,carried,renewed,reason:text(input.reason,'Approver edit reason'),policy:structuredClone(destination)};
     put(s,'request',next.id,next);put(s,'revision',next.id+':'+next.revision,{...next,request:next.id});
+    openReviews(s,a,next);
     audit(s,a,op,next.id,{revision:next.revision,...next.approverEdit});
     return projectApprovalEdit(s,a,next);
 }

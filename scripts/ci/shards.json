@@ -9,7 +9,8 @@
     ["tests/browser-comments.mjs", "--width=390"]
   ],
   "3": [
-    ["tests/browser.mjs", "--width=390", "--journey=quote-agent"]
+    ["tests/browser.mjs", "--width=390", "--journey=quote-agent"],
+    ["tests/browser-cross-team-reviews.mjs"]
   ],
   "4": [
     ["tests/browser.mjs", "--width=1440", "--journey=catalogue"]

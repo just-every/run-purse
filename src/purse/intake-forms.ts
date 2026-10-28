@@ -1,3 +1,4 @@
+import { reviewPlan } from './cross-team-reviews';
 import { unrestrictedPermission } from './access-records';
 import { all, audit, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 import { fieldDefinitions, purchaseTypes, splitValues } from './intake-fields';
@@ -15,6 +16,7 @@ export function intakeForms(s: State, a: Actor, op: string, b: Data) {
     requireThat(Array.isArray(b.requiredFiles ?? []) && (b.requiredFiles ?? []).length <= 10, 'Use up to 10 required file names');
     const form = { id: old?.id ?? uid(), version: (old?.version ?? 0) + 1, active: b.active !== false,
         name: text(b.name, 'Form name', 200), purchaseType: b.purchaseType,
+        reviews: reviewPlan(s, b.reviews ?? old?.reviews ?? []),
         questions: fieldDefinitions(b.questions ?? []), headerFields: fieldDefinitions(b.headerFields ?? []), lineFields: fieldDefinitions(b.lineFields ?? []),
         requiredFiles: (b.requiredFiles ?? []).map((x: unknown) => text(x, 'Required filename contains', 100)),
         defaults: { location: defaults.location || '', costCentre: defaults.costCentre || '', project: defaults.project || '', currency: defaults.currency || '', category: text(defaults.category || b.purchaseType, 'Default category'), allocations: splitValues(s, defaults.allocations) },

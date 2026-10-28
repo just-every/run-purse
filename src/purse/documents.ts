@@ -1,3 +1,4 @@
+import { reviewView } from './cross-team-reviews';
 import { visibleBudgetAlerts } from './budget-alerts';
 import { visibleCodingAgent } from './coding-agent';
 import {poGenerationQueue} from './po-generation';
@@ -45,6 +46,7 @@ function cashView(s: State, a: Actor, orderIds: Set<string>, invoiceIds: Set<str
 export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) {
     const permissions = resolvedPermissions(s, a); requireThat(permissions.length, 'No active business membership', 403);
     const { data, requestIds, orderIds, invoiceIds } = purchasingProjection(s, a);
+    data.request = data.request.map((r: Data) => ({...r, crossTeamReviews: reviewView(s,a,get(s,'request',r.id))}));
     data.poGenerationPolicy=a.owner?all(s,'poGenerationPolicy'):[];
     data.poGenerationEvent=all(s,'poGenerationEvent').filter(row=>requestIds.has(row.request));
     data.poGenerationQueue=poGenerationQueue(s).filter(row=>requestIds.has(row.request)).map(row=>({...row,mayConvert:allowed(s,a,'po.convert',get(s,'request',row.request))&&allowed(s,a,'po.issue',get(s,'request',row.request))}));
