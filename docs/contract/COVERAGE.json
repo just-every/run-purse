@@ -486,11 +486,19 @@
     {
       "file": "CONTRACT.md",
       "line": 51,
-      "to": "base",
+      "to": "clause",
       "ids": [
-        "BASE-INSTALL-001"
+        "PUR-015"
       ],
-      "text": "MIT source runs through maintained RER install/setup/dev/build/preview/verify/reset/export/import/deploy-dry-run/describe/check, with native TanStack Start/Hono/Cloudflare, shipped fonts, Purse theme and real dev personas."
+      "text": "MIT source runs through maintained RER install/setup/dev/build/preview/verify/reset/export/import/deploy-dry-run/describe/check, with native TanStack Start/Hono/Cloudflare, shipped fonts, Purse theme and real dev personas.",
+      "also": [
+        {
+          "to": "base",
+          "ids": [
+            "BASE-INSTALL-001"
+          ]
+        }
+      ]
     },
     {
       "file": "CONTRACT.md",
@@ -561,11 +569,19 @@
     {
       "file": "CONTRACT.md",
       "line": 55,
-      "to": "base",
+      "to": "clause",
       "ids": [
-        "BASE-ACCESS-004"
+        "PUR-017"
       ],
-      "text": "Forged actor, role, revision and total cannot authorize."
+      "text": "Forged actor, role, revision and total cannot authorize.",
+      "also": [
+        {
+          "to": "base",
+          "ids": [
+            "BASE-ACCESS-004"
+          ]
+        }
+      ]
     },
     {
       "file": "CONTRACT.md",
@@ -807,11 +823,19 @@
     {
       "file": "CONTRACT.md",
       "line": 75,
-      "to": "base",
+      "to": "clause",
       "ids": [
-        "BASE-ROLE-001"
+        "INTAKE-004"
       ],
-      "text": "Current-session and revision checks apply at each action."
+      "text": "Current-session and revision checks apply at each action.",
+      "also": [
+        {
+          "to": "base",
+          "ids": [
+            "BASE-ROLE-001"
+          ]
+        }
+      ]
     },
     {
       "file": "CONTRACT.md",
@@ -1056,11 +1080,19 @@
     {
       "file": "CONTRACT.md",
       "line": 99,
-      "to": "base",
+      "to": "clause",
       "ids": [
-        "BASE-MAIL-001"
+        "SUPPLIER-004"
       ],
-      "text": "The supplier's first current contact and the configured owner receive separate outcome records; provider acceptance is never called mailbox delivery and local suppressed mail is labelled as such."
+      "text": "The supplier's first current contact and the configured owner receive separate outcome records; provider acceptance is never called mailbox delivery and local suppressed mail is labelled as such.",
+      "also": [
+        {
+          "to": "base",
+          "ids": [
+            "BASE-MAIL-001"
+          ]
+        }
+      ]
     },
     {
       "file": "CONTRACT.md",
@@ -2064,10 +2096,7 @@
     {
       "file": "CONTRACT.md",
       "line": 241,
-      "to": "base",
-      "ids": [
-        "BASE-AGENT-001"
-      ],
+      "to": "changelog",
       "text": "The current session-bound local agent API (API.md) remains."
     },
     {
