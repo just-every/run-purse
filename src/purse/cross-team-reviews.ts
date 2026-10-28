@@ -29,10 +29,12 @@ export function reviewSatisfied(s: State, review: Data, r: Data) {
 }
 export function matchingReviews(s: State, r: Data) {
     const plan = requiredReviews(s,r), basis = reviewBasis(plan);
-    return { plan, basis, rows: all(s,'crossTeamReview').filter(row => row.request === r.id && row.revision === r.revision && row.basis === basis) };
+    const submitted = all(s,'crossTeamReview').filter(row => row.request === r.id && row.revision === r.revision);
+    return { plan, basis, configurationCurrent: submitted.every(row => row.basis === basis), rows: submitted.filter(row => row.basis === basis) };
 }
 export function requireReviews(s: State, r: Data) {
-    const {plan,rows} = matchingReviews(s,r);
+    const {plan,rows,configurationCurrent} = matchingReviews(s,r);
+    requireThat(configurationCurrent, 'Review configuration changed; revise and submit the request',409);
     requireThat(plan.every(step => rows.some(row => row.form === step.form && row.type === step.type && reviewSatisfied(s,row,r))), 'Every required cross-team review must approve this exact revision with current authority',409);
     return rows;
 }
@@ -74,11 +76,11 @@ export function reviews(s: State, a: Actor, op: string, b: Data): Data | undefin
     return next;
 }
 export function reviewView(s: State, a: Actor, r: Data) {
-    const {plan,basis} = matchingReviews(s,r);
+    const {plan,basis,configurationCurrent} = matchingReviews(s,r);
     const rows: Data[] = all(s,'crossTeamReview').filter(row => row.request === r.id && allowed(s,a,'request.read',get(s,'revision',row.request+':'+row.revision))).sort((a,b) => b.revision - a.revision || a.stage - b.stage || a.type.localeCompare(b.type) || a.id.localeCompare(b.id)).map(row => {
         const current = row.revision === r.revision && row.basis === basis;
         const stageReady = all(s,'crossTeamReview').filter(other => other.request === r.id && other.revision === r.revision && other.basis === basis && other.stage < row.stage).every(other => reviewSatisfied(s,other,r));
         return {...row,current,satisfied:current && reviewSatisfied(s,row,r),mayReview:current && stageReady && !row.erasure && r.status === 'pending' && !a.owner && a.email.toLowerCase() === row.reviewer};
     });
-    return {rows,required:plan.length,complete:plan.every(step => rows.some(row => row.form === step.form && row.type === step.type && row.satisfied))};
+    return {rows,required:plan.length,configurationChanged:!configurationCurrent,complete:configurationCurrent && plan.every(step => rows.some(row => row.form === step.form && row.type === step.type && row.satisfied))};
 }

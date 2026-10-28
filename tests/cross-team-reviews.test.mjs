@@ -91,6 +91,20 @@ test('Native cross-team reviews order questions, files and decisions before inde
     assert.ok(!scopedAudit.value.events.some(event=>event.action.startsWith('cross-review-')),'Audit cannot lend access to an out-of-scope historical review');
     const scopedCsv=await h.send('/api/purse/audit.csv?subject='+f.request.id,undefined,scoped);
     assert.ok(!scopedCsv.value.includes(historicReview.events.at(-1).body));
+    const guarded=await h.command('request',f.draft,f.requester);
+    await h.command('submit',{id:guarded.id,revision:1},f.requester);
+    const approvalBefore=(await h.state()).data.decision;
+    await h.command('intake-form',{...f.config,id:f.form.id,version:2,active:false});
+    await h.command('decision',{id:guarded.id,revision:1,decision:'approved',reason:'Disabling a form cannot drop already submitted reviews'},f.approver,409);
+    const afterDisable=(await h.state()).data;
+    assert.equal(afterDisable.request.find(r=>r.id===guarded.id).crossTeamReviews.configurationChanged,true);
+    assert.equal(afterDisable.request.find(r=>r.id===guarded.id).crossTeamReviews.complete,false);
+    assert.deepEqual(afterDisable.decision,approvalBefore);
+    const fresh=await h.command('amend',{...guarded,intakeForm:null,reason:'Explicit new revision adopts the current requirements'},f.requester);
+    await h.command('submit',{id:fresh.id,revision:fresh.revision},f.requester);
+    assert.equal((await h.command('decision',{id:fresh.id,revision:fresh.revision,decision:'approved',reason:'Independent approval of the fresh revision'},f.approver)).status,'pending');
+    assert.equal((await h.command('decision',{id:fresh.id,revision:fresh.revision,decision:'approved',reason:'Final independent approval of the fresh revision'},finalApprover)).status,'approved');
+
 
     assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
 });

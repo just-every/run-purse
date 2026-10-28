@@ -73,13 +73,17 @@ try {
             const config=settings.getByRole('group',{name:'Required cross-team reviews',exact:true});
             await config.getByLabel('Assigned reviewer',{exact:true}).first().waitFor();
             await capture('review-configuration-settings',owner,config);
-            if(width===1440) {
+            {
                 await config.getByLabel('Review stage',{exact:true}).last().fill('3');
                 await settings.getByLabel('Publish for requesters',{exact:true}).check();
                 await settings.getByRole('button',{name:'Publish category form',exact:true}).click();
                 await owner.waitForFunction(async id=>{const r=await fetch('/api/purse/state');const s=await r.json();return s.data.intakeForm.find(f=>f.id===id)?.version===2;},f.form.id);
-                const updated=(await f.h.state()).data.intakeForm.find(form=>form.id===f.form.id);assert.equal(updated.reviews.find(row=>row.type==='legal').stage,3);
+                const updated=(await f.h.state()).data.intakeForm.find(form=>form.id===f.form.id);if(width===1440)assert.equal(updated.reviews.find(row=>row.type==='legal').stage,3);
             }
+            await approver.goto(url);
+            const changed=approver.getByRole('region',{name:'Cross-team reviews',exact:true});
+            await changed.getByText('Review configuration changed. Revise and submit the request to use the new requirements.',{exact:true}).waitFor();
+            await capture('changed-review-configuration',approver,changed);
             assert.deepEqual(errors,[]);
             console.log('Native cross-team request reviews and Settings screens passed at '+width);
         } finally {for(const context of contexts)await context.close();await f.h.close();}

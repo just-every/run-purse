@@ -4,6 +4,7 @@ export function RequestReviews({current,data,mutate}:{current:D;data:D;mutate:(o
     const reviews=current.crossTeamReviews;
     if(!reviews?.rows.length && !reviews?.required) return null;
     return <section aria-label="Cross-team reviews"><h3>Cross-team reviews</h3>
+        {reviews.configurationChanged && <p>Review configuration changed. Revise and submit the request to use the new requirements.</p>}
         <p>{reviews.complete ? 'Required reviews approved for this revision.' : 'Purchase approval waits for every required review.'} Review decisions do not approve the purchase.</p>
         {reviews.rows.map((row:D)=><Details key={row.id} label={`${row.type.toUpperCase()} review · revision ${row.revision} · stage ${row.stage} · ${!row.current ? 'Historical' : row.satisfied ? 'Approved' : row.events.at(-1)?.decision === 'rejected' ? 'Rejected' : 'Review required'}`}>
             <p>Assigned to {row.reviewer}</p>

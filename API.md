@@ -911,7 +911,8 @@ its CSV export; they never create a purchase decision or send external messages.
 Approval, conversion and issuance require every current review to approve.
 Amendments and approver edits require fresh reviews for the new revision, even
 when a purchase decision may otherwise carry. Changed form versions also
-invalidate earlier review authority. Current membership, request scope and native
+invalidate earlier review authority. Disabling a form or removing reviews cannot
+release the reviews already opened for the same submitted revision. Current membership, request scope and native
 identity are checked again before purchase authority is used. The independent
 purchase-approval policy remains required after the reviews finish.
 
