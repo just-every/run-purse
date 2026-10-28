@@ -1,5 +1,6 @@
 import { linePosition } from './orders';
 import { hasSupplierGroups, supplierLineRemaining } from './po-supplier-groups';
+import { checkBudgetDisposition } from './budget-disposition';
 import { openReviews, requireReviews } from './cross-team-reviews';
 import { normalizePurchaseCharges } from './purchase-charges';
 import { eventBudgetPortion, requestBudgetShares } from './budget-allocations';
@@ -135,7 +136,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             const originalLiability=approvalAmount({...issued,lines:originalLines},s);
             const groups=new Map<string,Data>();for(const e of all(s,'commitment').filter(e=>e.request===id)){const k=e.policy+':'+e.currency;const g=groups.get(k)??{policy:e.policy,currency:e.currency,amount:0};g.amount+=e.amountMinor;groups.set(k,g)}
             // A draft can release authority, never grant unapproved replenishment.
-            for(const g of groups.values()){const target=g.policy===issued.policy&&g.currency===issued.currency?Math.min(originalLiability,g.amount):0;if(g.amount!==target)ledger(s,a,{...old,policy:g.policy,currency:g.currency},target-g.amount,'unissued-amendment-release')}
+            for(const g of groups.values()){const target=g.policy===issued.policy&&g.currency===issued.currency?Math.min(originalLiability,g.amount):0;if(g.amount!==target)ledger(s,a,{...old,...issued,id:old!.id,policy:g.policy,currency:g.currency},target-g.amount,'unissued-amendment-release')}
             put(s, 'order', issued.id, { ...issued, status: 'amendment-pending' });
         }
         else if (old?.status === 'approved' || old?.approvalRoute) {
@@ -165,6 +166,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             r.attachmentIds = all(s, 'attachment').filter(file => file.kind === 'request' && file.record === r.id && !file.erasure).map(file => file.id);
             put(s, 'revision', `${r.id}:${r.revision}`, {...r, request: r.id});
             const p = policies(s, r)[0];
+            checkBudgetDisposition(s,{...r,policy:p?.id});
             requireThat(p, 'No amount/category/project authority policy covers this request', 409);
             requireThat(!all(s, 'scimUser').some(user => user.userName === p.approver && user.active === false), 'The designated approver was deactivated; the owner must select a current approval policy before submission', 409);
             startChain(s,a,r,p) ?? put(s, 'request', r.id, { ...r, status: 'pending', policy: p.id });
