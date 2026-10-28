@@ -62,6 +62,11 @@ test('Reviewed quarter disposition moves unchanged 60 and 40 shares exactly once
    assert.deepEqual((await c.figures()).slice(0,2),[[200000,5000,60000,0,135000],[200000,5000,40000,0,155000]],'The unissued increase reserves its own allocation shares');
    await c.cmd('amend',{...c.r,revision:2,reason:'Discard the unissued increase and restore the original split'});
    assert.deepEqual((await c.figures()).slice(0,2),[[200000,0,60000,0,140000],[200000,0,40000,0,160000]],'Discarding an unissued amendment releases its exact reservation while preserving the original commitment');
+   const tiny=await c.purchase({title:'synthetic-purse-2821 rounded commitment',lines:c.input.lines.map(line=>({...line,unitMinor:1}))}),tinyAmendment=await c.amend(await c.preview(tiny.o,1));
+   await c.cmd('submit',{id:tinyAmendment.id,revision:2});await c.decide(tinyAmendment);await c.decide(tinyAmendment,c.firstOwner);await c.cmd('convert',{id:tinyAmendment.id,revision:2,issue:true},c.buyer);
+   const roundedFigures=[[200000,0,60000,0,140000],[200000,0,40000,0,160000],[200000,0,1,0,199999],[200000,0,0,0,200000]];assert.deepEqual(await c.figures(),roundedFigures,'Rounded zero shares create no extra exposure or approval spending');
+   const tinyArchive=join(continuity.dir,'synthetic-purse-2822.rer');await exportArchive(await createPortability({db:continuity.db,buckets:{ORIGINALS:continuity.originals},policy:portability}),tinyArchive,[]);
+   const roundedRestore=await harness();try {await importArchive(await createPortability({db:roundedRestore.db,buckets:{ORIGINALS:roundedRestore.originals},policy:portability}),tinyArchive,[]);const budgets=(await roundedRestore.state()).data.periodBudgets;assert.deepEqual(c.budgets.map(b=>{const row=budgets.find(row=>row.id===b.id);return [row.amountMinor,row.reservedMinor,row.committedMinor,row.actualMinor,row.availableMinor];}),roundedFigures,'A rounded commitment remains restorable with exact currency amounts');}finally{await roundedRestore.close();}
   }finally{await continuity.close();}
  }finally{await restored?.close();await h.close();}
 });
@@ -70,6 +75,7 @@ test('Unsafe quarter moves refuse changed sources, insufficient capacity, unrevi
  const h=await harness();let restored;
  try {
   const f=await dispositionFixture(h),review=await f.preview();
+  const zero=await f.purchase({title:'synthetic-purse-2823 no remaining commitment',lines:f.input.lines.map(line=>({...line,unitMinor:0}))});await f.unchanged(()=>f.cmd('budget-disposition-preview',{id:zero.o.id,revision:1,needDate:'2027-05-15'},h.owner,409));
   // Policy version binds every allocation, including the non-primary share.
   await f.cmd('policy',{...f.budgets[3],budgetMinor:200001});await f.unchanged(()=>f.amend(review,{},409));
   await f.cmd('policy',{...f.budgets[3],budgetMinor:30000});
