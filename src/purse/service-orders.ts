@@ -1,3 +1,4 @@
+import { receivedDates } from './received-dates';
 import { all, audit, extended, get, minor, put, qty, requireThat, text, uid, type Actor, type Data, type State } from './types';
 import { moneyInput } from './money';
 import { mayReceive, receiptVersion } from './receipt-routing';
@@ -56,14 +57,14 @@ export function serviceReceipt(s: State, a: Actor, b: Data) {
     requireThat(valueMinor > 0 && valueMinor <= (event === 'return' ? position.acceptedMinor : position.outstandingMinor), 'Service value exceeds accepted or outstanding value, or does not advance completion', 409);
     // Quantities support existing receiving displays; valueMinor is the matching authority.
     const q = Math.max(1, Number((BigInt(valueMinor) * BigInt(line.q) + BigInt(line.totalMinor) / 2n) / BigInt(line.totalMinor)));
-    const id = uid(), record = { order: o.id, line: line.id, event, q, quantity: qty(q), valueMinor: minor(valueMinor), mode, serviceSequence: all(s, 'receipt').filter(e => e.order === o.id && e.line === line.id).length + 1, ...(percentage ? { percentage } : {}), ...(milestone ? { milestone } : {}), reason: text(b.reason, 'Service acceptance evidence'), actor: a.id, at: new Date().toISOString() };
+    const id = uid(), record = { order: o.id, line: line.id, event, q, quantity: qty(q), valueMinor: minor(valueMinor), mode, serviceSequence: all(s, 'receipt').filter(e => e.order === o.id && e.line === line.id).length + 1, ...(percentage ? { percentage } : {}), ...(milestone ? { milestone } : {}), reason: text(b.reason, 'Service acceptance evidence'), actor: a.id, ...receivedDates(s, o, b.effectiveDate) };
     put(s, 'receipt', id, record);
     const request = get(s, 'request', o.request), delta = remainingValue(s, o) - commitment(s, request);
     if (delta > 0 && !reservationAvailable(s, request, delta)) {
         put(s, 'order', o.id, { ...o, replenishmentStatus: 'held', replenishmentMinor: delta, replenishmentReason: 'Returned service value needs renewed budget authority' });
         put(s, 'receipt', id, { ...record, replenishmentStatus: 'held', replenishmentMinor: delta, replenishmentReason: 'Returned service value needs renewed budget authority' });
     } else if (delta) ledger(s, a, request, delta, event === 'return' ? 'return-reservation' : 'service-receipt-release');
-    audit(s, a, 'service-receipt', o.id, { receipt: id, line: line.id, valueMinor, mode, event, ownerOverride: a.owner });
+    audit(s, a, 'service-receipt', o.id, { receipt: id, line: line.id, valueMinor, mode, event, effectiveDate: record.effectiveDate, recordedDate: record.recordedDate, ownerOverride: a.owner });
     return get(s, 'receipt', id);
 }
 

@@ -934,3 +934,40 @@ native command route accepts the same `csv`, `fingerprint`, `review` and
 all rows before any writes, and returns `changes`, `sourceHash` and item IDs.
 An unchanged import writes nothing. The column format and supplier identity
 rules are documented in IMPORTING.md. There is no outbound supplier action.
+
+## Native received-not-billed report
+
+Receivers can pass `effectiveDate` to the existing `receipt` and
+`service-receipt` commands. It defaults to the recording day in the installation
+timezone and must be between native issuance (or explicit adoption) and today,
+inclusive. `at` remains the recording instant; `recordedDate` and
+`receivedTimezone` retain the calendar basis. Approved commercial terms and
+receiving authority are unchanged. Historical source dates are never invented.
+
+`GET /api/purse/accrual-report/view?cutoff=YYYY-MM-DD` requires current
+`report.read`, PO reads and complete bill-source visibility for each purchase.
+Optional exact filters are `entity`, `department`, `location`, `supplier` and
+`glAccount`; class and project are also supported by the native report door.
+The response contains line and allocation `rows`, coding `groups`, separate
+currency `totals`, receipt and bill drill-through, separate imported `deposits`,
+and completeness warnings. Returned quantities use thousandths and money uses
+integer minor units. Receipts use their effective dates, including late entries.
+Only source-confirmed genuine native bill approvals with qualifying invoice
+dates reduce accrual. Pending, disputed or held evidence and cash-planning
+approval do not. Later reopening cannot erase an earlier closed-balance cutoff.
+
+The same route ending in `csv` or `xlsx` recomputes under the same fresh scope
+and session fence. Both contain source rows, receipts, eligible and excluded
+bills, coding groups, currency totals, deposits and completeness notes. Text
+cells stay literal. Credentials, protected values and originals are absent.
+
+The route ending in `xero` additionally requires one explicit `currency` and
+`liabilityAccount`. It downloads balanced period-end manual-journal CSV entries
+for the native entity: expense or asset GL debit and accrued-liability credit.
+Department and location are the two proposed tracking columns; other supplied
+coding stays in the description for review. The chosen account must differ
+from each debit account. Live Xero import and tracking qualification remains
+pending. Downloading never posts a journal or creates a reversal. All ledger
+posting, additional entities, card-paid exclusions and unsupported historical
+approval and deposit cases remain in REPORT-004's Gap. Archives preserve dated
+source evidence without granting restored identities or supplier links authority.
