@@ -1,3 +1,4 @@
+import { visibleBudgetAlerts } from './budget-alerts';
 import { visibleCodingAgent } from './coding-agent';
 import {poGenerationQueue} from './po-generation';
 import { visibleRecurringScenarios } from './recurring-scenarios';
@@ -58,6 +59,8 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     const globalProcurement = unrestrictedPermission(s, a, 'procurement.manage');
     data.mayManageSupplierRegister = globalProcurement;
     data.periodBudgets = visibleBudgetPositions(s, a, data);
+    data.budgetAlerts = visibleBudgetAlerts(s,a);
+    data.budgetAssignment = a.owner ? all(s,'budgetAssignment') : [];
     data.supplier = all(s, 'supplier').map(supplier => {
         const eligible = mayReadProtectedSupplier(s, a, supplier), value: Data = supplierPublicValue(supplier, eligible ? protectedViews?.get(supplier.id) : undefined);
         delete value.proposedBy;
