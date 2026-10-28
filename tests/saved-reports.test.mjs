@@ -16,6 +16,15 @@ test('Saved report views recompute scoped allocation rows, literal CSV and parse
  const direct=await h.send('/api/purse/spend-report?groupBy=glAccount',undefined,f.finance);assert.deepEqual(view.value.report,direct.value);
  const csv=await h.send(path+'/csv',undefined,f.finance),xlsx=await h.mf.dispatchFetch(h.origin+path+'/xlsx',{headers:{cookie:f.finance}});assert.equal(csv.status,200);assert.equal(xlsx.status,200);assert.equal(xlsx.headers.get('cache-control'),'no-store');assert.match(xlsx.headers.get('content-type'),/spreadsheetml/);assert.match(csv.headers.get('content-disposition'),/attachment/);
  await assertDownloads(csv.value,await xlsx.arrayBuffer(),view.value.report,f);
+ const supplierView=(await f.save({groupBy:'supplier'})).value,supplierPath='/api/purse/saved-reports/'+supplierView.id;
+ const supplierReport=(await h.send(supplierPath+'/view',undefined,f.finance)).value.report,supplierCsv=await h.send(supplierPath+'/csv',undefined,f.finance),supplierXlsx=await h.mf.dispatchFetch(h.origin+supplierPath+'/xlsx',{headers:{cookie:f.finance}});
+ await assertDownloads(supplierCsv.value,await supplierXlsx.arrayBuffer(),supplierReport,f);
+ for(const [field,value] of Object.entries({department:'Operations',project:'Network',location:'Denver',supplier:f.supplier.id,category:'Equipment'})) {
+  const filtered=(await f.save({[field]:value,groupBy:field})).value;
+  const result=await h.send('/api/purse/saved-reports/'+filtered.id+'/view',undefined,f.finance);assert.equal(result.status,200);assertNativeReport(result.value.report,f);assert.ok(result.value.report.rows.every(row=>row[field]===value));
+ }
+ const injected=await h.send('/api/purse/saved-reports',{name:'synthetic-purse-4124',filters:{},report:{rows:[]}},f.finance);assert.equal(injected.status,400);
+ const crossOrigin=await h.mf.dispatchFetch(h.origin+'/api/purse/saved-reports',{method:'POST',headers:{cookie:f.finance,origin:'https://example.invalid','content-type':'application/json'},body:JSON.stringify({name:'synthetic-purse-4125',filters:{}})});assert.equal(crossOrigin.status,403);
  const custom=await f.save({groupBy:'line:'+f.form.id+':grant',['header:'+f.form.id+':region']:'synthetic-purse-4108'});assert.equal(custom.status,200);const grouped=await h.send('/api/purse/saved-reports/'+custom.value.id+'/view',undefined,f.finance);assert.equal(grouped.value.report.rows.length,4);assert.deepEqual(grouped.value.report.groups.map(row=>[row.label,row.currency,row.committedMinor,row.actualMinor]),[['-synthetic-purse-4110','USD',6001,4000]]);
  const filtered=await f.save({groupBy:'department',from:'2027-01-15',through:'2027-01-15',glAccount:'6300'});assert.equal(filtered.status,200);const single=await h.send('/api/purse/saved-reports/'+filtered.value.id+'/view',undefined,f.finance);assert.deepEqual(single.value.report.rows.map(row=>[row.kind,row.amountMinor]),[['committed',2400]]);
  // Save no financial results: a later ordinary purchase changes a reopened broad view.
@@ -28,6 +37,7 @@ test('Saved report views recompute scoped allocation rows, literal CSV and parse
 
 test('Saved definitions never restore authority and refuse revoked scope, foreign members and erased identity',async t=>{
  const f=await savedReportFixture();t.after(()=>f.close());const {h,cmd}=f;
+ const auditor=await h.member(reportMail(4126),['auditor']);assert.equal((await f.save({},'synthetic-purse-4127',auditor)).status,403);assert.equal((await h.send('/api/purse/saved-reports',undefined,auditor)).value.maySave,false);
  const broad=(await f.save({groupBy:'department'})).value,scoped=(await f.save({department:'Operations'})).value;
  const path=id=>'/api/purse/saved-reports/'+id;
  await cmd('member',{email:reportMail(4101),name:'Changed current scope',active:true,grants:[{role:'finance-viewer',scope:{departments:['Research']}}]});

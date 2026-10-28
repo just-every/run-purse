@@ -24,7 +24,7 @@ export async function assertDownloads(csv,xlsx,report,f) {
  const groups=report.groups.map(group=>[report.groupBy,group.label??null,group.currency,group.reservedMinor,group.committedMinor,group.actualMinor]);
  const groupKeys=['groupBy','group','currency','reservedMinor','committedMinor','actualMinor'];
  assert.deepEqual(sheets.Groups.map(row=>groupKeys.map(key=>row[key])),groups);
- assert.deepEqual(records.filter(row=>row.recordType==='Groups').map(row=>groupKeys.map(key=>key.endsWith('Minor')?Number(row[key]):row[key])),groups.map(row=>row.map(value=>value??'')));
+ assert.deepEqual(records.filter(row=>row.recordType==='Groups').map(row=>groupKeys.map(key=>key.endsWith('Minor')?Number(row[key]):row[key])),groups.map(row=>row.map(value=>value==='@synthetic-purse-4104'?"'@synthetic-purse-4104":value??'')));
  const literal=sheets.Rows.find(row=>row.request===f.request.id);
  assert.equal(literal.title,'=1+1');assert.equal(literal.description,'+synthetic-purse-4109,"quoted"');assert.equal(literal.supplierName,'@synthetic-purse-4104');assert.equal(literal['line:'+f.form.id+':grant'],'-synthetic-purse-4110');
  const escaped=sources.find(row=>row.request===f.request.id);assert.equal(escaped.title,"'=1+1");assert.equal(escaped.description,"'+synthetic-purse-4109,\"quoted\"");assert.equal(escaped.supplierName,"'@synthetic-purse-4104");assert.equal(escaped['line:'+f.form.id+':grant'],"'-synthetic-purse-4110");

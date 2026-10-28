@@ -104,7 +104,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "8456b5dbf70cee97dd5c6ce9c72b59171c3900e96ea6e7a75f0207fb74fb3d4c",
+      "sha256": "d6971cd71ac12e5bfe9bfe6e29d649f52be62c8d41bed87c570938fdc07f65d2",
       "executable": false
     },
     "base-copies.json": {
@@ -5008,11 +5008,11 @@
       "executable": false
     },
     "tests/saved-report-proof.mjs": {
-      "sha256": "539f8b2ff2163040a5a067410ca0886f789d2cc13c30c1bb45017b5082f432ef",
+      "sha256": "120b7cd504eddb7d89d1a5956b45bf2db370312d9c52ce6872cfedc0dc390770",
       "executable": false
     },
     "tests/saved-reports.test.mjs": {
-      "sha256": "08655a3e1ea28dd65691728dcdc19df34474db8f73994cf7fa104e779208193b",
+      "sha256": "3fef0458051c158135dc7c14dfe8077013132423db4dacaaad839425fd2b69ff",
       "executable": false
     },
     "tests/scim.test.mjs": {
