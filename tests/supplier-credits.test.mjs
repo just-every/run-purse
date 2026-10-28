@@ -75,6 +75,12 @@ export async function supplierCreditsJourney(t) {
     await refused('approve-payable', { invoice: riskBill.id, version: riskTerms.version, reason: 'Unresolved document risk' });
     await refused('supplier-credit-apply', await f.application(reviewed, riskBill));
     assert.ok((await h.state()).data.invoice.find(row => row.id === riskBill.id).flags.some(row => row.code === 'duplicate-document' && !row.reviewed));
+    const beforeDispute = await f.application(reviewed);
+    await cmd('invoice-dispute', { invoice: f.invoice.id, version: 0, disputed: true, reason: 'Hold the bill during source review' }, f.ap);
+    await refused('supplier-credit-apply', beforeDispute);
+    await refused('supplier-credit-apply', await f.application(reviewed));
+    await cmd('invoice-dispute', { invoice: f.invoice.id, version: 1, disputed: false, reason: 'Source dispute resolved; retain separate credit review' }, f.ap);
+    await refused('supplier-credit-apply', beforeDispute);
     const ledgerBefore = (await h.state()).data.commitment, grossBefore = (await h.state()).data.invoice.find(row => row.id === f.invoice.id);
     const input = await f.application(reviewed), results = await Promise.all([h.send('/api/purse/command/supplier-credit-apply', input, f.ap), h.send('/api/purse/command/supplier-credit-apply', input, f.ap)]);
     assert.deepEqual(results.map(row => row.status).sort(), [200, 409]);

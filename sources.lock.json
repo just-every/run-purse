@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "7c1d253f2589b4e813cc163f67d6b1bdfbf5e040ff6808da79a7d3b20688e987",
+      "sha256": "e3040a3ad6294f86535e1e035f0f0c4479dabe6bd50e5c4a45e4da54c317830a",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "78a8e480c73125270eb1e622b185861aa266065e42321f6020ad31ecddc941c1",
+      "sha256": "592b74c8d2a4463b59c5fbaea1ba72cc0ed4d0991f2530894ccd1d0e8976519c",
       "executable": false
     },
     "DEMO.md": {
@@ -3764,7 +3764,7 @@
       "executable": false
     },
     "src/purse/supplier-credits.ts": {
-      "sha256": "4056f5cbbeae21a9a94676a8db479e67412feb95dd9798a217125cdfe12a3df8",
+      "sha256": "822e29b34adeea0e3a8809be4897b8bff876e8daeb8717ba53a41f814a95679e",
       "executable": false
     },
     "src/purse/supplier-csv-custody.ts": {
@@ -5204,7 +5204,7 @@
       "executable": false
     },
     "tests/supplier-credits.test.mjs": {
-      "sha256": "bd850b3957fb1c5df888236b9e6203bb5de0880388d5659a16553e4476f3f26b",
+      "sha256": "0f524112bb2543eec345d0fd131294bc65c00a7bb532eed864ecf95121a3884c",
       "executable": false
     },
     "tests/supplier-documents.test.mjs": {

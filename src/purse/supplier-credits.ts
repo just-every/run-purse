@@ -84,7 +84,7 @@ export function supplierCredits(s: State, a: Actor, op: string, b: Data): Data |
     requireThat(canonicalSupplier(s, order.supplier) === canonicalSupplier(s, credit.supplier) && invoice.currency === credit.currency, 'Credit and bill must have the same supplier and currency', 409);
     requireThat(invoice.invoiceDate >= credit.creditDate, 'Choose a bill dated on or after this credit', 409);
     requireThat(b.invoiceVersion === creditInvoiceVersion(s, invoice), 'Bill or applications changed; reload', 409);
-    requireThat(payable?.approvedAt && !invoice.exception && !openInvoiceFlags(invoice).length && !discrepancies(s).some(row => row.invoiceId === invoice.id && (row.priceMismatch || row.quantityMismatch || row.receiptShortfall || row.closedBalance || row.exception)), 'Resolve invoice holds and approve native cash-planning terms before applying credit', 409);
+    requireThat(payable?.approvedAt && !invoice.disputed && !invoice.exception && !openInvoiceFlags(invoice).length && !discrepancies(s).some(row => row.invoiceId === invoice.id && (row.priceMismatch || row.quantityMismatch || row.receiptShortfall || row.closedBalance || row.exception)), 'Resolve invoice holds and approve native cash-planning terms before applying credit', 409);
     requireThat(!all(s, 'supplierCreditApplication').some(row => row.credit === credit.id && row.invoice === invoice.id), 'This credit is already applied to this bill', 409);
     const amountMinor = moneyInput(b, 'amount', 'amountMinor', 'Application amount');
     requireThat(amountMinor > 0 && amountMinor <= credit.amountMinor - creditApplied(s, credit.id) && amountMinor <= invoice.totalMinor - invoiceCreditApplied(s, invoice.id), 'Application exceeds the open credit or bill balance', 409);
