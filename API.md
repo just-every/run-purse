@@ -488,12 +488,38 @@ approval or supplier send is fabricated.
 `consent:true`. It takes `{id?,version?,name,purchaseType,active,questions,
 headerFields,lineFields,requiredFiles,defaults}`. Purchase types are `goods`,
 `software`, `services`, `contractors` and `equipment`. Each field is
-`{id,label,type:"text"|"choice",options?,required,active,when?:{field,equals}}`;
+`{id,label,type:"text"|"choice"|"number"|"date"|"boolean",options?,inactiveOptions?,required,active,when?:{field,equals}}`;
 a condition names an earlier choice in the same field list. The form permits
 30 fields per list, 50 choices per choice, and 10 required filename fragments.
 Required files are exact retained uploads whose filenames contain the configured
 fragment. Definitions for protected tax, bank or credential fields are refused;
 those values retain their dedicated native owner storage/reveal boundary.
+
+Native number values use finite decimal text without exponent notation and with
+magnitude at most the safe integer limit; dates use valid `YYYY-MM-DD` calendar
+dates, and yes or no values use `"Yes"` or `"No"`. Zero and `"No"` satisfy a
+required field. A Purse list retains every value in `options`; its explicitly
+inactive values appear in `inactiveOptions` and cannot be selected or submitted.
+Changing definitions never rewrites an approved revision. Applying a current
+form discards obsolete or hidden field keys from an unfinished draft. Request-again review
+omits obsolete values and asks for replacements under the current definition.
+
+PO-backed invoice capture copies header values, line values, the exact form
+snapshot and the issued source revision from the PO. Caller-supplied replacement
+custom values are refused. Source confirmation, private original access,
+duplicate and unresolved-risk holds retain their ordinary checks. A later field
+change needs a new request revision and fresh purchase approval; previous bills
+keep their issued values. Native line `glAccount` values remain on the purchasing
+revision and PO. Guided line coding exposes the GL account under the existing
+coding disclosure.
+
+REPORT-001 returns namespaced custom dimensions from permitted retained purchase
+snapshots, including fields no longer present on the current revision. Its
+filters, choices, grouping and drill-through use current record access, retain
+issued bill values and keep currency totals separate. Ledger-origin lists,
+connection mappings and posting, broader custom-field defaults, materiality,
+non-PO and allocation fields and incumbent imports remain unqualified under
+CODING-002. This native path makes no provider or payment claim.
 
 Defaults set configured `currency`, `location`, `costCentre`, `project`,
 `category` and optional `allocations:[{costCentre,project,basisPoints}]`.
@@ -972,3 +998,47 @@ and limited to the reader's current scope. Archives retain validated RMA,
 credit, application and audit history without restoring sessions or grants.
 Reviewed erasure withdraws affected originals, preserves anonymous financial
 amounts and refuses new applications or capture replays from erased evidence.
+## Native received-not-billed report
+
+Receivers can pass `effectiveDate` to the existing `receipt` and
+`service-receipt` commands. It defaults to the recording day in the installation
+timezone and must be between native issuance (or explicit adoption) and today,
+inclusive. `at` remains the recording instant; `recordedDate` and
+`receivedTimezone` retain the calendar basis. Approved commercial terms and
+receiving authority are unchanged. Historical source dates are never invented.
+
+`GET /api/purse/accrual-report/view?cutoff=YYYY-MM-DD` requires current
+`report.read`, PO reads and complete bill-source visibility for each purchase.
+Optional exact filters are `entity`, `department`, `location`, `supplier` and
+`glAccount`; class and project are also supported by the native report door.
+The response contains line and allocation `rows`, coding `groups`, separate
+currency `totals`, receipt and bill drill-through, separate imported `deposits`,
+and completeness warnings. Returned quantities use thousandths and money uses
+integer minor units. Receipts use their effective dates, including late entries.
+Only source-confirmed genuine native bill approvals with qualifying invoice
+dates reduce accrual. Pending, disputed or held evidence and cash-planning
+approval do not. Later reopening cannot erase an earlier closed-balance cutoff.
+
+The same route ending in `csv` or `xlsx` recomputes under the same fresh scope
+and session fence. Both contain source rows, receipts, eligible and excluded
+bills, coding groups, currency totals, deposits and completeness notes. Text
+cells stay literal. Credentials, protected values and originals are absent.
+
+The route ending in `xero` additionally requires one explicit `currency` and
+`liabilityAccount`. It downloads balanced period-end manual-journal CSV entries
+for the native entity: expense or asset GL debit and accrued-liability credit.
+Department and location are the two proposed tracking columns; other supplied
+coding stays in the description for review. The chosen account must differ
+from each debit account. Live Xero import and tracking qualification remains
+pending. Downloading never posts a journal or creates a reversal. All ledger
+posting, additional entities, card-paid exclusions and unsupported historical
+approval and deposit cases remain in REPORT-004's Gap. Archives preserve dated
+source evidence without granting restored identities or supplier links authority.
+
+
+A current scoped invoice reviewer can use `invoice-dispute` with
+`{invoice, version, disputed, reason}` to open or resolve a dispute. The first
+version is zero. Each changed decision retains its reason, actor and time in
+invoice history and the audit export. A dispute holds both genuine bill
+approval and cash-planning approval and excludes a historical approval from
+accrual reduction until resolved; resolution itself never grants approval.

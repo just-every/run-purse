@@ -46,3 +46,9 @@ export function orderClosure(s: State, a: Actor, op: string, b: Data): Data | un
         status: o.lines.some((l: Data) => linePosition(s, o.id, l).outstanding > 0) ? 'issued' : 'closed' });
     return get(s, 'order', o.id);
 }
+
+/** A later reopening does not erase the closed balance at an earlier cutoff. */
+export function closureAt(s: State, order: string, line: string, cutoff: string, day: (at: string) => string) {
+    return all(s, 'orderClosure').filter(c => c.order === order && day(c.at) <= cutoff && (!c.reopenedAt || day(c.reopenedAt) > cutoff))
+        .flatMap(c => c.lines).filter((c: Data) => c.line === line).reduce((sum: number, c: Data) => sum + c.q, 0);
+}

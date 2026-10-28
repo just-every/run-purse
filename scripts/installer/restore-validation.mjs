@@ -1,5 +1,6 @@
 import { validateSupplierCredits } from './restore-supplier-credits.mjs';
 import { validateCrossTeamReviews } from './restore-cross-team-reviews.mjs';
+import { validateReceivedDates } from './restore-received-dates.mjs';
 import { validateSavedReports } from './restore-saved-reports.mjs';
 import { validateComments } from './restore-comments.mjs';
 import { validateCodingAgent } from './restore-coding-agent.mjs';
@@ -166,6 +167,7 @@ export function validatePurchasingArchive(rows) {
   check(quantity(stock.reorderPoint) === stock.reorderPointQ && quantity(stock.replenishTo) === stock.replenishToQ && stock.replenishToQ >= stock.reorderPointQ,'stockroom_quantity');
   check(stock.count === null ? stock.countQ === null : typeof stock.count === 'string' && (stock.count === '0' ? stock.countQ === 0 : quantity(stock.count) === stock.countQ),'stockroom_count');
  }
+ validateReceivedDates(all,get,check);
  validatePoKinds(all,get,check,same);
  validateOrderAdoptions(all,get);
  validateAdoptionAmendments(all,get,check);

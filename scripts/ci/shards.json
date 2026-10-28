@@ -17,7 +17,8 @@
     ["tests/browser-catalogue-import.mjs"]
   ],
   "5": [
-    ["tests/browser.mjs", "--width=390", "--journey=audit-log"]
+    ["tests/browser.mjs", "--width=390", "--journey=audit-log"],
+    ["tests/browser-custom-fields.mjs"]
   ],
   "6": [
     ["tests/browser.mjs", "--width=1440", "--journey=supplier-duplicates"]
@@ -60,7 +61,8 @@
   ],
   "19": [
     ["tests/browser.mjs", "--width=1440", "--journey=spend-report"],
-    ["tests/browser-saved-reports.mjs"]
+    ["tests/browser-saved-reports.mjs"],
+    ["tests/browser-accrual-report.mjs"]
   ],
   "20": [
     ["tests/browser.mjs", "--width=390", "--journey=performance-report"]

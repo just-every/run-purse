@@ -36,7 +36,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
 
   if(!['supplierRma','supplierCredit','supplierCreditApplication','crossTeamReview','audit','comment','commentNotice','agentRun','orderChaseEvent','orderThreadMessage','supplierInvoiceSubmission','orderSupplierResponse','orderSend','orderAcknowledgment','travelExpense','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
   const v=row.value;
-  if([v.comment,v.request,v.order,v.record,v.source,v.reading,v.emailIntake,v.apInvoiceEmail,v.attachment,v.rfq].some(ref=>linked.has(ref))&&!linked.has(row.id)){linked.add(row.id);changed=true;}
+  if([v.comment,v.request,v.order,v.record,v.source,v.reading,v.emailIntake,v.apInvoiceEmail,v.attachment,v.rfq,v.receipt,v.rma,v.credit].some(ref=>linked.has(ref))&&!linked.has(row.id)){linked.add(row.id);changed=true;}
  }}
  const eraseFile=(value:Data):Data=>{
   if(typeof value.base64!=='string'&&!value.key)return value;

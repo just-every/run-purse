@@ -14,7 +14,7 @@ import { publicEvidence } from './invoice-status';
 import { coveringPolicies } from './policy-match';
 import { auditEventAllowed } from './access-audit';
 import { discrepancies, linePosition } from './orders';
-import { mayReceive, receiptAssignment, receiptMatch, receiptMatchingStatus, receiptVersion } from './receipt-routing';
+import { mayReceive, receiptDay, receiptAssignment, receiptMatch, receiptMatchingStatus, receiptVersion } from './receipt-routing';
 import { all, type Actor, type Data, type State } from './types';
 
 function mayApprove(s: State, a: Actor, request: Data) {
@@ -48,7 +48,7 @@ export function purchasingProjection(s: State, a: Actor) {
             mayConvert: request.purchaseType !== 'travel' && allowed(s, a, 'po.convert', request), mayChangeNeedDate: request.purchaseType !== 'travel' && request.status === 'approved' && (request.requester === a.id && allowed(s,a,'request.edit',request) || allowed(s,a,'request.approve',request)), mayManagePurchasing: allowed(s, a, 'procurement.manage', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
             buyerLimit: buyerLimit(s, a, request), buyerLimits: buyerLimits(s, a, request) })),
         order: orders.map(order => ({ ...order, ...(orderAdoption(s, order) ? { adoptionBasis: 'Owner adopted imported obligation; source approval is historical', ...(allowed(s,a,'invoice.read',order) ? { depositPosition: adoptionDeposits(s, order) } : {}) } : {}), ...(order.poDetails?.blanket ? blanketView(s, a, order) : {}),
-            receiverAssignment: receiptAssignment(s, order), mayReceive: mayReceive(s, a, order), receiptVersion: receiptVersion(s, order),
+            receivingDate: receiptDay(s, Date.now()), receiverAssignment: receiptAssignment(s, order), mayReceive: mayReceive(s, a, order), receiptVersion: receiptVersion(s, order),
             ...(mayReceive(s, a, order) ? { receiptMatchingStatus: receiptMatchingStatus(s, order) } : {}),
             mayCaptureInvoice: allowed(s, a, 'invoice.capture', order), maySetCashExpectation: allowed(s, a, 'payable.terms', order),
             mayManageReceipt: allowed(s, a, 'procurement.manage', order), mayReassignReceipt: ['issued','adopted'].includes(order.status) && mayReceive(s, a, order) && allowed(s, a, 'receive', order),

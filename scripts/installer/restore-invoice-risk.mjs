@@ -5,6 +5,15 @@ export function validateInvoiceRisk(all,get,check) {
  validateInvoiceEvidence(all,check);
  const codes=new Set(['source-date-missing','near-duplicate','duplicate-document','remit-baseline-missing','remit-mismatch','remit-details-changed','sender-domain','po-balance','blanket-validity','release-balance','release-allocation']);
  for(const invoice of all('invoice')){
+  if(invoice.disputeVersion!==undefined) {
+   const history=invoice.disputeHistory;
+   check(Array.isArray(history)&&history.length>0&&invoice.disputeVersion===history.length,'invoice_dispute_history');
+   history.forEach((entry,index)=>{
+    check(entry.version===index+1&&typeof entry.disputed==='boolean'&&entry.disputed===(index%2===0)&&typeof entry.reason==='string'&&entry.reason.trim()&&typeof entry.actor==='string'&&Number.isFinite(Date.parse(entry.at)),'invoice_dispute_decision');
+    check(all('audit').some(event=>event.action==='invoice-dispute'&&event.record===invoice.id&&event.version===entry.version&&event.disputed===entry.disputed&&event.reason===entry.reason&&event.actor===entry.actor&&event.at===entry.at),'invoice_dispute_audit');
+   });
+   check(invoice.disputed===history.at(-1).disputed,'invoice_dispute_current');
+  }
   if(invoice.flags===undefined)continue;
   check(Array.isArray(invoice.flags)&&Array.isArray(invoice.riskReviews)&&Number.isSafeInteger(invoice.riskVersion)&&invoice.riskVersion>=1+invoice.riskReviews.length,'invoice_risk');
   check(invoice.imported&&invoice.invoiceDate===null&&invoice.invoiceDateSource==='not-recorded'||/^\d{4}-\d{2}-\d{2}$/.test(invoice.invoiceDate)&&new Date(invoice.invoiceDate).toISOString().slice(0,10)===invoice.invoiceDate,'invoice_source_date');
