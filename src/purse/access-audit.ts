@@ -24,7 +24,7 @@ export function auditEventAllowed(s:State,a:Actor,event:Data,permission='audit.r
    return grants.length>0&&grants.every((g:Data)=>allowed(s,a,permission,{scope:g.scope??{},entity:'main'}));
   });
  }
- const kinds=['comment','travelExpense','request','order','invoice','receipt','rfq','invoiceReading','invoiceSource','apInvoiceEmail','emailIntake','quote','quoteAward','stockroom','supplierIssue','supplierOrderEvidence','orderClosure','orderChaseEvent','orderThreadMessage','orderSupplierResponse','agentRun','valueConfirmation'];
+ const kinds=['supplierRma','supplierCredit','supplierCreditApplication','comment','travelExpense','request','order','invoice','receipt','rfq','invoiceReading','invoiceSource','apInvoiceEmail','emailIntake','quote','quoteAward','stockroom','supplierIssue','supplierOrderEvidence','orderClosure','orderChaseEvent','orderThreadMessage','orderSupplierResponse','agentRun','valueConfirmation'];
  const subject=event.parentKind ? s.get(event.parentKind+':'+event.record)?.value
   : kinds.map(kind=>s.get(kind+':'+event.record)?.value).find(Boolean);
  if(!subject||!allowed(s,a,permission,subject))return false;
