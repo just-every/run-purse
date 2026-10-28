@@ -33,6 +33,11 @@ test('Invoice exception assignment and receiver correction preserve age, source 
     await h.command('assign-invoice-exception', assign(item, f.ids.second, 'Second receiver checks the signed count sheet'), f.buyer);
     item = (await f.queue())[0]; assert.equal(item.openedAt, openedAt); assert.equal(item.history.length, 2);
     assert.equal(item.assignee, f.ids.second);
+    const taskResponse = await h.send('/api/purse/invoice-exceptions', undefined, f.second);
+    assert.deepEqual(taskResponse.value.tasks, [{ order: f.order.id, number: f.order.number, matchingStatus: 'Held for receipt' }]);
+    assert.deepEqual((await h.send('/api/purse/invoice-exceptions', undefined, f.receiver)).value.tasks, [], 'Reassignment removes the former assignee task');
+    for (const privateValue of [f.invoice.id, f.invoice.reference, f.invoice.source, '100000']) assert.ok(!JSON.stringify(taskResponse.value).includes(privateValue), 'Receiver task contains no invoice context');
+
     for (const cookie of [f.receiver, f.requester, f.outsider]) assert.deepEqual(await f.queue(cookie), [], 'Assignment confers no invoice read');
     const thread = await h.command('comment-add', { kind: 'invoiceException', record: item.id, attempt: 'synthetic-purse-6215', body: 'synthetic-purse-6216 private invoice review', mentions: [f.ids.second] }, f.buyer);
     assert.equal((await h.send('/api/purse/comments/invoiceException/' + item.id, undefined, f.second)).status, 403);
@@ -55,6 +60,7 @@ test('Invoice exception assignment and receiver correction preserve age, source 
     const state = (await h.state()).data, receiverState = (await h.state(f.second)).data;
     assert.deepEqual(state.order.find(o => o.id === f.order.id).positions.map(p => [p.accepted, p.outstanding]), [[10000, 0]]);
     assert.equal(state.invoice.find(i => i.id === f.invoice.id).receiptMatch, 'Ready for matching');
+    assert.deepEqual((await h.send('/api/purse/invoice-exceptions', undefined, f.second)).value.tasks, [], 'Corrected matching clears the active task');
     assert.equal(receiverState.invoice.length, 0); assert.deepEqual(receiverState.discrepancies, []);
     assert.equal(receiverState.order.find(o => o.id === f.order.id).receiptMatchingStatus, 'Ready for matching');
     assert.deepEqual(await raw('invoice'), beforeInvoice); assert.deepEqual(await raw('attachment'), originalFiles);
@@ -123,7 +129,7 @@ test('Exception and correction history survives real archives and erasure withou
     const boot = await restored.send('/auth/bootstrap', { token: 'synthetic-local-test-bootstrap-token-0123456789', displayName: 'synthetic-purse-6221' });
     assert.equal(boot.status, 303);
     const restoredQueue = await restored.send('/api/purse/invoice-exceptions', undefined, boot.cookie); assert.equal(restoredQueue.status, 200);
-    item = restoredQueue.value.queue[0]; assert.equal(item.assigneeCurrent, false);
+    item = restoredQueue.value.queue[0]; assert.equal(item.assigneeCurrent, false); assert.deepEqual(restoredQueue.value.tasks, []);
     const restoredState = await restored.send('/api/purse/state', undefined, boot.cookie);
     assert.equal(restoredState.value.data.order.find(o => o.id === f.order.id).positions[0].accepted, 10000);
     assert.equal(restoredState.value.data.receipt.find(r => r.id === corrected.id).reason, correction.reason);

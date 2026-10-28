@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "ad00e73a153a515127f302c1a1dbb0411eba1c00aca288977a1e0a095471009f",
+      "sha256": "97af88b18dcdabb4d4fb081794fc8d03cc0efaf2e73ab1f7467014a28ffc3d0a",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -104,7 +104,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "9a341f5569facbcb572d81ed64dabe4d394ab2f0cede369c56889119d4855129",
+      "sha256": "b3d445f9a3ba217054e02d890b90a6a1f71f6113d5c8e62d2da55e0fb8cf00ec",
       "executable": false
     },
     "base-copies.json": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "e917df9c0669ccfe46bccc2d3e3a67282bb244a4592f111e4ca8e519602e3afd",
+      "sha256": "a8aab7748fbaf3c9a786615e6fcca64d3727b160784ce18f2010a065b6cd5f5e",
       "executable": false
     },
     "DEMO.md": {
@@ -3280,7 +3280,7 @@
       "executable": false
     },
     "src/purse/invoice-exceptions.ts": {
-      "sha256": "e3156a2d24f03611394a1118a00d3953e9a3fc0f1b1b71d2cd3fc83f32613af0",
+      "sha256": "9d2e99734788588125a1b556103c6b98d36b034ac1f125d1574ab3b4888b190a",
       "executable": false
     },
     "src/purse/invoice-inbox-api.ts": {
@@ -4264,7 +4264,7 @@
       "executable": false
     },
     "src/ui/invoice-exceptions.tsx": {
-      "sha256": "3b4563b3c00747361fea2408d8fafd61285b5865e720d96a93a7099ae9c4af93",
+      "sha256": "2824d44b49ccdb0471815fe5e47cb5212eab67bec858647a8c0b2dca4e2c3af4",
       "executable": false
     },
     "src/ui/invoice-form.tsx": {
@@ -4712,7 +4712,7 @@
       "executable": false
     },
     "tests/browser-invoice-exceptions.mjs": {
-      "sha256": "b7340efda7976fdd403ccdd109a941190dc581080d5e6d31616b0bfad27a940a",
+      "sha256": "63496d18f0708dc4d154af6fdae5caf733c15cf2d1a1f8ea821dc1b25d6d0ffa",
       "executable": false
     },
     "tests/browser-invoice-inbox.mjs": {
@@ -4972,7 +4972,7 @@
       "executable": false
     },
     "tests/invoice-exceptions.test.mjs": {
-      "sha256": "2ba24b1728a824597a44d526a5bba901f470041b18bb877d5e711817f84e74b2",
+      "sha256": "3625d8c08c16fff148e32e6fa391c59fe800984ceb28c24982c905433ed6c1b2",
       "executable": false
     },
     "tests/invoice-history-fixture.mjs": {

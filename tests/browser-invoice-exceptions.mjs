@@ -46,9 +46,12 @@ try {
             await thread.getByLabel('Internal comment', { exact: true }).fill('Review the private invoice original without widening receiver access');
             await thread.getByRole('button', { name: 'Post internal comment', exact: true }).click();
             await thread.getByText('Review the private invoice original without widening receiver access', { exact: true }).first().waitFor();
-            await receiver.goto(f.h.origin + '/app?receipt=' + f.order.id);
+            await receiver.goto(f.h.origin + '/app?tab=Orders');
+            const assigned = receiver.getByRole('region', { name: 'Assigned purchasing reviews', exact: true });
+            await assigned.getByText(f.order.number + ' · Held for receipt', { exact: true }).waitFor();
+            await assigned.getByRole('button', { name: 'Open assigned purchase', exact: true }).click();
             await receiver.getByRole('heading', { name: f.order.number + ' · issued', exact: true }).waitFor();
-            await receiver.getByText('Held for receipt', { exact: true }).waitFor();
+            await receiver.locator('section.record').getByText('Held for receipt', { exact: true }).waitFor();
             assert.equal(await receiver.getByText(f.invoice.reference, { exact: false }).count(), 0);
             await receiver.getByText('Correct a recorded receipt', { exact: true }).click();
             const corrections = receiver.getByRole('region', { name: 'Receipt corrections', exact: true });

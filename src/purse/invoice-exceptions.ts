@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { type Bindings } from '../auth.server';
 import { allowed } from './access';
 import { discrepancies, linePosition } from './orders';
-import { mayReceive, receiptVersion } from './receipt-routing';
+import { mayReceive, receiptVersion, receiptMatchingStatus } from './receipt-routing';
 import { actor, load, readFence } from './store';
 import { all, audit, get, put, requireThat, text, type Actor, type Data, type State } from './types';
 
@@ -55,6 +55,21 @@ export async function invoiceExceptionQueue(s: State, a: Actor, env: Bindings) {
                 invoiceQuantity: invoice.allocations.find((l: Data) => l.line === d.lineId)?.quantity })) };
     }).sort((x, y) => (x.openedAt ?? '').localeCompare(y.openedAt ?? '') || x.id.localeCompare(y.id));
 }
+/** Assignment routes work, not invoice content. Deduplicate at the PO boundary
+ * so a receiving task exposes neither hidden invoice identity nor counts. */
+export function assignedExceptionTasks(s: State, a: Actor) {
+    const openInvoices = new Set(discrepancies(s).filter(isException).map(d => d.invoiceId));
+    const tasks = new Map<string, Data>();
+    for (const record of all(s, 'invoiceException')) {
+        if (!openInvoices.has(record.invoice) || record.assignee !== a.id || record.assigneeVersion !== a.version) continue;
+        const order = exceptionOrder(s, record);
+        if (!responsible(s, a, order) || mayReadInvoiceException(s, a, record)) continue;
+        tasks.set(order.id, { order: order.id, number: order.number,
+            ...(mayReceive(s, a, order) ? { matchingStatus: receiptMatchingStatus(s, order) } : {}) });
+    }
+    return [...tasks.values()];
+}
+
 export async function invoiceExceptions(s: State, a: Actor, op: string, b: Data, env?: Bindings): Promise<Data | undefined> {
     if (op !== 'assign-invoice-exception') return;
     requireThat(env, 'Native exception storage required', 409);
@@ -81,5 +96,5 @@ invoiceExceptionsApi.get('/api/purse/invoice-exceptions', async c => {
     requireThat(allowed(state, a, 'po.read'), 'Purchase read scope required', 403);
     const queue = await invoiceExceptionQueue(state, a, c.env);
     await readFence(c.env.DB, a, revision);
-    return c.json({ queue });
+    return c.json({ queue, tasks: assignedExceptionTasks(state, a) });
 });

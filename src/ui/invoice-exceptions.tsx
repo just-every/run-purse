@@ -3,10 +3,14 @@ import { Comments } from './comments';
 import { call, Details, Field, Form, Table, money, when, type D } from './shared';
 
 export function InvoiceExceptions({ data, mutate, openOrder }: { data: D; mutate: (op: string, b: D) => Promise<any>; openOrder: (id: string, target: HTMLButtonElement) => void }) {
-    const [queue, setQueue] = useState<D[]>([]), [error, setError] = useState('');
-    useEffect(() => { let live = true; call('invoice-exceptions').then(r => { if (live) { setQueue(r.queue); setError(''); } }).catch(e => { if (live) setError(e.message); }); return () => { live = false; }; }, [data]);
-    if (!queue.length && !error) return null;
-    return <section aria-label="Invoice exception work queue"><h3>Invoice exception work queue</h3>
+    const [queue, setQueue] = useState<D[]>([]), [tasks, setTasks] = useState<D[]>([]), [error, setError] = useState('');
+    useEffect(() => { let live = true; call('invoice-exceptions').then(r => { if (live) { setQueue(r.queue); setTasks(r.tasks); setError(''); } }).catch(e => { if (live) setError(e.message); }); return () => { live = false; }; }, [data]);
+    if (!queue.length && !tasks.length && !error) return null;
+    return <>{tasks.length > 0 && <section aria-label="Assigned purchasing reviews"><h3>Assigned purchasing reviews</h3>
+        <p>Your assignment uses your existing purchase access.</p>
+        <ul className="ruled-list">{tasks.map(task => <li key={task.order}><p>{task.number} · {task.matchingStatus ?? 'Review purchase context'}</p>
+            <button type="button" onClick={e => openOrder(task.order, e.currentTarget)}>Open assigned purchase</button></li>)}</ul>
+    </section>}{(queue.length > 0 || error) && <section aria-label="Invoice exception work queue"><h3>Invoice exception work queue</h3>
         <p>Assignments use existing access. Clear matching context is ready for review; it does not approve a bill or payment.</p>
         {error && <p role="alert">{error}</p>}
         {queue.map(item => <section className="invoice" key={item.id} aria-label={'Exception ' + item.reference}>
@@ -28,7 +32,7 @@ export function InvoiceExceptions({ data, mutate, openOrder }: { data: D; mutate
             <Details label="Assignment history"><ul className="ruled-list">{item.history.map((e: D) => <li key={e.version}>Assignment {e.version} · {when(e.at)} · {e.reason}</li>)}</ul></Details>
             <Comments kind="invoiceException" record={item.id} mutate={mutate}/>
         </section>)}
-    </section>;
+    </section>}</>;
 }
 
 export function ReceiptCorrections({ order, receipts, mutate }: { order: D; receipts: D[]; mutate: (op: string, b: D) => Promise<any> }) {
