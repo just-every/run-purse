@@ -122,3 +122,11 @@ into an empty installation of that release, upgrade that installation’s source
 in place, run `rer install` and `rer setup`, then export again. Keep the original release
 and private export until recovery is verified. Never import an older release’s
 archive directly into the current release.
+
+## Contract projections
+
+`CONTRACT.md` is the acceptance and status source. Lander-Regenerate:
+`node scripts/contract-docs.mjs write INVOICE-005`, then
+`node scripts/contract-docs.mjs check INVOICE-005`.
+The seed's existing parser updates the named acceptance entry without changing
+other clauses, and generates `docs/CLAIMS.md` and the Status counts. Run the edition source lock command last after source edits.

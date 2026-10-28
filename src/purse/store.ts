@@ -1,3 +1,4 @@
+import { currentDecision } from './approval';
 import { ensureSearchStorage } from './search-storage';
 import { currentIdentitySession } from './identity-authority';
 import { operatorAuth, runtimeBindings, type Bindings } from '../auth.server';
@@ -15,6 +16,19 @@ for (const [k, r] of after) {
     if(r.kind==='emailIntake'&&r.value.status!=='held')q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(r.value.requester,r.value.requesterVersion));
     if(r.kind==='agreement'&&r.value.ownerProof){const p=r.value.ownerProof;q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(p.actor,p.operatorVersion));}
     if(r.kind==='recurringScenarioDraft')for(const proof of r.value.authorityProofs??[])q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active' AND (?=0 OR role='owner')) THEN 1 ELSE 0 END").bind(proof.actor,proof.operatorVersion,proof.owner?1:0));
+    // Standing rules and newly approved or scheduled invoices retain live native authority atomically.
+    const prior = before.get(k)?.value;
+    const newRule = r.kind === 'orderSend' && r.value.invoiceApprovalRule?.enabled && r.value.invoiceApprovalRule.version !== prior?.invoiceApprovalRule?.version;
+    const newApproval = r.kind === 'invoice' && r.value.paymentApproval && !prior?.paymentApproval;
+    const newSchedule = r.kind === 'invoice' && r.value.paymentSchedule && !prior?.paymentSchedule;
+    if (newRule || newApproval || newSchedule) {
+        const event = newRule ? r.value : after.get('orderSend:' + r.value.paymentApproval.send)!.value;
+        const rule = event.invoiceApprovalRule;
+        q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active' AND role='owner') AND EXISTS(SELECT 1 FROM p_order_send_links WHERE send=? AND revoked_at IS NULL AND expires_at>?) THEN 1 ELSE 0 END").bind(rule.actor,rule.operatorVersion,event.id,Date.now()));
+        const decision = currentDecision(after, after.get('request:' + event.request)!.value);
+        for (const proof of [{actor:event.actor,version:event.operatorVersion},...(decision.chainProofs ?? [{actor:decision.actor,version:decision.operatorVersion}])])
+            q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(proof.actor,proof.version));
+    }
     // Fresh grants cover preparation and issuance; issued receiving metadata is physical history.
     if(r.kind==='order'&&(r.value.status==='prepared'||r.value.issuedAt&&!before.get(k)?.value.issuedAt||(r.value.status==='issued'&&(before.get(k)?.value.status!=='issued'||r.value.reopenedAt!==before.get(k)?.value.reopenedAt))))q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(r.value.approvalActor,r.value.approvalVersion));
     if(r.kind==='order'&&['prepared','issued'].includes(r.value.status))for(const proof of r.value.approvalProofs??[])q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(proof.actor,proof.version));

@@ -1,3 +1,4 @@
+import { supplierInvoiceMatched } from './supplier-invoice-approval';
 import { PDFDocument } from 'pdf-lib';
 import { captureInvoice } from './invoices';
 import { allocateInvoiceCharges } from './invoice-amounts';
@@ -25,15 +26,15 @@ export function requireSupplierInvoiceOrder(state: State, event: Data) {
     return order;
 }
 
-/** Supplier statuses project only invoices created by this exact capability.
- * Cash-planning approval is deliberately never translated into payment approval. */
+/** Supplier statuses project only this capability's submissions and actual approval evidence. */
 export function supplierInvoiceStatuses(state: State, event: Data) {
     return all(state, 'supplierInvoiceSubmission').filter(source => source.send === event.id && source.order === event.order && source.revision === event.revision).map(source => {
         const invoice = get(state, 'invoice', source.invoice);
         requireThat(invoice.supplierSubmission === source.id && invoice.order === event.order && invoice.currency === source.currency, 'Supplier invoice source scope changed', 409);
         const paid = state.get('pantrySync:' + invoice.id)?.value;
         const returned = paid?.status === 'synced' && paid.invoice === invoice.id && paid.returned?.reference === invoice.reference && paid.returned?.totalMinor === invoice.totalMinor && paid.returned?.paymentStatus === 'paid' && paid.returned?.paidMinor === invoice.totalMinor && paid.returned?.openMinor === 0;
-        return { reference: invoice.reference, currency: invoice.currency, amountMinor: invoice.totalMinor, invoiceDate: invoice.invoiceDate, status: returned ? 'paid' : 'received', receivedAt: source.at };
+        const approved = invoice.paymentApproval && supplierInvoiceMatched(state, invoice);
+        return { reference: invoice.reference, currency: invoice.currency, amountMinor: invoice.totalMinor, invoiceDate: invoice.invoiceDate, status: returned ? 'paid' : approved ? invoice.paymentSchedule ? 'scheduled' : 'approved' : 'received', receivedAt: source.at };
     });
 }
 
