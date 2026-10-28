@@ -1,4 +1,7 @@
-import test from 'node:test';
+import { createHash } from 'node:crypto';
+import { pdfContent } from './pdf-content.mjs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { createPortability } from '@runeditrun/rer/modules/portability';
@@ -9,7 +12,7 @@ import { harness } from './purse-harness.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
 import { creditDocument, creditEmail, supplierCreditsFixture } from './supplier-credits-fixture.mjs';
 
-test('Native returned-goods credit: source review, once-only AP allocation, gross originals, currency balances, refusals, archive continuation and erasure', async t => {
+export async function supplierCreditsJourney(t) {
     const h = await harness(); t.after(() => h.close()); const f = await supplierCreditsFixture(h), cmd = h.command;
     const records = async () => (await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results;
     const refused = async (op, body, cookie = f.ap, status = 409) => { const before = await records(); await cmd(op, body, cookie, status); assert.deepEqual(await records(), before, 'Refusal changes no purchasing or audit evidence'); };
@@ -19,6 +22,15 @@ test('Native returned-goods credit: source review, once-only AP allocation, gros
     await cmd('rma-record', { id: rma.id, version: 1, status: 'authorized', reference: 'synthetic-purse-6209', reason: 'Buyer records the supplier authorization' }, f.buyer);
     await refused('rma-record', { id: rma.id, version: 1, status: 'declined', reference: 'synthetic-purse-6209', reason: 'Stale outcome' }, f.buyer);
     assert.equal(h.messages.length, mailCount, 'RMA preparation and tracking send nothing');
+    const service = await f.purchase('USD', f.supplier, true), serviceBefore = (await h.state()).data.order.find(row => row.id === service.id), commitmentBefore = (await h.state()).data.commitment;
+    const rejectionBody = { order: service.id, line: service.lines[0].id, event: 'reject', receiptVersion: serviceBefore.receiptVersion, valueMinor: 30000, reason: 'Rejected defective service delivery' };
+    await refused('service-receipt', { ...rejectionBody, valueMinor: 100001 }, f.receiver);
+    const rejected = await cmd('service-receipt', rejectionBody, f.receiver);
+    await refused('service-receipt', rejectionBody, f.receiver);
+    assert.equal((await h.state()).data.order.find(row => row.id === service.id).positions[0].acceptedMinor, 0);
+    assert.deepEqual((await h.state()).data.commitment, commitmentBefore);
+    const serviceRma = await cmd('rma-prepare', { receipt: rejected.id, reason: 'Prepare authorization for rejected service' }, f.buyer);
+    assert.equal(serviceRma.receipt, rejected.id);
     const credit = await cmd('supplier-credit-capture', f.capture(rma), f.ap);
     assert.equal((await cmd('supplier-credit-capture', f.capture(rma), f.ap)).id, credit.id);
     for (const change of [{ amountMinor: 30100 }, { document: await creditDocument('synthetic-purse-6210') }, { reference: 'SYNTHETIC-PURSE-6208' }]) await refused('supplier-credit-capture', { ...f.capture(rma), ...change });
@@ -26,6 +38,9 @@ test('Native returned-goods credit: source review, once-only AP allocation, gros
     await refused('supplier-credit-capture', { ...f.capture(rma), currency: 'CAD' });
     const original = '/api/purse/download/attachment/' + credit.attachment;
     assert.equal((await h.send(original, undefined, f.ap)).status, 200); assert.equal((await h.send(original, undefined, f.receiver)).status, 403); assert.equal((await h.send(original)).status, 401);
+    const creditBytes = await h.mf.dispatchFetch(h.origin + original, { headers: { cookie: f.ap } });
+    const creditText = await pdfContent(new Uint8Array(await creditBytes.arrayBuffer()));
+    assert.match(creditText.text, /Credit memo: synthetic-purse-6208/); assert.match(creditText.text, /Total: 300.00/);
     await refused('supplier-credit-apply', await f.application(credit));
     await refused('supplier-credit-review', { ...f.review(credit), sourceHash: '0'.repeat(64) });
     await refused('supplier-credit-review', f.review(credit), f.receiver, 403);
@@ -35,15 +50,31 @@ test('Native returned-goods credit: source review, once-only AP allocation, gros
     await refused('supplier-credit-apply', { ...await f.application(reviewed), invoiceVersion: 'stale' });
     await refused('supplier-credit-apply', await f.application(reviewed, f.invoice, 30001));
     await refused('supplier-credit-apply', await f.application(reviewed), f.receiver, 403);
+    const outside = await h.member(creditEmail(6221), ['ap-clerk']);
+    await cmd('member', { email: creditEmail(6221), name: 'Austin AP', active: true, grants: [{ role: 'ap-clerk', scope: { locations: ['Austin'] } }] });
+    await refused('supplier-credit-apply', await f.application(reviewed), outside, 403);
+    assert.equal((await h.send(original, undefined, outside)).status, 403);
     const other = await cmd('supplier', { name: 'Other synthetic supplier', status: 'preferred', reason: 'Reviewed' }, f.buyer);
     for (const [currency, vendor] of [['CAD', f.supplier], ['USD', other]]) {
         const po = await f.purchase(currency, vendor), { invoice } = await f.bill(po, 'synthetic-purse-' + (currency === 'CAD' ? 6212 : 6213));
+        const payable = await cmd('payable-terms', { invoice: invoice.id, version: 0, invoiceDate: '2026-10-25', term: 'Net 30', reason: 'Original terms' }, f.ap);
+        await cmd('approve-payable', { invoice: invoice.id, version: payable.version, reason: 'Matching original' }, f.ap);
         await refused('supplier-credit-apply', await f.application(reviewed, invoice));
     }
     const heldPo = await f.purchase(), { invoice: held } = await f.bill(heldPo, 'synthetic-purse-6214', 100001);
     const terms = await cmd('payable-terms', { invoice: held.id, version: 0, invoiceDate: '2026-10-25', term: 'Net 30', reason: 'Original terms' }, f.ap);
     await refused('approve-payable', { invoice: held.id, version: terms.version, reason: 'Held bill cannot approve' });
     await refused('supplier-credit-apply', await f.application(reviewed, held));
+    const smallPo = await f.purchase('USD', f.supplier, false, 20000), { invoice: smallBill } = await f.bill(smallPo, 'synthetic-purse-6217', 20000);
+    const smallTerms = await cmd('payable-terms', { invoice: smallBill.id, version: 0, invoiceDate: '2026-10-25', term: 'Net 30', reason: 'Original terms' }, f.ap);
+    await cmd('approve-payable', { invoice: smallBill.id, version: smallTerms.version, reason: 'Matching small bill' }, f.ap);
+    await refused('supplier-credit-apply', await f.application(reviewed, smallBill));
+    const riskPo = await f.purchase(), { invoice: riskBill } = await f.bill(riskPo, 'synthetic-purse-6222', 100000, f.billDocument);
+    assert.ok(riskBill.flags.some(row => row.code === 'duplicate-document'));
+    const riskTerms = await cmd('payable-terms', { invoice: riskBill.id, version: 0, invoiceDate: '2026-10-25', term: 'Net 30', reason: 'Original terms' }, f.ap);
+    await refused('approve-payable', { invoice: riskBill.id, version: riskTerms.version, reason: 'Unresolved document risk' });
+    await refused('supplier-credit-apply', await f.application(reviewed, riskBill));
+    assert.ok((await h.state()).data.invoice.find(row => row.id === riskBill.id).flags.some(row => row.code === 'duplicate-document' && !row.reviewed));
     const ledgerBefore = (await h.state()).data.commitment, grossBefore = (await h.state()).data.invoice.find(row => row.id === f.invoice.id);
     const input = await f.application(reviewed), results = await Promise.all([h.send('/api/purse/command/supplier-credit-apply', input, f.ap), h.send('/api/purse/command/supplier-credit-apply', input, f.ap)]);
     assert.deepEqual(results.map(row => row.status).sort(), [200, 409]);
@@ -56,7 +87,15 @@ test('Native returned-goods credit: source review, once-only AP allocation, gros
     const billFile = data.attachment.find(row => row.kind === 'invoice' && row.record === f.invoice.id);
     const downloaded = await h.mf.dispatchFetch(h.origin + '/api/purse/download/attachment/' + billFile.id, { headers: { cookie: f.ap } });
     assert.equal(Buffer.from(await downloaded.arrayBuffer()).toString('base64'), f.billDocument.base64);
-    assert.equal(data.supplierCredit.find(row => row.id === credit.id).openMinor, 0); assert.equal(data.supplierCreditBalances.find(row => row.supplier === f.supplier.id && row.currency === 'USD').balanceMinor, 70000);
+    assert.equal(data.supplierCredit.find(row => row.id === credit.id).openMinor, 0); assert.equal(data.supplierCreditBalances.find(row => row.supplier === f.supplier.id && row.currency === 'USD').balanceMinor, 90000);
+    assert.equal(data.supplierCreditBalances.find(row => row.supplier === f.supplier.id && row.currency === 'CAD').balanceMinor, 100000);
+    await h.configureMail({ PROTECTED_DATA_KEY: createHash('sha256').update('synthetic-purse-6224').digest('hex') });
+    const connection = await h.send('/api/purse/pantry/connection', { origin: 'https://synthetic-purse.invalid', currency: 'USD', token: 'synthetic-purse-6225', generation: 0, confirmed: true }, h.owner);
+    assert.equal(connection.status, 200, JSON.stringify(connection.value));
+    const blockedSync = await h.send('/api/purse/pantry/preview', { invoice: f.invoice.id, payableVersion: data.payable.find(row => row.invoice === f.invoice.id).version, accountId: 'synthetic-purse-6226' }, h.owner);
+    assert.equal(blockedSync.status, 409); assert.match(blockedSync.value.error, /credit transport/);
+    const serviceCredit = await cmd('supplier-credit-capture', { ...f.capture(serviceRma), reference: 'synthetic-purse-6218', amountMinor: 10000, document: await creditDocument('synthetic-purse-6218', '100.00') }, f.ap);
+    const openServiceCredit = await cmd('supplier-credit-review', f.review(serviceCredit), f.ap);
     const csv = await h.send('/api/purse/audit.csv', undefined, h.owner); assert.ok(csv.value.includes('supplier-credit-apply')); assert.ok(csv.value.includes(applied.reason));
     assert.equal(validatePurchasingArchive(await records()), true);
     const saved = join(h.dir, 'synthetic-purse-6215.rer'); await exportArchive(await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability }), saved, []);
@@ -67,6 +106,10 @@ test('Native returned-goods credit: source review, once-only AP allocation, gros
     const restoredState = await restored.send('/api/purse/state', undefined, signedIn.cookie); assert.equal(restoredState.status, 200);
     assert.equal(restoredState.value.data.cashRequirements.bills.find(row => row.invoice === f.invoice.id).amountMinor, 70000);
     assert.equal((await restored.send('/api/purse/command/supplier-credit-apply', input, signedIn.cookie)).status, 409);
+    const continuation = await restored.send('/api/purse/command/supplier-credit-apply', { credit: openServiceCredit.id, version: openServiceCredit.version, invoice: smallBill.id, invoiceVersion: restoredState.value.data.invoice.find(row => row.id === smallBill.id).creditVersion, amountMinor: 10000, reason: 'Current owner allocates the restored open credit after reviewing its original' }, signedIn.cookie);
+    assert.equal(continuation.status, 200, JSON.stringify(continuation.value));
+    const continued = await restored.send('/api/purse/state', undefined, signedIn.cookie);
+    assert.equal(continued.value.data.cashRequirements.bills.find(row => row.invoice === smallBill.id).amountMinor, 10000);
     await cmd('member', { email: creditEmail(6204), name: 'AP revoked', active: true, roles: ['requester'] });
     await refused('supplier-credit-apply', input, f.ap, 403); assert.equal((await h.send(original, undefined, f.ap)).status, 403); assert.equal((await h.state(f.ap)).data.supplierCredit.length, 0);
     await reauthenticateErasure(h); const inventory = await h.send('/api/purse/erasure', undefined, h.owner);
@@ -79,4 +122,11 @@ test('Native returned-goods credit: source review, once-only AP allocation, gros
     const latest = join(h.dir, 'synthetic-purse-6216.rer'); await exportArchive(await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability }), latest, []);
     const empty = await harness({ empty: true }); t.after(() => empty.close());
     await assert.rejects(importArchive(await createPortability({ db: empty.db, buckets: { ORIGINALS: empty.originals }, policy: portability }), saved, [], latest), /erasure|journal/i);
-});
+
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+    const cleanup = [];
+    try { await supplierCreditsJourney({ after: fn => cleanup.push(fn) }); console.log('Native supplier credit sanity journey passed'); }
+    finally { for (const close of cleanup.reverse()) await close(); }
+}

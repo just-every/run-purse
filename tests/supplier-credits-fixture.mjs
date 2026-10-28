@@ -1,9 +1,9 @@
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 
 export const creditEmail = n => ['synthetic-purse-' + n, 'example.test'].join('@');
-export async function creditDocument(reference, amount = '300.00') {
+export async function creditDocument(reference, amount = '300.00', kind = 'Credit memo') {
     const pdf = await PDFDocument.create(), font = await pdf.embedFont(StandardFonts.Helvetica);
-    pdf.addPage().drawText(`Synthetic supplier original ${reference}. USD ${amount}. Returned equipment.`, { font, size: 16 });
+    pdf.addPage().drawText(`Synthetic equipment supplier\n${kind}: ${reference}\nCurrency: USD\nTotal: ${amount}`, { font, size: 16, x: 50, y: 750, lineHeight: 24 });
     return { name: reference + '.pdf', mediaType: 'application/pdf', base64: Buffer.from(await pdf.save()).toString('base64') };
 }
 export async function supplierCreditsFixture(h) {
@@ -13,17 +13,17 @@ export async function supplierCreditsFixture(h) {
     const supplier = await cmd('supplier', { name: 'Synthetic equipment supplier', status: 'preferred', reason: 'Approved supplier', contacts: [{ name: 'Synthetic credit contact', email: creditEmail(6206) }] }, buyer);
     for (const currency of ['USD', 'CAD']) await cmd('policy', { name: currency + ' Equipment', currency, category: '*', project: '*', approver: creditEmail(6203), limitMinor: 10000000, budgetMinor: 10000000 });
     let serial = 0;
-    const purchase = async (currency = 'USD', vendor = supplier, service = false) => {
-        const request = await cmd('request', { title: 'Synthetic equipment purchase ' + ++serial, supplier: vendor.id, currency, needDate: '2099-12-01', location: 'Denver', costCentre: 'Operations', terms: 'Net 30', lines: [{ description: service ? 'Equipment service' : 'Equipment kit', quantity: '10', unitMinor: 10000, category: 'Equipment', project: 'Equipment', ...(service ? { service: { mode: 'amount' } } : {}) }] }, requester);
+    const purchase = async (currency = 'USD', vendor = supplier, service = false, amountMinor = 100000) => {
+        const request = await cmd('request', { title: 'Synthetic equipment purchase ' + ++serial, supplier: vendor.id, currency, needDate: '2099-12-01', location: 'Denver', costCentre: 'Operations', terms: 'Net 30', lines: [{ description: service ? 'Equipment service' : 'Equipment kit', quantity: '10', unitMinor: amountMinor / 10, category: 'Equipment', project: 'Equipment', ...(service ? { service: { mode: 'amount' } } : {}) }] }, requester);
         await cmd('submit', { id: request.id, revision: 1 }, requester); await cmd('decision', { id: request.id, revision: 1, decision: 'approved', reason: 'Equipment approved' }, approver);
         const order = await cmd('convert', { id: request.id, revision: 1 }, buyer); await cmd('issue', { id: order.id, revision: 1, reason: 'Reviewed issued equipment PO' }, buyer);
         if (!service) await cmd('receipt', { order: order.id, line: order.lines[0].id, event: 'receive', quantity: '10', reason: 'Equipment received' }, receiver);
         return order;
     };
     const order = await purchase(), returned = await cmd('receipt', { order: order.id, line: order.lines[0].id, event: 'return', quantity: '3', reason: 'Three damaged units physically returned' }, receiver);
-    const laterOrder = await purchase(), billDocument = await creditDocument('synthetic-purse-6207', '1000.00');
+    const laterOrder = await purchase(), billDocument = await creditDocument('synthetic-purse-6207', '1000.00', 'Invoice');
     const bill = async (po, reference, amountMinor = 100000, document) => {
-        document ??= await creditDocument(reference, (amountMinor / 100).toFixed(2));
+        document ??= await creditDocument(reference, (amountMinor / 100).toFixed(2), 'Invoice');
         const invoice = await cmd('invoice', { order: po.id, reference, source: 'Reviewed supplier original', invoiceDate: '2026-10-25', document, allocations: [{ line: po.lines[0].id, quantity: '10', amountMinor }] }, ap);
         return { invoice, document };
     };

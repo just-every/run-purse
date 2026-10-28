@@ -18,7 +18,7 @@ export function validateSupplierCredits(all, get, check) {
         const rma = get('supplierRma', credit.rma), file = get('attachment', credit.attachment);
         check(credit.order === rma.order && credit.receipt === rma.receipt && credit.supplier === rma.supplier && credit.currency === rma.currency, 'credit_source');
         check(positive(credit.amountMinor) && validDate(credit.creditDate) && typeof credit.reference === 'string' && credit.reference.trim() && typeof credit.source === 'string' && credit.source.trim(), 'credit_facts');
-        const identity = canonical(credit.supplier) + ':' + credit.reference.trim().toUpperCase();
+        const identity = credit.supplier + ':' + credit.reference.trim().toUpperCase();
         check(!references.has(identity) && !hashes.has(credit.document?.sha256), 'credit_duplicate'); references.add(identity); hashes.add(credit.document.sha256);
         check(file.kind === 'supplierCredit' && file.record === credit.id && originalDigest(all, file) === credit.document.sha256 && file.size === credit.document.size, 'credit_original');
         check(['review', 'open'].includes(credit.status) && typeof credit.actor === 'string' && Number.isFinite(Date.parse(credit.at)), 'credit_status');
