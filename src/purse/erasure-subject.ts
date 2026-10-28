@@ -7,10 +7,10 @@ export async function erasureSubject(db:D1Database,state:State,input:Data):Promi
   const member=get(state,'member',input.id);
   requireThat(member.active===false,'Deactivate this member before erasure',409);
   requireThat(!member.email.endsWith('@erased.invalid'),'This identity was already erased',409);
-  const operator=await db.prepare('SELECT id,role FROM oa_operators WHERE email=?').bind(member.email).first<Data>();
+  const operator=await db.prepare('SELECT id,role,display_name FROM oa_operators WHERE email=?').bind(member.email).first<Data>();
   requireThat(operator?.role!=='owner','Native owners must transfer ownership before erasure',409);
   const scim=member.scim&&get(state,'scimUser',member.scim.user);
-  return {kind:'member',id:member.id,email:member.email,operator:operator?.id,values:[member.email,member.name,operator?.id,scim?.externalId].filter(Boolean)};
+  return {kind:'member',id:member.id,email:member.email,operator:operator?.id,values:[member.email,member.name,operator?.id,operator?.display_name,...all(state,'comment').filter(c=>c.author===operator?.id).map(c=>c.authorName),scim?.externalId].filter(Boolean)};
  }
  const supplier=get(state,'supplier',input.id);
  requireThat(typeof input.email==='string','Select the exact contact email');
