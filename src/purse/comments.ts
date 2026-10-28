@@ -1,17 +1,14 @@
 import { createHash } from 'node:crypto';
 import { Hono } from 'hono';
 import { runtimeBindings, type Bindings } from '../auth.server';
-import { canReadRecord, requireRecordRead } from './access-records';
+import { canReadCommentParent } from './access-records';
 import { actor, load, readFence } from './store';
 import { all, audit, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
 /** Internal correspondence is never an approval, supplier message or agent action. */
 function parent(s: State, kind: string, id: string) {
-    requireThat(['request', 'order'].includes(kind), 'Native request or PO required');
-    const record = get(s, kind, id);
-    requireThat(!record.imported && !record.adoption && record.purchaseType !== 'travel', 'This record comment door is not available', 409);
-    if (kind === 'order') requireThat(record.issuedAt, 'Issue the PO before commenting', 409);
-    return record;
+    requireThat(['request', 'order', 'invoice', 'supplier', 'agreement'].includes(kind), 'Purchasing comment record required');
+    return get(s, kind, id);
 }
 async function members(env: Bindings, s: State): Promise<(Actor & { name: string })[]> {
     const operators = (await env.DB.prepare("SELECT id,email,display_name,role,version FROM oa_operators WHERE status='active'").all<Data>()).results;
@@ -19,7 +16,7 @@ async function members(env: Bindings, s: State): Promise<(Actor & { name: string
         .map(o => ({ id: o.id, email: o.email, name: all(s, 'member').find(m => m.email.toLowerCase() === o.email.toLowerCase())?.name ?? o.display_name, owner: o.role === 'owner', version: o.version, session: '', dev: false }));
 }
 function warnings(s: State, record: Data, kind: string, mentions: string[], directory: (Actor & { name: string })[]) {
-    return mentions.filter(id => { const member = directory.find(m => m.id === id); return !member || !canReadRecord(s, member, kind, record); })
+    return mentions.filter(id => { const member = directory.find(m => m.id === id); return !member || !canReadCommentParent(s, member, kind, record); })
         .map(id => ({ id, name: directory.find(m => m.id === id)?.name ?? 'Unavailable member', message: 'This member cannot see the record. Their notice contains no record content.' }));
 }
 export async function comments(s: State, a: Actor, op: string, b: Data, env?: Bindings): Promise<Data | undefined> {
@@ -27,7 +24,7 @@ export async function comments(s: State, a: Actor, op: string, b: Data, env?: Bi
     requireThat(env, 'Native comment storage required', 409);
     const existing = op === 'comment-add' ? undefined : get(s, 'comment', text(b.id, 'Comment', 200));
     const kind = existing?.kind ?? b.kind, recordId = existing?.record ?? b.record;
-    const record = parent(s, kind, recordId); requireRecordRead(s, a, kind, record);
+    const record = parent(s, kind, recordId); requireThat(canReadCommentParent(s, a, kind, record), 'Record outside your scope', 403);
     if (existing) {
         requireThat(existing.author === a.id && existing.authorEmail.toLowerCase() === a.email.toLowerCase(), 'Only the author can change this comment', 403);
         requireThat(existing.status !== 'deleted' && !existing.erasure, 'Comment is no longer editable', 409);
@@ -73,6 +70,14 @@ export async function comments(s: State, a: Actor, op: string, b: Data, env?: Bi
     return { ...comment, warnings: warnings(s, record, kind, mentions, directory) };
 }
 
+function recordUrl(kind: string, record: Data) {
+    if (kind === 'request') return '/app?request=' + encodeURIComponent(record.id);
+    if (kind === 'order') return '/app?tab=Orders&receipt=' + encodeURIComponent(record.id);
+    if (kind === 'invoice') return '/app?tab=Orders&receipt=' + encodeURIComponent(record.order) + '#invoice-' + encodeURIComponent(record.id);
+    if (kind === 'supplier') return '/app?tab=Suppliers&supplier=' + encodeURIComponent(record.id);
+    return '/app?agreement=' + encodeURIComponent(record.id);
+}
+
 export const commentsApi = new Hono<{ Bindings: Bindings }>();
 commentsApi.get('/api/purse/comments/notices', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB);
@@ -80,17 +85,22 @@ commentsApi.get('/api/purse/comments/notices', async c => {
     requireThat(directory.some(m => m.id === a.id), 'No active business membership', 403);
     const notices = all(state, 'commentNotice').filter(n => n.recipient === a.id).map(n => {
         const comment = get(state, 'comment', n.comment), record = get(state, comment.kind, comment.record);
-        const canRead = canReadRecord(state, a, comment.kind, record);
+        const canRead = canReadCommentParent(state, a, comment.kind, record);
         const safe = { id: n.id, mentionedBy: n.mentionedByName, at: n.at, canRead };
-        return canRead ? { ...safe, kind: comment.kind, record: comment.record, title: record.title ?? record.number, body: comment.status === 'deleted' ? 'Comment deleted' : comment.versions.at(-1).body }
+        return canRead ? { ...safe, kind: comment.kind, record: comment.record, title: record.title ?? record.number ?? record.name ?? record.reference, url: recordUrl(comment.kind, record), body: comment.status === 'deleted' ? 'Comment deleted' : comment.versions.at(-1).body }
             : { ...safe, message: 'You were mentioned on a record you cannot access.' };
     });
-    await readFence(c.env.DB, a, revision); return c.json({ notices });
+    const recent = all(state, 'comment').filter(comment => comment.status === 'active' && canReadCommentParent(state, a, comment.kind, get(state, comment.kind, comment.record)))
+        .sort((x, y) => y.versions.at(-1).at.localeCompare(x.versions.at(-1).at) || x.id.localeCompare(y.id)).slice(0, 20).map(comment => {
+            const record = get(state, comment.kind, comment.record);
+            return { id: comment.id, author: comment.authorName, at: comment.versions.at(-1).at, title: record.title ?? record.number ?? record.name ?? record.reference, body: comment.versions.at(-1).body, url: recordUrl(comment.kind, record) };
+        });
+    await readFence(c.env.DB, a, revision); return c.json({ notices, recent });
 });
 commentsApi.get('/api/purse/comments/:kind/:record', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB);
     const kind = c.req.param('kind'), record = parent(state, kind, c.req.param('record'));
-    requireRecordRead(state, a, kind, record);
+    requireThat(canReadCommentParent(state, a, kind, record), 'Record outside your scope', 403);
     const directory = await members(runtimeBindings(c.env), state);
     const thread = all(state, 'comment').filter(comment => comment.kind === kind && comment.record === record.id)
         .sort((x, y) => x.at.localeCompare(y.at) || x.id.localeCompare(y.id))
