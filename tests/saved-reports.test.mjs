@@ -26,9 +26,13 @@ test('Saved report views recompute scoped allocation rows, literal CSV and parse
  const injected=await h.send('/api/purse/saved-reports',{name:'synthetic-purse-4124',filters:{},report:{rows:[]}},f.finance);assert.equal(injected.status,400);
  const crossOrigin=await h.mf.dispatchFetch(h.origin+'/api/purse/saved-reports',{method:'POST',headers:{cookie:f.finance,origin:'https://example.invalid','content-type':'application/json'},body:JSON.stringify({name:'synthetic-purse-4125',filters:{}})});assert.equal(crossOrigin.status,403);
  const custom=await f.save({groupBy:'line:'+f.form.id+':grant',['header:'+f.form.id+':region']:'synthetic-purse-4108'});assert.equal(custom.status,200);const grouped=await h.send('/api/purse/saved-reports/'+custom.value.id+'/view',undefined,f.finance);assert.equal(grouped.value.report.rows.length,4);assert.deepEqual(grouped.value.report.groups.map(row=>[row.label,row.currency,row.committedMinor,row.actualMinor]),[['-synthetic-purse-4110','USD',6001,4000]]);
- const filtered=await f.save({groupBy:'department',from:'2027-01-15',through:'2027-01-15',glAccount:'6300'});assert.equal(filtered.status,200);const single=await h.send('/api/purse/saved-reports/'+filtered.value.id+'/view',undefined,f.finance);assert.deepEqual(single.value.report.rows.map(row=>[row.kind,row.amountMinor]),[['committed',2400]]);
+ // Use immutable source dates rather than an expectation tied to today's date.
+ const dates=[f.order.needDate,f.invoice.at.slice(0,10)].sort(),from=dates[0],through=dates[1];
+ const outside=new Date(Date.parse(from+'T00:00:00Z')-86400000).toISOString().slice(0,10);
+ const excluded=await f.submit({...f.draft,title:'synthetic-purse-4128',needDate:outside});
+ const filtered=await f.save({groupBy:'department',from,through,glAccount:'6300'});assert.equal(filtered.status,200);const single=await h.send('/api/purse/saved-reports/'+filtered.value.id+'/view',undefined,f.finance);assert.deepEqual(single.value.report.rows.map(row=>[row.kind,row.amountMinor]),[['committed',2400],['actual',1600]]);assert.ok(!single.value.report.rows.some(row=>row.request===excluded.id));
  // Save no financial results: a later ordinary purchase changes a reopened broad view.
- await f.submit({...f.draft,title:'synthetic-purse-4120'});const updated=await h.send(path+'/view',undefined,f.finance);assert.equal(updated.value.report.totals.find(row=>row.currency==='USD').reservedMinor,13001);
+ await f.submit({...f.draft,title:'synthetic-purse-4120'});const updated=await h.send(path+'/view',undefined,f.finance);assert.equal(updated.value.report.totals.find(row=>row.currency==='USD').reservedMinor,23002);
  assert.equal((await h.send(path+'/view',undefined,h.owner)).status,403);
  assert.equal((await h.send(path+'/view')).status,401);
  for(const filters of [{bankAccount:'synthetic-purse-4121'},{groupBy:'bankAccount'},{from:'2027-02-30'},{through:'2026-01-01',from:'2027-01-01'}])assert.equal((await f.save(filters)).status,400);
