@@ -11,8 +11,8 @@ export function InvoiceExceptions({ data, mutate, openOrder }: { data: D; mutate
         {error && <p role="alert">{error}</p>}
         {queue.map(item => <section className="invoice" key={item.id} aria-label={'Exception ' + item.reference}>
             <h4>{item.reference} · {item.number}</h4>
-            <p>First recorded {when(item.openedAt)} · {Math.max(0, Math.floor((Date.now() - Date.parse(item.openedAt)) / 86400000))} days old · {item.status === 'open' ? 'Needs review' : 'Matching context clear'}</p>
-            <p>Responsible member: {item.assigneeName}</p>
+            <p>First recorded {when(item.openedAt)} · {item.openedAt ? Math.max(0, Math.floor((Date.now() - Date.parse(item.openedAt)) / 86400000)) + ' days old' : 'Original age unavailable'} · {item.status === 'open' ? 'Needs review' : 'Matching context clear'}</p>
+            <p>Responsible member: {item.assigneeName}</p>{item.ageBasis !== 'Exception detected' && <p>{item.ageBasis}</p>}
             <button type="button" onClick={e => openOrder(item.currentOrder, e.currentTarget)}>Open receiving context</button>
             <Table heads={['Line', 'Ordered', 'Received', 'Invoiced', 'Price', 'Review']}>{item.context.map((c: D) => <tr key={c.lineId}>
                 <td>{c.line}</td><td>{c.orderedQuantity}</td><td>{c.acceptedQuantity}</td><td>{c.invoiceQuantity}</td>

@@ -26,6 +26,7 @@ try {
             const queue = buyer.getByRole('region', { name: 'Invoice exception work queue', exact: true });
             const item = queue.getByRole('region', { name: 'Exception ' + f.invoice.reference, exact: true });
             await item.getByText('Receipt shortfall', { exact: true }).waitFor();
+            const openedAt = (await f.queue())[0].openedAt;
             const originalAge = await item.getByText('First recorded', { exact: false }).innerText();
             const assignment = item.locator('details').filter({ has: buyer.locator('summary').filter({ hasText: 'Assign exception' }) });
             await assignment.locator('summary').click();
@@ -70,7 +71,7 @@ try {
             await buyer.getByText('Matching context clear', { exact: false }).waitFor();
             const matched = (await f.queue())[0];
             assert.equal(matched.context[0].acceptedQuantity, 10); assert.equal(matched.context[0].receiptShortfall, false);
-            assert.equal(matched.openedAt, f.invoice.at);
+            assert.equal(matched.openedAt, openedAt);
             assert.equal((await f.h.state(f.buyer)).data.invoice[0].paymentApproval, undefined);
             await screenshot(buyer, 'exception-context-clear');
             assert.deepEqual(errors, []);

@@ -135,7 +135,7 @@ test('Legacy archive import migrates retained evidence without rewriting hashes,
  const {makePart,ContentVerifier,ArchiveVerifier}=await import('@runeditrun/rer/modules/portability/format');
  const {records,rows}=await import('./browser-archive.mjs');const {writeFile}=await import('node:fs/promises');const {join}=await import('node:path');
  const h=await harness();t.after(()=>h.close());const f=await legacyHistoryFixture(h);
- const bad=f.invoices.find(i=>i.reference==='Hash did not verify');await h.db.prepare("DELETE FROM p_records WHERE kind='invoice' AND id=?").bind(bad.id).run();await h.db.prepare("DELETE FROM p_records WHERE kind='invoiceEvidenceKey'").run();
+ const bad=f.invoices.find(i=>i.reference==='Hash did not verify');await h.db.prepare("DELETE FROM p_records WHERE kind IN ('invoice','invoiceException') AND id=?").bind(bad.id).run();await h.db.prepare("DELETE FROM p_records WHERE kind='invoiceEvidenceKey'").run();
  const before=(await h.db.prepare("SELECT id,value FROM p_records WHERE kind='invoice'").all()).results.map(r=>({id:r.id,hash:JSON.parse(r.value).evidenceHash}));
  const archive=join(h.dir,'legacy.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:{...portability,exportRow:undefined}}),archive,[]);
  const target=await harness({empty:true});t.after(()=>target.close());const service=await createPortability({db:target.db,buckets:{ORIGINALS:target.originals},policy:portability});

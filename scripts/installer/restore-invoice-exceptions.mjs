@@ -2,7 +2,7 @@
 export function validateInvoiceExceptions(all, get, check, same) {
     for (const record of all('invoiceException')) {
         const invoice = get('invoice', record.invoice);
-        check(record.id === invoice.id && record.order === invoice.order && Number.isFinite(Date.parse(record.openedAt)), 'invoice_exception_source');
+        check(record.id === invoice.id && record.order === invoice.order && (record.openedAt === null || Number.isFinite(Date.parse(record.openedAt))), 'invoice_exception_source');
         check(Number.isInteger(record.version) && record.version >= 0 && Array.isArray(record.history) && record.history.length === record.version, 'invoice_exception_history');
         for (const [index, event] of record.history.entries()) {
             check(event.version === index + 1 && typeof event.assignee === 'string' && Number.isInteger(event.assigneeVersion)

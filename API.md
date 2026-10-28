@@ -959,4 +959,5 @@ replayed, excessive, imported, service and superseded-receipt changes.
 Receivers continue to see only the PO's aggregate invoice matching state.
 Correction recalculates matching context and commitment position, preserves
 invoice originals and all risk holds, and creates no invoice or payment
-approval. Existing independent cash-planning review remains required.
+approval. Existing independent cash-planning review remains required. An open matching
+exception suspends current cash eligibility while retaining historical approval.
