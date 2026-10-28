@@ -829,3 +829,20 @@ supplier messages, supplier links or PO documents. Complete archives retain
 comment history and files without restoring identity authority; reviewed erasure
 anonymizes authors and withdraws affected originals. External mention delivery,
 provider reply binding and live supplier-inbox qualification remain unavailable.
+## Native budget review
+
+The current native owner uses `POST /api/purse/budget-import/columns` to read
+CSV column names and `POST /api/purse/budget-import/preview` to review a complete
+`{csv, mapping}`. Neither endpoint writes state. Mapping explicitly names
+`columns`, `budgets`, `owners` and `dimensions`; dimensions map source department,
+location, project and GL values to the selected existing dated policy. A source
+owner label maps to a current active member. Alert thresholds are whole
+percentages separated by semicolons in the mapped source column.
+
+`POST /api/purse/command/budget-import-commit` takes that same input, the preview's
+`fingerprint` and `review`, and `consent: true`. A changed source, mapping, state
+or native session requires a fresh preview. The signed review is not portable
+authority. Commit changes budget amounts and native alert custody, preserving
+policy approval authority. An unchanged import performs no writes. Audit retains
+source and mapping digests, amounts and assignments; it retains no CSV original.
+Current scoped state reads expose only permitted budget positions and alerts.

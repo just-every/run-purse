@@ -1,7 +1,8 @@
 {
   "1": [
     ["tests/browser.mjs", "--width=390", "--journey=agreements"],
-    ["tests/browser-comments.mjs", "--width=1440"]
+    ["tests/browser-comments.mjs", "--width=1440"],
+    ["tests/browser-budget-import.mjs"]
   ],
   "2": [
     ["tests/browser.mjs", "--width=390", "--journey=agent-value"],

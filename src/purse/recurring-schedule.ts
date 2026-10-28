@@ -1,3 +1,4 @@
+import { evaluateBudgetAlerts } from './budget-alerts';
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { load } from './store';
 import { recurringRenewal } from './recurring-renewal';
@@ -32,6 +33,7 @@ function generated(s: State, series: Data, now: number) {
     put(s,'order',orderId,{...order,id:orderId,request:id,revision:1,sequence,number:`PO-${String(sequence).padStart(6,'0')}`,status:'issued',lines:lines.map((l:Data)=>({...l,sourceLine:l.id})),needDate:series.nextDate,recurring:source,approvalActor:authorization.actor,approvalVersion:authorization.operatorVersion,generatedAt:at,issuedAt:at,issuedBy:series.owner,issueReason:'Scheduled order under approved recurring authority'});
     const nextDate=nextMonth(series.nextDate,series.anchor), count=series.generatedCount+1, ended=count>=series.maxOrders||nextDate>series.endDate;
     put(s,'recurringSeries',series.id,{...series,nextDate,generatedCount:count,status:ended?'ended':'active',version:series.version+1});
+    evaluateBudgetAlerts(s,actor);
     audit(s,actor,'recurring-generated',orderId,{series:series.id,sourceOrder:order.id,scheduledFor:series.nextDate});
     return {order:orderId,request:id,agreement:series.agreement,agreementVersion:all(s,'agreement').find(a=>a.id===series.agreement)!.version,sourceOrder:order.id,scheduledFor:series.nextDate,status:'generated',at};
 }
