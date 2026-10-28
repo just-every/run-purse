@@ -1,3 +1,4 @@
+import { unrestrictedPermission } from './access-records';
 import { builtinRoles } from './access';
 import { all, audit, can, get, put, roles, requireThat, text, type Actor, type Data, type State } from './types';
 
@@ -34,4 +35,8 @@ export function catalogueGrants(s: State, a: Actor, op: string, b: Data): Data |
     put(s, 'catalogueGrant', email, { email, ...scope });
     audit(s, a, op, email, scope);
     return get(s, 'catalogueGrant', email);
+}
+
+export function requireCatalogueManagement(s: State, a: Actor) {
+    requireThat(a.owner || unrestrictedPermission(s, a, 'procurement.manage'), 'Unrestricted procurement permission required for catalogue import', 403);
 }

@@ -885,3 +885,16 @@ native actor and personal values through the existing reviewed erasure door.
 Weekly and monthly email scheduling, received matching attachments, scoped
 OData under API-001, the authorized scheduled Google Sheets connection and full
 CODING-001 and CODING-002 qualification remain REPORT-002 gaps.
+
+
+## Hosted catalogue CSV
+
+`POST /api/purse/catalogue-import/preview` accepts `{csv}` and returns reviewed
+rows, currency-specific before and after prices, availability, source hash,
+fingerprint and a session-bound review token. It writes nothing and requires
+current unrestricted procurement management. `catalogue-import-commit` on the
+native command route accepts the same `csv`, `fingerprint`, `review` and
+`consent:true`. It rechecks current authority, exact bytes and state, validates
+all rows before any writes, and returns `changes`, `sourceHash` and item IDs.
+An unchanged import writes nothing. The column format and supplier identity
+rules are documented in IMPORTING.md. There is no outbound supplier action.

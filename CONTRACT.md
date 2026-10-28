@@ -365,8 +365,8 @@ STOCK-001, PO-010, SUPPLIER-007, SUPPLIER-005, CATALOG-001, SUPPLIER-003, SUPPLI
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 17 | 0 | 0 | 17 |
-| Target and push further | 37 | 26 | 33 | 96 |
-| All | 54 | 26 | 33 | 113 |
+| Target and push further | 37 | 27 | 32 | 96 |
+| All | 54 | 27 | 32 | 113 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -412,7 +412,7 @@ STOCK-001, PO-010, SUPPLIER-007, SUPPLIER-005, CATALOG-001, SUPPLIER-003, SUPPLI
 | `SOURCE-002` | Quote document processing | target | done | `src/purse/quote-reading.ts`; `src/purse/quote-reading-source.ts`; `src/purse/quote-reading-proposal.ts`; `src/ui/quote-reading.tsx`; `tests/quote-reading.test.mjs`; `tests/browser-quote-reading.mjs`; `scripts/installer/restore-quote-reading.mjs` |  |
 | `CATALOG-001` | Catalog items, bundles and access | target | done | `src/purse/catalogue.ts`; `src/purse/catalogue-access.ts`; `src/purse/catalogue-requests.ts`; `tests/catalogue.test.mjs`; `tests/browser-catalogue.mjs` |  |
 | `PUNCHOUT-001` | Amazon Business PunchOut | target | missing |  | Amazon Business cXML PunchOut and OrderRequest not built |
-| `PUNCHOUT-002` | Other PunchOut and hosted catalogs | target | missing |  | Other cXML/OCI PunchOut catalogs and catalog CSV validity not built |
+| `PUNCHOUT-002` | Other PunchOut and hosted catalogs | target | partial | `tests/catalogue-import.test.mjs` “Hosted catalogue review atomically imports exact identities and dated currency prices under current authority, preserving purchases and archive continuation”: native HTTP preview and reviewed commit, exact source and state binding, atomic expired-price refusal, future selection refusal, currency separation, idempotent repeat, current authority, approved revisions and restored continuation. | Native browser and imported-item PO-009 proof pending. Missing account and access: all six named supplier cXML and OCI test catalogues or accounts. Generic cXML and OCI connections, cart returns, approved-PO transmission, order confirmations and each named supplier qualification remain unbuilt, including PO-009 proof through those transport doors. |
 | `STOCK-001` | Stockroom consumables | target | done | `src/purse/stockroom.ts`; `src/ui/stockroom.tsx`; `tests/stockroom.test.mjs` STOCK-001; `tests/browser-stockroom.mjs` STOCK-001 at 1440/390; `API.md` Pier draft intake |  |
 | `CODING-001` | Split allocations across codings | target | missing |  | Split allocations by percentage, amount, quantity or equally, per-allocation budgets, routing and ledger lines, and split templates not built |
 | `CODING-002` | Custom header and line fields | target | missing |  | Custom header and line fields, ledger-dimension lists, carry-through to PO and bill lines, and ledger mappings not built |

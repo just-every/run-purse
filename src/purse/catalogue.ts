@@ -16,6 +16,24 @@ export function currentPrice(item: Data) {
     const today = catalogueDate();
     return (!item.validFrom || item.validFrom <= today) && (!item.validUntil || item.validUntil >= today);
 }
+export function catalogueItem(s: State, b: Data): Data {
+    supplier(s, b.supplier); currency(s, b.currency);
+    const business = get(s, 'business', 'main');
+    const defaults: Data = {};
+    for (const [field, list] of [['project', 'projects'], ['location', 'locations'], ['costCentre', 'costCentres']]) {
+        defaults[field] = b[field] ? text(b[field], field) : '';
+        requireThat(!defaults[field] || business[list].includes(defaults[field]), 'Use configured ' + field);
+    }
+    const validFrom = b.validFrom ? date(b.validFrom, 'Price valid from') : null;
+    const validUntil = b.validUntil ? date(b.validUntil, 'Price valid until') : null;
+    requireThat(!validFrom || !validUntil || validFrom <= validUntil, 'Price validity dates are reversed');
+    const record = { description: text(b.description, 'Description'), supplier: b.supplier, currency: b.currency,
+        unitMinor: moneyInput(b, 'unitAmount', 'unitMinor', 'Reference price'), category: text(b.category, 'Category'),
+        approved: b.approved === true, partNumber: b.partNumber ? text(b.partNumber, 'Part number', 200) : '',
+        unit: b.unit ? text(b.unit, 'Unit', 100) : 'each', validFrom, validUntil, ...defaults,
+        requiredAttachments: stringList(b.requiredAttachments, 'Required attachment filenames') };
+    return record;
+}
 export function catalogue(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if (op !== 'catalogue' && op !== 'catalogue-bundle') return;
     can(s, a, 'buyer');
@@ -24,21 +42,7 @@ export function catalogue(s: State, a: Actor, op: string, b: Data): Data | undef
     const previous = b.id ? get(s, kind, id) : undefined;
     let record: Data;
     if (kind === 'catalogue') {
-        supplier(s, b.supplier); currency(s, b.currency);
-        const business = get(s, 'business', 'main');
-        const defaults: Data = {};
-        for (const [field, list] of [['project', 'projects'], ['location', 'locations'], ['costCentre', 'costCentres']]) {
-            defaults[field] = b[field] ? text(b[field], field) : '';
-            requireThat(!defaults[field] || business[list].includes(defaults[field]), 'Use configured ' + field);
-        }
-        const validFrom = b.validFrom ? date(b.validFrom, 'Price valid from') : null;
-        const validUntil = b.validUntil ? date(b.validUntil, 'Price valid until') : null;
-        requireThat(!validFrom || !validUntil || validFrom <= validUntil, 'Price validity dates are reversed');
-        record = { description: text(b.description, 'Description'), supplier: b.supplier, currency: b.currency,
-            unitMinor: moneyInput(b, 'unitAmount', 'unitMinor', 'Reference price'), category: text(b.category, 'Category'),
-            approved: b.approved === true, partNumber: b.partNumber ? text(b.partNumber, 'Part number', 200) : '',
-            unit: b.unit ? text(b.unit, 'Unit', 100) : 'each', validFrom, validUntil, ...defaults,
-            requiredAttachments: stringList(b.requiredAttachments, 'Required attachment filenames') };
+        record = catalogueItem(s, b);
     } else {
         requireThat(Array.isArray(b.items) && b.items.length > 0 && b.items.length <= 100, 'Provide 1–100 bundle items');
         const items = b.items.map((input: Data) => {
