@@ -121,6 +121,11 @@
         "tests/browser-shipment-references.mjs",
         "--width=1440"
       ]
+    },
+    {
+      "args": [
+        "tests/browser-supplier-tax.mjs"
+      ]
     }
   ]
 }

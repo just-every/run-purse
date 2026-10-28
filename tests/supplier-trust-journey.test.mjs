@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {supplierTaxFlow} from './supplier-tax-flow.mjs';
 import {supplier_screeningFlow} from './supplier-screening-flow.mjs';
 import {supplier_duplicatesFlow} from './supplier-duplicates-flow.mjs';
 import {supplier_documentsFlow} from './supplier-documents-flow.mjs';
@@ -10,4 +11,5 @@ test("supplier trust through public purchasing doors", async()=>{
  await supplier_duplicatesFlow();
  await supplier_documentsFlow();
  await supplier_performanceFlow();
+ await supplierTaxFlow();
 });

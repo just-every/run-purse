@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "df5ed3651b177f8f8acca908b4560efa1658526a935c644a6e043fce192fe9e7",
+      "sha256": "320ff2201a9ce6865bfd43078a0c084ddb482b7843165572f1b86d8858cdcbe5",
       "executable": false
     },
     "DEMO.md": {
@@ -376,7 +376,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "3a622199bf5ad78651bb270a7db54f9bcd1157be76fdd7a892d3c0bdb1041e85",
+      "sha256": "9dfa47a8fa880c2fff301429f9b6fb21a632e98c7e520284c76c84480233a5a9",
       "executable": false
     },
     "packaging.json": {
@@ -704,7 +704,7 @@
       "executable": false
     },
     "scripts/ci/shards.json": {
-      "sha256": "01d6b198e093899ce8eda276f5c24ed2f3deddf0b2f003e2087257fe04d5c3c6",
+      "sha256": "b823c7a736a413c78f18d410f9ec51c555daf9aa7ad4d7d58d3f7ba97d6916ae",
       "executable": false
     },
     "scripts/ci/shared-build.mjs": {
@@ -5195,12 +5195,16 @@
       "sha256": "5f874950711c2174e898ff25bab0d969258315fcc18ba45422352148c515467f",
       "executable": false
     },
+    "tests/supplier-tax-flow.mjs": {
+      "sha256": "b82572768e25def0cbce0766f5b1ab7b7f9b57ac41abe8ae6f8dacdc7a903ded",
+      "executable": false
+    },
     "tests/supplier-tax.test.mjs": {
       "sha256": "e220ba0dbd3a28fde6fbb0e09439de714d610b17f4b87addfa84751eba0cc771",
       "executable": false
     },
     "tests/supplier-trust-journey.test.mjs": {
-      "sha256": "2a2f36027bb64a45db4b56cdfcd5dd9267140938daabe2539eebf8a303a5c9ec",
+      "sha256": "c4bbdd7c61a7322f3e7c0fa33f21485e72d580d8b3208ba4f6afab00b9c85def",
       "executable": false
     },
     "tests/travel-browser-exports.mjs": {
