@@ -457,3 +457,9 @@ Every agent action is a PUR-014 ProposedAction checked against current authority
 ## AGENT-011 — Spend questions in plain language
 
 A member asks a spend question in the web, Slack or Teams ("what did Marketing commit to software this quarter against budget?", "which suppliers did we pay over $50,000 last year without a PO?"); the agent answers from Purse's own records within that member's ACCESS-001 scope, shows the figures as a table or chart, states the filters and period it used, and links every figure to the requests, POs, invoices and card transactions behind it so it recomputes through REPORT-001. It says when the data cannot answer the question rather than estimating, and never sees SECURITY-001's protected fields. The native web reader is deterministic v1 with model and provider recorded as none; it accepts exact REPORT-001 dimensions, one stated UTC period and a reserved, committed or recorded-actual metric. It refuses unsupported conditions in full, including payment, card and non-PO questions whose sources are unavailable. Owner purchase-type controls and immediate pause apply under AGENT-010; each run retains scoped filters, figures, source versions and its answer or refusal. INTAKE-002 and INTAKE-003 inherit the same current-member scope, refusal, source drill-through, protected-field exclusion and governance obligations before a Slack or Teams question door ships.
+
+
+Email intake proof boundary: The real Base inbound/outbound adapters run with provider network-edge fakes under ct's 19 October 18:06Z ruling; no mailbox delivery or provider sandbox claim is made.
+
+
+Email intake proof boundary: The real Base inbound/outbound adapters run with provider network-edge fakes under ct's 19 October 18:06Z ruling; no mailbox delivery or provider sandbox claim is made.

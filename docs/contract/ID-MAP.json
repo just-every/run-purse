@@ -229,9 +229,10 @@
       ]
     },
     "SUPPLIER-008": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "SUPPLIER-008"
+        "SUPPLIER-008",
+        "SUPPLIER-009"
       ]
     },
     "SOURCE-001": {
@@ -387,15 +388,19 @@
       ]
     },
     "PO-011": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "PO-011"
+        "PO-011",
+        "PO-015",
+        "PO-016"
       ]
     },
     "PO-012": {
-      "how": "kept",
+      "how": "split",
       "to": [
-        "PO-012"
+        "PO-012",
+        "PO-017",
+        "PO-018"
       ]
     },
     "RECEIVE-001": {

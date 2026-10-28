@@ -8,10 +8,10 @@ The primary journey: Request a purchase, approve its exact budgeted revision, se
 
 | Tier | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
-| Core | 65 | 24 | 35 | 124 |
+| Core | 17 | 74 | 38 | 129 |
 | Agent surface | 0 | 0 | 13 | 13 |
 | Later | 0 | 0 | 0 | 0 |
-| Full target | 65 | 24 | 48 | 137 |
+| Full target | 17 | 74 | 51 | 142 |
 
 Judged from the code and tests at commit `66831028dc17110139ed4a4b0d12b32f47c8777d` (21 October 2026). Field proof register: 7 rows; 0 passed, 0 failed, 7 not run.
 
@@ -21,7 +21,7 @@ Judged from the code and tests at commit `66831028dc17110139ed4a4b0d12b32f47c877
 
 #### PUR-001 — Business setup and scoped capabilities
 
-Core · published · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-ROLE-001
+Core · published · **partial** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-ROLE-001
 
 **Requirement.** One business retains locations, cost centers, projects, currencies and native-session requester, approver, buyer and receiver capabilities. Setup preserves identity and data. The full role model is ACCESS-001's.
 
@@ -29,11 +29,11 @@ Core · published · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-RO
 1. Sign in as genuine members, configure the business and capabilities, re-run setup and restart; each member keeps exactly the configured capabilities and no data is lost .
 
 **Evidence.** `src/purse/admin.ts`; `src/purse/types.ts`; `tests/purse.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: Configured receiver capabilities survive a native state read. No complete asserting-line trace is recorded for point 1: All configured capabilities and data after setup rerun, All configured capabilities and data after restart.
 
 #### PUR-002 — Supplier register with blocking
 
-Core · published · **done**
+Core · published · **partial**
 
 **Requirement.** Suppliers retain contacts, documents, agreements and preferred/blocked reasons. Blocked suppliers cannot enter native purchasing. Self-service onboarding, tax and bank details are SUPPLIER-001 to SUPPLIER-003's.
 
@@ -41,11 +41,11 @@ Core · published · **done**
 1. Create, prefer and block suppliers through the API; submission, approval, conversion and issue to a blocked supplier fail with the recorded reason .
 
 **Evidence.** `src/purse/admin.ts`; `tests/purse.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: Supplier creation, preference and blocking produce audit history. No complete asserting-line trace is recorded for point 1: Blocked submission returns the recorded reason, Blocked approval returns the recorded reason, Blocked conversion returns the recorded reason, Blocked issuance returns the recorded reason.
 
 #### PUR-003 — Approved catalog prices
 
-Core · published · **done** · Cites BASE-INPUT-003
+Core · published · **partial** · Cites BASE-INPUT-003
 
 **Requirement.** Approved catalog reference prices copy into request revisions; subsequent catalog changes do not change approved terms.
 
@@ -53,11 +53,11 @@ Core · published · **done** · Cites BASE-INPUT-003
 1. Request a catalog item, change its price after approval and see the approved revision and PO keep the original price .
 
 **Evidence.** `src/purse/admin.ts`; `tests/purse.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: The copied request unit price remains the original value after catalogue edit. No complete asserting-line trace is recorded for point 1: Approved revision retains that price, The resulting PO retains that price.
 
 #### PUR-004 — Durable exact request revisions
 
-Core · published · **done** · Cites BASE-INPUT-003
+Core · published · **partial** · Cites BASE-INPUT-003
 
 **Requirement.** Durable drafts retain decimal quantities, project/category/need date, real attachment bytes and immutable revision history. Invalid values are refused.
 
@@ -65,7 +65,7 @@ Core · published · **done** · Cites BASE-INPUT-003
 1. Create and amend a request with attachments, download the original bytes and read every revision; invalid quantities and dates are refused without writes .
 
 **Evidence.** `src/purse/requests.ts`; `tests/purse.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: Original attachment bytes download unchanged; Invalid quantities are refused. No complete asserting-line trace is recorded for point 1: Every retained revision is read and compared, Invalid dates are refused without writes.
 
 #### PUR-005 — Quotation comparison
 
@@ -93,7 +93,7 @@ Core · published · **done**
 
 #### PUR-007 — Decisions and scoped delegation
 
-Core · published · **done** · Cites BASE-ROLE-001
+Core · published · **partial** · Cites BASE-ROLE-001
 
 **Requirement.** Approve/reject/return decisions retain reason, actor, time, revision and delegation. Scoped delegation expires. Resubmission preserves history.
 
@@ -101,11 +101,11 @@ Core · published · **done** · Cites BASE-ROLE-001
 1. Return, resubmit and approve under an expiring delegation; after expiry the delegate is refused and the history keeps every decision .
 
 **Evidence.** `src/purse/admin.ts`; `src/purse/requests.ts`; `tests/purse.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: Return reason is retained; Resubmission makes revision two. No complete asserting-line trace is recorded for point 1: An eligible delegated approval is retained, Elapsed expiry refuses the delegate, The entire decision history is read back.
 
 #### PUR-008 — Approved lines become numbered POs once
 
-Core · published · **done**
+Core · published · **partial**
 
 **Requirement.** Approved lines allocate once to numbered POs with source links and downloadable documents, including conconversion.
 
@@ -113,11 +113,11 @@ Core · published · **done**
 1. Convert the same approved lines concurrently; one PO receives them and its document downloads .
 
 **Evidence.** `src/purse/orders.ts`; `tests/purse.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: Concurrent conversion returns one success and one conflict; The downloaded document contains its purchased item. No complete asserting-line trace is recorded for point 1: Exactly one allocation record exists after the race.
 
 #### PUR-009 — Issuance and amendments under renewed authority
 
-Core · published · **done** · Cites BASE-INPUT-001, BASE-MAIL-001
+Core · published · **partial** · Cites BASE-INPUT-001, BASE-MAIL-001
 
 **Requirement.** Document generation and authorized issuance are distinct. Revisions and POs retain approved supplier identity and terms across supplier-directory edits. Supplier/quantity/cost amendments retain issued history, invalidate stale authority, reserve changes and require renewed approval before an amendment is issued. Sending to the supplier is PO-001's.
 
@@ -125,11 +125,11 @@ Core · published · **done** · Cites BASE-INPUT-001, BASE-MAIL-001
 1. Issue a PO, edit the supplier directory, amend supplier and cost; the old issuance remains, the amendment needs fresh approval and reserves its change .
 
 **Evidence.** `src/purse/orders.ts`; `src/purse/requests.ts`; `tests/purse.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: Old issuance remains marked amended with its issuance time. No complete asserting-line trace is recorded for point 1: Supplier-directory edit cannot rewrite the frozen supplier, Supplier and cost amendment requires renewed approval, The amendment reservation amount is read back.
 
 #### PUR-010 — Receiving, returns and commitments
 
-Core · published · **done** · Cites BASE-ROLE-001
+Core · published · **partial** · Cites BASE-ROLE-001
 
 **Requirement.** Partial receipts, service milestones, rejection, return and cancellation retain reasons. Events explain outstanding quantities and commitments. Physical returns exceeding replenishment authority remain recorded with an explicit hold for review, without overspending. Overreceipt, repeat return and wrong roles fail.
 
@@ -137,11 +137,11 @@ Core · published · **done** · Cites BASE-ROLE-001
 1. Receive partially, reject, return beyond authority and cancel; outstanding quantities and commitments reconcile and invalid receipts are refused .
 
 **Evidence.** `src/purse/receiving.ts`; `tests/purse.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: Partial receiving leaves the expected outstanding quantity; Cancellation releases the commitment; Overreceipt is refused. No complete asserting-line trace is recorded for point 1: Rejection is retained with its reason, Beyond-authority return preserves the explicit review hold, All outstanding and commitment terms reconcile through the full sequence.
 
 #### PUR-011 — Invoice evidence, discrepancies and accounting CSV
 
-Core · published · **done**
+Core · published · **partial**
 
 **Requirement.** Supplier ID plus invoice reference identifies invoice evidence once across POs. Identical re-entry is idempotent; conflicting evidence is refused for review. Allocations expose price/quantity/receipt discrepancies and export accounting CSV once without posting or payment. Live posting is SYNC-001 to SYNC-004's and payment is AP-001's.
 
@@ -149,11 +149,11 @@ Core · published · **done**
 1. Enter an invoice twice identically and once conflicting, allocate across POs and download the CSV; discrepancies show and the conflict is refused .
 
 **Evidence.** `src/purse/invoices.ts`; `src/purse/orders.ts`; `src/purse/documents.ts`; `tests/purse.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: Identical invoice re-entry returns the original identity; Conflicting invoice re-entry is refused; CSV contains the invoice once with its original amount. No complete asserting-line trace is recorded for point 1: One invoice allocation across several POs is asserted.
 
 #### PUR-012 — Commitments, overdue and renewals visible; complete restore
 
-Core · published · **done** · Cites BASE-DATA-001
+Core · published · **partial** · Cites BASE-DATA-001
 
 **Requirement.** Commitments remain currency-separated, overdue receiving and renewals stay visible, and complete `.rer` archive restore preserves domain links, decisions, files and import history.
 
@@ -161,11 +161,11 @@ Core · published · **done** · Cites BASE-DATA-001
 1. Export a populated installation, restore into an empty one and compare records and files; corrupt or nonempty restores write nothing .
 
 **Evidence.** `src/ui/overview.tsx`; `tests/browser-archive.mjs`
-**Gap.** None.
+**Gap.** Asserted: Every retained domain record is compared after restore; Corrupt semantic restore leaves every portable row unchanged. No complete asserting-line trace is recorded for point 1: Original file bytes are compared after restore, Nonempty destination restore leaves all rows unchanged.
 
 #### PUR-013 — Reviewed CSV move-in
 
-Core · published · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-INPUT-001, BASE-INPUT-003, BASE-ROLE-001, BASE-SECRET-001
+Core · published · **partial** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-INPUT-001, BASE-INPUT-003, BASE-ROLE-001, BASE-SECRET-001
 
 **Requirement.** The documented first CSV move-in kit uses Base import-kit D1, native-session SQL guards, exact source keys/bytes/mapping decisions (except SUPPLIER-003's redacted TIN/bank cells with original digest and column custody), no-write preview, reviewed commit, resume, idempotence and conflict-preserving undo. Imported status never grants authority. Real incumbent exports are IMPORT-001 and IMPORT-002's.
 
@@ -173,7 +173,7 @@ Core · published · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-IN
 1. Preview, change input, commit, resume and undo a fixture CSV; changed input needs a new review and undo preserves edited targets .
 
 **Evidence.** `src/purse/imports.ts`; `src/purse/import-mapping.ts`; `src/purse/import-custody.ts`; `tests/purse.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: Preview writes no import job; Changed input requires a new review; Commit retains exact original CSV bytes. No complete asserting-line trace is recorded for point 1: An unfinished batch actually resumes to completion.
 
 #### PUR-014 — Governed human preparation and proposed actions
 
@@ -189,7 +189,7 @@ Core · published · **done** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGEN
 
 #### PUR-015 — Owner-run source and command path
 
-Core · published · **done** · Cites BASE-DATA-005, BASE-INSTALL-001, BASE-OPS-002
+Core · published · **partial** · Cites BASE-DATA-005, BASE-INSTALL-001, BASE-OPS-002
 
 **Requirement.** Purse ships MIT source, the native TanStack Start/Hono/Cloudflare edition, bundled fonts, the Purse theme and development personas through the shared RER command path.
 
@@ -197,11 +197,11 @@ Core · published · **done** · Cites BASE-DATA-005, BASE-INSTALL-001, BASE-OPS
 1. Run the RER command path from a fresh clone and the browser journey .
 
 **Evidence.** `package.json`; `tests/runtime.mjs`; `tests/browser.mjs`; `tests/run-site.mjs`
-**Gap.** None.
+**Gap.** The carried tests prove bounded native behavior. No complete asserting-line trace is recorded for point 1: Every named RER verb is exercised from a fresh clone on the same installation.
 
 #### PUR-016 — Exact money and quantities with an append-only ledger
 
-Core · published · **done** · Cites BASE-AUDIT-001
+Core · published · **partial** · Cites BASE-AUDIT-001
 
 **Requirement.** Quantities are thousandths; money is integer minor units, each line rounds half-up once. Commitment reservations/releases/amendments append to an auditable ledger. Invalid/nonfinite values fail.
 
@@ -209,11 +209,11 @@ Core · published · **done** · Cites BASE-AUDIT-001
 1. Enter decimal quantities and currency text, round lines and amend; the commitment ledger is append-only and invalid values leave state unchanged .
 
 **Evidence.** `src/purse/money.ts`; `tests/purse.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: Decimal quantity rounds half-up to thirteen minor units; Currency text produces exact freight, tax and line totals; Invalid currency representations leave all domain rows unchanged. No complete asserting-line trace is recorded for point 1: Every original ledger row remains unchanged after amendment.
 
 #### PUR-017 — Current-session authorization on every door
 
-Core · published · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-ROLE-001
+Core · published · **partial** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-ROLE-001
 
 **Requirement.** Purchasing commands bind the actual request, PO and invoice, including the approved revision and computed total.
 
@@ -221,13 +221,13 @@ Core · published · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-RO
 1. Call every command and download signed out, with the wrong role, forged revision, revoked session and another record's scope; each is refused without mutation .
 
 **Evidence.** `src/purse/store.ts`; `src/purse/documents.ts`; `tests/purse.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: Signed-out state read is refused; Forged actor and role cannot create a supplier; Cross-record attachment read is refused. No complete asserting-line trace is recorded for point 1: Every command and every download is checked for every named refusal and no mutation.
 
 ### Roles, access and entities
 
 #### ACCESS-001 — Procurement roles and buyer limits
 
-Core · target · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AUDIT-001, BASE-DATA-001, BASE-ROLE-001 · Rules D-1, D-2, D-3
+Core · target · **partial** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AUDIT-001, BASE-DATA-001, BASE-ROLE-001 · Rules D-1, D-2, D-3
 
 **Requirement.** Beyond PUR-001's capabilities, a business assigns owner, admin, requester, approver, buyer, receiver, AP clerk, finance viewer and read-only auditor roles, scoped by department, location, project and entity. Requesters see only their own purchases and their department's where granted; AP sees invoices and supplier tax and bank fields only through SECURITY-001's masking; auditors read everything and change nothing. Admins can define custom roles from the same permission set. A buyer grant carries PO-012's price variance limit (dollars, percentage or both, and a quantity variance) per buyer or per buyer role and entity, zero allowed. Every grant, revocation and limit change is audited. Native implementation uses independent permission-and-scope grants; all dimensions and every line project must fit one complete grant, including the custom role restriction. Requester grants preserve own-purchase reads unless an explicit department-read grant adds department purchases; that read never grants editing another requester’s draft. Native owner authority alone assigns or revokes membership and raises buyer limits. Access administrators may set all price and quantity limits to zero on one existing conversion grant only when its entire effective scope is contained by one complete administrative grant; other grants, identity and active status are retained. Role-wide zero limits require unrestricted administrative authority; only the native owner sets other limit values. Administrators define custom roles without native owner, reveal or assignment authority. Entity scope currently names the main business; ACCESS-003 supplies additional entities and inherits these checks. Role defaults and person overrides use dollar and/or percentage price caps (when both are configured, both apply and the lower governs) plus the quantity limit; decreases remain permitted, the whole edit fits a single grant, and issuance rechecks authority, limit and budget. Frozen approval revisions stay unchanged; a PO retains attributed before/after conversion evidence and restores only with its exact source and audit proof. PO-012 inherits the remaining edit kinds, channels and authority changes; this native price/quantity conversion door does not close it.
 
@@ -237,11 +237,11 @@ Core · target · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AUDIT
 3. Set a buyer role's price variance limit to $50 or 10% and one buyer's to zero: each buyer's conversion edits are allowed or refused by their own limit through the web and the API, and the audit log shows each limit change.
 
 **Evidence.** `tests/access.test.mjs`; `tests/browser-access.mjs`; `tests/browser-access-flows.mjs`; `tests/po-documents.test.mjs`; `tests/browser-access-flows.mjs`; `tests/payables.test.mjs`; `tests/browser-access-sources.mjs`; `tests/access.test.mjs`; `tests/browser-access.mjs`; `tests/access.test.mjs`; `tests/browser-access.mjs`; `tests/rfq.test.mjs`; `tests/agreement-savings.test.mjs`; `tests/rfq.test.mjs`; `tests/browser-access-sources.mjs`; `tests/email-intake.test.mjs`; `tests/browser-access-sources.mjs`; `tests/access.test.mjs`; `tests/supplier-duplicates.test.mjs`; `tests/browser-access.mjs`; `tests/search.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: Each declared content role sees the permitted request and excludes the other scope; Each role’s permitted and forbidden PO document reads are checked; Department approver cannot decide outside scope. No complete asserting-line trace is recorded for point 1: The web role matrix at both widths covers every promised right; point 2: Its permitted receipt is read back after creation; point 3: Every promised role and person conversion outcome is asserted on the web and API.
 
 #### ACCESS-004 — Scoped procurement reports and cash access
 
-Core · target · **done** · From ACCESS-001 · Cites BASE-AUDIT-001, BASE-ROLE-001 · Rules D-1, D-2, D-3
+Core · target · **partial** · From ACCESS-001 · Cites BASE-AUDIT-001, BASE-ROLE-001 · Rules D-1, D-2, D-3
 
 **Requirement.** Before shipping this capability, its AP and finance roles must replace AP-003’s temporary owner/buyer access with scoped term entry, cash-planning approval and cash-view reads. Acceptance must assert this AP-003 integration through the capability’s public door. Its read-only auditor role must read, filter and export AUDIT-001 history inside its granted scope and must never mutate it. Acceptance must assert this obligation through its public door and AUDIT-001 read/export. Before shipping, REPORT-001 must enforce the new role and department/entity scopes on filters, choices, totals, source drill-through and direct HTTP reads. Acceptance must assert permitted records and refusal or absence of out-of-scope records through the public report door and web.
 
@@ -251,11 +251,11 @@ Core · target · **done** · From ACCESS-001 · Cites BASE-AUDIT-001, BASE-ROLE
 3. Before shipping its AP/finance roles, grant REPORT-003 performance access under those roles and assert unauthorized-role refusal through the report API and web.
 
 **Evidence.** `tests/access.test.mjs`; `tests/browser-access.mjs`; `tests/browser-access-flows.mjs`; `tests/po-documents.test.mjs`; `tests/browser-access-flows.mjs`; `tests/payables.test.mjs`; `tests/browser-access-sources.mjs`; `tests/access.test.mjs`; `tests/browser-access.mjs`; `tests/access.test.mjs`; `tests/browser-access.mjs`; `tests/rfq.test.mjs`; `tests/agreement-savings.test.mjs`; `tests/rfq.test.mjs`; `tests/browser-access-sources.mjs`; `tests/email-intake.test.mjs`; `tests/browser-access-sources.mjs`; `tests/access.test.mjs`; `tests/supplier-duplicates.test.mjs`; `tests/browser-access.mjs`; `tests/search.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: Department report rows and choices are confined to Facilities; The forbidden department has no rows; Permitted sources appear and forbidden source identities are absent. No complete asserting-line trace is recorded for point 1: Every requested figure equals its permitted source sum, Entity-scope report results are independently asserted; point 2: The full report web projection is compared at both widths.
 
 #### ACCESS-005 — Scoped procurement sources and protected fields
 
-Core · target · **done** · From ACCESS-001 · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AUDIT-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001, BASE-SIGNIN-001 · Rules D-1, D-2, D-3
+Core · target · **partial** · From ACCESS-001 · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AUDIT-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001, BASE-SIGNIN-001 · Rules D-1, D-2, D-3
 
 **Requirement.** The scoped receiver sees only an aggregate receipt-matching status on its PO; invoice records, references, amounts and files still require invoice-read permission. Shared supplier/catalogue mutation and unassigned email administration require unrestricted corresponding grants; source reads and purchase changes follow the actual linked request/PO scope. Existing unscoped supplier presence masks remain, while scoped supplier reads require a related permitted purchase; a buyer grant never lends its suffix privilege to another grant. Protected reveal and legacy evidence re-entry remain current-native-owner only under SECURITY-001. ACCESS-002 inherits permission/scope rechecks, native session fencing and audited grants for IdP/SCIM changes; every future source, payment, entity and transport door under SOURCE-001, INVOICE-002/003, AP-003, REPORT-001/003, INTAKE-004, API-001 and ERASURE-001 inherits the same actual-record scope.
 
@@ -268,7 +268,7 @@ Core · target · **done** · From ACCESS-001 · Cites BASE-ACCESS-002, BASE-ACC
 6. A role granted SECURITY-001 reveal may receive legacy invoice-evidence re-entry under the same grant; auditors never.
 
 **Evidence.** `tests/access.test.mjs`; `tests/browser-access.mjs`; `tests/browser-access-flows.mjs`; `tests/po-documents.test.mjs`; `tests/browser-access-flows.mjs`; `tests/payables.test.mjs`; `tests/browser-access-sources.mjs`; `tests/access.test.mjs`; `tests/browser-access.mjs`; `tests/access.test.mjs`; `tests/browser-access.mjs`; `tests/rfq.test.mjs`; `tests/agreement-savings.test.mjs`; `tests/rfq.test.mjs`; `tests/browser-access-sources.mjs`; `tests/email-intake.test.mjs`; `tests/browser-access-sources.mjs`; `tests/access.test.mjs`; `tests/supplier-duplicates.test.mjs`; `tests/browser-access.mjs`; `tests/search.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: A read-only RFQ role has no reissue control; Auditor projection remains masked. No complete asserting-line trace is recorded for point 1: AP source-risk and approval outcomes are all asserted under the new role; point 2: Every private original, confirmation, remit-retention and hold outcome is asserted under the new role; point 3: All named RFQ configuration, invitation, history, award and original branches are asserted for every new scope; point 4: Reasoned held-mail assignment and completion retain all named new-role source boundaries; point 5: AP and finance reveal grants are demonstrated independently; point 6: The permitted legacy-evidence re-entry grant is demonstrated, Auditor legacy re-entry is refused.
 
 #### ACCESS-002 — Single sign-on and provisioning
 
@@ -301,7 +301,7 @@ Core · target · **missing** · Cites BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-
 
 #### INTAKE-001 — Guided intake forms and supplier proposals
 
-Core · target · **done** · Cites BASE-INPUT-001, BASE-INPUT-003 · Rules D-2
+Core · target · **partial** · Cites BASE-INPUT-001, BASE-INPUT-003 · Rules D-2
 
 **Requirement.** Admins build intake forms per purchase type (goods, software and subscriptions, professional services, contractors, equipment) with conditional questions, required attachments (specifications, quotes, security questionnaires), default coding (with a default CODING-001 split template where a cost is shared), the CODING-002 custom header and line fields that purchase type requires, and a requested need date. When the supplier a requester needs is not in the register, the form lets them propose one on the request (SUPPLIER-008) rather than leaving Purse, and the draft and submission carry the pending supplier. The form previews the applicable policy and approvers before submission.
 
@@ -315,11 +315,11 @@ Core · target · **done** · Cites BASE-INPUT-001, BASE-INPUT-003 · Rules D-2
 7. Only current authorized supplier administration can resolve eligibility.
 
 **Evidence.** `tests/purse.test.mjs`; `tests/browser-guided-intake.mjs`; `tests/browser-intake.mjs`; `tests/purse.test.mjs`; `tests/browser-request-again.mjs`; `tests/browser-intake.mjs`
-**Gap.** None.
+**Gap.** Asserted: Conditional question hides and reveals the security answer; The approval preview names the applicable route; The frozen revision retains its answer, custom field, exact-cent allocations and file. No complete asserting-line trace is recorded for point 2: Pending supplier identity and status are independently read back from the saved draft; point 3: Publish requires unrestricted administrator rights and exact versioned consent; point 4: Every conditional, required-file, coding and custom-value invalid case is refused at submission; point 5: Preview creates no budget reservation, Submission independently rechecks changed policy authority; point 6: Pending proposal’s status and review step persist after submission, Purchase approval alone cannot make the pending supplier purchasable; point 7: Only permitted supplier administrators resolve eligibility.
 
 #### INTAKE-009 — Private unfinished request drafts
 
-Core · target · **done** · From INTAKE-001 · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-INPUT-003 · Rules D-2
+Core · target · **partial** · From INTAKE-001 · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-INPUT-003 · Rules D-2
 
 **Requirement.** Requester-owned unfinished drafts retain the answers and files while the requester is away, without submitting a purchase.
 
@@ -328,11 +328,11 @@ Core · target · **done** · From INTAKE-001 · Cites BASE-ACCESS-002, BASE-ACC
 2. Requester-owned unfinished drafts autosave without creating requests or approval authority; their private files and answers survive a fresh native sign-in.
 
 **Evidence.** `tests/purse.test.mjs`; `tests/browser-guided-intake.mjs`; `tests/browser-intake.mjs`; `tests/purse.test.mjs`; `tests/browser-request-again.mjs`; `tests/browser-intake.mjs`
-**Gap.** None.
+**Gap.** Asserted: Fresh sign-in retains the saved answer and exact file bytes; No purchase request exists for the unfinished draft. No complete asserting-line trace is recorded for point 2: Automatic save is independently demonstrated before an explicit Save action.
 
 #### INTAKE-010 — Request again from a previous purchase
 
-Core · target · **done** · From INTAKE-001 · Cites BASE-INPUT-003, BASE-MAIL-001 · Rules D-2
+Core · target · **partial** · From INTAKE-001 · Cites BASE-INPUT-003, BASE-MAIL-001 · Rules D-2
 
 **Requirement.** A requester can copy any past request or PO they can see into a new draft ("request again"): lines, supplier, coding, CODING-001 splits and CODING-002 field values copy, catalog lines take the catalog price with any change from the original shown (PUR-003), and attachments copy only if the requester ticks them; approvals, quotes, receipts and invoices never copy, the draft is a new request routed afresh under APPROVAL-001, and a catalog item outside the requester's access (CATALOG-001), a blocked supplier (PUR-002) or an inactive coding or field value is flagged and left out until replaced.
 
@@ -346,7 +346,7 @@ Core · target · **done** · From INTAKE-001 · Cites BASE-INPUT-003, BASE-MAIL
 7. Copy review retains eligible splits and custom values, flags obsolete values and recalculates allocations against current catalog prices.
 
 **Evidence.** `tests/purse.test.mjs`; `tests/browser-guided-intake.mjs`; `tests/browser-intake.mjs`; `tests/purse.test.mjs`; `tests/browser-request-again.mjs`; `tests/browser-intake.mjs`
-**Gap.** None.
+**Gap.** Asserted: Two eligible lines remain after the restricted item is excluded; Current price before/after values are returned; Inactive project omission is asserted. No complete asserting-line trace is recorded for point 5: Every other listed lineage and authority field is absent; point 6: Every source-change eligibility branch forces a new review; point 7: Split/custom-value obsolete-value and price rescaling outcomes are all read back.
 
 #### INTAKE-002 — Slack intake, approvals and updates
 
@@ -376,7 +376,7 @@ Core · target · **missing** · Cites BASE-ACCESS-002, BASE-ACCESS-004
 
 #### INTAKE-004 — Email intake
 
-Core · target · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
+Core · target · **partial** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
 
 **Requirement.** Each business has a request address; an employee forwards a supplier quote or describes a need by email and receives a link to a prefilled draft with the attachments retained. Mail from unknown senders is held, never turned into a request. The owner records the address and configures the signed Resend receiving webhook and private provider credentials; recording an address does not verify or configure a mailbox. The supported door verifies the exact webhook bytes and freshness, hydrates the signed provider email ID through Base's real receiving adapter, and privately retains the exact provider JSON and decoded attachments in R2. The provider-reported sender label never claims verified employee authorship. The subject prefills the draft title, original body/HTML remain source evidence, and the assigned requester completes supplier, coding, lines and terms before explicitly creating one ordinary request draft; submission and approval remain separate native actions. Known senders require native requester capability (the owner can request); unknown, inactive and non-requester senders are held for the owner's reasoned assignment to an active requester, with no implied grant. Until ACCESS-001 supplies admin, the owner performs administration. Only the owner and assigned requester read the intake and its exact download-only originals, including after completion; only its assigned requester edits/completes it. Source content is data, never instructions. Provider email identity durably de-duplicates ingestion, and draft-link mail claims before sending with honest adapter outcomes; uncertain claims are visible to the owner and never silently repeated. Bounds are three attachments of 10 MB (10,000,000 bytes) each, 30 MB decoded total, 500 kB combined body and 2 MB provider JSON, refused without truncation. Complete archives retain source bytes, source/request lineage, receipt ledger, holds, corrections, assignments and mail outcomes; archived principals grant no native session. ACCESS-001, API-001 and INTAKE-001 inherit current-role source privacy, explicit completion and replay rules before adding roles, keys or form capabilities; ERASURE-001 inherits the new personal source fields and originals.
 
@@ -385,10 +385,9 @@ Core · target · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-DATA-
 2. Through native HTTP and the web at 1440 and 390, inspect exact private source downloads, keep unknown mail inaccessible to another requester, assign with a reason, correct the draft, complete required purchasing fields into one request draft and submit separately.
 3. Wrong-role, inactive, signed-out and stale or repeated actions are refused; invalid/stale webhook signatures do not fetch or write, a repeated provider message creates no second intake/send, and planted source instructions grant no authority.
 4. Complete export/restore preserves exact originals and receipt/lineage/mail evidence.
-5. The real Base inbound/outbound adapters run with provider network-edge fakes under ct's 19 October 18:06Z ruling; no mailbox delivery or provider sandbox claim is made.
 
 **Evidence.** `src/purse/email-intake.ts`; `src/purse/email-intake-api.ts`; `src/ui/email-intake.tsx`; `tests/email-intake.test.mjs`; `tests/browser-email-intake.mjs`; `scripts/installer/restore-email-intake.mjs`
-**Gap.** None.
+**Gap.** Asserted: Known member email retains a prefilled draft and its subject/body; Draft-link mail names that intake and its requester; Unknown sender mail is held. No complete asserting-line trace is recorded for point 2: The recorded assignment reason is read back; point 3: Invalid and stale signatures make no retained source write.
 
 #### INTAKE-005 — Cross-team review orchestration
 
@@ -418,7 +417,7 @@ Core · target · **partial** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGEN
 
 #### INTAKE-007 — Integration purchase-request tokens
 
-Core · target · **done** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-AUDIT-001, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
+Core · target · **partial** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-AUDIT-001, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
 
 **Requirement.** The native owner creates a token scoped only to creating purchase-request drafts and binds it to one active native requester. Linen ASSET-005 and Pier STOCK-001 inherit this create-only boundary by name; the wider API-001 remains separate. Tokens contain 32 random bytes, are displayed once, and only SHA-256 digests are stored. The owner can rotate or revoke a token immediately; old/revoked tokens cannot create or replay requests. Create-only integration bearers and preparation records grant no workspace read, token administration, submission, approval, issuance, receiving or payment scope. Agent equivalents declare their access, security, commitment or money classes and follow company policy. Token use rechecks the bound native identity and requester capability; inactive or no-longer-requester identities are refused. The owner cannot silently change the binding: create a new token for a different requester. POST /api/purse/integration/requests requires a bearer in the Authorization header, an Idempotency-Key and the ordinary complete purchasing fields. It creates one native draft under the bound requester, recording the token label and requester on every draft, preserving source integration identity and applying normal supplier, catalog, coding, amount and line validation. Client identity, approval and totals confer no authority. As with INTAKE-004, a human reviews and explicitly submits before normal policy approval; creating a draft makes no decision, reservation, PO or send. The same token integration and Idempotency-Key with identical UTF-8 JSON bytes return the original creation response, including after rotation or later human edits; a changed body returns 409 without another draft, and conretries create once. Keys contain 1–200 visible ASCII characters; the body limit is 1,600,000 bytes with no truncation. Tokens and replay-response authority never enter portable archives; complete restore preserves purchasing lineage and AUDIT-001 create/rotate/revoke/use/refusal evidence but requires fresh owner-issued tokens. Every refused use is audited with outcome/reason, door and the recognized integration label/requester when available; invalid or rotated secrets are anonymous, never retained. Secrets and digests never appear in ordinary state, token lists, audit read/export, agent context or URLs.
 
@@ -427,7 +426,7 @@ Core · target · **done** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-0
 2. Through Settings, exercise issuance, rotation and revocation and the requester’s draft and submission at 1440 and 390 pixels.
 
 **Evidence.** `src/purse/integration-tokens.ts`; `src/purse/integration-requests.ts`; `src/purse/integration-audit.ts`; `src/ui/integration-tokens.tsx`; `tests/integration-tokens.test.mjs`; `tests/browser-integration-tokens.mjs`; `migrations/core/0026_integration_tokens.sql`; `scripts/installer/portability.mjs`; `API.md`
-**Gap.** None.
+**Gap.** Asserted: The created draft uses its bound requester rather than forged identity; The bearer creates only a draft and no PO, decision, commitment or mail; Concurrent identical calls return the same creation result once. No complete asserting-line trace is recorded for point 1: Native owner issues the token with the bound requester, Native identity deactivation refuses the bearer; point 2: Settings issuance, rotation and revocation and requester submission are asserted in the browser.
 
 #### INTAKE-008 — Read-only PO-data integration tokens
 
@@ -516,7 +515,7 @@ Core · target · **done** · Cites BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-00
 
 #### SUPPLIER-004 — Document expiry, compliance refresh and renewal reminders
 
-Core · target · **done** · Cites BASE-DATA-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001
+Core · target · **partial** · Cites BASE-DATA-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001
 
 **Requirement.** Insurance certificates, W-9s, licenses, security reviews and agreements carry expiry dates; Purse emails the supplier and owner before expiry on a buyer-configured schedule, requests refreshed documents through the standalone supplier-link refresh branch, and can block new POs to a supplier whose required document has lapsed. A buyer records the private original, required flag, expiry, reminder day offsets and optional compliance-cycle days. Dates are inclusive calendar dates in America/New_York; a lapse starts on the following day, and a compliance cycle runs from the last substantive buyer review (schedule-only edits do not restart it). Hourly cron processes the most recently due expiry offset or due cycle once per document version; missed earlier offsets are not sent in a burst. An uncertain or rejected attempt is retained without automatic resending; a buyer can explicitly request a fresh link. Links use 32 random bytes, retain only SHA-256 hashes, expire after seven days, bind one supplier/document/version, and allow one private file upload only, with no existing-file or register access. Compliance bytes are buyer/owner-only from the moment of upload; ordinary supplier attachments keep their existing scope. A supplier upload stays pending until a buyer reviews its evidence and expiry, so upload alone cannot clear a lapse. Metadata, original files and prior reviews remain in history and portable archives; active bearer links never travel in archives. Required-document holds cover the entire surviving supplier family after SUPPLIER-003 merges and refuse native conversion and issuance while existing issued receiving and invoice evidence remain usable; screening and manual blocks remain independent. This is complete for document-refresh branch and native new-PO doors. SUPPLIER-001 inherits this refresh branch before full onboarding ships; PO-001, PO-005, PO-008, PUNCHOUT-001, IMPORT-003 and API-001 inherit the same required-document hold before adding another PO creation/transmission door.
 
@@ -526,7 +525,7 @@ Core · target · **done** · Cites BASE-DATA-001, BASE-INPUT-003, BASE-MAIL-001
 3. A requester cannot download private compliance files or request a refresh link; merging a supplier with a required lapse cannot bypass the hold.
 
 **Evidence.** `src/purse/supplier-documents.ts`; `src/purse/supplier-reminders.ts`; `src/purse/supplier-refresh.ts`; `tests/supplier-documents.test.mjs`; `tests/browser-supplier-documents.mjs`
-**Gap.** None.
+**Gap.** Asserted: Supplier reminder is sent to its contact; Owner reminder is sent to the owner; Buyer review clears the lapse. No complete asserting-line trace is recorded for point 2: A link holder’s direct request for earlier file bytes is refused.
 
 #### SUPPLIER-005 — Supplier performance and issues
 
@@ -569,7 +568,7 @@ Core · target · **done**
 
 Core · target · **missing** · Cites BASE-AUDIT-001, BASE-MAIL-001
 
-**Requirement.** A requester or buyer who needs a supplier that is not in the register proposes one on the request line, as Procurify's "OTHER" vendor and "Request new vendor" do, or from the Suppliers page without a request: name, contact email, optional website, phone and TIN, and the reason this supplier is needed. Before the proposal is saved, SUPPLIER-003's duplicate check runs on the name, email domain, website and TIN and offers any existing match, which the requester can pick instead; a matching blocked supplier (PUR-002) is shown as blocked and cannot be proposed again. A proposed supplier is a pending supplier record whose status is one of proposed, invited, onboarding, in vendor approval, active or rejected, and it is never purchasable until active. The request carries the pending supplier, is submitted and routed under APPROVAL-001 with new-supplier status true, can be approved while the supplier is pending, and BUDGET-001 reserves its amount on approval as for any request. The proposal starts SUPPLIER-001's onboarding invite to the contact email, sent by the buyer or automatically where the business turns on auto-invite. Activation then passes through a vendor approval chain that the admin configures separately from purchase chains, using APPROVAL-001's step types (sequential and parallel, "all of" and "any one of", with conditions on entity, category, supplier risk and 1099 status) with APPROVAL-002's reminders, escalation and out-of-office and APPROVAL-003's channels; SUPPLIER-002's bank verification, SUPPLIER-003's duplicate check and SUPPLIER-007's screening must also clear, and the person who proposed or submitted the vendor can never decide its vendor approval step. Suppliers created by CSV import, ledger pull (SYNC-001 to SYNC-008) or API-001 go through the same chain unless the admin turns on a bypass for that source, as Procurify's vendor approval settings allow, and each bypassed creation is recorded in AUDIT-001. Until the supplier is active, converting lines to a PO (PUR-008), issuing, sending or transmitting a PO (PO-001, PO-008, PUNCHOUT-001) and paying it (AP-001, AP-002) are refused through the web, the API, Slack, Teams and the native apps with the reason "supplier pending vendor approval". When the supplier activates, the approved request converts (automatically under PO-008, or by the buyer) without a second purchase approval; if activation changed a term the request carried (currency, payment terms, a supplier-quoted price or the supplier's legal entity), the change becomes a PUR-009 amendment re-routed under APPROVAL-001. The requester sees the supplier's onboarding and vendor approval status, and who holds it and since when, on the request, and NOTIFY-001 tells them when it activates or is rejected. A rejected vendor returns the request to the requester with the approver's reason and releases its reservation, and the requester can pick another supplier and resubmit. Every proposal, invite, decision and bypass is in AUDIT-001. IMPORT-001 imports Procurify's vendor approval routing and its pending vendor requests.
+**Requirement.** A requester or buyer who needs a supplier that is not in the register proposes one on the request line, as Procurify's "OTHER" vendor and "Request new vendor" do, or from the Suppliers page without a request: name, contact email, optional website, phone and TIN, and the reason this supplier is needed. Before the proposal is saved, SUPPLIER-003's duplicate check runs on the name, email domain, website and TIN and offers any existing match, which the requester can pick instead; a matching blocked supplier (PUR-002) is shown as blocked and cannot be proposed again. A proposed supplier is a pending supplier record whose status is one of proposed, invited, onboarding, in vendor approval, active or rejected, and it is never purchasable until active. The request carries the pending supplier, is submitted and routed under APPROVAL-001 with new-supplier status true, can be approved while the supplier is pending, and BUDGET-001 reserves its amount on approval as for any request. The proposal starts SUPPLIER-001's onboarding invite to the contact email, sent by the buyer or automatically where the business turns on auto-invite. Activation then passes through a vendor approval chain that the admin configures separately from purchase chains, using APPROVAL-001's step types (sequential and parallel, "all of" and "any one of", with conditions on entity, category, supplier risk and 1099 status) with APPROVAL-002's reminders, escalation and out-of-office and APPROVAL-003's channels; SUPPLIER-002's bank verification, SUPPLIER-003's duplicate check and SUPPLIER-007's screening must also clear, and the person who proposed or submitted the vendor can never decide its vendor approval step. Until the supplier is active, converting lines to a PO (PUR-008), issuing, sending or transmitting a PO (PO-001, PO-008, PUNCHOUT-001) and paying it (AP-001, AP-002) are refused through the web, the API, Slack, Teams and the native apps with the reason "supplier pending vendor approval". When the supplier activates, the approved request converts (automatically under PO-008, or by the buyer) without a second purchase approval; if activation changed a term the request carried (currency, payment terms, a supplier-quoted price or the supplier's legal entity), the change becomes a PUR-009 amendment re-routed under APPROVAL-001. The requester sees the supplier's onboarding and vendor approval status, and who holds it and since when, on the request, and NOTIFY-001 tells them when it activates or is rejected. A rejected vendor returns the request to the requester with the approver's reason and releases its reservation, and the requester can pick another supplier and resubmit. Every proposal, invite, decision and bypass is in AUDIT-001.
 
 **Acceptance.**
 1. A requester raises a $900 catering request naming an unknown caterer with an email address and a reason: the request routes with the new-supplier step and is approved, and the department budget shows $900 reserved.
@@ -579,7 +578,19 @@ Core · target · **missing** · Cites BASE-AUDIT-001, BASE-MAIL-001
 5. The buyer who submitted a vendor is refused when deciding that vendor's step.
 6. A proposed supplier whose TIN matches an existing supplier is offered that supplier; picking it leaves the request with the existing supplier and no new-supplier step.
 7. A vendor rejected by the controller returns its request to the requester with the reason, and the $900 reservation is released.
-8. A vendor pulled from a QuickBooks Online sandbox enters the chain with the ledger-pull bypass off, and is active at once with it on, with the bypass recorded in the audit log. A Procurify fixture with vendor approval routing and two pending vendor requests imports them as Purse's vendor approval chain and two pending suppliers linked to their requests.
+
+**Evidence.** None.
+**Gap.** Requests accept only a register supplier (src/purse/requests.ts); new-supplier proposals, pending supplier status, the vendor approval chain and holding POs until activation not built
+
+#### SUPPLIER-009 — Vendor routing from import and ledger sources
+
+Core · target · **missing** · From SUPPLIER-008 · Cites BASE-AUDIT-001, BASE-MAIL-001
+
+**Requirement.** Suppliers created by CSV import, ledger pull (SYNC-001 to SYNC-008) or API-001 go through the same chain unless the admin turns on a bypass for that source, as Procurify's vendor approval settings allow, and each bypassed creation is recorded in AUDIT-001. IMPORT-001 imports Procurify's vendor approval routing and its pending vendor requests.
+
+**Acceptance.**
+1. A vendor pulled from a QuickBooks Online sandbox enters the chain with the ledger-pull bypass off, and is active at once with it on, with the bypass recorded in the audit log.
+2. A Procurify fixture with vendor approval routing and two pending vendor requests imports them as Purse's vendor approval chain and two pending suppliers linked to their requests.
 
 **Evidence.** None.
 **Gap.** Requests accept only a register supplier (src/purse/requests.ts); new-supplier proposals, pending supplier status, the vendor approval chain and holding POs until activation not built
@@ -588,7 +599,7 @@ Core · target · **missing** · Cites BASE-AUDIT-001, BASE-MAIL-001
 
 #### SOURCE-001 — RFQ invitations and supplier responses
 
-Core · target · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-AUDIT-001, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
+Core · target · **partial** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-AUDIT-001, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
 
 **Requirement.** A buyer sends a request for quotation to nominated suppliers with scope, quantities, response deadline and questions; suppliers respond through a no-account link with line prices, freight, tax, lead time, validity and files; reminders go before the deadline; responses land in PUR-005's comparison and the buyer awards one, with the award reason kept. The owner/buyer configures the exact native draft revision and nominated contact snapshots; supplier-link possession permits only reading those requirements/questions and appending that supplier’s response, never business reads, approval or request mutation. Links contain 32 random bytes, keep only SHA-256, expire exactly at the response deadline (at most 30 days), and buyer reissue revokes the old link atomically. Supplier replies may be revised strictly before the deadline; each version and exact original file remains immutable, and the latest response per supplier counts in comparison. Buyer/owner alone reads response history and originals. RFQs accept 100 requested lines, 50 nominees and 30 questions, with explicit refusal. Responses keep exact requested item/quantity/unit/SKU and supplied decimal prices; nothing is inferred. Every currency remains separate. Times require an explicit offset/UTC through the API, are chosen in the buyer browser’s labelled zone and stored as UTC instants; supplier deadlines show the installation zone. A reminder is after configuration and at least one hour before the deadline. The first hourly tick at or after it claims one reminder for each invited nonrespondent, only before the deadline; at/after the deadline the schedule records nonresponse and durably closes link authority. Every invitation, explicit reissue and reminder claims its attempt before the real mail adapter call; uncertain attempts never silently repeat. The supplier page uses strict-origin referrers (no path/query/token), exact same-origin POST and cross-site refusal. A buyer’s reasoned award rechecks the exact source request and latest selected response; its baseline is the actual first recorded RFQ offer in the awarded currency, ordered by the serialized offer sequence. Awarding that first offer is allowed with zero savings. Real supplier and response identities stay on the source quotations; the selected supplier, prices and terms create a new ordinary request draft needing fresh approval. Later responses cannot rewrite a retained award or approved revision. Approved awards feed REPORT-003 negotiated savings, and received cash-planning-approved invoice evidence feeds its honestly labelled realized savings, with original response/quote, award and invoice drill-through. Unawarded or unapproved offers count as neither. All configuration, invitation/reissue, mail outcomes, responses and awards enter AUDIT-001. Portable archives preserve requirements, all offers/files, history and award/source links while excluding bearer authority. ACCESS-001 and API-001 inherit scoped RFQ commands/reads; AGENT-002 inherits these invitation, response-version, source/privacy, first-offer and explicit-award obligations before its agent execution ships; ERASURE-001 inherits the new personal fields before erasure ships. Supplier original files are private R2 objects, up to three files of 10 MB (10,000,000 bytes) each; response metadata retains their exact size and SHA-256.
 
@@ -601,11 +612,11 @@ Core · target · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AGENT
 6. A complete archive restore preserves valid response originals, all versions, mail outcomes and award links with no restored bearer keys.
 
 **Evidence.** `src/purse/rfq.ts`; `src/purse/rfq-public.ts`; `src/purse/rfq-originals.ts`; `src/purse/rfq-mail.ts`; `src/ui/rfq.tsx`; `tests/rfq.test.mjs`; `tests/browser-rfq.mjs`; `scripts/installer/restore-rfq.mjs`
-**Gap.** None.
+**Gap.** Asserted: Two suppliers and a revised offer reach the comparison; All three ten-megabyte originals download byte for byte; Oversize originals refuse without response or object writes. No complete asserting-line trace is recorded for point 1: Three supplier invitations are retained, Malformed offer refusal leaves response and storage counts unchanged, The entered award reason is read back.
 
 #### SOURCE-002 — Quote document processing
 
-Core · target · **done** · Cites BASE-DATA-001, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
+Core · target · **partial** · Cites BASE-DATA-001, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
 
 **Requirement.** An attached supplier quote PDF or email becomes proposed item, quantity, unit price, unit, currency, freight, tax, lead time and validity fields, with per-field confidence and source page/quotation. The native reader handles labelled tables, item blocks and inline quantity/price text in PDFs, plain text and plain/HTML MIME email; it never guesses unseen values. Scans, images and other layouts use the source-bound external-reader prepare door: the person explicitly downloads the original through the existing private scoped download, chooses and runs a reader, and returns its structured proposal with exact attachment SHA-256/revision, request revision, quoted source text/page, confidence and declared model/provider/run reference. Purse never sends source bytes to a reader automatically, stores no provider key and labels the result "externally prepared reading; model/provider declared, not verified". The immutable original proposal, original bytes and every correction remain linked. This is a data proposal under PUR-014, not purchasing authority; preparation never submits, approves, issues or sends an order. Only the requester on their own editable native draft, or a buyer on a visible editable draft (including the owner's existing buyer authority), may prepare, correct or confirm; submitted/approved revisions never change. A missing field remains blank with zero confidence. Native confidence is a fixed source-match score, not a calibrated probability; external confidence is the reader's unverified declaration and a correction identifies its human actor. Confirmation requires every item, explicit freight/tax amounts (including zero), currency matching the request, lead time and validity, plus a reason and a exact source/review/request version. It alone creates a new editable request revision: mapped lines keep their category/project, part number, destination and coding, unmatched lines remain, and new lines require coding. The confirmed header tax replaces prior line tax allocations in proportion to revised line values, using the existing largest-remainder cent allocation. Lead-time/validity evidence and corrections survive later amendments and portable restore. Native reading refuses unreadable documents, unsupported charsets/transfers/layouts, PDFs beyond 50 pages, extracted text beyond 500,000 characters, more than 100 items or a field beyond 2,000 characters; it never truncates or invents blank item rows. The external proposal accepts 1–100 items with fields up to 2,000 characters.
 
@@ -615,7 +626,7 @@ Core · target · **done** · Cites BASE-DATA-001, BASE-INPUT-001, BASE-INPUT-00
 3. Read the real raster quotation in with image-only supplier text as an external vision reader, embed it as an image-only PDF, obtain the live source-bound instructions, upload the quoted reading through the public door, retain its declared provenance, correct a field and confirm a new draft; assert exact original downloads, immutable proposal/correction history and portable digest validation.
 
 **Evidence.** `src/purse/quote-reading.ts`; `src/purse/quote-reading-source.ts`; `src/purse/quote-reading-proposal.ts`; `src/ui/quote-reading.tsx`; `tests/quote-reading.test.mjs`; `tests/browser-quote-reading.mjs`; `scripts/installer/restore-quote-reading.mjs`
-**Gap.** None.
+**Gap.** Asserted: Text PDF description, quantity, unit and unit price are read; Freight, tax, lead time and validity are read; Confidence and page/line evidence are asserted for the listed read fields. No complete asserting-line trace is recorded for point 1: Currency is independently asserted, Unit confidence and its source page are independently asserted; point 2: Every wrong-role and signed-out reading door is refused.
 
 #### CATALOG-001 — Catalog items, bundles and access
 
@@ -661,17 +672,16 @@ Core · target · **missing** · Cites BASE-INPUT-003, BASE-MAIL-001
 
 #### STOCK-001 — Stockroom consumables
 
-Core · target · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
+Core · target · **partial** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
 
-**Requirement.** Office, cleaning and site consumables carry stockroom counts and reorder points; a count below its reorder point creates a draft request to the preferred supplier or PunchOut item for the owner to submit. Businesses that run warehouse inventory use [Pier](https://github.com/just-every/run-pier). A Pier operator sends replenishment needs through Purse's documented, authenticated purchase-request API door using a native session and the same-origin check; it creates a draft request only, never a PO. Scoped connector keys for unattended Pier calls belong to API-001 and remain required there.
+**Requirement.** Office, cleaning and site consumables carry stockroom counts and reorder points; a count below its reorder point creates a draft request to the preferred supplier or PunchOut item for the owner to submit. Businesses that run warehouse inventory use [Pier](https://github.com/just-every/run-pier). A Pier operator sends replenishment needs through Purse's documented, authenticated purchase-request API door using a native session and the same-origin check; it creates a draft request only, never a PO. Scoped connector keys for unattended Pier calls belong to API-001 and remain required there. API-001 separately proves unattended access with a scoped connector key.
 
 **Acceptance.**
 1. Record a count below a reorder point; a draft request appears with the preferred item and quantity, and nothing is submitted until a person does.
 2. Send a Pier replenishment need through the authenticated request door: the draft retains the preferred catalog item and quantity under the current requester, no PO is created and nothing is submitted; signed-out and cross-origin calls are refused.
-3. API-001 separately proves unattended access with a scoped connector key.
 
 **Evidence.** `src/purse/stockroom.ts`; `src/ui/stockroom.tsx`; `tests/stockroom.test.mjs`; `tests/browser-stockroom.mjs`; `API.md`
-**Gap.** None.
+**Gap.** Asserted: Low count creates a new draft; The draft has the preferred catalogue item; The replenishment quantity is seven and a half. No complete asserting-line trace is recorded for point 2: Pier’s returned catalogue item and quantity are read back, Pier creates no PO, Signed-out and cross-origin Pier calls are independently asserted.
 
 ### Coding, allocations and custom fields
 
@@ -902,7 +912,7 @@ Core · target · **done** · From PO-005
 
 #### PO-014 — Recurring order generation and renewal checks
 
-Core · target · **done** · From PO-005 · Cites BASE-MAIL-001, BASE-ROLE-001
+Core · target · **partial** · From PO-005 · Cites BASE-MAIL-001, BASE-ROLE-001
 
 **Requirement.** Before each recurring order is generated, the renewal check compares it with the series' linked agreement (CONTRACT-001) and its budget: if the order would fall after the agreement's end date or inside its notice period, exceed the agreement value or the remaining budget, or the supplier is blocked or lapsed (SUPPLIER-004), the series pauses and the PO owner is asked to continue, amend under PUR-009 or end it, with the reason shown; otherwise the order is generated. A native owner configures an exact issued-template monthly series with its linked agreement, dates and bounded order count; the designated non-self approver explicitly authorizes that series. Each scheduled generation rechecks native owner/approver versions, policy/grants, template, agreement, supplier and budget, then atomically records a distinct order, decision provenance and commitment. A failed renewal pauses visibly for the owner’s reasoned continue, amendment or end disposition. No supplier send is implied by generation. APPROVAL-001/002, PO-001/004/008, MATCH-001/002 and API-001 inherit these source, renewal and current-cap obligations before adding their doors.
 
@@ -911,7 +921,7 @@ Core · target · **done** · From PO-005 · Cites BASE-MAIL-001, BASE-ROLE-001
 2. Link a monthly recurring PO to an agreement ending in six weeks: the next order is generated, the one after the end date is not, the series pauses and the owner is asked with the agreement end date as the reason.
 
 **Evidence.** `tests/blanket-orders.test.mjs`; `tests/blanket-orders.test.mjs`; `tests/browser-blanket.mjs`; `tests/browser-blanket-kinds.mjs`; `tests/browser-po-kinds.mjs`
-**Gap.** None.
+**Gap.** Asserted: Concurrent real Cron ticks generate one order and reservation; The order before the six-week end is generated; The order after agreement end is not generated. No complete asserting-line trace is recorded for point 2: The owner receives the request to decide how the series continues.
 
 #### PO-006 — Shipment tracking
 
@@ -960,7 +970,7 @@ Core · target · **partial** · Cites BASE-MAIL-001
 
 #### PO-009 — PO document content, labels and terms
 
-Core · target · **done** · Cites BASE-DATA-001, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001
+Core · target · **partial** · Cites BASE-DATA-001, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001
 
 **Requirement.** Every PO document (PDF, and the same content behind PO-001's link and in cXML OrderRequest where the format allows) carries: the legal entity's name and the logo configured for the bill-to location; bill-to name and address; ship-to name, address and attention line, with a ship-to per line where lines differ; the supplier's name, address and remit-to; PO number, revision and issue date; payment terms, deposit or prepayment terms (PO-011) and FOB or shipping terms; need and promised dates; lines with supplier part number, description, quantity, unit, unit price, line tax and total, with freight, tax and the order total; notes to the supplier; the buyer's contact; and the business's purchase terms and conditions, printed on the document or attached. Admins set the logo, address labels (which name populates bill-to and ship-to), field labels and standard terms per entity (ACCESS-003) and location, with terms per purchase type where they differ; the applicable tax exemption or resale certificate (PO-007) is attached when the bill-to location and supplier state call for it. A change order (PO-004) shows its revision number and what changed. Native HTML and real PDF downloads use an owner-configured location/category profile frozen at conversion, including the legal name, bill-to logo and labelled bill-to/ship-to addresses with attention, buyer contact, shipping terms, printed terms, original attached purchase-terms PDF and a configured exemption/resale PDF selected by the supplier’s recorded two-letter postal state. This selection never claims tax validation. New conversions require a profile. A category-specific profile wins only when every line has that category; otherwise the location’s * profile applies. Supplier name, contact, postal address and remit-to are copied into the request’s immutable supplier snapshot. A later directory or profile edit never rewrites an existing PO. Legacy fields never captured are labelled Not recorded, never borrowed from supplier directory. Need dates, latest recorded supplier-promised dates, exact line quantities/units/prices, part numbers, per-line ship-to overrides, supplied line tax, freight, total, supplier notes and textual deposit/prepayment terms appear on both downloads. Explicit line tax must cover all lines and sum to supplied tax; when omitted entirely, supplied tax is apportioned by line value with largest-remainder cents, original line order breaking ties and equal shares for zero-valued lines. Textual deposit terms do not create a deposit, approval or payment. PDF originals are appended as pages and embedded byte-for-byte; the HTML offers the same originals for download. An amendment identifies the preceding PO, the numbered change order and each changed line/header value. Change-order numbering and document revision count issued amendments from one, independently of draft/request revisions; pre-issue edits never consume a change-order number. The approved request/PO revision is labelled separately. This completes native document doors; PO-001/004, PUNCHOUT-001/002, ACCESS-003, PO-007 and PO-011 inherit these document fields and original attachments before shipping their link, send, cXML, entity, tax-provider and structured-deposit capabilities.
 
@@ -973,11 +983,11 @@ Core · target · **done** · Cites BASE-DATA-001, BASE-INPUT-001, BASE-INPUT-00
 6. Run the supplier/profile/request/order web paths at 1440 and 390 without horizontal overflow, and restore the profile/snapshots/originals in the portable archive.
 
 **Evidence.** `src/purse/po-profiles.ts`; `src/purse/po-content.ts`; `src/purse/po-pdf.ts`; `src/ui/po-profiles.tsx`; `tests/po-documents.test.mjs`; `tests/browser-po-documents.mjs`; `tests/restore-po-documents.mjs`
-**Gap.** None.
+**Gap.** Asserted: Distinct emitted PDFs retain distinct location logos; Supplier and profile directory changes cannot rewrite the first emitted document; Amendment emits change order one. No complete asserting-line trace is recorded for point 1: Each PDF’s legal identity and all named supplier, remit, shipping, deposit, date, line, note and original fields are compared; point 3: Both old and new quantities and approved revision labels are compared; point 5: Signed-out and out-of-scope downloads are refused; point 6: Both web widths have no overflow, Actual archive restoration compares frozen profile, logo and original attachments.
 
 #### PO-010 — Manual PO close and reopen
 
-Core · target · **done** · Cites BASE-AUDIT-001, BASE-MAIL-001
+Core · target · **partial** · Cites BASE-AUDIT-001, BASE-MAIL-001
 
 **Requirement.** A buyer can close an issued PO, a line or a remaining balance without sending a cancellation to the supplier (a short shipment the supplier has written off, an order fulfilled under another PO), with a required reason; the remaining commitment is released to the budget, closed balances are excluded from shared overdue and receiving eligibility, and later invoices against the closed balance carry an explicit closed-balance exception for MATCH-002. Closing and reopening send nothing outbound. Supplier chases under PO-003 and receipt prompts under RECEIVE-001 remain required by those clauses; once built, they must use the shared eligibility and stop for a closed balance. A closed PO can be reopened by a buyer, which re-reserves its remaining balance subject to available budget and authority, with both events audited. After a supplier merge, issued POs continue and reopen as SUPPLIER-003 states.
 
@@ -986,32 +996,57 @@ Core · target · **done** · Cites BASE-AUDIT-001, BASE-MAIL-001
 2. After PO-003 and RECEIVE-001 are built, repeat with an active supplier chase and receipt prompt and prove both stop on close; these dependent acceptance steps remain required under those clauses.
 
 **Evidence.** `src/purse/order-closure.ts`; `src/purse/invoices.ts`; `src/ui/order-closure.tsx`; `tests/order-closure.test.mjs`; `tests/browser-order-closure.mjs`
-**Gap.** None.
+**Gap.** Asserted: Receiving eight units leaves two thousand minor units outstanding; Close records the reason and removes the outstanding balance; Close and reopen send no supplier messages. No complete asserting-line trace is recorded for point 1: Closed balance disappears from the overdue projection; point 2: Active chasing stops on closure in this clause’s cited Evidence set, Active receipt prompting stops on closure in this clause’s cited Evidence set.
 
-#### PO-011 — Deposits and prepayments
+#### PO-011 — Deposit terms and two-way payment handoff
 
 Core · target · **missing** · Cites BASE-INPUT-003, BASE-MAIL-001
 
-**Requirement.** A PO, or the agreement it draws on (CONTRACT-001), can carry one or more deposit or prepayment terms, as Procurify's deposit billing does: an amount or a percentage of the PO total, a due trigger (on supplier acknowledgment under PO-001, on issue, or on a date) and the prepaid account it posts to (a default prepaid expenses or vendor prepayments account per entity, mapped from the ledger). The deposits on a PO can never exceed its total, a deposit added after issue is a PUR-009 amendment, and the terms print on the PO document (PO-009) and show on the supplier link. A deposit invoice (submitted as a deposit by the supplier through INVOICE-005's PO flip, marked as one by AP, or proposed as one by INVOICE-002's reading and confirmed by AP) matches two-way to its deposit term, not to receipts: it is never held for receipt under MATCH-001 or RECEIVE-001, it is approved for payment automatically within the unbilled deposit amount and its tolerance and goes to MATCH-002 above it, and AP-003 sets its due date from the trigger. It posts to the ledger once (SYNC-001 to SYNC-008) as a bill coded to the prepaid account, or as the ledger's own vendor prepayment where it has one (NetSuite vendor prepayments, Business Central prepayment invoices), and is paid through AP-001 or AP-002 like any bill. Later invoices on the PO match three-way against receipts at their full value, and Purse applies the unapplied deposit balance as a credit line coded to the prepaid account (all of it on the final invoice, or pro rata on progress invoices where the term says so), so the net payable is the invoice less the deposit applied and the bill syncs with that credit line. The PO's billed total counts each deposit once, so INVOICE-003's remaining-balance check treats a final invoice carrying its deposit credit as within balance, and a deposit invoice beyond the unbilled deposit is flagged. BUDGET-001, REPORT-001 and REPORT-004 count a deposit as actual when its invoice is approved and never count it again on the final bill. A deposit not yet applied when the PO is closed or canceled (PO-010) stays on the supplier's balance (RECEIVE-002) for a refund or credit, and open POs adopted under IMPORT-003 keep their unapplied deposits. Before shipping this capability, its deposit due triggers must feed AP-003 due dates; deposit bills and their later application must count once in weekly approved bills and remaining expected liability. Acceptance must assert this AP-003 integration through the capability’s public door. Before shipping, REPORT-001 must count a deposit once as actual and apply it once to the final bill and remaining liability, with drill-through to both source records. Acceptance must assert these figures through the public report door and web. Before shipping, its new document/link/send/cXML/entity/tax-provider/deposit door must preserve PO-009’s frozen applicable identity/profile, labelled fields, original terms/certificate, line destinations/taxes and numbered amendment differences, including structured deposit terms where this capability supplies them. Acceptance must assert PO-009 content and attachments through that public door and its downloaded PDF.
+**Requirement.** A PO, or the agreement it draws on (CONTRACT-001), can carry one or more deposit or prepayment terms, as Procurify's deposit billing does: an amount or a percentage of the PO total, a due trigger (on supplier acknowledgment under PO-001, on issue, or on a date) and the prepaid account it posts to (a default prepaid expenses or vendor prepayments account per entity, mapped from the ledger). The deposits on a PO can never exceed its total, a deposit added after issue is a PUR-009 amendment, and the terms print on the PO document (PO-009) and show on the supplier link. A deposit invoice (submitted as a deposit by the supplier through INVOICE-005's PO flip, marked as one by AP, or proposed as one by INVOICE-002's reading and confirmed by AP) matches two-way to its deposit term, not to receipts: it is never held for receipt under MATCH-001 or RECEIVE-001, it is approved for payment automatically within the unbilled deposit amount and its tolerance and goes to MATCH-002 above it, and AP-003 sets its due date from the trigger. It posts to the ledger once (SYNC-001 to SYNC-008) as a bill coded to the prepaid account, or as the ledger's own vendor prepayment where it has one (NetSuite vendor prepayments, Business Central prepayment invoices), and is paid through AP-001 or AP-002 like any bill. Before shipping this capability, its deposit due triggers must feed AP-003 due dates; deposit bills and their later application must count once in weekly approved bills and remaining expected liability. Acceptance must assert this AP-003 integration through the capability’s public door.
 
 **Acceptance.**
 1. Issue a $20,000 PO with a 50% deposit due on acknowledgment and acknowledge it.
 2. A $10,000 deposit invoice arriving before any receipt is not held for receipt, is approved, and syncs to a QuickBooks Online sandbox company as one bill coded to the prepaid account; a retried push still leaves one bill.
-3. After full receipt, a $20,000 final invoice matches three-way, carries a −$10,000 deposit credit line and syncs as a net $10,000 bill; the department budget's actual ends at exactly $20,000 and the dashboard shows $20,000 spend on the PO.
-4. A second $10,000 deposit invoice on the same PO is flagged and cannot be approved for payment.
-5. The same journey against a NetSuite sandbox records the deposit as a vendor prepayment applied to the final vendor bill.
-6. Before shipping, REPORT-001 must count a deposit once as actual and apply it once to the final bill and remaining liability, with drill-through to both source records.
-7. Acceptance must assert these figures through the public report door and web.
-8. Before shipping, its new document/link/send/cXML/entity/tax-provider/deposit door must preserve PO-009’s frozen applicable identity/profile, labelled fields, original terms/certificate, line destinations/taxes and numbered amendment differences, including structured deposit terms where this capability supplies them. Acceptance must assert PO-009 content and attachments through that public door and its downloaded PDF. Before shipping, INVOICE-003 must count each deposit once in billed balance, apply the final invoice deposit credit once and flag a deposit invoice beyond the unbilled deposit amount; unresolved flags refuse payment approval. Acceptance must assert all three figures through the public invoice and approval doors.
+3. A second $10,000 deposit invoice on the same PO is flagged and cannot be approved for payment.
+4. The same journey against a NetSuite sandbox records the deposit as a vendor prepayment applied to the final vendor bill.
 
 **Evidence.** None.
 **Gap.** Deposit terms, two-way deposit matching, prepaid posting and deposit credits not built
 
-#### PO-012 — Buyer edits at conversion within a price variance limit
+#### PO-015 — Deposit credits and remaining liabilities
+
+Core · target · **missing** · From PO-011 · Cites BASE-INPUT-003, BASE-MAIL-001
+
+**Requirement.** Later invoices on the PO match three-way against receipts at their full value, and Purse applies the unapplied deposit balance as a credit line coded to the prepaid account (all of it on the final invoice, or pro rata on progress invoices where the term says so), so the net payable is the invoice less the deposit applied and the bill syncs with that credit line. The PO's billed total counts each deposit once, so INVOICE-003's remaining-balance check treats a final invoice carrying its deposit credit as within balance, and a deposit invoice beyond the unbilled deposit is flagged. BUDGET-001, REPORT-001 and REPORT-004 count a deposit as actual when its invoice is approved and never count it again on the final bill. A deposit not yet applied when the PO is closed or canceled (PO-010) stays on the supplier's balance (RECEIVE-002) for a refund or credit, and open POs adopted under IMPORT-003 keep their unapplied deposits. Before shipping, REPORT-001 must count a deposit once as actual and apply it once to the final bill and remaining liability, with drill-through to both source records. Acceptance must assert these figures through the public report door and web.
+
+**Acceptance.**
+1. After full receipt, a $20,000 final invoice matches three-way, carries a −$10,000 deposit credit line and syncs as a net $10,000 bill; the department budget's actual ends at exactly $20,000 and the dashboard shows $20,000 spend on the PO.
+2. Before shipping, REPORT-001 must count a deposit once as actual and apply it once to the final bill and remaining liability, with drill-through to both source records.
+3. Acceptance must assert these figures through the public report door and web.
+4. Before shipping, INVOICE-003 must count each deposit once in billed balance, apply the final invoice deposit credit once and flag a deposit invoice beyond the unbilled deposit amount; unresolved flags refuse payment approval.
+5. Acceptance must assert all three figures through the public invoice and approval doors.
+
+**Evidence.** None.
+**Gap.** Deposit terms, two-way deposit matching, prepaid posting and deposit credits not built
+
+#### PO-016 — Frozen deposit documents and supplier links
+
+Core · target · **missing** · From PO-011 · Cites BASE-INPUT-003, BASE-MAIL-001
+
+**Requirement.** Before shipping, its new document/link/send/cXML/entity/tax-provider/deposit door must preserve PO-009’s frozen applicable identity/profile, labelled fields, original terms/certificate, line destinations/taxes and numbered amendment differences, including structured deposit terms where this capability supplies them. Acceptance must assert PO-009 content and attachments through that public door and its downloaded PDF.
+
+**Acceptance.**
+1. Before shipping, its new document/link/send/cXML/entity/tax-provider/deposit door must preserve PO-009’s frozen applicable identity/profile, labelled fields, original terms/certificate, line destinations/taxes and numbered amendment differences, including structured deposit terms where this capability supplies them.
+2. Acceptance must assert PO-009 content and attachments through that public door and its downloaded PDF.
+
+**Evidence.** None.
+**Gap.** Deposit terms, two-way deposit matching, prepaid posting and deposit credits not built
+
+#### PO-012 — Buyer conversion edits within variance limits
 
 Core · target · **partial** · Cites BASE-AUDIT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001
 
-**Requirement.** A buyer converting approved lines (PUR-008, including PO-008's Procure page and its automatic rules) can correct each line before the PO is issued, as Procurify's purchasers do on its Procure page: unit price, quantity, unit of measure, supplier part number or SKU, and the supplier (to another active, purchasable supplier; a SUPPLIER-008 pending supplier cannot be chosen), and can add freight, tax and other charge lines. Each buyer has a price variance limit under ACCESS-001, set per buyer or per buyer role and entity as a dollar amount, a percentage, or both (the lower governs), measured above the approved line and above the approved request total; an admin can set it to zero, and a quantity increase is allowed only within a separate quantity variance (default zero). Decreases in price or quantity are always within the limit. An edit inside every limit creates a new exact revision of the request attributed to the buyer and the PO is issued from it with no renewed approval: the request and PO show the before-and-after values to the requester and the approvers, the requester is notified under NOTIFY-001, and AUDIT-001 records each edit with the limit in force. PUR-009 keeps its text: this clause defines the buyer edits that are not amendments. An edit beyond any limit, a supplier switch whose price change is beyond it, or a quantity increase beyond the quantity variance is a PUR-009 amendment: the revision is re-routed under APPROVAL-001 to the chain the request's rules now select, and nothing on the PO is issued, sent or transmitted (PO-001, PO-008, PUNCHOUT-001) until it is approved. BUDGET-001 moves the reservation to the edited amount and commits it atomically under PUR-006 when the PO is issued; where the edited amount would take a budget over, the edit goes to the budget-owner step as any over-budget request does, even when it is inside the buyer's limit. Coding, CODING-001 splits and CODING-002 values stay on the edited line, and each allocation is rescaled by its share exactly under PUR-016 (the remainder cent on the first allocation). After approval and before or after issue, the requester or an approver may change a line's need date: it is a non-material change (APPROVAL-004's default), makes a new revision with no re-approval, and once the PO is issued it is sent to the supplier as a PO-004 change order. Every edit is enforced on every door (web at both widths, API, Slack and Teams). Its buyer conversion edits must record before/after values and the price and quantity limits in force in AUDIT-001. Acceptance must assert this obligation through its public door and AUDIT-001 read/export. Native conversion writes a new exact buyer-attributed revision, preserving immutable source revisions and explicitly linked carried decisions. Price/quantity/unit/SKU, consistent active supplier changes and distinct freight/tax/other charges retain coding and rescale splits with the remainder cent on the first allocation. caps apply to each line and the total; zero-limit increases are refused. A nonzero over-limit edit, changed threshold route or over-budget amount becomes an approval revision with no issued PO until its exact chain and allocation-budget owners approve. Web edited conversion can explicitly issue in the same native transaction; API preparation retains its explicit separate issue door. The issued face and prior invoice evidence govern remaining-balance/risk checks. Approved requester/approver line need-date edits carry approval, create exact numbered document history and retain receiving custody; supplier delivery starts visibly pending and an explicit scoped buyer sends the exact numbered change with its frozen PDF and original terms; the safe outcome and supplier acknowledgment are shown separately from creation-time metadata. Mixed supplier-group conversion, notification/channel execution and Slack/Teams qualification remain gaps; explicit change-order sending reports provider outcomes without claiming mailbox delivery.
+**Requirement.** A buyer converting approved lines (PUR-008, including PO-008's Procure page and its automatic rules) can correct each line before the PO is issued, as Procurify's purchasers do on its Procure page: unit price, quantity, unit of measure, supplier part number or SKU, and the supplier (to another active, purchasable supplier; a SUPPLIER-008 pending supplier cannot be chosen), and can add freight, tax and other charge lines. Each buyer has a price variance limit under ACCESS-001, set per buyer or per buyer role and entity as a dollar amount, a percentage, or both (the lower governs), measured above the approved line and above the approved request total; an admin can set it to zero, and a quantity increase is allowed only within a separate quantity variance (default zero). Decreases in price or quantity are always within the limit. An edit inside every limit creates a new exact revision of the request attributed to the buyer and the PO is issued from it with no renewed approval: the request and PO show the before-and-after values to the requester and the approvers, the requester is notified under NOTIFY-001, and AUDIT-001 records each edit with the limit in force. PUR-009 keeps its text: this clause defines the buyer edits that are not amendments. An edit beyond any limit, a supplier switch whose price change is beyond it, or a quantity increase beyond the quantity variance is a PUR-009 amendment: the revision is re-routed under APPROVAL-001 to the chain the request's rules now select, and nothing on the PO is issued, sent or transmitted (PO-001, PO-008, PUNCHOUT-001) until it is approved. BUDGET-001 moves the reservation to the edited amount and commits it atomically under PUR-006 when the PO is issued; where the edited amount would take a budget over, the edit goes to the budget-owner step as any over-budget request does, even when it is inside the buyer's limit. Coding, CODING-001 splits and CODING-002 values stay on the edited line, and each allocation is rescaled by its share exactly under PUR-016 (the remainder cent on the first allocation). Every edit is enforced on every door (web at both widths, API, Slack and Teams). Its buyer conversion edits must record before/after values and the price and quantity limits in force in AUDIT-001. Acceptance must assert this obligation through its public door and AUDIT-001 read/export. Native conversion writes a new exact buyer-attributed revision, preserving immutable source revisions and explicitly linked carried decisions. Price/quantity/unit/SKU, consistent active supplier changes and distinct freight/tax/other charges retain coding and rescale splits with the remainder cent on the first allocation. Caps apply to each line and the total; zero-limit increases are refused. A nonzero over-limit edit, changed threshold route or over-budget amount becomes an approval revision with no issued PO until its exact current chain and allocation-budget owners approve. Web conversion can explicitly issue in the same native transaction; API preparation retains its explicit separate issue door.
 
 **Acceptance.**
 1. Give a buyer a 10% price variance limit.
@@ -1020,8 +1055,31 @@ Core · target · **partial** · Cites BASE-AUDIT-001, BASE-INPUT-003, BASE-MAIL
 4. A buyer with a zero limit is refused any price increase through the web and the API, and is allowed a decrease.
 5. Raise a $1,000 line split 60/40 to $1,040 and issue it: the two budgets commit $624 and $416.
 6. An in-limit edit that would take the department over budget routes to the budget owner.
-7. Change the need date on an issued PO's line as the requester: no approval step is opened and the supplier receives a change order.
-8. Switch the supplier on a line to a pending SUPPLIER-008 supplier and see the switch refused. Before shipping buyer edits and charge lines, INVOICE-003 must use the edited current issued face once and prior invoice evidence across amendments; acceptance must assert an invoice at the remaining balance and one exceeding it, with unresolved-flag refusal.
+7. Switch the supplier on a line to a pending SUPPLIER-008 supplier and see the switch refused.
+
+**Evidence.** `tests/po-documents.test.mjs`; `tests/spend-report.test.mjs`; `tests/browser-intake.mjs`; `tests/browser-approver-edits.mjs`; `tests/order-send.test.mjs`; `tests/browser-order-send.mjs`
+**Gap.** Exact buyer revision/carry, separate charges, active/pending supplier checks, zero/within/over-limit/threshold and allocation-owner routing, first-allocation cents, invoice/risk lineage, approved native date revisions and explicit supplier change send/ack implemented. Mixed supplier-group conversion, NOTIFY-001 execution and Slack/Teams transports/qualification remain; Teams app/test tenant not held
+
+#### PO-017 — Issued line need-date changes
+
+Core · target · **partial** · From PO-012 · Cites BASE-AUDIT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001
+
+**Requirement.** After approval and before or after issue, the requester or an approver may change a line's need date: it is a non-material change (APPROVAL-004's default), makes a new revision with no re-approval, and once the PO is issued it is sent to the supplier as a PO-004 change order. Approved requester/approver line need-date edits carry approval, create exact numbered document history and retain receiving custody; supplier delivery starts visibly pending and an explicit scoped buyer sends the exact numbered change with its frozen PDF and original terms; the safe current outcome and supplier acknowledgment are shown separately from creation-time metadata.
+
+**Acceptance.**
+1. Change the need date on an issued PO's line as the requester: no approval step is opened and the supplier receives a change order.
+
+**Evidence.** `tests/po-documents.test.mjs`; `tests/spend-report.test.mjs`; `tests/browser-intake.mjs`; `tests/browser-approver-edits.mjs`; `tests/order-send.test.mjs`; `tests/browser-order-send.mjs`
+**Gap.** Exact buyer revision/carry, separate charges, active/pending supplier checks, zero/within/over-limit/threshold and allocation-owner routing, first-allocation cents, invoice/risk lineage, approved native date revisions and explicit supplier change send/ack implemented. Mixed supplier-group conversion, NOTIFY-001 execution and Slack/Teams transports/qualification remain; Teams app/test tenant not held
+
+#### PO-018 — Invoice balance after buyer conversion edits
+
+Core · target · **partial** · From PO-012 · Cites BASE-AUDIT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001
+
+**Requirement.** The current issued face and prior invoice evidence govern remaining-balance/risk checks.
+
+**Acceptance.**
+1. Before shipping buyer edits and charge lines, INVOICE-003 must use the edited current issued face once and prior invoice evidence across amendments; acceptance must assert an invoice at the remaining balance and one exceeding it, with unresolved-flag refusal.
 
 **Evidence.** `tests/po-documents.test.mjs`; `tests/spend-report.test.mjs`; `tests/browser-intake.mjs`; `tests/browser-approver-edits.mjs`; `tests/order-send.test.mjs`; `tests/browser-order-send.mjs`
 **Gap.** Exact buyer revision/carry, separate charges, active/pending supplier checks, zero/within/over-limit/threshold and allocation-owner routing, first-allocation cents, invoice/risk lineage, approved native date revisions and explicit supplier change send/ack implemented. Mixed supplier-group conversion, NOTIFY-001 execution and Slack/Teams transports/qualification remain; Teams app/test tenant not held
@@ -1030,18 +1088,17 @@ Core · target · **partial** · Cites BASE-AUDIT-001, BASE-INPUT-003, BASE-MAIL
 
 #### RECEIVE-001 — Receiver prompts and invoice holds
 
-Core · target · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AUDIT-001, BASE-MAIL-001, BASE-ROLE-001
+Core · target · **partial** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AUDIT-001, BASE-MAIL-001, BASE-ROLE-001
 
-**Requirement.** Native orders prompt the responsible receiver by email when the delivery date is due or an invoice is waiting on receipt. The hourly scheduler and buyer-triggered prompt door use the installation's IANA timezone (America/New_York if none is configured), inclusive due dates, and one retained attempt per order, receiver, reason and local calendar day. Mail contains only the PO number, due date and signed-in receipt link; it records provider acceptance, suppressed local mail, unavailable or uncertain outcomes honestly, never claiming delivery. The signed-in link opens the exact PO with an entered partial receipt or a one-tap confirmation of a line's full remaining quantity; GET never records receipt, and confirmation rechecks session, receiver authority and receipt position. Invoices held for receipt release into ordinary matching immediately when the recorded receipt covers their invoiced quantity; other risk, price, quantity and closed-balance exceptions still apply and no payment is approved by receiving. Buyers (including the owner) configure an active receiver by PO, location and/or purchase category: precedence is PO, location plus category, category, location, then requester by default. A category rule applies only when every line shares that category. An explicitly assigned PO permits receipt only by that active receiver or an audited owner override; without an explicit assignment, existing receiver-capability members and the request's own active requester may record receipt. The receiver with receiver capability can reassign the PO to another active receiver; changes retain reason, actor and versioned history. Closed, superseded and fully received balances stop prompts, using PO-010's shared eligibility. This completes native receipt doors. PO-006 inherits the delivered-tracking trigger; INTAKE-002/003, MOBILE-002 and NOTIFY-001 inherit receipt prompts and replies through their Slack, Teams, push and preference-controlled channels; PO-011 inherits deposit-invoice exemption; CARD-002 inherits card-paid no-hold/no-prompt behavior before those capabilities ship.
+**Requirement.** Native orders prompt the responsible receiver by email when the delivery date is due or an invoice is waiting on receipt. The hourly scheduler and buyer-triggered prompt door use the installation's IANA timezone (America/New_York if none is configured), inclusive due dates, and one retained attempt per order, receiver, reason and local calendar day. Mail contains only the PO number, due date and signed-in receipt link; it records provider acceptance, suppressed local mail, unavailable or uncertain outcomes honestly, never claiming delivery. The signed-in link opens the exact PO with an entered partial receipt or a one-tap confirmation of a line's full remaining quantity; GET never records receipt, and confirmation rechecks session, receiver authority and receipt position. Invoices held for receipt release into ordinary matching immediately when the recorded receipt covers their invoiced quantity; other risk, price, quantity and closed-balance exceptions still apply and no payment is approved by receiving. Buyers (including the owner) configure an active receiver by PO, location and/or purchase category: precedence is PO, location plus category, category, location, then requester by default. A category rule applies only when every line shares that category. An explicitly assigned PO permits receipt only by that active receiver or an audited owner override; without an explicit assignment, existing receiver-capability members and the request's own active requester may record receipt. The receiver with receiver capability can reassign the PO to another active receiver; changes retain reason, actor and versioned history. Closed, superseded and fully received balances stop prompts, using PO-010's shared eligibility. This completes native receipt doors. PO-006 inherits the delivered-tracking trigger; INTAKE-002/003, MOBILE-002 and NOTIFY-001 inherit receipt prompts and replies through their Slack, Teams, push and preference-controlled channels; PO-011 inherits deposit-invoice exemption; CARD-002 inherits card-paid no-hold/no-prompt behavior before those capabilities ship. Named future clauses must assert their inherited trigger, channel or exemption through their public door.
 
 **Acceptance.**
 1. Through native HTTP and the web at 1440 and 390 pixels, submit an invoice before goods, see the correct receiver's prompt and held state, enter a partial receipt and confirm the remainder once: the invoice releases into matching without another action.
 2. Assign facilities to building services: facilities alone is prompted and the requester cannot record receipt.
 3. Assert every rule precedence, reassignment, default-requester receipt, wrong-role/signed-out/deactivated refusal, stale confirmation, local-zone due day across DST, duplicate scheduler refusal, PO-010 closure/reopen, retained audit/history and portable outcomes.
-4. Named future clauses must assert their inherited trigger, channel or exemption through their public door.
 
 **Evidence.** `src/purse/receipt-routing.ts`; `src/purse/receipt-prompts.ts`; `tests/receipt-routing.test.mjs`; `tests/browser-receipt-routing.mjs`
-**Gap.** None.
+**Gap.** Asserted: Default requester receiving releases its reservation; Retained assignment, history and outcome graph validates. No complete asserting-line trace is recorded for point 1: The correct assigned receiver receives the invoice-held prompt, Partial and final receipts release the invoice into matching once; point 2: Facilities is the exclusive prompt recipient for building services, The requester cannot receive the assigned PO; point 3: Every rule precedence and reassignment is read back, Wrong-role, signed-out and deactivated actors cannot receive, Stale confirmation and DST due-day boundaries are independently asserted, Duplicate scheduler ticks make no duplicate prompt, Closure and reopen preserve the prompting boundary.
 
 #### RECEIVE-002 — Credit memos, RMAs and supplier balances
 
@@ -1059,7 +1116,7 @@ Core · target · **partial**
 
 #### INVOICE-001 — Supplier invoice email inbox
 
-Core · target · **done** · Cites BASE-AUDIT-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001 · Rules D-1, D-3
+Core · target · **partial** · Cites BASE-AUDIT-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001 · Rules D-1, D-3
 
 **Requirement.** Each business (and entity) has an AP inbox address; suppliers' invoice emails and attachments (PDF, image, e-invoice XML) are captured with the original email retained, linked to the supplier by sender and remit details, and unknown senders are queued for review rather than trusted. E-invoice XML in UBL 2.1 (including PEPPOL BIS Billing 3.0 and the US DBNAlliance exchange profile) and cXML InvoiceDetailRequest is captured as structured fields straight from the XML, needing no document reading (INVOICE-002), with the XML and any embedded PDF kept. The owner configures the AP address, which must differ from INTAKE-004's request address; until ACCESS-003 adds entities, the business has one AP address, and ACCESS-003 must give each entity its own before it ships. AP mail arrives only through the signed Resend inbound webhook: signature, freshness and provider-ID replay are checked before hydration, INTAKE-004's transport limits apply (at most 3 attachments of 10 MB each, 30 MB decoded and a 2 MB provider record, refused explicitly, never truncated), and the exact provider record and attachments are kept in private R2 custody. Mail addressed to the AP address is captured only as supplier invoice mail and never becomes a purchase request, even when the request address is also a recipient. A capture is linked to a supplier only when the provider-reported From address exactly equals, ignoring letter case, a recorded contact email of exactly one supplier family, and it is labelled "Provider-reported sender; supplier authorship is not verified"; its reading's remit details are then compared with that supplier's recorded remit baseline by INVOICE-003; every other sender (unknown, a look-alike domain with a one-character, subdomain or encoded difference, an unrecorded mailbox at a supplier's contact domain, a contact of several suppliers, or an invalid address) is held with that reason until an owner or buyer assigns it to a supplier with a reason. Until ACCESS-001 adds an AP role, only owners and buyers read captures and download their originals. A capture creates no invoice evidence, payable or approval, and its text is data, never instructions. An owner or buyer opens an INVOICE-002 reading from one captured attachment, within INVOICE-002's 1 MB document limit (larger files are refused with the original kept), for a issued PO of the linked supplier; each attachment opens one reading. The reading binds the exact original bytes and waits for explicit review and confirmation, and the provider-reported sender, never a reading correction, reaches INVOICE-003's sender check, so duplicate-document, near-duplicate, remit, sender and PO-balance flags apply before cash-planning approval. A capture records when its attachment bytes equal an earlier capture's. UBL 2.1 Invoice documents of any customization (PEPPOL BIS Billing 3.0, DBNAlliance) and cXML InvoiceDetailRequest documents are read from their elements, not by document reading: invoice number, issue date (for cXML, the calendar date written in invoiceDate, without time-zone conversion), due date (UBL only; cXML payment days become "Net N" terms), PO number, currency, supplier name, postal remit address, each line's description, quantity, unit price, line amount and the PO line it references (the line number on the named PO), subtotal, document charges (UBL ChargeTotalAmount, cXML ShippingAmount), tax in the document currency and payable total, each with confidence 1 and its element path. Absent elements stay blank for the reviewer, and bank or tax identifiers are never read out of the original. Profile conformance and e-invoicing network membership are neither validated nor claimed. XML with a DOCTYPE or entity declaration is refused as unsupported, and nothing it references is fetched or expanded. A PDF embedded in a UBL invoice is kept beside the XML as its own exact private original when it fits the transport limits; the XML original always keeps it. Before shipping, each connected mailbox, other inbound provider or entity AP address inherits this entire clause and must pass its own provider sandbox. ACCESS-003 inherits entity AP addresses, ACCESS-001 inherits AP roles, and ERASURE-001 inherits capture, original, sender and audit erasure with anonymized financial lineage preserved.
 
@@ -1069,11 +1126,11 @@ Core · target · **done** · Cites BASE-AUDIT-001, BASE-DATA-003, BASE-DATA-006
 3. Before shipping email/XML capture, preserve genuine date, original-byte identity, sender provenance and remit evidence for INVOICE-003, applying duplicate/fraud/balance flags before approval; acceptance must submit duplicate and look-alike mail originals and assert unresolved-flag refusal.
 
 **Evidence.** `src/purse/invoice-inbox.ts`; `src/purse/invoice-inbox-api.ts`; `src/purse/invoice-xml.ts`; `src/purse/email-intake-api.ts`; `src/ui/invoice-inbox.tsx`; `scripts/installer/restore-invoice-inbox.mjs`; `tests/invoice-inbox.test.mjs`; `tests/browser-invoice-inbox.mjs`
-**Gap.** None.
+**Gap.** Asserted: Known supplier capture is a linked draft; Unknown sender capture is held; UBL and cXML reference and dates equal their source fields. No complete asserting-line trace is recorded for point 1: Known and unknown original files download unchanged; point 3: Unresolved flags refuse payment approval through this capture door.
 
 #### INVOICE-002 — Invoice reading with confidence
 
-Core · target · **done** · Cites BASE-AUDIT-001, BASE-DATA-001, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
+Core · target · **partial** · Cites BASE-AUDIT-001, BASE-DATA-001, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
 
 **Requirement.** Invoice documents are read into supplier, invoice number, dates, terms, PO number, lines, freight, tax, totals and remit-to, with per-field confidence; low-confidence fields are highlighted for AP review and every value links to where it was read. The document is data, never instructions. Until ACCESS-001 supplies AP roles, the owner/buyer stages and reviews originals; every invoice original download and its metadata are owner/buyer-only, including originals recorded through the earlier invoice and attachment doors. Text PDFs and MIME email bodies use an inert labelled parser; a MIME From header supplies the unverified sender ahead of any body label. Scanned/image invoices and other layouts use a chosen external reader through a private original download and source-bound JSON proposal; An agent’s external-reader call carries external and, for regulated fields, sensitive; company policy decides it. The original digest, attachment revision, declared provider/model/run, immutable proposal and corrections remain linked. Reader execution and quotations are declared, never verified. Native label matches score 0.97 and table matches 0.92; missing values score zero and remain blank; below 0.95 is highlighted. Every field, including high-confidence or absent optional fields, requires explicit human review before confirmation. Required identity, date, currency, PO, line and amount fields cannot be missing; absent optional due dates, terms, sender or remit facts remain explicitly unrecorded. Corrections retain original values, actor and source and score one only as human corrections. Each line amount must equal quantity (up to three decimals) × unit price, rounded half-up to cents; lines must sum to subtotal and subtotal plus explicit freight and tax must equal the document total. invoice allocations include freight/tax apportioned by line subtotal, floored to cents with remainder on the first mapped item, with the original breakdown retained. Every item maps once to a unique line of the selected issued PO; confirmation rechecks its immutable supplier, number, currency and revision. It records evidence, never submission, bank verification, payment approval or a match bypass. Confirmed date, unverified sender, safe postal remit facts, optional transient bank comparison and exact original bytes pass through INVOICE-003. Structured fields, quotations and correction/audit history never accept bank/TIN fields; remit keeps payee/postal address and a private original/page link, not a bank excerpt. Bank comparison inputs are transient and discarded after the existing keyed check. Postal/payee or bank differences from the supplier record raise a “remit details changed” hold. This completes native invoice kinds and reading doors. ACCESS-001, INVOICE-001/004/005, IMPORT-003 and API-001 inherit private originals, source-bound human confirmation, safe remit retention and INVOICE-003 holds before adding their roles, invoice kinds or reading doors. Native files are at most 1 MB; native PDF reading accepts 50 pages/500,000 text characters, and readings accept 100 lines/2,000 characters per field, with explicit refusal rather than truncation.
 
@@ -1086,24 +1143,22 @@ Core · target · **done** · Cites BASE-AUDIT-001, BASE-DATA-001, BASE-INPUT-00
 6. A complete archive restore preserves originals, source digests, proposals, corrections, confirmation and flags; corrupt source digests are refused.
 
 **Evidence.** `src/purse/invoice-reading.ts`; `src/purse/invoice-reading-fields.ts`; `src/purse/invoice-reading-proposal.ts`; `src/ui/invoice-reading.tsx`; `tests/invoice-reading.test.mjs`; `tests/browser-invoice-reading.mjs`; `scripts/installer/restore-invoice-reading.mjs`
-**Gap.** None.
+**Gap.** Asserted: Text PDF header, line and total fields are read exactly; MIME sender comes from the original From header; Image-only PDF uses the declared external proposal. No complete asserting-line trace is recorded for point 2: Low-confidence cases stay in review before creation; point 3: Stale and source-changed confirmation are both refused; point 4: Structured bank values and excerpts are rejected on every named proposal/correction door; point 5: Unresolved cash-planning approval is refused, Reasoned review does not manufacture a match; point 6: An actual archive round-trip preserves original bytes, source digests, proposals, corrections, confirmation and flags.
 
 #### INVOICE-003 — Duplicate and fraud checks
 
-Core · target · **done** · Cites BASE-AUDIT-001, BASE-DATA-001, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
+Core · target · **partial** · Cites BASE-AUDIT-001, BASE-DATA-001, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SECRET-001
 
-**Requirement.** Beyond PUR-011’s exact supplier-plus-reference identity, Purse flags near-duplicates (same canonical supplier, currency, amount and invoice date with a varied reference), the same document image arriving twice, remit-to details that differ from the verified supplier record, invoices exceeding the PO’s remaining balance (with any PO-011 deposit counted once in the PO’s billed total and the deposit credit applied on the invoice), deposit invoices beyond the PO’s unbilled deposit, and invoices from look-alike sender domains. Flagged invoices cannot be approved for payment until AP resolves the flag. Until ACCESS-001 supplies AP roles, owners and buyers capture and review native invoice evidence. structured inputs retain a valid invoice calendar date (default UTC entry date, explicitly labelled), an optional buyer-recorded unverified sender, exact-byte original-document SHA-256 and safe bank-comparison results. Near-duplicate dates use the recorded invoice date, an older payable date where present, otherwise the older UTC entry date. bank comparison uses the surviving supplier’s keyed matching-only fingerprint, explicitly labelled buyer-recorded identity, not bank verification; supplied remit with no baseline is held. Structured bank digits are discarded and a domain-separated keyed digest binds re-entry evidence without returning the digest; original documents retain their uploaded contents and are owner/buyer-only. Confirmed payee/postal remit facts are compared with the surviving supplier record; a difference or absent postal baseline raises a “remit details changed” hold. INVOICE-002 owns source-bound extraction and confirmation. A domain different from every immutable PO contact domain is flagged, including one-character, subdomain and Unicode/encoded look-alikes; missing contact provenance is also a flag when sender evidence is supplied. Sender matching never claims authentication. Document checks apply both to original bytes supplied with a new invoice and the existing later attachment-upload door. Exact supplier/reference and identical submitted evidence remain idempotent; changed source metadata under that identity is refused. billed balance counts prior invoice evidence across request amendments once against the issued PO face value, never sums superseded face values, and keeps currencies separate. Every flag needs an immutable owner/buyer reasoned disposition under an exact review version; this is risk review, never bank verification and never a bypass of price, quantity, receipt or closed-balance discrepancies. Unresolved flags hold AP-003 cash-planning approval; a later upload also removes an already-approved invoice from cash bills and REPORT-003 realized savings until review, retaining its historical approval. This completes native doors. SUPPLIER-002 carries the verified bank baseline; PO-005/008/012 carry their new PO kinds and edited/combined balance sources; PO-011 carries deposit-once, deposit-credit and unbilled-deposit checks; INVOICE-001/002/005, IMPORT-003 and API-001 carry their email, extraction, supplier, adoption and key-based source doors; ACCESS-001 carries AP review authority; MATCH-001 and AP-001/002 carry genuine payment-approval refusal.
+**Requirement.** Beyond PUR-011’s exact supplier-plus-reference identity, Purse flags near-duplicates (same canonical supplier, currency, amount and invoice date with a varied reference), the same document image arriving twice, remit-to details that differ from the verified supplier record, invoices exceeding the PO’s remaining balance (with any PO-011 deposit counted once in the PO’s billed total and the deposit credit applied on the invoice), deposit invoices beyond the PO’s unbilled deposit, and invoices from look-alike sender domains. Flagged invoices cannot be approved for payment until AP resolves the flag. Until ACCESS-001 supplies AP roles, owners and buyers capture and review native invoice evidence. structured inputs retain a valid invoice calendar date (default UTC entry date, explicitly labelled), an optional buyer-recorded unverified sender, exact-byte original-document SHA-256 and safe bank-comparison results. Near-duplicate dates use the recorded invoice date, an older payable date where present, otherwise the older UTC entry date. bank comparison uses the surviving supplier’s keyed matching-only fingerprint, explicitly labelled buyer-recorded identity, not bank verification; supplied remit with no baseline is held. Structured bank digits are discarded and a domain-separated keyed digest binds re-entry evidence without returning the digest; original documents retain their uploaded contents and are owner/buyer-only. Confirmed payee/postal remit facts are compared with the surviving supplier record; a difference or absent postal baseline raises a “remit details changed” hold. INVOICE-002 owns source-bound extraction and confirmation. A domain different from every immutable PO contact domain is flagged, including one-character, subdomain and Unicode/encoded look-alikes; missing contact provenance is also a flag when sender evidence is supplied. Sender matching never claims authentication. Document checks apply both to original bytes supplied with a new invoice and the existing later attachment-upload door. Exact supplier/reference and identical submitted evidence remain idempotent; changed source metadata under that identity is refused. billed balance counts prior invoice evidence across request amendments once against the issued PO face value, never sums superseded face values, and keeps currencies separate. Every flag needs an immutable owner/buyer reasoned disposition under an exact review version; this is risk review, never bank verification and never a bypass of price, quantity, receipt or closed-balance discrepancies. Unresolved flags hold AP-003 cash-planning approval; a later upload also removes an already-approved invoice from cash bills and REPORT-003 realized savings until review, retaining its historical approval. This completes native doors. SUPPLIER-002 carries the verified bank baseline; PO-005/008/012 carry their new PO kinds and edited/combined balance sources; PO-011 carries deposit-once, deposit-credit and unbilled-deposit checks; INVOICE-001/002/005, IMPORT-003 and API-001 carry their email, extraction, supplier, adoption and key-based source doors; ACCESS-001 carries AP review authority; MATCH-001 and AP-001/002 carry genuine payment-approval refusal. Future verified-bank, deposit, source and payment-approval acceptance remains required by each named inheriting clause. SECURITY-001 owns evidence keys, representations and legacy evidence states.
 
 **Acceptance.**
 1. Through authenticated HTTP and the web at 1440 and 390, submit a near-duplicate, a resent actual PDF, changed remit details and a look-alike domain: each is flagged and cash-planning approval refuses until reasoned owner/buyer review.
 2. Assert that missing bank/contact baselines hold, raw structured bank digits never enter invoice/audit records or state, original bytes download unchanged, exact re-entry stays idempotent and changed evidence refuses.
 3. Upload a repeated document after a planning approval: current bills and realized savings hold while historical approval remains; review restores eligibility without bypassing matching.
 4. Prove remaining-balance checks across an issued amendment, stale/repeated/wrong-role/signed-out review refusal, and archive preservation of exact original bytes, flags and immutable review evidence.
-5. Future verified-bank, deposit, source and payment-approval acceptance remains required by each named inheriting clause.
-6. SECURITY-001 owns evidence keys, representations and legacy evidence states.
 
 **Evidence.** `src/purse/invoice-risk.ts`; `src/purse/invoice-evidence.ts`; `src/purse/invoice-review.ts`; `tests/invoice-risk.test.mjs`; `tests/browser-invoice-risk.mjs`; `scripts/installer/restore-invoice-risk.mjs`
-**Gap.** None.
+**Gap.** Asserted: Raw structured bank values do not enter retained invoice/audit evidence; Exact re-entry returns the same invoice identity; A later repeated document is flagged. No complete asserting-line trace is recorded for point 1: Near-duplicate, repeated PDF, remit and sender outcomes are individually asserted through the invoice door, Cash-planning approval stays held until reasoned review; point 2: Missing bank and contact baselines are held, Original bytes download unchanged, Changed evidence is refused; point 3: Risk review restores eligibility without manufacturing matching; point 4: Every stale/repeated/role/session refusal is asserted against review, Actual archive restoration compares all originals, flags and immutable review evidence.
 
 #### MATCH-001 — Automatic two- and three-way matching with tolerances
 
@@ -1152,7 +1207,7 @@ Core · target · **missing** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGEN
 
 #### INVOICE-005 — Supplier invoice submission from the PO (PO flip)
 
-Core · target · **done** · Rules D-1, D-3
+Core · target · **partial** · Rules D-1, D-3
 
 **Requirement.** From PO-001's no-account link, a supplier turns an acknowledged PO into an invoice: lines, quantities and prices prefill from the PO's uninvoiced and received balance, the supplier enters the invoice number, date, freight and tax and attaches its own invoice PDF, and the submission arrives as a structured invoice that needs no reading (INVOICE-002) and goes straight to INVOICE-003's checks and MATCH-001. The supplier cannot invoice above the remaining PO balance without the line being flagged, sees the invoice's status (received, approved, scheduled, paid) and cannot change remit-to details from this form.
 
@@ -1161,7 +1216,7 @@ Core · target · **done** · Rules D-1, D-3
 2. Before shipping supplier PO flip, apply INVOICE-003 exact-document, duplicate, remaining-balance and source/remit checks before matching or approval; acceptance must assert that an unresolved flag refuses payment approval.
 
 **Evidence.** `tests/supplier-invoice.test.mjs`; `tests/browser-supplier-invoice.mjs`
-**Gap.** None.
+**Gap.** Asserted: Received quantity prefills from the acknowledged PO; Three-way matching produces the automatic approval; Approved status returns on the supplier link. No complete asserting-line trace is recorded for point 1: Supplier PDF is captured as private original evidence.
 
 ### Payables and payment handoff
 
@@ -1197,21 +1252,20 @@ Core · target · **missing** · Cites BASE-AUDIT-001, BASE-DATA-001, BASE-INPUT
 
 #### AP-003 — Terms, due dates and cash requirements
 
-Core · target · **done** · Cites BASE-AUDIT-001, BASE-DATA-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001
+Core · target · **partial** · Cites BASE-AUDIT-001, BASE-DATA-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001
 
-**Requirement.** Payment terms (Net 15/30/60, 2/10 Net 30, due on receipt) set due and discount dates; AP sees bills due by week with discounts expiring, and finance sees a cash-requirements view of approved bills plus open commitments by expected invoice date. Until ACCESS-001 provides AP and finance roles, the owner and buyers record terms, approve for cash planning and read this view; other roles cannot read it. “Approved for cash planning” is a manual, audited confirmation of exact native invoice evidence, never a claim of matching, payment approval, scheduling, sending or payment. price, quantity, receipt and closed-balance discrepancies refuse that confirmation. Invoice calendar date is the basis for every term: Net 15/30/60 adds that many calendar days, 2/10 Net 30 adds 30 days with a 2% deadline 10 days after invoice date (inclusive), and due on receipt is due on the recorded invoice date. The discount rounds half-up once to minor units; the UI compares its deadline with today in America/New_York. Approved terms are immutable. Weeks start Monday and currencies stay separate. Expected native PO liability includes received-but-unbilled value and freight/tax proportionally, excludes canceled and closed quantities, and subtracts approved bills across issued amendment history once. A buyer records the expected invoice date, defaulting to the PO need date; both basis and source PO remain visible. This completes native invoice and planning doors; ACCESS-001, CODING-001, PO-011, INVOICE-004, MATCH-001/002, AP-001/002, SYNC-001 through SYNC-008 and IMPORT-003 inherit the obligations below before adding their roles, allocation, deposit, non-PO, matching, payment, ledger or adopted-record capability.
+**Requirement.** Payment terms (Net 15/30/60, 2/10 Net 30, due on receipt) set due and discount dates; AP sees bills due by week with discounts expiring, and finance sees a cash-requirements view of approved bills plus open commitments by expected invoice date. Until ACCESS-001 provides AP and finance roles, the owner and buyers record terms, approve for cash planning and read this view; other roles cannot read it. “Approved for cash planning” is a manual, audited confirmation of exact native invoice evidence, never a claim of matching, payment approval, scheduling, sending or payment. price, quantity, receipt and closed-balance discrepancies refuse that confirmation. Invoice calendar date is the basis for every term: Net 15/30/60 adds that many calendar days, 2/10 Net 30 adds 30 days with a 2% deadline 10 days after invoice date (inclusive), and due on receipt is due on the recorded invoice date. The discount rounds half-up once to minor units; the UI compares its deadline with today in America/New_York. Approved terms are immutable. Weeks start Monday and currencies stay separate. Expected native PO liability includes received-but-unbilled value and freight/tax proportionally, excludes canceled and closed quantities, and subtracts approved bills across issued amendment history once. A buyer records the expected invoice date, defaulting to the PO need date; both basis and source PO remain visible. This completes native invoice and planning doors; ACCESS-001, CODING-001, PO-011, INVOICE-004, MATCH-001/002, AP-001/002, SYNC-001 through SYNC-008 and IMPORT-003 inherit the obligations below before adding their roles, allocation, deposit, non-PO, matching, payment, ledger or adopted-record capability. Future capability acceptance remains with the named clauses.
 
 **Acceptance.**
 1. Approve native bills on Net 15, Net 30, Net 60, due on receipt and 2/10 Net 30 through the authenticated HTTP door; the due list sorts by date, the 2/10 deadline and rounded discount show, and cash totals approved bills plus remaining expected PO liability by Monday week without double counting or mixing currencies.
 2. At 1440 and 390 pixels, record and approve terms, inspect the discount and weekly total, change the expected invoice date and open its source PO and invoice.
 3. Unreceived invoices, stale versions, invalid dates, unauthorized and signed-out writes fail without mutation; approved terms cannot be rewritten.
 4. Portable restore retains terms, approval and forecast history.
-5. Future capability acceptance remains with the named clauses.
-6. INVOICE-003 unresolved flags hold cash-planning approval; a later original-document upload can hold a historically approved invoice out of current due bills until reasoned risk review, while the immutable approval remains.
-7. Acceptance must assert held and restored current cash eligibility without bypassing matching.
+5. INVOICE-003 unresolved flags hold cash-planning approval; a later original-document upload can hold a historically approved invoice out of current due bills until reasoned risk review, while the immutable approval remains.
+6. Acceptance must assert held and restored current cash eligibility without bypassing matching.
 
 **Evidence.** `src/purse/payment-terms.ts`; `src/purse/payables.ts`; `src/purse/cash-requirements.ts`; `src/ui/payables.tsx`; `tests/payables.test.mjs`; `tests/browser-payables.mjs`; `scripts/installer/restore-payables.mjs`
-**Gap.** None.
+**Gap.** Asserted: Net 15, Net 30, Net 60 and due-on-receipt dates are compared; Two-ten discount and deadline are compared; Due bills sort by their expected dates. No complete asserting-line trace is recorded for point 2: Both browser widths show the expected discount and weekly total, Source PO and invoice drill-through is independently asserted; point 3: Approved terms cannot be rewritten; point 4: Actual archive restore compares term, approval and forecast history; point 6: An unresolved source flag refuses cash-planning approval, A late document removes a historically approved bill from the current due list; point 7: Risk review restores current cash eligibility without bypassing matching.
 
 ### Card-paid purchases
 
@@ -1361,7 +1415,7 @@ Core · target · **missing** · Cites BASE-AUDIT-001, BASE-DATA-001, BASE-SECRE
 
 #### REPORT-001 — Spend and committed-budget dashboards
 
-Core · target · **done** · Cites BASE-INPUT-003, BASE-ROLE-001
+Core · target · **partial** · Cites BASE-INPUT-003, BASE-ROLE-001
 
 **Requirement.** Dashboards show spend and commitments by department, project, location, supplier, category, GL account and any CODING-002 custom field over any period, with each CODING-001 allocation under its own coding, including card-paid purchases (CARD-002), adopted open POs (IMPORT-003) and deposits counted once as actual (PO-011), with budget versus reserved, committed and actual, filters, and drill-through from any figure to the requests, POs and invoices behind it. Currencies stay separate unless the owner sets reporting rates. Native reports retain the existing record visibility and report by department (cost centre), project, location, supplier and category. Outstanding authority is the commitment ledger: reserved until issued, committed against an issued PO’s unreceived, uncancelled, unclosed balance; an approved amendment’s extra authority stays reserved until issued. Actual is recorded invoice-allocation evidence (including flagged exceptions), never a claim of payment or matching approval. The inclusive period filters PO/request need dates for outstanding authority and UTC invoice entry dates for actual. Freight and supplied tax follow line-value proportions with largest-remainder cent allocation and original line order as the tie-break; a zero-value order uses equal shares, and closed/received lines take no share of remaining commitments. Figures and drill-through retain separate currencies. Policy budgets and available outstanding authority cover the whole visible policy scope; filtered reserved, committed and actual columns identify the selected records, and actual is not deducted again from the outstanding-authority budget. This completes native capabilities. CODING-001/002 inherit allocation, GL/custom-field reporting; CARD-002 inherits card purchases; IMPORT-003 inherits adopted commitments; PO-011 inherits counting deposits once; BUDGET-001 inherits period budget/reserved/committed/actual semantics; ACCESS-001 inherits its finer report scope before those capabilities ship.
 
@@ -1371,7 +1425,7 @@ Core · target · **done** · Cites BASE-INPUT-003, BASE-ROLE-001
 3. An out-of-scope requester sees no other requester’s records, including in choices and drill-through.
 
 **Evidence.** `src/purse/spend-report.ts`; `src/ui/spend-report.tsx`; `tests/spend-report.test.mjs`; `tests/browser-spend-report.mjs`
-**Gap.** None.
+**Gap.** Asserted: Receipts and closure release only their outstanding authority; Mixed-coding freight cents remain exact; Every grouped figure equals the sum of its actual source rows. No complete asserting-line trace is recorded for point 1: Department and project filters and committed-PO drill-through are read at both widths; point 2: Reservations and commitments remain separate, Currencies remain separate; point 3: Requester choices exclude other requesters, Requester drill-through excludes other requesters.
 
 #### REPORT-002 — Saved, scheduled and exported reports
 
@@ -1387,20 +1441,19 @@ Core · target · **partial** · Cites BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-
 
 #### REPORT-003 — Procurement performance measures
 
-Core · target · **done** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-DATA-001, BASE-MAIL-001, BASE-ROLE-001
+Core · target · **partial** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-DATA-001, BASE-MAIL-001, BASE-ROLE-001
 
-**Requirement.** Purse reports request-to-PO and approval cycle times, spend under PO (PO coverage), off-contract and unapproved spend found in synced bills, on-time delivery, invoice exception rate and savings, separating negotiated savings from realized savings (AGENT-005). Negotiated savings are the difference between a quote’s or agreement’s first offered price and the awarded price (PUR-005, SOURCE-001, CONTRACT-001); realized savings are only what approved invoices actually billed below the first offered price for the received quantity. Until ACCESS-001 supplies AP/finance roles, owners and buyers read the performance dashboard/API. Native source measures are elapsed creation-to-first-issuance and first-submission-to-approved-decision per revision (including rework), using recorded server timestamps, with missing endpoints excluded rather than fabricated. Delivery compares accepted receipt events’ UTC dates with the buyer-evidenced supplier promise; unknown promises are excluded. Invoice exceptions count each native invoice once; native PO coverage, missing immutable contract references and absent pre-issue purchase approval are reported by currency, never claimed as paid spend or verified contract compliance. Buyer-recorded quote awards are immutable, reasoned, and attach the first recorded supplier offer and a later winning quote to the exact native draft revision before submission. Every item/unit/SKU/quantity maps one-to-one and its winning price must equal the draft price. Negotiated savings count only approved revisions, with the latest approved award per request replacing earlier negotiated figures. Savings use signed line-value differences, excluding freight and tax; realized cents round half-up once for invoice quantity capped by net accepted quantity across amendments, so returns reduce realized savings. Today’s realized savings require buyer cash-planning-approved invoice evidence and are labelled accordingly, never payment approval. This completes native doors. Before shipping, ACCESS-001 carries AP/finance access; INVOICE-004 and SYNC-001 through SYNC-008 carry non-PO, off-contract and unapproved synced bill measures; SOURCE-001 and CONTRACT-001 carry their supplier awards and agreement first-offer/award evidence; MATCH-001 and AP-001/002 carry genuine payment approval as the realized-savings basis; AGENT-005 carries its realized-outcome sources. Each new source must preserve currency separation and exact record drill-through.
+**Requirement.** Purse reports request-to-PO and approval cycle times, spend under PO (PO coverage), off-contract and unapproved spend found in synced bills, on-time delivery, invoice exception rate and savings, separating negotiated savings from realized savings (AGENT-005). Negotiated savings are the difference between a quote’s or agreement’s first offered price and the awarded price (PUR-005, SOURCE-001, CONTRACT-001); realized savings are only what approved invoices actually billed below the first offered price for the received quantity. Until ACCESS-001 supplies AP/finance roles, owners and buyers read the performance dashboard/API. Native source measures are elapsed creation-to-first-issuance and first-submission-to-approved-decision per revision (including rework), using recorded server timestamps, with missing endpoints excluded rather than fabricated. Delivery compares accepted receipt events’ UTC dates with the buyer-evidenced supplier promise; unknown promises are excluded. Invoice exceptions count each native invoice once; native PO coverage, missing immutable contract references and absent pre-issue purchase approval are reported by currency, never claimed as paid spend or verified contract compliance. Buyer-recorded quote awards are immutable, reasoned, and attach the first recorded supplier offer and a later winning quote to the exact native draft revision before submission. Every item/unit/SKU/quantity maps one-to-one and its winning price must equal the draft price. Negotiated savings count only approved revisions, with the latest approved award per request replacing earlier negotiated figures. Savings use signed line-value differences, excluding freight and tax; realized cents round half-up once for invoice quantity capped by net accepted quantity across amendments, so returns reduce realized savings. Today’s realized savings require buyer cash-planning-approved invoice evidence and are labelled accordingly, never payment approval. This completes native doors. Before shipping, ACCESS-001 carries AP/finance access; INVOICE-004 and SYNC-001 through SYNC-008 carry non-PO, off-contract and unapproved synced bill measures; SOURCE-001 and CONTRACT-001 carry their supplier awards and agreement first-offer/award evidence; MATCH-001 and AP-001/002 carry genuine payment approval as the realized-savings basis; AGENT-005 carries its realized-outcome sources. Each new source must preserve currency separation and exact record drill-through. The non-PO invoice acceptance and new-source cases remain required by the named inheriting clauses before they ship.
 
 **Acceptance.**
 1. Through native HTTP and the web at 1440 and 390, derive each measure from its source records, including timestamp differences, currency-separated coverage/off-contract/unapproved evidence, known/unknown promises and distinct invoice exceptions.
 2. Record an award from $10,000 to $9,000, approve its exact revision and receive/bill 60%: assert $1,000 negotiated and, after cash-planning approval only, $600 realized, drilling to both quotes, award and invoice.
 3. A quote without an award and an unapproved invoice count as neither negotiated nor realized savings respectively; a returned unit reduces realized savings.
 4. Requester/signed-out report reads are refused and the portable archive retains valid award links.
-5. The non-PO invoice acceptance and new-source cases remain required by the named inheriting clauses before they ship.
-6. INVOICE-003 unresolved flags exclude even historically cash-planning-approved invoice evidence from current realized savings until risk review; acceptance must assert the held amount and the restored source-backed savings.
+5. INVOICE-003 unresolved flags exclude even historically cash-planning-approved invoice evidence from current realized savings until risk review; acceptance must assert the held amount and the restored source-backed savings.
 
 **Evidence.** `src/purse/performance-metrics.ts`; `src/purse/savings-report.ts`; `src/purse/quote-awards.ts`; `tests/performance-report.test.mjs`; `tests/browser-performance-report.mjs`; `scripts/installer/restore-quote-awards.mjs`
-**Gap.** None.
+**Gap.** Asserted: Request-to-PO and approval durations equal source timestamps; Coverage, off-contract and unapproved amounts reconcile to source rows; Unknown promise is reported honestly. No complete asserting-line trace is recorded for point 6: Late invoice-risk holds remove historically approved evidence from current realized savings, Risk review restores source-backed savings.
 
 #### REPORT-004 — Month-end received-not-billed accruals
 
@@ -1490,7 +1543,7 @@ Core · target · **partial** · Cites BASE-AGENT-001, BASE-INPUT-001, BASE-MAIL
 
 #### SEARCH-001 — Search across purchasing records
 
-Core · target · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AUDIT-001, BASE-DATA-001, BASE-INPUT-003, BASE-ROLE-001
+Core · target · **partial** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AUDIT-001, BASE-DATA-001, BASE-INPUT-003, BASE-ROLE-001
 
 **Requirement.** One search, in the web at any width, the native apps and API-001, finds requests, POs (including IMPORT-003's adopted numbers) and change orders, receipts, invoices and bills, suppliers, agreements and catalog items. It searches by number (request, PO, change order, Purse invoice, the supplier's invoice reference), supplier name or DBA, amount (exact or a range), date range, requester, status, coding and CODING-002 field values, and by text in descriptions, notes, COMMENT-001 comments and the text read from attached documents (INVOICE-002, SOURCE-002). Partial numbers match, and supplier names match regardless of case and punctuation. Results show only records inside the searcher's ACCESS-001 scope and open the record. SECURITY-001's protected fields are never indexed, so a TIN or bank account number finds nothing. Native web and session HTTP search covers requests, and historical imported POs, receipts, native invoice evidence, supplier names/DBAs, catalog items, supplier agreement references and the text actually read by INVOICE-002/SOURCE-002. A read-only result opens its exact source record projection under a fresh current-session scope check. Supplier names ignore Unicode case, punctuation, symbols and spacing; number fragments and token prefixes match. Amounts are integer minor units: `$1,234.56` or decimal currency text means exact 123456 minor units, while minimum/maximum bounds are inclusive; the currency filter selects one currency and unfiltered amounts remain separate labelled rows. Date bounds are inclusive calendar dates on invoice document date, otherwise the recorded at, issuedAt, generatedAt, createdAt and needDate fields in that precedence; currency amounts remain labelled and are never added. Requester search follows own-purchase grants and any explicitly granted department reads; all staff and custom-role reads follow one complete ACCESS-001 permission-and-scope grant. Invoice document text is returned only under scoped invoice-read authority (including ACCESS-001 AP, finance and auditor grants); catalog search applies approval, date validity and CATALOG-001 grants. Search projects explicit non-protected fields, never document originals, remit/bank/TIN fields or matching hashes; readable document text excludes payment/tax identifier lines and digit identifiers. Complete archives preserve the scoped projection, and the derived full-text index rebuilds before search becomes ready after restore; neither grants authority. This completes native doors. Before shipping, ACCESS-001 must carry its department/entity/custom-role scope through query filters and result opens; API-001 and MOBILE-002 must expose the same scoped search; IMPORT-003 must search adopted original numbers; PO-004/005/008/012, INVOICE-001/004/005, CONTRACT-001, CODING-001/002 and COMMENT-001 must index their new order/bill/agreement/allocation/custom-field/comment kinds under the same protected-field exclusions and exact source links.
 
@@ -1499,7 +1552,7 @@ Core · target · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AUDIT
 2. A department-scoped requester's search for another department's PO number returns nothing, and a search for a supplier's full bank account number returns nothing for every role.
 
 **Evidence.** `tests/search.test.mjs`; `tests/browser-search.mjs`; `tests/browser-search-scale.mjs`; `tests/browser.mjs`
-**Gap.** None.
+**Gap.** Asserted: Adopted Procurify PO number returns its source record; Supplier invoice reference returns its source record; Punctuation-free supplier name returns its source record. No complete asserting-line trace is recorded for point 1: All queries run on one hundred thousand synthetic records at both browser widths.
 
 #### IMPORT-001 — Procurify migration
 
@@ -1530,7 +1583,7 @@ Core · target · **missing** · Cites BASE-DATA-001, BASE-MAIL-001
 
 #### IMPORT-003 — Adopting open POs without re-sending
 
-Core · target · **done** · Cites BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001 · Rules D-1, D-3
+Core · target · **partial** · Cites BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001 · Rules D-1, D-3
 
 **Requirement.** On switch day the owner reviews the open POs from IMPORT-001 or IMPORT-002 and adopts them. An adopted PO keeps its original number (searchable, printed as the PO reference and matched by MATCH-001 and INVOICE-002 against invoices quoting it), its supplier, lines, remaining quantities, received and billed amounts, any unapplied PO-011 deposit, and its remaining value committed against the imported budgets; it becomes receivable and matchable at once and is never sent to the supplier on adoption. The adoption records the source system's approval evidence as imported evidence and the adopting owner and time, never as native authority: any later amendment, change order or cancellation needs native approval under PUR-009 before PO-004 sends it, and new numbering continues without colliding with adopted numbers. Before shipping this capability, its adopted PO and bill balances, including unapplied deposits, must enter AP-003 expected liability and approved bills without duplication or invented native approval. Acceptance must assert this AP-003 integration through the capability’s public door. Before shipping, REPORT-001 must include adopted open PO commitments at their remaining value without counting historical received/billed quantities again, with original-number drill-through. Acceptance must assert these figures through the public report door and web.
 
@@ -1541,7 +1594,7 @@ Core · target · **done** · Cites BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001
 4. Before shipping adoption, imported invoice originals and available date/sender/remit provenance must pass INVOICE-003 before a new approval, with absent verification labelled honestly; acceptance must assert duplicate/balance holds on adopted invoices without granting authority from history.
 
 **Evidence.** `tests/order-adoption.test.mjs`; `tests/browser-order-adoption.mjs`; `tests/browser-import-adoption.mjs`
-**Gap.** None.
+**Gap.** Asserted: Original PO number is retained after adoption; Adoption sends no supplier mail; Remaining commitment equals the imported remainder. No complete asserting-line trace is recorded for point 1: Original-number invoice matches all three-way terms, Amendment awaits native approval; point 3: The report web projection compares those figures; point 4: Duplicate and balance holds block new approval of historical invoices.
 
 #### IMPORT-004 — Existing ledger records keep their ledger identity
 
@@ -1557,9 +1610,9 @@ Core · target · **missing**
 
 #### AUDIT-001 — Audit log and approval evidence
 
-Core · target · **done** · Cites BASE-AUDIT-001, BASE-DATA-003, BASE-DATA-006, BASE-MAIL-001, BASE-ROLE-001
+Core · target · **partial** · Cites BASE-AUDIT-001, BASE-DATA-003, BASE-DATA-006, BASE-MAIL-001, BASE-ROLE-001
 
-**Requirement.** Every decision (including which pool member decided an APPROVAL-001 “any one of” step), amendment, approver edit (APPROVAL-004), buyer conversion edit with the variance limit in force (PO-012), split allocation change (CODING-001), comment and comment edit (COMMENT-001), grant, send, sync, accrual posting (REPORT-004) and payment-status change is in an audit log with actor, time, action and subject, filterable and exportable for auditors (including SOX-style evidence that each PO was approved under the policy in force), surviving erasure of the actor with anonymized references. Until ACCESS-001 supplies read-only auditors, the owner alone reads and exports the full log; other roles are refused on both native HTTP audit doors. The owner filters by exact subject ID or PO number, exact action and inclusive UTC from/through dates. A PO-number filter includes its request’s decisions and amendments and its invoices. CSV export contains exactly the filtered rows, actor, timestamp, action, subject, reason and retained detail. Native request revisions supply before/after amendment terms; new decisions retain an immutable snapshot of the policy in force and its version. Historical decisions without that snapshot retain their recorded policy/version and explicitly say the snapshot is unavailable; policy is never presented as historical authority. This is complete for actions. APPROVAL-001/004, PO-012, CODING-001, COMMENT-001, PO-001/002, SYNC-001 through SYNC-008, REPORT-004 and AP-001/002 inherit their new events before shipping; ERASURE-001 inherits anonymization with business evidence retained; ACCESS-001 inherits read-only auditor export.
+**Requirement.** Every decision (including which pool member decided an APPROVAL-001 “any one of” step), amendment, approver edit (APPROVAL-004), buyer conversion edit with the variance limit in force (PO-012), split allocation change (CODING-001), comment and comment edit (COMMENT-001), grant, send, sync, accrual posting (REPORT-004) and payment-status change is in an audit log with actor, time, action and subject, filterable and exportable for auditors (including SOX-style evidence that each PO was approved under the policy in force), surviving erasure of the actor with anonymized references. Until ACCESS-001 supplies read-only auditors, the owner alone reads and exports the full log; other roles are refused on both native HTTP audit doors. The owner filters by exact subject ID or PO number, exact action and inclusive UTC from/through dates. A PO-number filter includes its request’s decisions and amendments and its invoices. CSV export contains exactly the filtered rows, actor, timestamp, action, subject, reason and retained detail. Native request revisions supply before/after amendment terms; new decisions retain an immutable snapshot of the policy in force and its version. Historical decisions without that snapshot retain their recorded policy/version and explicitly say the snapshot is unavailable; policy is never presented as historical authority. This is complete for actions. APPROVAL-001/004, PO-012, CODING-001, COMMENT-001, PO-001/002, SYNC-001 through SYNC-008, REPORT-004 and AP-001/002 inherit their new events before shipping; ERASURE-001 inherits anonymization with business evidence retained; ACCESS-001 inherits read-only auditor export. The future clauses below must assert their event, edit, limit, send, sync, posting, payment and erasure acceptance when those capabilities exist.
 
 **Acceptance.**
 1. Through native HTTP and the web at 1440 and 390 pixels, approve a request, issue its PO, amend its quantity and filter the PO’s history.
@@ -1567,14 +1620,13 @@ Core · target · **done** · Cites BASE-AUDIT-001, BASE-DATA-003, BASE-DATA-006
 3. Export the filtered CSV and verify the same events and retained policy.
 4. Filter a member grant, exact action and inclusive date bounds.
 5. Signed-out, requester and buyer reads/exports are refused without mutation.
-6. The future clauses below must assert their event, edit, limit, send, sync, posting, payment and erasure acceptance when those capabilities exist.
 
 **Evidence.** `src/purse/audit-log.ts`; `src/purse/requests.ts`; `src/ui/audit-log.tsx`; `tests/audit-log.test.mjs`; `tests/browser-audit-log.mjs`
-**Gap.** None.
+**Gap.** Asserted: Filtered history contains events only for the intended request and PO; Before and after amendment quantities are read back; The exact original policy name, limit, amount and reason are retained. No complete asserting-line trace is recorded for point 3: CSV has exactly the filtered event identities and count.
 
 #### SECURITY-001 — Protected supplier storage and role projections
 
-Core · target · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-AUDIT-001, BASE-INPUT-001, BASE-MAIL-001, BASE-ROLE-001
+Core · target · **partial** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-AUDIT-001, BASE-INPUT-001, BASE-MAIL-001, BASE-ROLE-001
 
 **Requirement.** SECURITY-001 policy is the single main business and native owner authority, never membership grants alone. Only that owner creates or changes recoverable TIN/account/routing values through a handler rechecking session validity/version, origin, revision and merge state; every write requires reason and evidence reference, encrypts before storage and refreshes SUPPLIER-003 matching atomically. Buyer matching-only input remains fingerprint-only; a fingerprint never proves recoverable storage. Bank details are labelled Recorded, not verified – not active for payment; SUPPLIER-002 owns activation, call-back, independent approval, provider verification and payment holds. Reveal is owner-only, one field per POST with no-store, reason and native reauthentication within ten minutes; buyer/requester/approver/receiver, tokens, supplier/RFQ links have no reveal scope; an agent reveal carries sensitive and security, decided by company policy. Owners see masked values until reveal; buyers see TIN/account/routing last four; requesters/approvers/receivers see only On file for TIN/account and nothing for routing. Ordinary non-sensitive tools, create-only tokens, exports, search, logs, mail and PDFs receive neither full values nor last four; separately authorized sensitive and security calls follow company policy. All supplier/state/merge/duplicate/import-plan reads reuse supplierPublicValue rather than duplicating projection. Errors never echo input, and every write, reveal and refusal is audited without digits. Structured protected fields cannot enter human-preparation context or ProposedAction inputs; no protected-field action is supported. Free text remains source data, not a claim of universal free-text redaction; existing historical context needs separate handling.
 
@@ -1586,11 +1638,11 @@ Core · target · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AGENT
 5. Through native HTTP and the web at 1440 and 390, assert concurrent change/reveal revision settlement.
 
 **Evidence.** `tests/supplier-duplicates.test.mjs`; `tests/browser-protected-web.mjs`; `tests/integration-tokens.test.mjs`; `tests/browser-evidence-history.mjs`; `tests/invoice-risk.test.mjs`; `tests/browser.mjs`; `tests/integration-tokens.test.mjs`; `tests/browser-evidence-history.mjs`; `tests/purse.test.mjs`; `tests/browser-evidence-history.mjs`; `tests/supplier-duplicates.test.mjs`; `tests/browser-protected-web.mjs`; `tests/browser-evidence-history.mjs`
-**Gap.** None.
+**Gap.** Asserted: Owner storage retains all requested protected fields; Authorized reauthenticated owner reveals each exact field; Refused writes preserve the protected snapshot. No complete asserting-line trace is recorded for point 4: Every suffix is absent from every named PDF, mail, log and agent-context output. The policy-driven agent class and disposition cases also remain unproved.
 
 #### SECURITY-002 — Credential custody and encryption-key rotation
 
-Core · target · **done** · From SECURITY-001 · Cites BASE-AUDIT-001, BASE-DATA-001, BASE-SECRET-001
+Core · target · **partial** · From SECURITY-001 · Cites BASE-AUDIT-001, BASE-DATA-001, BASE-SECRET-001
 
 **Requirement.** Connector secrets never have read-back, even for the owner: create/show-once, rotate, revoke and delete expose metadata only. Encryption is AES-256-GCM in a separate table outside p_records, bound to business/supplier/field/key ID. The installation key is a Worker secret provisioned through rer setup and rer-setup.json, never D1/R2/archives/argv/logs; unavailable keys return 503 without fallback and revision races return 409. Audited owner rotation retains old keys until every value is reencrypted and checked; key loss means unrecoverable values and reentry, without escrow/plaintext copies.
 
@@ -1599,11 +1651,11 @@ Core · target · **done** · From SECURITY-001 · Cites BASE-AUDIT-001, BASE-DA
 2. Through native HTTP and the web at 1440 and 390, assert readable audited rotation and explicit missing-key 503.
 
 **Evidence.** `tests/supplier-duplicates.test.mjs`; `tests/browser-protected-web.mjs`; `tests/integration-tokens.test.mjs`; `tests/browser-evidence-history.mjs`; `tests/invoice-risk.test.mjs`; `tests/browser.mjs`; `tests/integration-tokens.test.mjs`; `tests/browser-evidence-history.mjs`; `tests/purse.test.mjs`; `tests/browser-evidence-history.mjs`; `tests/supplier-duplicates.test.mjs`; `tests/browser-protected-web.mjs`; `tests/browser-evidence-history.mjs`
-**Gap.** None.
+**Gap.** Asserted: Rotation reports all three values checked and preserves other product records; Every rotated ciphertext decrypts under the new key to the original payload; Missing-key data is labelled unavailable and returns the explicit refusal. No complete asserting-line trace is recorded for point 1: Every connector secret is shown only once through each credential lifecycle; point 2: Rotation audit fields are independently read back.
 
 #### SECURITY-003 — Protected-data export and restore
 
-Core · target · **done** · From SECURITY-001 · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001, BASE-SECRET-001
+Core · target · **partial** · From SECURITY-001 · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-ROLE-001, BASE-SECRET-001
 
 **Requirement.** Default archives exclude protected values, encrypted protected values, connector secrets and sensitive TIN/bank matching key material. Matching and invoice-evidence keys require true cryptographic separation with explicit preservation/migration of legacy fingerprints and evidence, never relabelling an old root or rewriting frozen history. Invoice-evidence hashes must actually verify with their stated old/new representation and lineage; a format check is insufficient. An explicit owner include encrypts that section under a passphrase supplied as private input. Default restore labels values Not restored – re-enter, preserves other matching and verifiable invoice evidence, never restores reveal authority or grants; after a merge reveal remains per supplier row, and wrong-passphrase include restore writes nothing. ERASURE-001 retains only tax-required encrypted/reveal-restricted data and fences archive resurrection. ACCESS-001/003, SUPPLIER-001/002, IMPORT-001/002, SYNC-001 through SYNC-008, AP-001/002, API-001, AGENT-010 and ERASURE-001 inherit their named duties below in both contract and acceptance before completion. Local fixtures never establish legal sufficiency or provider acceptance. The owner include is a separate passphrase-encrypted supplement kept with the ordinary installation archive; restoration of that protected section is an explicit owner action after ordinary restore and never imports installation keys or grants.
 
@@ -1612,11 +1664,11 @@ Core · target · **done** · From SECURITY-001 · Cites BASE-AGENT-002, BASE-AG
 2. Through native HTTP and the web at 1440 and 390, assert explicit include restoration and wrong-passphrase atomic refusal.
 
 **Evidence.** `tests/supplier-duplicates.test.mjs`; `tests/browser-protected-web.mjs`; `tests/integration-tokens.test.mjs`; `tests/browser-evidence-history.mjs`; `tests/invoice-risk.test.mjs`; `tests/browser.mjs`; `tests/integration-tokens.test.mjs`; `tests/browser-evidence-history.mjs`; `tests/purse.test.mjs`; `tests/browser-evidence-history.mjs`; `tests/supplier-duplicates.test.mjs`; `tests/browser-protected-web.mjs`; `tests/browser-evidence-history.mjs`
-**Gap.** None.
+**Gap.** Asserted: Wrong passphrase leaves all ordinary and protected rows unchanged; Explicit included restoration reveals the exact original field. No complete asserting-line trace is recorded for point 1: Default export byte-search excludes protected values, encrypted values and matching-key material, Ordinary matching continues after actual default restore, Invoice evidence is cryptographically checked after actual default restore.
 
 #### SECURITY-004 — Legacy invoice-evidence verification
 
-Core · target · **done** · From SECURITY-001 · Cites BASE-AUDIT-001, BASE-DATA-001, BASE-INPUT-001, BASE-INPUT-003, BASE-SECRET-001
+Core · target · **partial** · From SECURITY-001 · Cites BASE-AUDIT-001, BASE-DATA-001, BASE-INPUT-001, BASE-INPUT-003, BASE-SECRET-001
 
 **Requirement.** Invoice-evidence hashes made under the shared matching root (representation legacy-root-v1) are preserved byte for byte and never recomputed into, replaced by or relabelled as new evidence; new evidence uses a new independently random invoice-evidence key (v2), the old root keeps only its matching use and leaves default archives, and no default archive holds a bank-derived value with the key that derived it. A one-time audited migration gives every legacy hash exactly one state, shown wherever invoice evidence is shown: attested-at-migration when recomputed from retained records (no bank input, or a bank input equal to a retained supplier baseline), labelled "Checked at migration on <date> from retained records. Later checks verify this migration record, not the original submission."; unavailable-source when it binds a bank input no retained record reproduces, labelled "Original bank input not retained – legacy evidence not verified."; did-not-verify when every bound input is retained and recomputation fails, labelled "Legacy evidence did not verify." Only the native owner re-enters the original bank input, one invoice per no-store POST with reason, evidence reference, native reauthentication within ten minutes and revision; a match sets verified-by-reentry ("Verified by owner re-entry on <date>. Later checks verify this re-entry record."), a mismatch answers did not verify and writes only a digit-free audit event, and an absent old root returns 503 without fallback. Re-entered digits are discarded; invoices, audit, receipts, logs and archives never hold bank digits, suffixes or bank fingerprints. Each attestation is an HMAC under the invoice-evidence key over the exact legacy hash, representation, retained-field digest, state, event, actor and time. No state claims bank or supplier verification or changes INVOICE-003 flags, reviews, comparisons or holds. Restore writes nothing and names the invoice when a v2 hash does not recompute, an attestation does not bind the stored hash, a state is unsupported by its fields, a migrated archive holds an unmigrated legacy hash, or an invoice carries a bank-derived field; a pre-migration archive is migrated on import by the same rules and refused when a retained-input hash does not recompute. Unavailable-source rows are preserved history and are never counted as verified. The migration receipt counts each state and states that archives exported before migration still carry the old root.
 
@@ -1624,11 +1676,11 @@ Core · target · **done** · From SECURITY-001 · Cites BASE-AUDIT-001, BASE-DA
 1. Legacy evidence remains byte-identical, each migration state is independently verifiable, and restoration refuses inconsistent evidence without changing invoice-risk holds.
 
 **Evidence.** `tests/supplier-duplicates.test.mjs`; `tests/browser-protected-web.mjs`; `tests/integration-tokens.test.mjs`; `tests/browser-evidence-history.mjs`; `tests/invoice-risk.test.mjs`; `tests/browser.mjs`; `tests/integration-tokens.test.mjs`; `tests/browser-evidence-history.mjs`; `tests/purse.test.mjs`; `tests/browser-evidence-history.mjs`; `tests/supplier-duplicates.test.mjs`; `tests/browser-protected-web.mjs`; `tests/browser-evidence-history.mjs`
-**Gap.** None.
+**Gap.** Asserted: Every migrated invoice retains its original hash bytes; Unsupported state or altered bound hash is refused; New evidence’s altered hash fails actual verification. No complete asserting-line trace is recorded for point 1: Every migration state is independently verified rather than merely accepted as a label, The migration and restore leave every existing invoice-risk hold unchanged.
 
 #### ERASURE-001 — Personal data erasure with financial retention
 
-Core · target · **done** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-AUDIT-001, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-003, BASE-MAIL-001
+Core · target · **partial** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-AUDIT-001, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-003, BASE-MAIL-001
 
 **Requirement.** An owner can erase a departed member's or supplier contact's personal data with a receipt of what was removed, while purchasing and tax records the business must keep (US practice is seven years for payable records) are retained with the person anonymized. It must scrub identifying AUDIT-001 actor, email, reason, detail and retained revision/policy evidence fields while preserving anonymized business evidence and chronology; audit reads and CSV export must assert the anonymized result. Acceptance must assert this obligation through its public door and AUDIT-001 read/export. Under RL-2, a native owner reviews an exact field/original inventory, completes fresh native reauthentication and explicitly consents before erasure. Affected opaque originals are withdrawn rather than claiming in-place PDF redaction. Anonymous financial chronology has no automatic destruction; retained TIN and bank values stay encrypted under the existing reveal restriction. The erasure checkpoint rejects older archives in that installation; an empty installation must receive the newest archive as its later journal when restoring an older backup. Receipt, journal, financial links, invoice hashes, evidence state and attestations remain portable; retained evidence labels erased source values honestly. Future ACCESS-002/003, API-001, INVOICE-004, PO-011 and provider source doors inherit this erasure and restore boundary before shipping.  The RL-2 boundary retains: native-owner explicit inventory/review/consent with fresh proof; resumable withdrawal and deletion of opaque originals; anonymous financial chronology without automatic destruction; encrypted, reveal-restricted retained TIN and bank values; honest verification labels; installation-checkpoint or supplied-journal fencing. A fresh destination given no later journal restores only after the native owner acknowledges "erasure history unverified: supply your latest archive as the journal". The report records that acknowledgment, the archive time and that no journal was supplied. Retained protected values follow an owner retention period in whole years (default 7, minimum 1, IRS Pub. 583 warning below 7) counted from the latest supported payable. Expired values are listed and erased only on owner confirmation. Order-send acknowledgment names and recipients, travel identities, Pantry-held contact fields and scenario consents are in the reviewed inventory. None is asserted. The fresh-destination acknowledgment is a native-owner door in Settings of the empty installation with fresh native reauthentication; it and the restore report (acknowledgment, archive time, no journal supplied) live in an installation-local table that never enters an archive, and a restore that supplies a later journal needs none and is labelled journal-supplied. The unverified label stays on a restored installation; only a restore that supplies the journal clears it. Retention counts whole years from the latest invoice date entered against any order of the supplier; Ready to erase lists protected TIN and bank values and W-9 originals, a supplier with no payable has no clock, and an invoice whose bank binding lost its source value says so. Every refused erasure door of a configured business appends one value-free audit row, and agent erasure proposals carry standard and execution carries destructive, decided by company policy. A link holder's stated acknowledgment name is erased with its recipient, a sole proprietor's name in a synced Pantry bill source is erased with its contact, and a departed member's scenario consent actor and email are erased with the member.
 
@@ -1641,7 +1693,7 @@ Core · target · **done** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-0
 6. Erasing a retained value an invoice-evidence hash binds keeps the hash, state and attestation, shows (source values since erased) and never yields did-not-verify; restore accepts the difference only with the erasure journal.
 
 **Evidence.** `tests/audit-log.test.mjs`; `tests/erasure-flow.mjs`; `tests/audit-log.test.mjs`; `tests/erasure-retention-flow.mjs`; `tests/browser.mjs`; `tests/audit-log.test.mjs`; `tests/order-send.test.mjs`; `tests/travel.test.mjs`; `tests/agent-value.test.mjs`; `tests/pantry-flow.mjs`; `tests/browser-erasure.mjs`
-**Gap.** None.
+**Gap.** Asserted: Departed member receipt lists removed policy and revision fields; Supplier contact erasure completes; Domain rows and public audit/CSV contain no retained personal values. No complete asserting-line trace is recorded for point 2: Every nominated contact snapshot and personal supplier-response field is independently checked.
 
 ### Push further: agents in the purchasing job
 
@@ -1696,7 +1748,7 @@ Core · push-further · **partial** · Cites BASE-AGENT-002, BASE-AGENT-005, BAS
 
 #### AGENT-005 — Value realization tracking
 
-Core · push-further · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-AUDIT-001, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SIGNIN-001 · Register R-6
+Core · push-further · **partial** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-AUDIT-001, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-001, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001, BASE-SIGNIN-001 · Register R-6
 
 **Requirement.** The company policy decides this agent’s standard evidence work, external contact, sensitive records, money changes and commitment sign-offs. In the held-policy native journey, a request records its promised outcome (a need met by a date, a seat count used, a quoted saving). The agent collects evidence after delivery (receipts and milestones, software seat usage from the identity provider or [Auth](https://github.com/just-every/run-auth) sign-in records, supplier issues, a requester check-in at 30 and 90 days) and reports realized value against the promise, never counting an unsigned or unrealized discount as savings. Requesters confirm usefulness; the agent cannot invent evidence. Native operation is labelled deterministic v1, model/provider: none. The promise is immutable purchasing input on the exact approved request revision; later changes require amendment and approval. Native quantity receipts compare their recorded UTC event dates to the promised need date and preserve net accepted quantities; recorded milestone descriptions and supplier issues remain source facts; free text is never scored as completion. Imported usage retains the exact JSON original, SHA-256, declared provider, inclusive period and active-true rule (only distinct seat IDs with active === true count), explicitly provider-reported and unverified. Usage imports require a native delivery receipt and an inclusive period ending on or after its UTC date. The latest declared period end, then import time and ID, selects the report source. A 50-seat promise and 31 active seats reports a 19-seat shortfall; missing evidence is labelled no evidence yet. Only the native requester with requester capability confirms usefulness against the exact report, approved revision and unchanged source fingerprint; owner authority never substitutes for another requester. Confirmation is an explicit ProposedAction and never approves a purchase, payment or claimed monetary saving. Owner enable/pause controls, complete run inputs/sources/mode/messages/proposals/outcomes, audit and source-exact archives are retained without restoring historical identity authority. Real hourly Cron claims each 30- and 90-day elapsed interval (86400000 milliseconds per day from the earliest accepted native delivery receipt timestamp for the issued purchase lineage) before one mail attempt, rechecks policy, revision and requester, records outcomes without inbox-delivery claims and never repeats a consumed interval. Each overdue interval is handled once; paused intervals are suppressed and consumed rather than replayed after re-enabling. REPORT-003 annotates eligible existing realized-savings rows with exact confirmed outcome sources without adding any money; its buyer-only financial scope, award/approval/invoice/receipt/return/risk/currency rules remain intact on value reports, state, download and confirmation doors. Before shipping, live IdP or Auth usage collection inherits this whole clause under ACCESS-002 and SECURITY-001 and must pass its provider sandbox; native imported evidence is not live collection. ACCESS-001/003, ERASURE-001, PO-005 service milestones and AGENT-010 inherit new scope, record, source and governance capabilities before they ship.
 
@@ -1706,11 +1758,11 @@ Core · push-further · **done** · Cites BASE-ACCESS-002, BASE-ACCESS-004, BASE
 3. Acceptance must assert the report amount and drill-through.
 
 **Evidence.** `src/purse/value-promise.ts`; `src/purse/agent-value.ts`; `src/purse/agent-value-evidence.ts`; `src/purse/agent-value-checkins.ts`; `src/ui/agent-value.tsx`; `scripts/installer/restore-agent-value.mjs`; `tests/agent-value.test.mjs`; `tests/agent-value-checkins.test.mjs`; `tests/browser-agent-value.mjs`; `tests/browser.mjs`
-**Gap.** None.
+**Gap.** Asserted: The approved exact request revision promises fifty seats; The imported provider original reports thirty-one active of fifty seats; The report shows the nineteen-seat shortfall and receipt source. No complete asserting-line trace is recorded for point 2: Confirmed outcome annotations retain exact realized-savings source versions, Unsigned and unawarded discounts never create realized savings; point 3: The report amount and all drill-through sources are independently compared. The policy-driven agent class and disposition cases also remain unproved.
 
 #### AGENT-006 — Recurring-spend consolidation, renegotiation and cancellation proposals
 
-Core · push-further · **done** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-AUDIT-001, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001
+Core · push-further · **partial** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-AUDIT-001, BASE-DATA-001, BASE-DATA-003, BASE-DATA-006, BASE-INPUT-003, BASE-MAIL-001, BASE-ROLE-001
 
 **Requirement.** The company policy decides this agent’s standard evidence work, external contact, sensitive records, money changes and commitment sign-offs. In the held-policy native journey, from supplier families, agreements and notice dates, price history, usage (AGENT-005) and service outcomes (SUPPLIER-005), the agent proposes which recurring spend to consolidate, renegotiate or cancel, each as a reproducible scenario showing the cash effect on commitments and forecast spend, operational risk and the notice deadline. Under the held company policy, finance and affected owners approve the commitment and money calls; the agent drafts the negotiation brief or cancellation notice, and the policy-named person sends it. The deterministic v1 slice has no model or provider. Conditional consolidation uses recorded calendar, category and supplier-family overlap; renegotiation uses exact reported underusage or comparable confirmed price increases; cancellation review uses zero reported active seats. Functional interchangeability remains unknown until human review, reported usage remains unverified and no figure is realized savings. Immutable safe source projections and revisions retain prices, notice terms, families, usage, service facts, commitment allocations and recomputable arithmetic. The native owner assigns agreement ownership to an active native member through audited agreement confirmation. Each assigned agreement owner consents under their own grant to the same source hash. Finance approval is independent of affected agreement and budget owners and requires payable approval and cash access over linked purchases. Every budget whose recorded allocated commitment changes also consents through its configured budget owner, or the policy approver where no separate budget owner is recorded. Procurement and finance prepare only within source scope. Forecasts use recorded value, auto-renewal, recorded renewal months or inclusive term duration, and recorded increase caps; they are labelled "forecast from recorded terms; not issued, not realized". Missing recorded value or term remains unknown. Renewal assumptions show the hypothetical proposed total separately from issued obligations and commitments. Scheduled discovery runs inside each agreement's recorded reminder lead window through its notice deadline. It records source-exact proposals and in-app notices for finance approvers and assigned owners, deduplicated by source and notice window. It grants no consent, draft, send or purchasing authority. After all exact consents, the native owner requests a nonbinding draft and separately consents to send its exact hash to an explicit recipient through PO-004's native send boundary. The claim precedes the existing native mail adapter; it is consumed once and an uncertain outcome is never retried automatically. The send is recorded against the agreements and notice deadlines. A separate native-owner-approved agreement disposition records cancellation or non-renewal after an accepted notice attempt; the person separately ends future recurring orders and records outstanding PO cancellation through their existing authorized doors. The scenario itself cancels nothing. Drafting and sending recheck sources, policies, grants and native consent identity versions. Historical archives preserve source facts and accountability without restoring authority. Assigned owners receive safe agreement terms and the curated affected scenario, with no original, protected-data or general invoice read grant. New recipient and actor stores inherit ERASURE-001. Erased source values retain their original hashes as labelled anonymous history under sealed erasure evidence; monetary arithmetic still recomputes, and erased scenarios cannot approve, draft, send or authorize a disposition. AGENT-005, AGENT-010 and future proposal or sending capabilities inherit this whole source, scope, protected-context and explicit-current-authority boundary before shipping. Notice drafts cite recorded notice terms and say "verify the notice method your agreement requires"; no notice effectiveness or legal adequacy is claimed.
 
@@ -1718,7 +1770,7 @@ Core · push-further · **done** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-A
 1. With overlapping subscriptions and an approaching notice date, the agent proposes consolidation with a scenario whose figures recompute from the cited records; under the held company policy, sending or cancellation waits for the policy-named owner to approve and send.
 
 **Evidence.** `tests/agent-value.test.mjs`; `tests/agreements.test.mjs`; `tests/agent-value-checkins.test.mjs`; `tests/browser-recurring-scenarios.mjs`; `tests/recurring-scenario-web-rider.mjs`
-**Gap.** None.
+**Gap.** Asserted: The scenario has exact baseline, proposed and cash-effect amounts; The recorded agreement notice deadline and supplier issue source are retained; Every recorded forecast figure recomputes from its cited source terms. No complete asserting-line trace is recorded for point 1: A company-selected held policy is independently proven for sending and cancellation. The policy-driven agent class and disposition cases also remain unproved.
 
 #### AGENT-007 — Supplier onboarding and compliance agent
 
@@ -1759,7 +1811,7 @@ Core · push-further · **partial** · Cites BASE-AGENT-002, BASE-AGENT-005, BAS
 
 #### AGENT-010 — Agent governance
 
-Core · push-further · **done** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-INPUT-001, BASE-MAIL-001, BASE-ROLE-001
+Core · push-further · **partial** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008, BASE-AGENT-011, BASE-INPUT-001, BASE-MAIL-001, BASE-ROLE-001
 
 **Requirement.** Purse agent runs retain purchasing inputs, exact sources, model/provider, messages, proposals and outcomes by purchase type. Chasing uses PO-003 cadence and count facts; the company policy sets the disposition and business limits. Ordinary preparation uses protected-field-free context; a protected-data tool carries sensitive and security with its authorized source projection. Supplier messages and documents retain their source lineage. The Base policy, Pause, attribution and grant duties apply to every native, API and MCP agent door.
 
@@ -1768,7 +1820,7 @@ Core · push-further · **done** · Cites BASE-AGENT-002, BASE-AGENT-005, BASE-A
 2. Through each new preparation door, verify that ordinary context and proposed actions contain no SECURITY-001 protected values or suffixes; any separately authorized protected-data operation declares sensitive and security and follows company policy.
 
 **Evidence.** `tests/agent-governance.test.mjs`; `tests/purse.test.mjs`; `tests/browser-agent-governance.mjs`; `tests/agent-value.test.mjs`; `tests/agent-value-checkins.test.mjs`; `tests/quote-agent.test.mjs`
-**Gap.** None.
+**Gap.** Asserted: The configured run sends two chases and one escalation, never a third chase; Pausing during a send suppresses the next chase and escalation; Every retained run includes inputs, sources, mode, provider, messages, proposals and outcomes. No complete asserting-line trace is recorded for point 2: A separately authorized sensitive/security operation is classified and decided by company policy. The policy-driven agent class and disposition cases also remain unproved.
 
 #### AGENT-011 — Spend questions in plain language
 
