@@ -376,7 +376,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "1002d4ac233be4049a2dfc224e406ea307167f949c44506fb3b384ac3cb6383f",
+      "sha256": "e8c761cc6dfcf9093599c97e3f23d8135e90afbc1c72604320c0c44c99f4093d",
       "executable": false
     },
     "packaging.json": {
@@ -704,7 +704,7 @@
       "executable": false
     },
     "scripts/ci/shards.json": {
-      "sha256": "b5ad6da3d504d23b19911e1475cb45a3f0678a778bfb1969c3e095d02500f1a0",
+      "sha256": "0b1690e509e5b7549dbb02313bc402d5369675e3b976e43c1f0067545c9de1c4",
       "executable": false
     },
     "scripts/ci/shared-build.mjs": {
@@ -5171,12 +5171,16 @@
       "sha256": "5f874950711c2174e898ff25bab0d969258315fcc18ba45422352148c515467f",
       "executable": false
     },
+    "tests/supplier-tax-flow.mjs": {
+      "sha256": "b82572768e25def0cbce0766f5b1ab7b7f9b57ac41abe8ae6f8dacdc7a903ded",
+      "executable": false
+    },
     "tests/supplier-tax.test.mjs": {
       "sha256": "e220ba0dbd3a28fde6fbb0e09439de714d610b17f4b87addfa84751eba0cc771",
       "executable": false
     },
     "tests/supplier-trust-journey.test.mjs": {
-      "sha256": "2a2f36027bb64a45db4b56cdfcd5dd9267140938daabe2539eebf8a303a5c9ec",
+      "sha256": "c4bbdd7c61a7322f3e7c0fa33f21485e72d580d8b3208ba4f6afab00b9c85def",
       "executable": false
     },
     "tests/travel-browser-exports.mjs": {
