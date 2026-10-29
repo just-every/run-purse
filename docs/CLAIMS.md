@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002`. Current candidate counts: 54 done, 31 partial, 28 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 NOTIFY-001`. Current candidate counts: 54 done, 32 partial, 27 missing; 113 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -96,7 +96,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `REPORT-003` | Procurement performance measures | done |
 | `REPORT-004` | Month-end received-not-billed accruals | partial |
 | `CONTRACT-001` | Agreements, renewals and contract spend | done |
-| `NOTIFY-001` | Notifications and preferences | missing |
+| `NOTIFY-001` | Notifications and preferences | partial |
 | `API-001` | Public API, webhooks and automation | partial |
 | `SEARCH-001` | Search across purchasing records | done |
 | `IMPORT-001` | Procurify migration | partial |
