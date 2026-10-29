@@ -21,7 +21,7 @@ export function evaluateInvoiceMatch(s: State, a: Actor, invoiceId: string) {
     }
     const order = get(s,'order',invoice.order), request = get(s,'request',order.request), reasons:string[] = [];
     const reading = all(s,'invoiceReading').find(r => r.id === invoice.confirmedReading && r.status === 'confirmed' && r.invoice === invoice.id);
-    if (order.imported || order.adoption || order.supplierGroup || order.recurring || order.recurringSeries || order.poDetails?.blanket || order.lines.some((l:Data)=>l.service || l.allocations?.length || l.supplier && l.supplier !== order.supplier) || request.purchaseType && request.purchaseType !== 'goods') reasons.push('Only ordinary native goods invoices are supported');
+    if (order.imported || order.adoption || order.supplierGroup || order.recurring || order.recurringSeries || order.poDetails?.blanket || order.lines.some((l:Data)=>l.service || l.supplier && l.supplier !== order.supplier) || request.purchaseType && request.purchaseType !== 'goods') reasons.push('Only ordinary native goods invoices are supported');
     if (order.status !== 'issued' || request.status !== 'approved' || request.revision !== order.revision) reasons.push('Current issued approved purchase revision required');
     if (invoice.sourceConfirmation !== 'confirmed' || !reading || reading.sourceDescriptor.sha256 !== invoice.document?.sha256 || invoice.erasure || invoice.sourceValuesErased) reasons.push('Current source-confirmed private original required');
     const attachment = reading && s.get('attachment:' + reading.sourceDescriptor.attachment)?.value;
@@ -52,16 +52,32 @@ export function evaluateInvoiceMatch(s: State, a: Actor, invoiceId: string) {
         if (row.closedBalance || linePosition(s,order.id,line).cancelled) reasons.push('Closed or cancelled balance requires review');
         proofs.push({line:line.id,rule:rule.id,ruleVersion:rule.version,ruleSnapshot:structuredClone(rule.history.at(-1)),expectedMinor:expected,billedMinor:sourceLine.amountMinor,q:allocation.q,acceptedQ:linePosition(s,order.id,line).accepted});
     }
+    const charges:Data[]=[];
     if (reading) {
+        const breakdown=invoice.chargeBreakdown;
         const subtotal = order.lines.reduce((n:number,l:Data)=>n+l.totalMinor,0);
         const expected = invoice.allocations.reduce((n:number,l:Data)=>n+extended(l.q,order.lines.find((x:Data)=>x.id===l.line).unitMinor),0);
         const share=(amount:number)=>subtotal?Number(BigInt(amount)*BigInt(expected)/BigInt(subtotal)):0;
-        if (reading.amounts.freightMinor !== share(order.freightMinor) || reading.amounts.taxMinor !== share(order.taxMinor) || order.otherChargesMinor) reasons.push('Unplanned or differing charges require separate coding and review');
+        if ((share(order.freightMinor)>0 && reading.amounts.freightMinor!==share(order.freightMinor)) || reading.amounts.taxMinor!==share(order.taxMinor) || order.otherChargesMinor) reasons.push('Quoted PO charges differ from the confirmed invoice');
+        const unplanned=breakdown?.unplannedMinor??Math.max(0,reading.amounts.freightMinor-share(order.freightMinor))+(reading.amounts.otherMinor??0);
+        if(unplanned) {
+            const rules=[...new Map(proofs.map(proof=>[proof.rule,get(s,'matchingRule',proof.rule)])).values()];
+            if(!breakdown || proofs.length!==invoice.allocations.length || !rules.length) reasons.push('Unplanned charges require complete source-bound rules and coding');
+            for(const rule of rules) {
+                const limit=rule.unplanned;
+                if(!limit || limit.amountMinor!==null && unplanned>limit.amountMinor || limit.bps!==null && BigInt(unplanned)*10000n>BigInt(invoice.totalMinor)*BigInt(limit.bps)) reasons.push('Unplanned charges exceed tolerance');
+            }
+            for(const charge of breakdown?.charges??[]) {
+                const codes=rules.map(rule=>rule.unplanned?.coding[charge.type]);
+                if(!codes.length||codes.some(code=>!code||code!==codes[0])) {reasons.push('Unplanned charge needs consistent default GL coding: '+charge.type);continue;}
+                charges.push({...charge,glAccount:codes[0],rules:rules.map(rule=>({id:rule.id,version:rule.version})),codingBasis:'Owner-consented charge-type default'});
+            }
+        }
     }
     const matching = {status:reasons.length?'held':'approved',reasons:[...new Set(reasons)],at:new Date().toISOString()};
     invoice={...invoice,matching};
     if (!reasons.length) {
-        const at=matching.at, approval={kind:'native-matching',invoice:invoice.id,order:order.id,revision:order.revision,reading:reading!.id,documentSha256:invoice.document.sha256,amountMinor:invoice.totalMinor,currency:invoice.currency,actor:a.id,at,match:'three-way',lines:proofs};
+        const at=matching.at, approval={kind:'native-matching',invoice:invoice.id,order:order.id,revision:order.revision,reading:reading!.id,documentSha256:invoice.document.sha256,amountMinor:invoice.totalMinor,currency:invoice.currency,actor:a.id,at,match:'three-way',lines:proofs,...(charges.length?{charges}: {})};
         invoice.paymentApproval=approval;
         const old=s.get('payable:'+invoice.id)?.value;
         if (!old?.approvedAt) {

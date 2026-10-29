@@ -3,6 +3,7 @@ import { purchasingSearchText } from './search-text';
 import { invoice } from './invoices';
 import { documentMetadata } from './invoice-risk';
 import { allocateInvoiceCharges, readingAmounts } from './invoice-amounts';
+import { sourceInvoiceCharges } from './invoice-charges';
 import { invoiceHeaders, invoiceItems, invoiceEmailSender, parseInvoiceFields } from './invoice-reading-fields';
 import { invoiceReadingText, postalRemit } from './invoice-reading-values';
 import { invoiceInstructions, proposedInvoice } from './invoice-reading-proposal';
@@ -10,6 +11,7 @@ import { invoiceXmlFields, invoiceXmlKind } from './invoice-xml';
 import { quoteSourceDescriptor } from './quote-reading-proposal';
 import { readQuoteSource } from './quote-reading-source';
 import { normalizedSupplierText } from './supplier-matching';
+import { missingField } from './quote-reading-fields';
 import { all, audit, date, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 import { allowed, requirePermission } from './access';
 
@@ -70,9 +72,9 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
         else {
             try {
                 const bytes=Uint8Array.from(atob(attachment.base64),c=>c.charCodeAt(0));
-                if(invoiceXmlKind(bytes)){ Object.assign(reading,invoiceXmlFields(bytes,attachment.id,order)); reading.searchText=purchasingSearchText([...invoiceHeaders.map(key=>reading[key]),...reading.lines.flatMap((line:Data)=>invoiceItems.map(key=>line[key]))].filter(field=>field.value!==null).map(field=>({text:field.value}))); }
+                if(invoiceXmlKind(bytes)){ Object.assign(reading,invoiceXmlFields(bytes,attachment.id,order)); reading.searchText=purchasingSearchText([...invoiceHeaders.map(key=>reading[key]),...reading.lines.flatMap((line:Data)=>invoiceItems.map(key=>line[key]))].filter(field=>field&&field.value!==null).map(field=>({text:field.value}))); }
                 else { const rows=await readQuoteSource(attachment); reading.searchText=purchasingSearchText(rows); Object.assign(reading,parseInvoiceFields(rows,attachment.id));const sender=invoiceEmailSender(attachment);if(sender)reading.senderEmail=sender; }
-                const fields=[...invoiceHeaders.map(key=>reading[key]),...reading.lines.flatMap((line:Data)=>invoiceItems.map(key=>line[key]))];
+                const fields=[...invoiceHeaders.map(key=>reading[key]),...reading.lines.flatMap((line:Data)=>invoiceItems.map(key=>line[key]))].filter(Boolean);
                 requireThat(reading.lines.length>0&&reading.lines.length<=100&&fields.every(field=>field.value===null||field.value.length<=2000),'Invoice needs 1–100 recognizable items and fields of at most 2,000 characters');
             } catch(error) { reading.status='unsupported'; reading.reason=(error as Error).message.replace(/quotes?/gi,'invoices'); reading.lines=[]; }
         }
@@ -86,7 +88,7 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
             requireThat(target&&(change.line?invoiceItems:invoiceHeaders).includes(change.field),'Correction is outside the invoice reading');
             requireThat(change.value===null||typeof change.value==='string','Correction must be text or missing');
             const value=change.value?.trim()?change.field==='remitTo'?postalRemit(change.value):invoiceReadingText(change.value,'Correction'):null;
-            const before=structuredClone(target[change.field]); if(before.value===value) continue;
+            const before=structuredClone(target[change.field]??missingField()); if(before.value===value) continue;
             target[change.field]={value,confidence:value===null?0:1,source:value===null?null:{attachment:attachment.id,method:'human correction',actor:a.id,at:new Date().toISOString(),original:before.source}};
             changes.push({line:change.line??null,field:change.field,before,after:structuredClone(target[change.field])});
         }
@@ -105,9 +107,9 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
     const used=new Set<string>();
     const mapped=amounts.lines.map((line:Data)=>{ const map=b.lines.find((item:Data)=>item.id===line.id);requireThat(map&&order.lines.some((item:Data)=>item.id===map.orderLine)&&!used.has(map.orderLine),'Map each invoice item to a unique line of this PO');used.add(map.orderLine);return{...line,line:map.orderLine}; });
     // The current invoice door stores inclusive allocation amounts; retain the exact breakdown here.
-    const allocations=allocateInvoiceCharges(mapped,amounts.freightMinor+amounts.taxMinor).map(line=>({line:line.line,quantity:line.quantity,amountMinor:line.amountMinor}));
+    const allocations=allocateInvoiceCharges(mapped,amounts.freightMinor+amounts.taxMinor+amounts.otherMinor).map(line=>({line:line.line,quantity:line.quantity,amountMinor:line.amountMinor}));
     const result:Data=invoice(s,a,{order:order.id,reference:value('reference'),source:'Confirmed invoice reading '+reading.id,invoiceDate,
-        ...(source.apSender?{senderEmail:source.apSender}:reading.senderEmail.value?{senderEmail:reading.senderEmail.value}:{}),...(reading.remitTo.value?{remitTo:reading.remitTo.value}:{}),...(b.remit?{remit:b.remit}:{}),document:{name:attachment.name,mediaType:attachment.mediaType,base64:attachment.base64},allocations, ...(b.depositAppliedAmount !== undefined ? { depositAppliedAmount: b.depositAppliedAmount } : {})}, { reading: reading.id });
+        ...(source.apSender?{senderEmail:source.apSender}:reading.senderEmail.value?{senderEmail:reading.senderEmail.value}:{}),...(reading.remitTo.value?{remitTo:reading.remitTo.value}:{}),...(b.remit?{remit:b.remit}:{}),document:{name:attachment.name,mediaType:attachment.mediaType,base64:attachment.base64},allocations, ...(b.depositAppliedAmount !== undefined ? { depositAppliedAmount: b.depositAppliedAmount } : {})}, { reading: reading.id, charges:sourceInvoiceCharges(order,mapped,amounts) });
     reading.status='confirmed';reading.version++;reading.invoice=result.id;reading.confirmedBy=a.id;reading.confirmedAt=new Date().toISOString();reading.amounts=amounts;
     put(s,'invoice',result.id,{...get(s,'invoice',result.id),sourceConfirmation:'confirmed',confirmedReading:reading.id,confirmedBy:a.id,confirmedAt:reading.confirmedAt});
     put(s,'invoiceReading',reading.id,reading);event(s,a,reading,op,{invoice:result.id,reason,snapshot:structuredClone(reading)});return reading;

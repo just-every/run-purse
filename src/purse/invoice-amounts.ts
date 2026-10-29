@@ -1,4 +1,5 @@
 import { moneyInput } from './money';
+import { invoiceChargeTypes } from './invoice-charge-types';
 import { extended, minor, quantity, requireThat, type Data } from './types';
 
 /** Reconcile document line extensions and explicit charges before creating evidence. */
@@ -14,9 +15,11 @@ export function readingAmounts(reading: Data) {
     const freightMinor = amount(reading.freightAmount, 'Invoice freight (explicit zero allowed)');
     const taxMinor = amount(reading.taxAmount, 'Invoice tax (explicit zero allowed)');
     const totalMinor = amount(reading.totalAmount, 'Invoice total');
+    const otherCharges=invoiceChargeTypes.slice(1).map(charge=>({type:charge.type,amountMinor:reading[charge.field]?.value==null?0:amount(reading[charge.field],charge.label)}));
+    const otherMinor=otherCharges.reduce((n,charge)=>n+charge.amountMinor,0);
     requireThat(lines.reduce((n: number, line: Data) => n + line.amountMinor, 0) === subtotalMinor, 'Invoice lines must reconcile to the document subtotal');
-    requireThat(minor(subtotalMinor + freightMinor + taxMinor, 'Invoice total') === totalMinor, 'Invoice subtotal, freight and tax must reconcile to the document total');
-    return { lines, subtotalMinor, freightMinor, taxMinor, totalMinor };
+    requireThat(minor(subtotalMinor + freightMinor + taxMinor + otherMinor, 'Invoice total') === totalMinor, 'Invoice subtotal, freight, fees and tax must reconcile to the document total');
+    return { lines, subtotalMinor, freightMinor, taxMinor, otherCharges, otherMinor, totalMinor };
 }
 
 /** Apportion document charges once; the first mapped line receives remainder cents. */

@@ -1,4 +1,4 @@
-import { invoiceHeaders, invoiceItems } from './invoice-reading-fields';
+import { invoiceHeaders, invoiceItems, invoiceOptionalHeaders } from './invoice-reading-fields';
 import { missingField } from './quote-reading-fields';
 import { requireThat, uid, type Data } from './types';
 
@@ -130,7 +130,7 @@ export function invoiceXmlFields(bytes: Uint8Array, attachment: string, order: D
     requireThat(kind === 'ubl' ? root.local === 'Invoice' && root.attrs[root.name.includes(':') ? 'xmlns:' + root.name.split(':')[0] : 'xmlns'] === ublInvoiceNamespace : root.local === 'cXML', 'Unsupported e-invoice XML root', 422);
     const result = kind === 'ubl' ? ubl(root, attachment, order) : cxml(root, attachment, order);
     requireThat(result.lines.length > 0 && result.lines.length <= 100, 'E-invoice XML needs 1–100 invoice lines', 422);
-    for (const key of invoiceHeaders) result[key] ??= missingField();
+    for (const key of invoiceHeaders) if(!invoiceOptionalHeaders.includes(key as typeof invoiceOptionalHeaders[number])) result[key] ??= missingField();
     for (const line of result.lines) for (const key of invoiceItems) line[key] ??= missingField();
     return { ...result, parser: kind === 'ubl' ? 'UBL 2.1 structured fields, no document reading' : 'cXML InvoiceDetailRequest structured fields, no document reading', format: kind };
 }

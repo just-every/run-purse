@@ -24,6 +24,7 @@ import { poContent, poHtml } from './po-content';
 import { cashRequirements } from './cash-requirements';
 import { all, get, requireThat, roles, type Actor, type Data, type State } from './types';
 import { discrepancies } from './orders';
+import { codedInvoiceCharges, invoiceLineChargeShare } from './invoice-charges';
 import { supplierFamilies } from './supplier-merge';
 import { supplierPublicValue } from './supplier-identity';
 import { catalogueAllows } from './catalogue-access';
@@ -178,11 +179,12 @@ export function accounting(s: State, a: Actor) {
     requirePermission(s, a, 'invoice.read');
     const cell = (value: unknown) => '"' + String(value).replace(/"/g, '""').replace(/^[=+@-]/, "' $&") + '"';
     const byAllocation = new Map(discrepancies(s).map(discrepancy => [JSON.stringify([discrepancy.invoiceId, discrepancy.lineId]), discrepancy]));
-    const rows = [['invoice', 'po', 'line', 'currency', 'quantity', 'amount_minor', 'price_mismatch', 'quantity_mismatch', 'receipt_shortfall'],
-        ...all(s, 'invoice').filter(invoice => allowed(s, a, 'invoice.read', invoice)).flatMap(invoice => invoice.allocations.map((line: Data) => {
+    const rows = [['invoice', 'po', 'line', 'currency', 'quantity', 'amount_minor', 'gl_account', 'charge_type', 'price_mismatch', 'quantity_mismatch', 'receipt_shortfall'],
+        ...all(s, 'invoice').filter(invoice => allowed(s, a, 'invoice.read', invoice)).flatMap(invoice => [...invoice.allocations.map((line: Data,index:number) => {
             const order = get(s, 'order', invoice.order), discrepancy = byAllocation.get(JSON.stringify([invoice.id, line.line]))!;
-            return [invoice.reference, order.number, line.line, invoice.currency, line.quantity, line.amountMinor, discrepancy.priceMismatch, discrepancy.quantityMismatch, discrepancy.receiptShortfall];
-        }))];
+            const sourceLine=order.lines.find((item:Data)=>item.id===line.line);
+            return [invoice.reference, order.number, line.line, invoice.currency, line.quantity, line.amountMinor-invoiceLineChargeShare(invoice,index), sourceLine.glAccount??order.glAccount??'', '', discrepancy.priceMismatch, discrepancy.quantityMismatch, discrepancy.receiptShortfall];
+        }),...codedInvoiceCharges(invoice).map((charge:Data)=>[invoice.reference,get(s,'order',invoice.order).number,'',invoice.currency,'',charge.amountMinor,charge.glAccount,charge.type,false,false,false])])];
     return new Response(rows.map(row => row.map(cell).join(',')).join('\r\n'), { headers: {
         'content-type': 'text/csv', 'content-disposition': 'attachment; filename="purse-accounting.csv"' } });
 }

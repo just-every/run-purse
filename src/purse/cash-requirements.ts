@@ -27,7 +27,7 @@ export function cashRequirementsFromRecords(s:State,accepts:(record:Data)=>boole
         const active = o.lines.reduce((n: number, l: Data) => { const p = linePosition(s, o.id, l); return n + extended(Math.max(0, l.q - p.cancelled - p.closed), l.unitMinor); }, 0);
         const liability = base ? Number((BigInt(o.totalMinor) * BigInt(active) + BigInt(base) / 2n) / BigInt(base)) : 0;
         const lineage = new Set(all(s, 'order').filter(p => p.request === o.request && operationalOrder(s, p) && accepts(p)).map(p => p.id));
-        const billed = eligibleBills.filter(p => lineage.has(p.order) && p.currency === o.currency).reduce((n, p) => n + p.approvedMinor, 0);
+        const billed = eligibleBills.filter(p => lineage.has(p.order) && p.currency === o.currency).reduce((n, p) => n + p.approvedMinor - (get(s,'invoice',p.invoice).chargeBreakdown?.unplannedMinor??0), 0);
         const expectedDate = s.get('cashExpectation:' + o.id)?.value.expectedDate ?? o.needDate;
         return { order: o.id, number: o.number, currency: o.currency, expectedDate, week: weekOf(expectedDate), amountMinor: Math.max(0, liability - billed - adoptionDeposits(s, o).amountMinor), basis: s.has('cashExpectation:' + o.id) ? 'Recorded forecast' : 'PO need date' };
     }).filter(o => o.amountMinor > 0);

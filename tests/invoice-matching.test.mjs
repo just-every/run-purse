@@ -5,6 +5,7 @@ import { harness } from './purse-harness.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {parse as parseCsv} from 'csv-parse/sync';
 import {invoiceMatchingFixture,matchingMail} from './invoice-matching-fixture.mjs';
 import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
 import portability from '../scripts/installer/portability.mjs';
@@ -28,6 +29,40 @@ test('Native invoice matching approves exact and bounded goods once, holds excep
     const exceptions=await h.send('/api/purse/invoice-exceptions',undefined,buyer);assert.equal(exceptions.status,200);assert.ok(JSON.stringify(exceptions.value).includes(above.id));assert.ok(JSON.stringify(exceptions.value).includes(early.id));
     const excessOrder=await f.order({received:'10'}),excess=await f.confirm(await f.stage(excessOrder,{quantity:'10.001'}));assert.equal(excess.paymentApproval,undefined);assert.match(excess.matching.reasons.join(';'),/approved remaining quantity|po-balance/);
     const chargeOrder=await f.order(),charge=await f.confirm(await f.stage(chargeOrder,{freightMinor:3500}));assert.equal(charge.paymentApproval,undefined);assert.match(charge.matching.reasons.join(';'),/Unplanned/);
+    // Source-confirmed fees use independent consent and do not consume PO goods balances.
+    const feeConsent={bps:500,amountMinor:5000,coding:{freight:'6100',fuel:'6200',handling:'6300','small-order':'6400',other:'6500'}};
+    const feeRule=await cmd('matching-rule',{...rule,unplanned:feeConsent,consent:true,reason:'Owner consents to bounded explicitly coded fees'});
+    const freightOrder=await f.order({received:'10'}),freightSource=await f.stage(freightOrder,{quantity:'10',freightMinor:3500}),freight=await f.confirm(freightSource);
+    assert.equal(freight.paymentApproval.amountMinor,103500);assert.equal(freight.poAmountMinor,100000);assert.equal(freight.flags.length,0);
+    assert.deepEqual(freight.paymentApproval.charges.map(c=>[c.type,c.amountMinor,c.glAccount]),[['freight',3500,'6100']]);
+    data=(await h.state()).data;assert.equal(data.cashRequirements.bills.find(b=>b.invoice===freight.id).amountMinor,103500);assert.ok(!data.cashRequirements.commitments.some(o=>o.order===freightOrder.id));
+    const csv=await h.send('/api/purse/accounting',undefined,buyer);assert.equal(csv.status,200);
+    const coded=parseCsv(csv.value,{columns:true}).filter(row=>row.invoice===freight.reference);
+    assert.equal(coded.reduce((n,row)=>n+Number(row.amount_minor),0),103500);assert.equal(coded.find(row=>row.charge_type==='freight').gl_account,'6100');assert.equal(coded.find(row=>!row.charge_type).amount_minor,'100000');
+    const spend=await h.send('/api/purse/spend-report?groupBy=glAccount',undefined,buyer);assert.equal(spend.status,200,JSON.stringify(spend.value));
+    const spendRows=spend.value.rows.filter(row=>row.invoice===freight.id&&row.kind==='actual');assert.equal(spendRows.reduce((n,row)=>n+row.amountMinor,0),103500);assert.equal(spendRows.find(row=>row.chargeType==='freight').glAccount,'6100');
+    const retained=await h.mf.dispatchFetch(h.origin+'/api/purse/download/attachment/'+freightSource.source.attachment,{headers:{cookie:buyer}});assert.equal(Buffer.from(await retained.arrayBuffer()).toString('base64'),freightSource.document.base64);
+    const fuelOrder=await f.order({received:'10'}),fuel=await f.confirm(await f.stage(fuelOrder,{quantity:'10',fees:{fuel:12000}}));assert.equal(fuel.paymentApproval,undefined);assert.ok(fuel.matching.reasons.includes('Unplanned charges exceed tolerance'));
+    const feeQueue=await h.send('/api/purse/invoice-exceptions',undefined,buyer);assert.ok(feeQueue.value.queue.some(row=>row.invoice===fuel.id&&row.status==='open'&&row.context.some(c=>c.exception.includes('Unplanned charges exceed tolerance'))));
+    const allFeesOrder=await f.order({received:'10'}),allFees=await f.confirm(await f.stage(allFeesOrder,{quantity:'10',freightMinor:1000,fees:{fuel:1000,handling:1000,'small-order':1000,other:1000}}));assert.equal(allFees.paymentApproval.charges.length,5);assert.equal(allFees.paymentApproval.amountMinor,105000);
+    const aggregateOrder=await f.order({received:'10'}),aggregate=await f.confirm(await f.stage(aggregateOrder,{quantity:'10',freightMinor:2500,fees:{handling:2501}}));assert.equal(aggregate.paymentApproval,undefined,'The amount cap applies to the combined fees');
+    const percentOrder=await f.order(),percent=await f.confirm(await f.stage(percentOrder,{freightMinor:3500}));assert.equal(percent.paymentApproval,undefined,'Both caps apply; 35 exceeds five percent of 635');
+    await f.rule({category:'Amount fees',unplanned:{...feeConsent,bps:null}});
+    const amountOrder=await f.order({category:'Amount fees'}),amountBill=await f.confirm(await f.stage(amountOrder,{freightMinor:3500}));assert.equal(amountBill.paymentApproval.amountMinor,63500);
+    data=(await h.state()).data;assert.equal(data.cashRequirements.commitments.find(o=>o.order===amountOrder.id).amountMinor,40000,'Unplanned fees never reduce unbilled goods commitment');
+    await f.rule({category:'Percent fees',unplanned:{...feeConsent,amountMinor:null}});
+    const percentOnlyOrder=await f.order({category:'Percent fees'}),percentOnly=await f.confirm(await f.stage(percentOnlyOrder,{freightMinor:3000}));assert.equal(percentOnly.paymentApproval.amountMinor,63000);
+    await f.rule({category:'Uncoded fees',unplanned:{...feeConsent,coding:{fuel:'6200'}}});
+    const uncodedOrder=await f.order({category:'Uncoded fees'}),uncoded=await f.confirm(await f.stage(uncodedOrder,{freightMinor:1000}));assert.equal(uncoded.paymentApproval,undefined);assert.match(uncoded.matching.reasons.join(';'),/default GL coding: freight/);
+    const quotedOrder=await f.order({freightMinor:3500,taxMinor:2000}),quoted=await f.confirm(await f.stage(quotedOrder,{freightMinor:2100,taxMinor:1200}));assert.equal(quoted.paymentApproval.amountMinor,63300);assert.equal(quoted.paymentApproval.charges,undefined);
+    const changedQuoted=await f.order({freightMinor:3500}),quotedMismatch=await f.confirm(await f.stage(changedQuoted,{freightMinor:2200}));assert.equal(quotedMismatch.paymentApproval,undefined);assert.match(quotedMismatch.matching.reasons.join(';'),/Quoted PO charges differ/);
+    const forgedOrder=await f.order({received:'10'}),forged=await cmd('invoice',{order:forgedOrder.id,reference:'synthetic-purse-forged-fee',source:'Unconfirmed charge evidence',poAmountMinor:0,chargeBreakdown:{unplannedMinor:103500},allocations:[{line:forgedOrder.lines[0].id,quantity:'10',amountMinor:103500}]},buyer);assert.equal(forged.poAmountMinor,undefined);assert.ok(forged.flags.some(flag=>flag.code==='po-balance'));assert.equal(forged.paymentApproval,undefined);
+    await cmd('matching-rule',{...feeRule,unplanned:{...feeConsent,bps:-1},consent:true},h.owner,400);
+    const splitOrder=await f.order({lines:[{description:'Safety equipment',quantity:'10',unitMinor:10000,category:'Equipment',project:'Safety',allocations:[{costCentre:'Operations',project:'Safety',glAccount:'5200',basisPoints:6000},{costCentre:'IT',project:'Safety',glAccount:'5300',basisPoints:4000}]}]});
+    const splitSource=await f.stage(splitOrder,{freightMinor:1000}),splitBill=await f.confirm(splitSource);assert.equal(splitBill.paymentApproval.lines.length,1,'A coding split never duplicates the matched PO line');assert.equal(splitBill.allocations.length,1);assert.equal(splitBill.paymentApproval.amountMinor,61000);
+    const splitReport=await h.send('/api/purse/spend-report?groupBy=glAccount',undefined,buyer);assert.equal(splitReport.status,200);
+    assert.deepEqual(splitReport.value.rows.filter(row=>row.invoice===splitBill.id&&row.kind==='actual').map(row=>[row.glAccount,row.amountMinor]).sort(),[['5200',36000],['5300',24000],['6100',1000]]);
+    data=(await h.state()).data;assert.equal(data.cashRequirements.commitments.find(row=>row.order===splitOrder.id).amountMinor,40000);assert.equal(data.cashRequirements.bills.find(row=>row.invoice===splitBill.id).amountMinor,61000);
     const unchanged=(await h.state()).data;await cmd('matching-rule',{...rule,version:0,consent:true},h.owner,409);await cmd('matching-rule',{...rule,consent:true},buyer,403);await cmd('match-invoice',{invoice:exact.id,rule:rule.id,version:rule.version},f.requester,403);assert.deepEqual((await h.state()).data,unchanged);
     // Specific owner decisions shadow broader consent, including pauses.
     const paused=await f.rule({category:'Equipment',enabled:false,priceBps:1000,priceMinor:99999});
@@ -67,6 +102,7 @@ test('Native invoice matching approves exact and bounded goods once, holds excep
     assert.equal(restored.matchingRule.find(r=>r.id===rule.id).currentConsent,false);
     assert.equal((await fresh.send('/api/purse/command/match-invoice',{invoice:above.id,rule:renewed.id,version:renewed.version},boot.cookie)).status,409);
     assert.deepEqual(restored.invoice.find(i=>i.id===exact.id).paymentApproval,exact.paymentApproval);
+    assert.deepEqual(restored.invoice.find(i=>i.id===freight.id).paymentApproval.charges,freight.paymentApproval.charges);
     // A revoked native owner cannot authorize a new match under historical consent.
     const otherOwner=await h.member(matchingMail(8605),['buyer'],'owner');
     await cmd('matching-rule',{...renewed,version:renewed.version,consent:true,reason:'Second owner consents'},otherOwner);

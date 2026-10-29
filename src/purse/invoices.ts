@@ -33,14 +33,14 @@ function evidence(i: Data) {
             .sort((a: any[], b: any[]) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0) });
 }
 
-export function invoice(s: State, a: Actor, b: Data, confirmation?: { reading: string }) {
+export function invoice(s: State, a: Actor, b: Data, confirmation?: { reading: string; charges?: Data }) {
     return captureInvoice(s, { kind: 'native', actor: a }, b, confirmation);
 }
 
 /** The supplier capability is checked and atomically fenced by its HTTP door.
  * It records evidence without impersonating an authenticated native operator. */
 export type InvoiceCaptureAuthority = { kind: 'native'; actor: Actor } | { kind: 'supplier-link'; event: Data };
-export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: Data, confirmation?: { reading: string }): Data {
+export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: Data, confirmation?: { reading: string; charges?: Data }): Data {
     const a = authority.kind === 'native' ? authority.actor : null;
     if (a) requirePermission(s, a, 'invoice.capture');
     const o = get(s, 'order', b.order);
@@ -78,6 +78,10 @@ export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: 
             orderedMinor: extended(q, l.unitMinor), receivedQ: linePosition(s, o.id, l).accepted };
     });
     const candidate: Data = { ...customFields, ...(b.release ? { release: text(b.release, 'Blanket release') } : {}), order: o.id, supplier: o.supplier, reference, source, currency: o.currency, allocations, totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total') };
+    if(confirmation?.charges && !o.imported && !o.adoption && !o.supplierGroup && !o.recurring && !o.recurringSeries && !o.poDetails?.blanket && !o.lines.some((line:Data)=>line.service) && !b.depositAppliedAmount && !b.depositAppliedMinor) {
+        candidate.chargeBreakdown=confirmation.charges;
+        candidate.poAmountMinor=minor(candidate.totalMinor-confirmation.charges.unplannedMinor,'PO-backed invoice amount');
+    }
     const identityPrior = all(s, 'invoice').find(i => canonicalSupplier(s, get(s, 'order', i.order).supplier) === canonicalSupplier(s, o.supplier) && i.reference === reference);
     const grossMinor = candidate.totalMinor;
     const depositAppliedMinor = b.depositAppliedAmount !== undefined || b.depositAppliedMinor !== undefined ? moneyInput(b, 'depositAppliedAmount', 'depositAppliedMinor', 'Deposit credit') : 0;

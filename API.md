@@ -1138,3 +1138,29 @@ when none was captured. Confirmation must preserve the same line quantities,
 amounts and existing original digest; every prior risk flag and disposition
 remains. Imported, deposit, service and unplanned-charge qualifications retain
 the limits recorded in MATCH-001.
+
+
+### Source-confirmed unplanned invoice charges
+
+The native `matching-rule` command accepts optional `unplanned` consent with
+`amountMinor` and `bps` caps, and a `coding` object mapping `freight`, `fuel`,
+`handling`, `small-order` and `other` to default GL accounts. Either cap may be
+null; at least one is required. Both supplied caps apply to the aggregate
+unplanned charges; the percentage uses the confirmed invoice total. Missing or
+conflicting charge coding keeps the invoice in exceptions. Only the current
+native owner may publish or renew this versioned consent in Settings.
+
+The labelled private-original reader also recognizes Fuel surcharge, Handling,
+Small-order fee and Other fees. Missing optional fees remain unrecorded; source
+lines, subtotal, freight, fees, tax and total must reconcile before confirmation.
+Quoted freight and tax still match the PO exactly. A confirmed fee absent from
+the PO has its own source-bound charge breakdown. Direct invoice capture cannot
+supply this breakdown or reduce its PO-backed amount. No tolerance clears an
+unresolved invoice risk flag, adds approved goods or invents a receipt.
+
+Genuine approval freezes each charge amount, GL account and exact rule version.
+Accounting CSV and spend reports separate coded fees from item amounts while
+preserving the original gross total. Cash due includes fees once; fees do not
+consume the remaining unbilled PO goods commitment. Native split coding retains
+one matched PO line and its existing report distributions. This does not qualify
+connected-ledger coding, deposits, supplier sending or actual payment.

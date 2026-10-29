@@ -1,6 +1,7 @@
 import { supplierLineRemaining } from './po-supplier-groups';
 import { budgetCoding, budgetScopeMatches, selectBudgetPolicy } from './budget-dimensions';
 import { budgetApportion } from './budget-allocations';
+import { codedInvoiceCharges, invoiceLineChargeShare } from './invoice-charges';
 import { date, requireThat, type Data } from './types';
 
 // Largest-remainder apportionment preserves every cent, including freight/tax,
@@ -71,10 +72,11 @@ export function spendReport(data: Data, filters: Data = {}) {
         const revision = data.revision.find((r: Data) => r.request === request.id && r.revision === order.revision) || request;
         for (const allocation of invoice.allocations) {
             const line = order.lines.find((l: Data) => l.id === allocation.line);
-            if (line) rows.push({ ...source({...revision,...order}, {...line,...(invoice.intakeForm?{customFields:allocation.customFields}:{})}), kind: 'actual', amountMinor: allocation.amountMinor - (invoice.depositAppliedMinor ? distribute(invoice.depositAppliedMinor, invoice.allocations.map((a: Data) => ({ totalMinor: a.amountMinor })))[invoice.allocations.indexOf(allocation)] : 0), date: (invoice.imported ? invoice.invoiceDate || invoice.at?.slice(0, 10) || order.adoptedAt?.slice(0, 10) : invoice.at.slice(0, 10)), sourceBasis: invoice.imported ? 'Imported invoice evidence; source approval is historical' : 'Recorded invoice evidence',
+            if (line) rows.push({ ...source({...revision,...order}, {...line,...(invoice.intakeForm?{customFields:allocation.customFields}:{})}), kind: 'actual', amountMinor: allocation.amountMinor - invoiceLineChargeShare(invoice,invoice.allocations.indexOf(allocation)) - (invoice.depositAppliedMinor ? distribute(invoice.depositAppliedMinor, invoice.allocations.map((a: Data) => ({ totalMinor: a.amountMinor })))[invoice.allocations.indexOf(allocation)] : 0), date: (invoice.imported ? invoice.invoiceDate || invoice.at?.slice(0, 10) || order.adoptedAt?.slice(0, 10) : invoice.at.slice(0, 10)), sourceBasis: invoice.imported ? 'Imported invoice evidence; source approval is historical' : 'Recorded invoice evidence',
                 currency: invoice.currency, policy: order.policy, order: order.id, number: order.number, invoice: invoice.id, reference: invoice.reference,
                 exception: data.discrepancies.some((d: Data) => d.invoiceId === invoice.id && (d.priceMismatch || d.quantityMismatch || d.receiptShortfall || d.closedBalance)) });
         }
+        for(const charge of codedInvoiceCharges(invoice))rows.push({...source({...revision,...order},order.lines.find((line:Data)=>line.id===invoice.allocations[0].line)),kind:'actual',amountMinor:charge.amountMinor,glAccount:charge.glAccount,chargeType:charge.type,description:charge.type+' charge',date:invoice.at.slice(0,10),sourceBasis:'Source-confirmed charge with owner-consented default coding',currency:invoice.currency,policy:order.policy,order:order.id,number:order.number,invoice:invoice.id,reference:invoice.reference});
     }
     for (const deposit of data.deposit ?? []) {
         const order = orderById.get(deposit.order), request = order && requestById.get(order.request);
@@ -94,7 +96,7 @@ export function spendReport(data: Data, filters: Data = {}) {
     const allocated = rows.flatMap(row => {
         const terms = row.order ? orderById.get(row.order) : data.revision.find((revision: Data) => revision.request === row.request && revision.revision === row.revision) ?? requestById.get(row.request);
         const line = terms?.lines.find((line: Data) => line.id === row.line);
-        const codes = line?.allocations?.length ? line.allocations : [budgetCoding(terms,line ?? {})];
+        const codes = row.chargeType ? [{...budgetCoding(terms,line??{}),glAccount:row.glAccount}] : line?.allocations?.length ? line.allocations : [budgetCoding(terms,line ?? {})];
         const amounts = budgetApportion(row.amountMinor, codes.map((allocation: Data) => allocation.amountMinor ?? line?.totalMinor ?? 1));
         return codes.map((allocation: Data, index: number) => {
             const code=budgetCoding(terms,line ?? {},allocation);

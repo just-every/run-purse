@@ -27,12 +27,23 @@ export function validateMatching(all,get,check) {
   for(const [index,h] of rule.history.entries()) {
    check(h.version===index+1&&typeof h.enabled==='boolean'&&typeof h.supplier==='string'&&typeof h.category==='string'&&(h.supplier!=='*'||h.category!=='*')&&typeof h.currency==='string'&&h.receiptRequired===true&&typeof h.actor==='string'&&Number.isSafeInteger(h.operatorVersion)&&h.operatorVersion>0&&h.reason?.trim()&&Number.isFinite(Date.parse(h.at)),'matching_rule');
    for(const field of ['priceBps','quantityBps','priceMinor','quantityMinor'])check(Number.isSafeInteger(h[field])&&h[field]>=0&&h[field]<=(field.endsWith('Bps')?10000:1e12),'matching_tolerance');
+   if(h.unplanned) {
+    const u=h.unplanned;check((u.bps!==null||u.amountMinor!==null)&&[u.bps,u.amountMinor].every(value=>value===null||Number.isSafeInteger(value)&&value>=0)&& (u.bps===null||u.bps<=10000),'matching_charge_limits');
+    check(u.coding&&Object.keys(u.coding).length>0&&Object.entries(u.coding).every(([type,code])=>['freight','fuel','handling','small-order','other'].includes(type)&&typeof code==='string'&&code.trim()&&code.length<=200),'matching_charge_coding');
+   }
    if(h.supplier!=='*')get('supplier',h.supplier);
    check(all('audit').some(e=>e.action==='matching-rule'&&e.record===rule.id&&e.snapshot?.version===h.version&&e.actor===h.actor),'matching_rule_audit');
   }
   check(Object.keys(rule.history.at(-1)).every(key=>JSON.stringify(rule[key])===JSON.stringify(rule.history.at(-1)[key])),'matching_rule_snapshot');
  }
  for(const invoice of all('invoice')) {
+  if(invoice.chargeBreakdown) {
+   const reading=get('invoiceReading',invoice.confirmedReading),order=get('order',invoice.order),b=invoice.chargeBreakdown;
+   const base=order.lines.reduce((n,line)=>n+line.totalMinor,0),expected=invoice.allocations.reduce((n,line)=>n+Number((BigInt(line.q)*BigInt(order.lines.find(item=>item.id===line.line).unitMinor)+500n)/1000n),0);
+   const share=value=>base?Number(BigInt(value)*BigInt(expected)/BigInt(base)):0;
+   const charges=[{type:'freight',amountMinor:reading.amounts.freightMinor},...(reading.amounts.otherCharges??[])].filter(charge=>charge.amountMinor>0&&(charge.type!=='freight'||share(order.freightMinor)===0));
+   check(b.plannedFreightMinor===share(order.freightMinor)&&b.plannedTaxMinor===share(order.taxMinor)&&JSON.stringify(b.charges)===JSON.stringify(charges)&&b.unplannedMinor===charges.reduce((n,charge)=>n+charge.amountMinor,0)&&invoice.poAmountMinor===invoice.totalMinor-b.unplannedMinor,'matching_source_charges');
+  } else check(invoice.poAmountMinor===undefined,'matching_source_charges');
   const approval=invoice.paymentApproval;if(approval?.kind!=='native-matching')continue;
   const order=get('order',invoice.order),reading=get('invoiceReading',approval.reading);
   check(approval.invoice===invoice.id&&approval.order===order.id&&approval.revision===order.revision&&approval.amountMinor===invoice.totalMinor&&approval.currency===invoice.currency&&approval.documentSha256===invoice.document?.sha256&&reading.status==='confirmed'&&reading.invoice===invoice.id&&invoice.confirmedReading===reading.id&&invoice.sourceConfirmation==='confirmed'&&approval.match==='three-way'&&Date.parse(approval.at)>=Date.parse(reading.confirmedAt)&&approval.lines.length===invoice.allocations.length,'matching_approval');
@@ -42,6 +53,16 @@ export function validateMatching(all,get,check) {
    const delta=Math.abs(line.billedMinor-line.expectedMinor);
    check(line.expectedMinor===Number((BigInt(line.q)*BigInt(sourceLine.unitMinor)+500n)/1000n)&&delta<=snapshot.priceMinor&&BigInt(delta)*10000n<=BigInt(line.expectedMinor)*BigInt(snapshot.priceBps),'matching_approval_tolerance');
   }
+  if(invoice.chargeBreakdown?.unplannedMinor) {
+   const b=invoice.chargeBreakdown,charges=approval.charges??[];check(charges.length===b.charges.length,'matching_charge_approval');
+   for(const charge of charges) {
+    check(b.charges.some(source=>source.type===charge.type&&source.amountMinor===charge.amountMinor)&&charge.codingBasis==='Owner-consented charge-type default','matching_charge_approval');
+    for(const line of approval.lines) {
+     const u=line.ruleSnapshot.unplanned;
+     check(u&&u.coding[charge.type]===charge.glAccount&&(u.amountMinor===null||b.unplannedMinor<=u.amountMinor)&&(u.bps===null||BigInt(b.unplannedMinor)*10000n<=BigInt(invoice.totalMinor)*BigInt(u.bps)),'matching_charge_approval');
+    }
+   }
+  } else check(!approval.charges?.length,'matching_charge_approval');
   check(all('audit').some(e=>e.action==='invoice-matched-approved'&&e.record===invoice.id&&e.documentSha256===approval.documentSha256&&e.at===approval.at),'matching_approval_audit');
  }
 }

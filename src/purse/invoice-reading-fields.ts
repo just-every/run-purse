@@ -1,7 +1,9 @@
 import { missingField } from './quote-reading-fields';
 import { uid, type Data } from './types';
 import type { SourceLine } from './quote-reading-source';
-export const invoiceHeaders = ['supplier', 'reference', 'invoiceDate', 'dueDate', 'terms', 'poNumber', 'currency', 'senderEmail', 'remitTo', 'subtotalAmount', 'freightAmount', 'taxAmount', 'totalAmount'];
+import { invoiceChargeTypes } from './invoice-charge-types';
+export const invoiceOptionalHeaders = invoiceChargeTypes.slice(1).map(charge=>charge.field);
+export const invoiceHeaders = ['supplier', 'reference', 'invoiceDate', 'dueDate', 'terms', 'poNumber', 'currency', 'senderEmail', 'remitTo', 'subtotalAmount', 'freightAmount', 'taxAmount', 'totalAmount', ...invoiceChargeTypes.slice(1).map(charge=>charge.field)];
 export const invoiceItems = ['description', 'quantity', 'unitAmount', 'amount'];
 const amount = /^(?:[A-Z]{3}\s*)?[$€£]?\s*((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*$/;
 const aliases: Record<string, RegExp> = { description: /^(?:item|description|product|service)$/i, quantity: /^(?:qty|quantity)$/i, unitAmount: /^(?:unit price|unit cost|rate)$/i, amount: /^(?:line amount|line total|amount|extended price)$/i };
@@ -13,8 +15,8 @@ export function parseInvoiceAmounts(rows: SourceLine[], attachment: string): Dat
     let headers: string[] | null = null, block: Data | null = null;
     const finish = () => { if (block && invoiceItems.some(key => block![key].value !== null)) result.lines.push(block); block = null; };
     for (const row of rows) {
-        const header = row.text.match(/^(subtotal|freight|shipping|tax|sales tax|total|invoice total|amount due)\s*[:=]\s*(.+)$/i);
-        if (header) { const value = header[2].match(amount); if (value) { const key = /subtotal/i.test(header[1]) ? 'subtotalAmount' : /freight|shipping/i.test(header[1]) ? 'freightAmount' : /tax/i.test(header[1]) ? 'taxAmount' : 'totalAmount'; result[key] = found(value[1], row, .97); } continue; }
+        const header = row.text.match(/^(subtotal|freight|shipping|fuel surcharge|handling|small-order fee|other fees|tax|sales tax|total|invoice total|amount due)\s*[:=]\s*(.+)$/i);
+        if (header) { const value = header[2].match(amount); if (value) { const key = invoiceChargeTypes.find(charge=>charge.label.toLowerCase()===header[1].toLowerCase())?.field ?? (/subtotal/i.test(header[1]) ? 'subtotalAmount' : /shipping/i.test(header[1]) ? 'freightAmount' : /tax/i.test(header[1]) ? 'taxAmount' : 'totalAmount'); result[key] = found(value[1], row, .97); } continue; }
         const cells = row.text.split(/\s*\|\s*|\t+|\s{2,}/).map(value => value.trim()).filter(Boolean);
         const candidate = cells.map(cell => Object.keys(aliases).find(key => aliases[key].test(cell)) ?? '');
         if (candidate.includes('description') && candidate.includes('quantity')) { finish(); headers = candidate; continue; }
@@ -47,7 +49,7 @@ const identityLabels: Record<string, RegExp> = {
 };
 import { invoiceReadingText, postalRemit } from './invoice-reading-values';
 export function parseInvoiceFields(rows: SourceLine[], attachment: string): Data {
-    const result = { ...Object.fromEntries(invoiceHeaders.map(key => [key, missingField()])), ...parseInvoiceAmounts(rows, attachment) };
+    const result = { ...Object.fromEntries(invoiceHeaders.filter(key=>!invoiceOptionalHeaders.includes(key as typeof invoiceOptionalHeaders[number])).map(key => [key, missingField()])), ...parseInvoiceAmounts(rows, attachment) };
     for (const row of rows) for (const [key, pattern] of Object.entries(identityLabels)) {
         const match = row.text.match(pattern); if (!match) continue;
         try {

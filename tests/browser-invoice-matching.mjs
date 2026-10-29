@@ -24,10 +24,13 @@ try {
         await rules.getByLabel('Matching category (* means all)',{exact:true}).fill('*');
         await rules.getByLabel('Price tolerance percent',{exact:true}).fill('2');await rules.getByLabel('Price tolerance amount',{exact:true}).fill('20.00');
         await rules.getByLabel('Quantity tolerance percent',{exact:true}).fill('2');await rules.getByLabel('Quantity tolerance amount',{exact:true}).fill('20.00');
-        await rules.getByLabel('Matching consent reason',{exact:true}).fill('Owner explicitly consents to exact received goods and both variance limits');await rules.getByRole('checkbox').check();
+        await rules.getByLabel('Matching consent reason',{exact:true}).fill('Owner explicitly consents to exact received goods and both variance limits');await rules.getByLabel('I consent to automatic invoice approval under these exact limits.',{exact:true}).check();
+        await rules.getByLabel('Unplanned-charge tolerance percent',{exact:true}).fill('5');await rules.getByLabel('Unplanned-charge tolerance amount',{exact:true}).fill('50');
+        await rules.getByLabel('Freight GL account',{exact:true}).fill('6100');await rules.getByLabel('Fuel surcharge GL account',{exact:true}).fill('6200');
+        await rules.getByLabel('Allow automatic approval of these coded unplanned charges within the limits.',{exact:true}).check();
         await rules.getByRole('button',{name:'Save matching consent',exact:true}).click();await rules.getByText('Active owner consent',{exact:true}).waitFor();await snap(page,'owner-matching-consent',rules);
-        for(const [name,received,unitMinor,approved,reason] of [['exact','6',10000,true,null],['within-two-percent','6',10200,true,null],['above-tolerance','6',10201,false,'Price exceeds tolerance for Safety equipment'],['before-receipt','0',10000,false,'Receipt shortfall for Safety equipment']]) {
-            const order=await f.order({received}),source=await f.stage(order,{unitMinor,reference:'synthetic-purse-'+name});
+        for(const [name,received,unitMinor,approved,reason,charges={}] of [['exact','6',10000,true,null],['within-two-percent','6',10200,true,null],['above-tolerance','6',10201,false,'Price exceeds tolerance for Safety equipment'],['before-receipt','0',10000,false,'Receipt shortfall for Safety equipment'],['coded-freight','10',10000,true,null,{quantity:'10',freightMinor:3500}],['fuel-exception','10',10000,false,'Unplanned charges exceed tolerance',{quantity:'10',fees:{fuel:12000}}]]) {
+            const order=await f.order({received}),source=await f.stage(order,{unitMinor,reference:'synthetic-purse-'+name,...charges});
             await ap.goto(f.h.origin+'/app?tab=Orders');
             await ap.getByRole('row').filter({hasText:order.number}).getByRole('button',{name:'Open order',exact:true}).click();
             // Select and confirm the staged original through the same source-bound web form.
@@ -39,9 +42,11 @@ try {
             await ap.getByRole('button',{name:'Create invoice from reviewed original',exact:true}).click();
             const matching=ap.getByRole('region',{name:'Automatic matching synthetic-purse-'+name,exact:true});await matching.waitFor();
             if(approved)await matching.getByText('Approved automatically under owner-consented matching',{exact:true}).waitFor();else await matching.getByText(reason,{exact:true}).waitFor();
+            if(name==='coded-freight')await matching.locator('..').getByText('freight charge · $35.00 · GL 6100 · owner-consented default coding',{exact:true}).waitFor();
             await snap(ap,'invoice-'+name,matching.locator('..'));
             const state=(await f.h.state()).data,invoice=state.invoice.find(i=>i.reference==='synthetic-purse-'+name);assert.equal(Boolean(invoice.paymentApproval),approved);
-            if(approved){const cash=state.cashRequirements.bills.find(b=>b.invoice===invoice.id);assert.equal(cash.dueDate,new Date(Date.parse(invoice.invoiceDate+'T12:00:00Z')+30*86400000).toISOString().slice(0,10));assert.equal(cash.amountMinor,unitMinor*6);}else assert.ok(!state.cashRequirements.bills.some(b=>b.invoice===invoice.id));
+            if(approved){const cash=state.cashRequirements.bills.find(b=>b.invoice===invoice.id);assert.equal(cash.dueDate,new Date(Date.parse(invoice.invoiceDate+'T12:00:00Z')+30*86400000).toISOString().slice(0,10));assert.equal(cash.amountMinor,unitMinor*Number(charges.quantity??'6')+(charges.freightMinor??0));
+                if(name==='coded-freight'){assert.ok(!state.cashRequirements.commitments.some(row=>row.order===order.id));const exported=await f.h.send('/api/purse/accounting',undefined,f.buyer);assert.equal(exported.status,200);assert.ok(exported.value.includes('\"3500\",\"6100\",\"freight\"'));}}else assert.ok(!state.cashRequirements.bills.some(b=>b.invoice===invoice.id));
         }
         const awardedOrder=await f.order({unitMinor:90000,awardFirstUnitMinor:100000}),awardedSource=await f.stage(awardedOrder,{unitMinor:90000,reference:'synthetic-purse-awarded'}),awarded=await f.confirm(awardedSource);
         assert.equal(awarded.paymentApproval.kind,'native-matching');
