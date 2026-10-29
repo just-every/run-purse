@@ -94,9 +94,18 @@ export async function email_intakeFlow(){
     assert.equal((await send('/auth/signout', {}, requester)).status, 204);
     assert.equal((await send(detail, undefined, requester)).status, 401); assert.equal((await send(download, undefined, requester)).status, 401);
     addMail('parallel_first', 'owner@example.test'); addMail('parallel_second', 'owner@example.test');
+    const beforeParallelMail = h.messages.length;
     const distinct = await Promise.all([deliver('parallel_first'), deliver('parallel_second')]);
     assert.deepEqual(distinct.map(response => response.status), [202,202], 'INTAKE-004 distinct simultaneous emails must both produce retained drafts');
-    assert.equal((await state()).data.emailIntake.filter(i => ['parallel_first','parallel_second'].includes(i.providerEmailId)).length, 2);
+    const parallelIntakes = (await state()).data.emailIntake.filter(i => ['parallel_first','parallel_second'].includes(i.providerEmailId));
+    assert.equal(parallelIntakes.length, 2);
+    assert.equal(h.messages.length, beforeParallelMail + 2, 'Each retained concurrent draft gets one native completion link');
+    for (const captured of parallelIntakes) {
+        const downloaded = await send(`/api/purse/email-intake/${captured.id}/files/${captured.files[0].id}`, undefined, owner);
+        assert.equal(downloaded.status, 200); assert.equal(downloaded.value, pdf.toString(), 'Concurrent capture retains the exact quotation bytes');
+    }
+    const parallelReceipts = (await send('/api/purse/email-intake-receipts', undefined, owner)).value.receipts.filter(r => ['parallel_first','parallel_second'].includes(r.email_id));
+    assert.equal(parallelReceipts.length, 2); assert.ok(parallelReceipts.every(r => r.status === 'stored'));
     // Intake administrators receive only their native scope; an unassigned provider source has no inferred purchasing department.
     const administrator=await h.member('synthetic-intake-admin@example.test',['admin']),scopedAdministrator=await h.member('synthetic-scoped-admin@example.test',['admin']),scopedRequester=await h.member('synthetic-intake-requester@example.test',['requester']);
     const scope={departments:['Field'],locations:['Denver'],projects:['Site'],entities:['main']};

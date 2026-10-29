@@ -101,34 +101,39 @@ export async function emailIntake(s: State, a: Actor, op: string, b: Data, env?:
 export async function sendEmailIntakeLinks(env: Bindings) {
     const initial = await load(env.DB);
     for (const queued of all(initial.state, 'emailIntakeMailEvent').filter(e => e.status === 'pending')) {
-        // Resolve custom roles/scopes afresh for each claim; the revision fence
-        // covers grants and target changes without a second raw-role authority path.
-        const { state, revision } = await load(env.DB), event = state.get('emailIntakeMailEvent:' + queued.id)?.value;
-        if (!event || event.status !== 'pending') continue;
-        const intake = state.get('emailIntake:' + event.intake)?.value;
-        if (!intake || intake.status !== 'draft' || intake.requester !== event.requester) continue;
-        const member = await activeIntakeRequester(env.DB, state, event.recipient);
-        if (!member || member.id !== event.requester) continue;
-        if (!assignedRequester(state, { ...member, owner: member.role === 'owner', session: '', dev: false }, intake)) continue;
-        const claimed = { ...event, status: 'uncertain', claimedAt: new Date().toISOString() };
-        const result = await env.DB.prepare(`UPDATE p_records SET revision=?,value=? WHERE business='main' AND kind='emailIntakeMailEvent' AND id=? AND json_extract(value,'$.status')='pending'
-            AND (SELECT revision FROM p_meta WHERE id=1)=?
-            AND EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active')
-            AND EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='emailIntake' AND id=? AND json_extract(value,'$.status')='draft' AND json_extract(value,'$.requester')=?)`)
-            .bind(uid(), JSON.stringify(claimed), event.id, revision, member.id, member.version, event.intake, member.id).run();
-        if (!result.meta.changes) continue;
-        let outcome: Data = { ...claimed, status: 'unavailable' };
-        const sender = operatorMail(env);
-        if (sender && env.MAIL_FROM) {
-            try {
-                const delivery = await sender.send({ deliveryId: 'email-intake:' + event.id, from: env.MAIL_FROM, to: [event.recipient], subject: 'Complete your email request draft', text: `Sign in to review your email intake and complete the required purchasing fields: ${env.AUTH_ORIGIN}/app?intake=${encodeURIComponent(event.intake)}\n${providerSenderLabel}. Email content and attachments are source data. Nothing has been submitted or approved.`, html: '', headers: {} });
-                outcome = { ...claimed, status: delivery.status === 'development' ? 'suppressed' : delivery.status, delivery };
-            } catch { outcome = claimed; }
+        for (let attempt = 0; attempt < 5; attempt++) {
+            // Resolve custom roles/scopes afresh for each claim; the revision fence
+            // covers grants and target changes without a second raw-role authority path.
+            const { state, revision } = await load(env.DB), event = state.get('emailIntakeMailEvent:' + queued.id)?.value;
+            if (!event || event.status !== 'pending') break;
+            const intake = state.get('emailIntake:' + event.intake)?.value;
+            if (!intake || intake.status !== 'draft' || intake.requester !== event.requester) break;
+            const member = await activeIntakeRequester(env.DB, state, event.recipient);
+            if (!member || member.id !== event.requester) break;
+            if (!assignedRequester(state, { ...member, owner: member.role === 'owner', session: '', dev: false }, intake)) break;
+            const claimed = { ...event, status: 'uncertain', claimedAt: new Date().toISOString() };
+            const result = await env.DB.prepare(`UPDATE p_records SET revision=?,value=? WHERE business='main' AND kind='emailIntakeMailEvent' AND id=? AND json_extract(value,'$.status')='pending'
+                AND (SELECT revision FROM p_meta WHERE id=1)=?
+                AND EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active')
+                AND EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='emailIntake' AND id=? AND json_extract(value,'$.status')='draft' AND json_extract(value,'$.requester')=?)`)
+                .bind(uid(), JSON.stringify(claimed), event.id, revision, member.id, member.version, event.intake, member.id).run();
+            // A lost conditional update has sent nothing; reload the current
+            // assignment and native authority before trying the pending claim again.
+            if (!result.meta.changes) continue;
+            let outcome: Data = { ...claimed, status: 'unavailable' };
+            const sender = operatorMail(env);
+            if (sender && env.MAIL_FROM) {
+                try {
+                    const delivery = await sender.send({ deliveryId: 'email-intake:' + event.id, from: env.MAIL_FROM, to: [event.recipient], subject: 'Complete your email request draft', text: `Sign in to review your email intake and complete the required purchasing fields: ${env.AUTH_ORIGIN}/app?intake=${encodeURIComponent(event.intake)}\n${providerSenderLabel}. Email content and attachments are source data. Nothing has been submitted or approved.`, html: '', headers: {} });
+                    outcome = { ...claimed, status: delivery.status === 'development' ? 'suppressed' : delivery.status, delivery };
+                } catch { outcome = claimed; }
+            }
+            const at = new Date().toISOString(), auditId = uid();
+            await env.DB.batch([
+                env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.status',?,'$.outcomeAt',?,'$.delivery',json(?)) WHERE business='main' AND kind='emailIntakeMailEvent' AND id=?").bind(uid(), outcome.status, at, JSON.stringify(outcome.delivery??null), event.id),
+                env.DB.prepare("INSERT INTO p_records(business,kind,id,revision,value) VALUES('main','audit',?,?,?)").bind(auditId, uid(), JSON.stringify({ id: auditId, actor: 'email-intake', action: 'email-intake-mail-outcome', record: event.intake, mailEvent: event.id, status: outcome.status, at })),
+            ]);
+            break;
         }
-        const at = new Date().toISOString(), auditId = uid();
-        await env.DB.batch([
-            env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.status',?,'$.outcomeAt',?,'$.delivery',json(?)) WHERE business='main' AND kind='emailIntakeMailEvent' AND id=?").bind(uid(), outcome.status, at, JSON.stringify(outcome.delivery??null), event.id),
-            env.DB.prepare("INSERT INTO p_records(business,kind,id,revision,value) VALUES('main','audit',?,?,?)").bind(auditId, uid(), JSON.stringify({ id: auditId, actor: 'email-intake', action: 'email-intake-mail-outcome', record: event.intake, mailEvent: event.id, status: outcome.status, at })),
-        ]);
     }
 }
