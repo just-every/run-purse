@@ -3836,7 +3836,7 @@
       "executable": false
     },
     "src/purse/supplier-proposals.ts": {
-      "sha256": "347f5be9acdc79eb7c86591c5dbcff59a6bd3861a8b53a1f0dbb8ef546986fe2",
+      "sha256": "414f7d70ca9cc16d806cb80f853eed144a7a0816dad1f07dffb61c0077369253",
       "executable": false
     },
     "src/purse/supplier-protected.ts": {
@@ -5328,7 +5328,7 @@
       "executable": false
     },
     "tests/supplier-proposals.test.mjs": {
-      "sha256": "6d76a873c9a93cd8757009aa7251b67103b0eccbf0aab4d23af56fa9d5491dff",
+      "sha256": "ba0faf096bae26702a56987a8f27ebbbdea5436e4e325331468321a84c276b9f",
       "executable": false
     },
     "tests/supplier-screening.test.mjs": {

@@ -1,5 +1,6 @@
 import { containsProtectedInput } from './protected-context-fields.mjs';
 import { supplierMatches } from './supplier-matching';
+import { canonicalSupplier } from './supplier-identity';
 import { supplier } from './admin';
 import { all, allowed, accessGrants, audit, get, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
@@ -29,7 +30,7 @@ function proposalInput(input: Data) {
         category: input.category ? text(input.category,'Supplier category',200) : '' };
 }
 function matches(s: State, input: Data) {
-    const others = all(s,'supplier').filter(v=>!v.mergedInto).map(v=>{
+    const others = all(s,'supplier').map(v=>{
         const proposal = s.get('supplierProposal:' + v.id)?.value;
         return proposal ? {...v, contacts:[{email:proposal.contactEmail}],website:proposal.website} : v;
     });
@@ -40,7 +41,12 @@ function matches(s: State, input: Data) {
         if (match) match.reasons.push('website');
         else found.push({id:other.id,name:other.name,status:other.status,mergedInto:null,reasons:['website']});
     }
-    return found;
+    const canonical=new Map<string,Data>();
+    for(const match of found) {
+        const id=canonicalSupplier(s,match.id), current=get(s,'supplier',id), prior=canonical.get(id);
+        canonical.set(id,{id,name:current.name,status:current.status,reasons:[...new Set([...(prior?.reasons??[]),...match.reasons])]});
+    }
+    return [...canonical.values()];
 }
 export function proposalChoices(s: State, a: Actor, input: Data) {
     requirePermission(s,a,'request.create');
