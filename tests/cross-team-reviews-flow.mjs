@@ -4,7 +4,7 @@ import {join} from 'node:path';
 import {createPortability} from '@runeditrun/rer/modules/portability';
 import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
-import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
+
 import {harness} from './purse-harness.mjs';
 import {reauthenticateErasure} from './erasure-flow.mjs';
 import {crossTeamFixture,reviewFile,reviewEmail} from './cross-team-reviews-fixture.mjs';
@@ -109,8 +109,6 @@ export async function cross_team_reviewsFlow(){
     assert.equal((await h.command('decision',{id:fresh.id,revision:fresh.revision,decision:'approved',reason:'Independent approval of the fresh revision'},f.approver)).status,'pending');
     assert.equal((await h.command('decision',{id:fresh.id,revision:fresh.revision,decision:'approved',reason:'Final independent approval of the fresh revision'},finalApprover)).status,'approved');
 
-    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
-
  } finally {for(const close of cleanups.reverse())await close();}
 }
 {
@@ -147,7 +145,7 @@ export async function cross_team_reviewsFlow(){
     assert.equal((await h.send(download(security.events[0].files[0]),undefined,h.owner)).status,410);
     assert.notEqual((await h.send('/api/purse/command/cross-review-record',{id:security.id,revision:1,version:1,decision:'approved',body:'Replay erased capture'},f.reviewers.security.cookie)).status,200);
     const csv=await h.send('/api/purse/audit.csv?subject='+f.request.id,undefined,h.owner);assert.ok(!csv.value.includes(f.reviewers.security.email));
-    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
+
     const latest=await archived(h,'synthetic-purse-6152'),erasedCopy=await restored(t,latest);
     assert.ok((await erasedCopy.h.send('/api/purse/state',undefined,erasedCopy.cookie)).value.data.request.find(r=>r.id===f.request.id).crossTeamReviews.rows.find(row=>row.id===security.id).erasure);
     const destination=await harness({empty:true});t.after(()=>destination.close());

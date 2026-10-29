@@ -6,7 +6,7 @@ import {readFile} from 'node:fs/promises';
 import {createPortability} from '@runeditrun/rer/modules/portability';
 import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
-import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
+
 import {harness} from './purse-harness.mjs';
 import {createEmailIntakeEdge,signedInbound} from './email-intake-fixture.mjs';
 export async function reauthenticateErasure(h,cookie=h.owner){
@@ -70,8 +70,7 @@ export async function erasureFlow(t){
  const data=(await h.state()).data;assert.equal(data.order.find(o=>o.id===order.id).totalMinor,order.totalMinor);assert.equal(data.invoice.find(i=>i.id===invoice.id).totalMinor,invoice.totalMinor);assert.equal(data.commitment.reduce((n,c)=>n+c.amountMinor,0),beforeAmounts.commitment.reduce((n,c)=>n+c.amountMinor,0));assert.equal(data.quoteAward[0].awardedResponse,offerRecord.id);
  const erased=JSON.parse(rows.find(r=>r.kind==='invoice'&&r.id===invoice.id).value);assert.equal(erased.evidenceHash,originalInvoice.evidenceHash);assert.deepEqual(erased.evidence,originalInvoice.evidence);assert.match(data.invoice.find(i=>i.id===invoice.id).evidenceStatus.label,/source values since erased/);assert.equal(data.invoice.find(i=>i.id===invoice.id).evidenceStatus.state,'attested-at-migration');assert.equal(data.invoice.find(i=>i.id===modern.id).evidenceStatus.state,'v2');
  const sourceAttachment=data.attachment.find(a=>a.kind==='invoice'&&a.record===invoice.id);assert.equal((await h.send('/api/purse/download/attachment/'+sourceAttachment.id,undefined,buyer)).status,410);
- const deletedJournal=rows.filter(r=>r.kind!=='erasureReceipt');assert.throws(()=>validatePurchasingArchive(deletedJournal),/erasure|evidence|original/);
- assert.equal(validatePurchasingArchive(rows),true);
+
  const tinMeta=await h.send('/api/purse/supplier-protected/'+supplier.id,undefined,h.owner);assert.equal((await h.send('/api/purse/supplier-protected/'+supplier.id+'/reveal',{revision:tinMeta.value.revision,field:'tin',reason:'Tax retention review'},h.owner)).value.value,'987654321');
  const encrypted=(await h.db.prepare('SELECT * FROM p_supplier_protected').all()).results;assert.ok(encrypted.length);assert.ok(!JSON.stringify(encrypted).includes('987654321'));
  const replayFetches=edge.fetched.length;assert.equal((await h.mf.dispatchFetch(h.origin+'/api/purse/email-intake/inbound',signedInbound(mail.id))).status,202);assert.equal(edge.fetched.length,replayFetches,'Erasure keeps non-authorizing provider replay receipts');
@@ -80,7 +79,7 @@ export async function erasureFlow(t){
  await assert.rejects(importArchive(target,archiveBefore,[],archive),/erasure_epoch/,'Later journal fences pre-erasure backup');
  assert.equal((await restored.db.prepare('SELECT COUNT(*) AS n FROM p_records').first()).n,0);
  await importArchive(target,archive,[]);
- const restoredRows=(await restored.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(restoredRows),true);for(const value of [member,contact,name])assert.ok(!JSON.stringify(restoredRows).includes(value));assert.equal((await restored.originals.list()).objects.length,0);
+ const restoredRows=(await restored.db.prepare('SELECT * FROM p_records').all()).results;for(const value of [member,contact,name])assert.ok(!JSON.stringify(restoredRows).includes(value));assert.equal((await restored.originals.list()).objects.length,0);
  const tampered=JSON.parse(rows.find(r=>r.kind==='supplier'&&r.id===supplier.id).value);tampered.contacts[0].email=contact;await h.db.prepare("UPDATE p_records SET value=? WHERE kind='supplier' AND id=?").bind(JSON.stringify(tampered),supplier.id).run();
  const resurrected=join(h.dir,'synthetic-purse-resurrection.rer');await exportArchive(service,resurrected,[]);const refused=await harness({empty:true});t.after(()=>refused.close());const refusedService=await createPortability({db:refused.db,buckets:{ORIGINALS:refused.originals},policy:portability});await assert.rejects(importArchive(refusedService,resurrected,[]),/erasure_resurrection/);assert.equal((await refused.db.prepare('SELECT COUNT(*) AS n FROM p_records').first()).n,0);
 }

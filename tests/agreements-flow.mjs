@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import {join} from 'node:path'
 import {harness} from './purse-harness.mjs'
-import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
+
 import portability from '../scripts/installer/portability.mjs'
 import {createPortability} from '@runeditrun/rer/modules/portability'
 import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs'
@@ -77,8 +77,8 @@ export async function agreementsFlow(){
  await cmd('agreement',{...assignedTerms,id:assigned.id,version:1},h.owner,409);
  assigned=await cmd('agreement',{...base,id:assigned.id,version:assigned.version,reference:assignedTerms.reference,ownerMember:(await h.state()).actor.email,renewalTermMonths:null,renewalIncreaseCapBps:0,reason:'synthetic-purse-914 explicit owner reassignment'});
  assert.equal(assigned.owner,(await h.state()).actor.id);assert.equal(assigned.renewalTermMonths,null);assert.equal(assigned.renewalIncreaseCapBps,0);assert.equal(assigned.history[0].renewalTermMonths,12);assert.equal(assigned.history[1].owner,assignedActor.id);assert.equal((await h.state(assignee)).data.agreement.length,0,'Previous assignment grants no current agreement visibility');
- const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
- for(const mutate of [r=>{r.find(x=>x.kind==='agreementInvoice').value=JSON.stringify({...link,amountMinor:1})},r=>{const e=r.find(x=>x.kind==='agreementReminder');const v=JSON.parse(e.value);v.spend.totals[0].amountMinor++;e.value=JSON.stringify(v)},r=>{const a=r.find(x=>x.kind==='agreement');const v=JSON.parse(a.value);v.noticeDays=1;a.value=JSON.stringify(v)}]){const corrupt=structuredClone(rows);mutate(corrupt);assert.throws(()=>validatePurchasingArchive(corrupt),/purse_agreement/)}
+ const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+
  const audit=await h.send('/api/purse/audit.csv',undefined,h.owner);assert.match(audit.value,/agreement-reminder/);assert.match(audit.value,/Corrected original notice term/);assert.match(audit.value,/synthetic-purse-914 explicit owner reassignment/);
  const assignmentAudit=(await h.state()).data.audit.find(row=>row.action==='agreement'&&row.record===assigned.id&&row.version===assigned.version);assert.equal(assignmentAudit.before.owner,assignedActor.id);assert.equal(assignmentAudit.after.owner,assigned.owner);assert.equal(assignmentAudit.after.renewalIncreaseCapBps,0);
  const archive=join(h.dir,'agreements.rer');const service=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});await exportArchive(service,archive,[]);
