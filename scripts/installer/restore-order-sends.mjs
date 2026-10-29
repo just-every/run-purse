@@ -35,10 +35,13 @@ export function validateOrderSends(all, get, check) {
         check(audits.some(audit => audit.action === (event.mode === 'initial' ? 'order-send-claimed' : 'order-change-send-claimed') && audit.record === order.id && audit.send === event.id && audit.actor === event.actor && audit.email === event.email && audit.recipient === event.recipient && audit.revision === event.revision && audit.reason === event.reason && audit.pdfSha256 === file.sha256 && audit.contentSha256 === event.contentSha256 && audit.at === event.at), 'order_send_claim_audit');
         if (event.outcomeAt) check(audits.some(audit => audit.action === (event.mode === 'initial' ? 'order-send-outcome' : 'order-change-send-outcome') && audit.record === order.id && audit.send === event.id && audit.status === event.status && audit.pdfSha256 === file.sha256 && audit.at === event.outcomeAt), 'order_send_outcome_audit');
         if (event.revokedAt) check(timestamp(event.revokedAt) && audits.some(audit => audit.action === (event.mode === 'initial' ? 'order-link-revoked' : 'order-change-link-revoked') && audit.record === order.id && audit.send === event.id && audit.at === event.revokedAt), 'order_send_revoke_audit');
-        if (event.mode === 'initial') validateResponses(event, order, all, get, check);
+        validateResponses(event, order, all, get, check);
         if (event.acknowledgment) check(equal(event.acknowledgment, get('orderAcknowledgment', event.id)), 'order_acknowledgment_link');
     }
-    for (const response of all('orderSupplierResponse')) check(get('orderSend',response.send).mode === 'initial', 'order_response_send');
+    for (const response of all('orderSupplierResponse')) {
+        const event = get('orderSend', response.send), order = get('order', event.order);
+        check(event.mode === 'initial' || /^Change order [1-9]\d*$/.test(event.changeLabel) && !order.cancellation && !order.supplierGroup && !order.recurring && !order.recurringSeries && !order.poDetails?.blanket && (!order.purchaseType || order.purchaseType === 'goods') && order.lines.every(line => !line.service && (!line.supplier || line.supplier === order.supplier)), 'order_response_send');
+    }
     for (const acknowledgment of all('orderAcknowledgment')) {
         const event = get('orderSend', acknowledgment.send);
         check(acknowledgment.id === event.id && acknowledgment.order === event.order && acknowledgment.request === event.request && acknowledgment.revision === event.revision && acknowledgment.changeLabel === event.changeLabel && acknowledgment.pdfSha256 === event.pdf.sha256 && acknowledgment.actor === 'supplier-link' && acknowledgment.identityVerified === false && nonempty(acknowledgment.name) && timestamp(acknowledgment.at) && Date.parse(acknowledgment.at) >= Date.parse(event.at) && Date.parse(acknowledgment.at) < Date.parse(event.expiresAt) && equal(event.acknowledgment,acknowledgment), 'order_acknowledgment_revision');

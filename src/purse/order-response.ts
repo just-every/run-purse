@@ -6,6 +6,15 @@ import { moneyInput } from './money';
 import { requests } from './requests';
 import { insertOrderSendRecord, liveOrderLink, orderSendSummary } from './order-send';
 
+/** Change responses share the initial response door only for native ordinary goods. */
+export function supportsOrderResponses(event: Data, order: Data) {
+    return event.mode === 'initial' || /^Change order [1-9]\d*$/.test(event.changeLabel)
+        && order.status === 'issued' && !order.imported && !order.adoption && !order.cancellation
+        && !order.supplierGroup && !order.recurring && !order.recurringSeries && !order.poDetails?.blanket
+        && (!order.purchaseType || order.purchaseType === 'goods')
+        && order.lines.every((line: Data) => !line.service && (!line.supplier || line.supplier === order.supplier));
+}
+
 /** The capability's creator must still hold current native purchasing authority. */
 export async function currentOrderSender(env: Bindings, state: State, event: Data) {
     const principal = await env.DB.prepare("SELECT id,email,version,role FROM oa_operators WHERE id=? AND version=? AND status='active'").bind(event.actor, event.operatorVersion).first<{ id: string; email: string; version: number; role: string }>();
@@ -41,7 +50,9 @@ export function normalizeOrderResponse(body: Data, order: Data, event: Data) {
 
 /** Supplier input is evidence. Only the authenticated adoption door can create a draft. */
 export async function recordOrderResponse(env: Bindings, state: State, revision: number, event: Data, hash: string, body: Data) {
-    const order = get(state, 'order', event.order), normalized = normalizeOrderResponse(body, order, event), at = new Date().toISOString();
+    const order = get(state, 'order', event.order);
+    requireThat(supportsOrderResponses(event, order), 'This order supports acknowledgment only; contact the buyer for changes', 409);
+    const normalized = normalizeOrderResponse(body, order, event), at = new Date().toISOString();
     const version = (event.response?.version ?? 0) + 1;
     const response: Data = { id: event.id + ':' + version, send: event.id, order: event.order, request: event.request, revision: event.revision, pdfSha256: event.pdf.sha256, version, ...normalized, actor: 'supplier-link', identityVerified: false, at };
     const acknowledgment = event.acknowledgment ?? { id: event.id, send: event.id, order: event.order, request: event.request, revision: event.revision, changeLabel: event.changeLabel, pdfSha256: event.pdf.sha256, name: response.name, actor: 'supplier-link', identityVerified: false, at };
@@ -55,7 +66,7 @@ export async function recordOrderResponse(env: Bindings, state: State, revision:
         env.DB.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(event.actor, event.operatorVersion),
         ...proofs.map((proof: Data) => env.DB.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(proof.actor, proof.version)),
         insertOrderSendRecord(env.DB, 'orderSupplierResponse', response),
-        ...(!event.acknowledgment ? [insertOrderSendRecord(env.DB, 'orderAcknowledgment', acknowledgment), insertOrderSendRecord(env.DB, 'audit', { id: uid(), action: 'order-acknowledged', record: event.order, send: event.id, actor: 'supplier-link', name: acknowledgment.name, identityVerified: false, revision: event.revision, pdfSha256: event.pdf.sha256, at })] : []),
+        ...(!event.acknowledgment ? [insertOrderSendRecord(env.DB, 'orderAcknowledgment', acknowledgment), insertOrderSendRecord(env.DB, 'audit', { id: uid(), action: event.mode === 'initial' ? 'order-acknowledged' : 'order-change-acknowledged', record: event.order, send: event.id, actor: 'supplier-link', name: acknowledgment.name, identityVerified: false, revision: event.revision, pdfSha256: event.pdf.sha256, at })] : []),
         ...(response.promisedDate ? [env.DB.prepare("INSERT INTO p_records(business,kind,id,revision,value) VALUES('main','supplierOrderEvidence',?,?,?) ON CONFLICT(business,kind,id) DO UPDATE SET revision=excluded.revision,value=excluded.value").bind(order.id, uid(), JSON.stringify(evidence))] : []),
         env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.response',json(?),'$.acknowledgment',json(?)) WHERE business='main' AND kind='orderSend' AND id=?").bind(uid(), JSON.stringify(response), JSON.stringify(acknowledgment), event.id),
         insertOrderSendRecord(env.DB, 'audit', { id: uid(), action: 'order-supplier-response', record: event.order, send: event.id, response: response.id, decision: response.decision, promisedDate: response.promisedDate, actor: 'supplier-link', name: response.name, identityVerified: false, revision: event.revision, pdfSha256: event.pdf.sha256, at }),
@@ -69,6 +80,7 @@ export async function adoptOrderResponse(env: Bindings, actor: Actor, orderId: s
     requirePermission(state, actor, 'po.issue', order); requirePermission(state, actor, 'request.edit', request);
     const event = get(state, 'orderSend', 'order-send:' + order.id), response = event.response;
     requireThat(!event.erasure && !event.revokedAt && Date.parse(event.expiresAt) > Date.now() && order.status === 'issued' && !order.imported && !order.adoption && request.status === 'approved' && request.revision === order.revision && body.revision === order.revision, 'Current native exact approved purchase and live response required', 409);
+    requireThat(supportsOrderResponses(event, order) && await currentOrderSender(env, state, event), 'Current sender authority and supported response required', 409);
     currentDecision(state, request);
     requireThat(body.consent === true && response && response.decision === 'change' && body.response === response.id && !event.responseAdoptions?.some((entry: Data) => entry.response === response.id), 'Choose the exact unadopted supplier change proposal', 409);
     requireThat(body.adoptDeliveryDate === undefined || typeof body.adoptDeliveryDate === 'boolean', 'Delivery-date adoption must be explicit');

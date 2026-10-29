@@ -38,7 +38,35 @@ test('Explicit native buyer change send freezes exact numbered PDF and originals
     await h.command('supplier-order-evidence',{order:f.order.id,version:0,promisedDate:'2026-11-07',source:'Later promise'});
     assert.deepEqual(Buffer.from(await(await publicGet(h,link.href+'/pdf')).arrayBuffer()),bytes,'Later mutable evidence cannot rewrite frozen sent bytes');
     assert.deepEqual((await h.state()).data.revision.find(row=>row.request===f.request.id&&row.revision===2),immutable,'Send and acknowledgment never rewrite approved revisions');
-    const history=await h.send('/api/purse/audit.csv?subject='+f.order.id,undefined,h.owner);for(const event of ['order-change-send-claimed','order-change-send-outcome','order-change-acknowledged',sent.value.pdfSha256])assert.ok(history.value.includes(event),event);
+    // The existing exact amendment link now records the complete response set as evidence only.
+    const purchasing = data => Object.fromEntries(['request','revision','decision','order','receipt','invoice','commitment','policy','payable','cashExpectation','deposit','totals'].map(kind => [kind, data[kind] ?? []]));
+    const financialBefore = purchasing((await h.state()).data);
+    const responseBody = { revision: 2, promisedDate: '2026-11-12' };
+    for (const invalid of [
+        { revision: 1 }, { promisedDate: null }, { consent: false },
+        { decision: 'change', lines: [{ line: f.order.id, quantity: '3', unitAmount: '112.25' }] },
+        { decision: 'change', lines: [{ line: f.order.lines[0].id, quantity: '0', unitAmount: '112.25' }] },
+        { decision: 'change', lines: [{ line: f.order.lines[0].id, quantity: '3', unitAmount: '10000000000.01' }] },
+        { decision: 'change', lines: Array.from({ length: 2 }, () => ({ line: f.order.lines[0].id, quantity: '3', unitAmount: '112.25' })) },
+    ]) assert.ok([400,409].includes((await respond(h, link, { ...responseBody, ...invalid })).status), JSON.stringify(invalid));
+    assert.equal((await respond(h, link, responseBody)).status, 200);
+    let review = await h.send('/api/purse/order-send/' + f.order.id, undefined, f.requester);
+    assert.equal(review.value.event.response.decision, 'accept'); assert.equal(review.value.event.response.promisedDate, '2026-11-12');
+    assert.equal(review.value.event.response.revision, 2); assert.equal(review.value.event.response.pdfSha256, sent.value.pdfSha256); assert.equal(review.value.event.response.identityVerified, false);
+    const proposal = { ...responseBody, version: 1, decision: 'change', promisedDate: '2026-11-22', name: 'synthetic-purse-2870', note: 'synthetic-purse-2871', lines: [{ line: f.order.lines[0].id, quantity: '3.125', unitAmount: '112.25' }] };
+    const simultaneous = await Promise.all([respond(h, link, proposal), respond(h, link, proposal)]); assert.deepEqual(simultaneous.map(result => result.status).sort(), [200,409]);
+    assert.equal((await respond(h, link, proposal)).status, 409, 'A stale supplier response cannot overwrite the latest version');
+    assert.equal((await respond(h, link, { ...responseBody, version: 2, decision: 'reject', promisedDate: null, name: 'synthetic-purse-2872', note: 'synthetic-purse-2873' })).status, 200);
+    review = await h.send('/api/purse/order-send/' + f.order.id, undefined, f.requester);
+    assert.deepEqual(review.value.responses.map(response => response.decision), ['accept','change','reject']);
+    assert.equal(review.value.event.response.promisedDate, null); assert.equal(review.value.event.acknowledgment.name, 'synthetic-purse-2821', 'A revised response retains the original acknowledgment');
+    const offer = review.value.responses[1].lines[0]; assert.equal(offer.line, f.order.lines[0].id); assert.equal(offer.originalQ, 2000); assert.equal(offer.q, 3125); assert.equal(offer.originalUnitMinor, 10000); assert.equal(offer.unitMinor, 11225);
+    assert.deepEqual(purchasing((await h.state()).data), financialBefore, 'Supplier responses grant no terms, receipt, budget, approval or payment authority');
+    assert.deepEqual(Buffer.from(await (await publicGet(h, link.href + '/pdf')).arrayBuffer()), bytes);
+    for (let index=0; index<2; index++) assert.deepEqual(Buffer.from(await (await publicGet(h,link.href+'/original/'+index)).arrayBuffer()), Buffer.from(index ? f.certificate : f.terms, 'base64'));
+    assert.equal((await h.send('/api/purse/order-send/' + f.order.id + '/adopt-response', { revision:2, response:review.value.event.response.id, reason:'synthetic-purse-2874', consent:true }, f.buyer)).status, 409, 'Rejection grants no draft authority');
+    for (const cookie of [f.outsider, '']) assert.equal((await h.send('/api/purse/order-send/' + f.order.id, undefined, cookie)).status, cookie ? 403 : 401);
+    const history=await h.send('/api/purse/audit.csv?subject='+f.order.id,undefined,h.owner);for(const event of ['order-change-send-claimed','order-change-send-outcome','order-change-acknowledged','order-supplier-response',review.value.responses[1].id,sent.value.pdfSha256])assert.ok(history.value.includes(event),event);
     const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
     const corrupt=structuredClone(rows),event=corrupt.find(row=>row.kind==='orderSend');const value=JSON.parse(event.value);value.pdf.base64=Buffer.from('%PDF-synthetic-purse-2826').toString('base64');event.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt),/order_send_pdf_digest/);
     const changedContent=structuredClone(rows),frozen=changedContent.find(row=>row.kind==='orderSend'),tampered=JSON.parse(frozen.value);tampered.content.sections[0].lines.push('synthetic-purse-2827');frozen.value=JSON.stringify(tampered);assert.throws(()=>validatePurchasingArchive(changedContent),/order_send_content_digest/);
@@ -50,7 +78,7 @@ test('Explicit native buyer change send freezes exact numbered PDF and originals
     for(const suffix of ['', '/pdf','/original/0'])assert.equal((await publicGet(h,link.href+suffix)).status,410);
     const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(!JSON.stringify(erasedRows).includes('synthetic-purse-2820@example.test'));assert.equal(validatePurchasingArchive(erasedRows),true);
     // The link holder's stated acknowledgment name is a personal field of the same reviewed inventory: gone from the PO, audit read and CSV, while the revision, PDF hash and acknowledgment time stay.
-    assert.ok(!JSON.stringify(erasedRows).includes('synthetic-purse-2821'),'The stated acknowledgment name is erased with its recipient');assert.ok(preview.value.coverage.find(entry=>/acknowledgment names/.test(entry.store)).fields>0);
+    for (const personal of ['synthetic-purse-2821','synthetic-purse-2870','synthetic-purse-2871','synthetic-purse-2872','synthetic-purse-2873']) assert.ok(!JSON.stringify(erasedRows).includes(personal), 'Acknowledgment and every response name and note are erased with the recipient');assert.ok(preview.value.coverage.find(entry=>/acknowledgment names/.test(entry.store)).fields>0);
     for(const path of ['/api/purse/state','/api/purse/audit','/api/purse/audit.csv?subject='+f.order.id,'/api/purse/order-send/'+f.order.id,'/api/purse/download/order/'+f.order.id]){const read=await h.send(path,undefined,h.owner);assert.equal(read.status,200,path);assert.ok(!JSON.stringify(read.value).includes('synthetic-purse-2821'),path);}
     const retainedSend=JSON.parse(erasedRows.find(row=>row.kind==='orderSend').value);assert.equal(retainedSend.revision,2);assert.equal(retainedSend.pdf.sha256,sent.value.pdfSha256);assert.equal(retainedSend.acknowledgment.pdfSha256,sent.value.pdfSha256);assert.ok(retainedSend.acknowledgment.at);assert.deepEqual((await h.state()).data.revision.find(row=>row.request===f.request.id&&row.revision===2),immutable,'Erasure never rewrites approved revisions');
     const quantityHarness=await harness();t.after(()=>quantityHarness.close());const quantity=await orderSendFixture(quantityHarness,{kind:'quantity'}),quantitySent=await quantity.send();assert.equal(quantitySent.status,200,JSON.stringify(quantitySent.value));assert.equal(quantitySent.value.changeLabel,'Change order 1');
@@ -59,6 +87,36 @@ test('Explicit native buyer change send freezes exact numbered PDF and originals
     const overdueTick=await quantityHarness.mf.dispatchFetch(quantityHarness.origin+'/cdn-cgi/local/scheduled?time='+(Date.parse(quantity.order.needDate+'T17:00:00Z')+86400000));assert.equal(overdueTick.status,200);
     const overdue=(await quantityHarness.state()).data.orderChaseEvent.filter(row=>row.order===quantity.order.id);assert.equal(overdue.length,1);assert.equal(overdue[0].reason,'overdue-delivery');assert.equal(overdue[0].supplierAcknowledgment.revision,2);
     assert.equal(validatePurchasingArchive((await quantityHarness.db.prepare('SELECT * FROM p_records').all()).results),true,'Overdue delivery retains exact native supplier acknowledgment through archive validation');
+    const adoptionHarness=await harness();t.after(()=>adoptionHarness.close());const adoptionSource=await orderSendFixture(adoptionHarness,{kind:'quantity'}),adoptionSent=await adoptionSource.send();assert.equal(adoptionSent.status,200);const adoptionLink=orderLink(adoptionHarness);
+    const proposed = { revision:2, decision:'change', promisedDate:'2026-11-22', lines:[{line:adoptionSource.order.lines[0].id,quantity:'4.125',unitAmount:'112.25'}] };
+    assert.equal((await respond(adoptionHarness,adoptionLink,proposed)).status,200);
+    const response=(await adoptionHarness.send('/api/purse/order-send/'+adoptionSource.order.id,undefined,adoptionSource.requester)).value.event.response;
+    const adoption={revision:2,response:response.id,reason:'synthetic-purse-2875',consent:true,adoptDeliveryDate:true};
+    const door='/api/purse/order-send/'+adoptionSource.order.id+'/adopt-response';
+    assert.equal((await adoptionHarness.send(door,adoption,adoptionSource.requester)).status,403);
+    await adoptionHarness.command('member',{email:'synthetic-purse-2804@example.test',name:'synthetic-purse-2804',active:true,grants:[{role:'buyer',scope:{locations:['Denver']}}]});
+    assert.equal((await adoptionHarness.send(door,adoption,adoptionSource.buyer)).status,403);
+    assert.equal((await adoptionHarness.send('/api/purse/order-send/'+adoptionSource.order.id,undefined,adoptionSource.buyer)).status,403);
+    assert.equal((await respond(adoptionHarness,adoptionLink,{...proposed,version:1})).status,410, 'Current sender scope fences the supplier capability');
+    await adoptionHarness.command('member',{email:'synthetic-purse-2804@example.test',name:'synthetic-purse-2804',active:true,roles:['buyer']});
+    assert.equal((await adoptionHarness.send(door,{...adoption,response:response.send+':99'},adoptionSource.buyer)).status,409);
+    const beforeAdoption=(await adoptionHarness.state()).data, originalRevision=beforeAdoption.revision.find(row=>row.request===adoptionSource.request.id&&row.revision===2);
+    const adopted=await adoptionHarness.send(door,adoption,adoptionSource.buyer);assert.equal(adopted.status,200,JSON.stringify(adopted.value));
+    assert.equal(adopted.value.draft.status,'draft');assert.equal(adopted.value.draft.revision,3);assert.equal(adopted.value.draft.amends,adoptionSource.order.id);assert.equal(adopted.value.draft.lines[0].quantity,'4.125');assert.equal(adopted.value.draft.lines[0].unitMinor,11225);assert.equal(adopted.value.draft.needDate,'2026-11-22');
+    const afterAdoption=(await adoptionHarness.state()).data;
+    for(const kind of ['decision','receipt','invoice','commitment','payable','cashExpectation']) assert.deepEqual(afterAdoption[kind],beforeAdoption[kind],kind+' remains unchanged before renewed approval');
+    assert.deepEqual(afterAdoption.revision.find(row=>row.request===adoptionSource.request.id&&row.revision===2),originalRevision);
+    assert.equal((await adoptionHarness.send(door,adoption,adoptionSource.buyer)).status,409);
+    assert.equal((await adoptionHarness.send('/api/purse/command/convert',{id:adoptionSource.request.id,revision:3,issue:true},adoptionSource.buyer)).status,409);
+    assert.equal((await publicGet(adoptionHarness,adoptionLink)).status,410);assert.equal((await respond(adoptionHarness,adoptionLink,{...proposed,version:1})).status,410);
+    assert.equal(adoptionHarness.messages.filter(message=>message.subject.startsWith('Change order ')).length,1,'Adoption sends no supplier mail');
+    await adoptionHarness.command('submit',{id:adoptionSource.request.id,revision:3},adoptionSource.requester);
+    assert.equal((await adoptionHarness.send('/api/purse/command/convert',{id:adoptionSource.request.id,revision:3,issue:true},adoptionSource.buyer)).status,409);
+    await adoptionHarness.command('decision',{id:adoptionSource.request.id,revision:3,decision:'approved',reason:'synthetic-purse-2876'},adoptionSource.approver);
+    const renewed=await adoptionHarness.command('convert',{id:adoptionSource.request.id,revision:3,issue:true},adoptionSource.buyer);assert.equal(renewed.lines[0].unitMinor,11225);assert.equal(renewed.lines[0].quantity,'4.125');
+    const audit=await adoptionHarness.send('/api/purse/audit.csv?subject='+adoptionSource.order.id,undefined,adoptionHarness.owner);for(const action of ['order-supplier-response','order-response-adopted',response.id,adoptionSent.value.pdfSha256])assert.ok(audit.value.includes(action),action);
+    assert.equal(validatePurchasingArchive((await adoptionHarness.db.prepare('SELECT * FROM p_records').all()).results),true,'Amendment responses and exact proposal adoption remain portable history');
+
 
 });
 
@@ -77,7 +135,7 @@ test('Native current buyer scope, exact approval and claim-before-send prevent s
     const sends=await Promise.all([f.send(),f.send()]);assert.deepEqual(sends.map(result=>result.status).sort(),[200,409]);assert.equal(sends.find(result=>result.status===200).value.status,'uncertain');assert.equal(claimed,true);
     assert.equal((await f.send()).status,409);assert.equal(h.messages.filter(message=>message.subject.startsWith('Change order ')).length,1);
     const link=orderLink(h);assert.equal((await publicGet(h,link)).status,200);
-    const next=await h.command('need-date-edit',{id:f.request.id,revision:2,needDate:'2026-11-09',reason:'New exact correction'},f.requester);assert.equal(next.revision,3);assert.equal((await publicGet(h,link)).status,410);assert.equal((await ack(h,link,2)).status,410);
+    const next=await h.command('need-date-edit',{id:f.request.id,revision:2,needDate:'2026-11-09',reason:'New exact correction'},f.requester);assert.equal(next.revision,3);assert.equal((await publicGet(h,link)).status,410);assert.equal((await ack(h,link,2)).status,410);assert.equal((await respond(h,link,{revision:2})).status,410);
     await h.command('member',{email:'synthetic-purse-2804@example.test',name:'synthetic-purse-2804',active:false,roles:['buyer']});assert.equal((await f.send()).status,403,'Deactivated purchasing membership refuses its retained native session');
     assert.equal((await h.send('/auth/signout',{},f.buyer)).status,204);assert.equal((await f.send()).status,401,'Revoked native session refuses the send door');
 });
@@ -86,7 +144,7 @@ test('Real supplier-link expiry and explicit withdrawal fence read, original and
     const h=await harness();t.after(()=>h.close());const f=await orderSendFixture(h);
     const started=Date.now(),expiresAt=new Date(started+4000).toISOString(),sent=await f.send({expiresAt});assert.equal(sent.status,200,JSON.stringify(sent.value));const link=orderLink(h);assert.equal((await publicGet(h,link)).status,200);
     await delay(Math.max(0,Date.parse(expiresAt)-Date.now()+30));
-    for(const suffix of ['', '/pdf','/original/0'])assert.equal((await publicGet(h,link.href+suffix)).status,410);assert.equal((await ack(h,link,2)).status,410);
+    for(const suffix of ['', '/pdf','/original/0'])assert.equal((await publicGet(h,link.href+suffix)).status,410);assert.equal((await ack(h,link,2)).status,410);assert.equal((await respond(h,link,{revision:2})).status,410);
     const revoke=await h.send('/api/purse/order-send/'+f.order.id+'/revoke',{},f.buyer);assert.equal(revoke.status,200);
     const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
     assert.ok(!JSON.stringify(rows).includes(link.pathname.split('/').at(-1)),'Bearer token never enters portable domain rows');
