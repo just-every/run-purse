@@ -46,7 +46,7 @@ export async function orderSendJourney(browser, bundle, width, evidence) {
         await requester.screenshot({path:join(evidence,`PO-012-requester-acknowledged-${width}.png`),fullPage:true});
         const respond = async (decision, date) => {
             const form=supplier.locator('form').filter({has:supplier.getByRole('button',{name:'Record supplier response',exact:true})});
-            await form.getByLabel('Your name',{exact:true}).fill('synthetic-purse-2877');await form.getByLabel('Response',{exact:true}).selectOption(decision);await form.getByLabel('Promised delivery date',{exact:false}).fill(date);await form.getByRole('checkbox').check();
+            await form.getByLabel('Your response name',{exact:true}).fill('synthetic-purse-2877');await form.getByLabel('Response',{exact:true}).selectOption(decision);await form.getByLabel('Promised delivery date',{exact:false}).fill(date);await form.getByRole('checkbox').check();
             const outcome=supplier.waitForResponse(response=>response.url()===link.href&&response.request().method()==='POST');await form.getByRole('button',{name:'Record supplier response',exact:true}).click();const result=await outcome;assert.equal(result.status(),200,await result.text());await supplier.getByRole('heading',{name:'Supplier response recorded',exact:true}).waitFor();
         };
         await supplier.goto(link.href);await respond('accept','2026-11-12');

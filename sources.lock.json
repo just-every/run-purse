@@ -3392,7 +3392,7 @@
       "executable": false
     },
     "src/purse/order-response-public.ts": {
-      "sha256": "12aeecdfc22543474ca2a4fed5d9f971da75918a1a5faf5b85a0c5bc27a62893",
+      "sha256": "14e237c0032e1c9ac712c12411c33dd31e4f93a99c486341f3473972e616fe61",
       "executable": false
     },
     "src/purse/order-response.ts": {
@@ -3412,7 +3412,7 @@
       "executable": false
     },
     "src/purse/order-send-public.ts": {
-      "sha256": "6dd90a4c7fd957ebdeae999c94742e3db5560034006d1941bba78d0b14cbf9c0",
+      "sha256": "12695aa1837937d929bf86e75ded36d190d9cc172836979471f5f388aa1f5c34",
       "executable": false
     },
     "src/purse/order-send.ts": {
@@ -4848,7 +4848,7 @@
       "executable": false
     },
     "tests/browser-order-send.mjs": {
-      "sha256": "910f5bc632c10b56745f0e7c1787abc17835e0e2eed9b740dd359e272bada598",
+      "sha256": "d94a546d151ea69fff56781b2ed269f5f05c9ea10c5c89e972786bb97c062d17",
       "executable": false
     },
     "tests/browser-order-thread.mjs": {
