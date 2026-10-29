@@ -228,7 +228,7 @@ test('APPROVAL-004 exact pending header edits carry or renew chain approvals and
  const coding=await create();await decide(coding,manager);
  const line=coding.lines[0], baseline=(await h.state()).data;
  await cmd('approver-edit',{id:coding.id,revision:1,changes:{supplier:blocked.id},reason:'synthetic-purse-24'},finance,409);
- await cmd('approver-edit',{id:coding.id,revision:1,changes:{lines:[{id:line.id,supplier:alternate.id}]},reason:'synthetic-purse-48'},finance,409);
+ await cmd('approver-edit',{id:coding.id,revision:1,changes:{lines:[{id:line.id,supplier:blocked.id}]},reason:'synthetic-purse-48'},finance,409);
  for(const change of [{lines:[{id:line.id,quantity:'2'}]},{lines:[{id:line.id,unitMinor:2}]},{lines:[{id:'synthetic-purse-25',class:'Other'}]},{lines:[{id:line.id,class:'Other'},{id:line.id,class:'Again'}]}])await cmd('approver-edit',{id:coding.id,revision:1,changes:change,reason:'synthetic-purse-26'},finance,change.lines.length===2?400:403);
  assert.deepEqual((await h.state()).data,baseline,'Refused supplier and supply edits make no writes');
  const corrected=await cmd('approver-edit',{id:coding.id,revision:1,changes:{supplier:alternate.id,lines:[{id:line.id,supplier:alternate.id,costCentre:'Operations',class:'synthetic-purse-27',glAccount:'synthetic-purse-28',location:'Austin',project:'General',needDate:'2026-11-06',shipTo:'synthetic-purse-29',notes:'synthetic-purse-30'}]},reason:'synthetic-purse-31'},finance);
