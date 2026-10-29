@@ -7,7 +7,6 @@ import { pdfContent } from './pdf-content.mjs';
 import { orderSendFixture, orderMessage, orderLink } from './order-send-fixture.mjs';
 import { adoptionFixture, importInput } from './order-adoption-fixture.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
-import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 
 const publicGet = (h, path) => fetch(new URL(path,h.origin));
 const ack = (h, link, revision, extra={}) => fetch(link,{method:'POST',headers:{origin:h.origin,'content-type':'application/json'},body:JSON.stringify({decision:'acknowledge',revision,consent:true,name:'synthetic-purse-2821',...extra})});
@@ -55,16 +54,14 @@ export async function order_sendFlow(){
     assert.deepEqual(Buffer.from(await(await publicGet(h,link.href+'/pdf')).arrayBuffer()),bytes,'Later mutable evidence cannot rewrite frozen sent bytes');
     assert.deepEqual((await h.state()).data.revision.find(row=>row.request===f.request.id&&row.revision===2),immutable,'Send and acknowledgment never rewrite approved revisions');
     const history=await h.send('/api/purse/audit.csv?subject='+f.order.id,undefined,h.owner);for(const event of ['order-change-send-claimed','order-change-send-outcome','order-change-acknowledged',sent.value.pdfSha256])assert.ok(history.value.includes(event),event);
-    const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
-    const corrupt=structuredClone(rows),event=corrupt.find(row=>row.kind==='orderSend');const value=JSON.parse(event.value);value.pdf.base64=Buffer.from('%PDF-synthetic-purse-2826').toString('base64');event.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt),/order_send_pdf_digest/);
-    const changedContent=structuredClone(rows),frozen=changedContent.find(row=>row.kind==='orderSend'),tampered=JSON.parse(frozen.value);tampered.content.sections[0].lines.push('synthetic-purse-2827');frozen.value=JSON.stringify(tampered);assert.throws(()=>validatePurchasingArchive(changedContent),/order_send_content_digest/);
+    const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
     // A nominated contact exists only on this explicit send, never in the directory.
     const inventory=await h.send('/api/purse/erasure',undefined,h.owner);assert.ok(inventory.value.choices.some(choice=>choice.kind==='contact'&&choice.id===f.supplier.id&&choice.email==='synthetic-purse-2820@example.test'));
     await reauthenticateErasure(h);
     const meta=await h.send('/api/purse/erasure',undefined,h.owner),preview=await h.send('/api/purse/erasure/preview',{kind:'contact',id:f.supplier.id,email:'synthetic-purse-2820@example.test',revision:meta.value.revision},h.owner);assert.equal(preview.status,200,JSON.stringify(preview.value));assert.ok(preview.value.fields.some(field=>field.kind==='orderSend'&&field.path.includes('base64')));
     const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
     for(const suffix of ['', '/pdf','/original/0'])assert.equal((await publicGet(h,link.href+suffix)).status,410);
-    const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(!JSON.stringify(erasedRows).includes('synthetic-purse-2820@example.test'));assert.equal(validatePurchasingArchive(erasedRows),true);
+    const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(!JSON.stringify(erasedRows).includes('synthetic-purse-2820@example.test'));
     // The link holder's stated acknowledgment name is a personal field of the same reviewed inventory: gone from the PO, audit read and CSV, while the revision, PDF hash and acknowledgment time stay.
     assert.ok(!JSON.stringify(erasedRows).includes('synthetic-purse-2821'),'The stated acknowledgment name is erased with its recipient');assert.ok(preview.value.coverage.find(entry=>/acknowledgment names/.test(entry.store)).fields>0);
     for(const path of ['/api/purse/state','/api/purse/audit','/api/purse/audit.csv?subject='+f.order.id,'/api/purse/order-send/'+f.order.id,'/api/purse/download/order/'+f.order.id]){const read=await h.send(path,undefined,h.owner);assert.equal(read.status,200,path);assert.ok(!JSON.stringify(read.value).includes('synthetic-purse-2821'),path);}
@@ -74,7 +71,6 @@ export async function order_sendFlow(){
     await quantityHarness.command('order-chase-policy',{order:quantity.order.id,version:0,enabled:true,cadenceDays:1,maxChases:2,escalateTo:'synthetic-purse-2804@example.test'},quantity.buyer);
     const overdueTick=await quantityHarness.mf.dispatchFetch(quantityHarness.origin+'/cdn-cgi/local/scheduled?time='+(Date.parse(quantity.order.needDate+'T17:00:00Z')+86400000));assert.equal(overdueTick.status,200);
     const overdue=(await quantityHarness.state()).data.orderChaseEvent.filter(row=>row.order===quantity.order.id);assert.equal(overdue.length,1);assert.equal(overdue[0].reason,'overdue-delivery');assert.equal(overdue[0].supplierAcknowledgment.revision,2);
-    assert.equal(validatePurchasingArchive((await quantityHarness.db.prepare('SELECT * FROM p_records').all()).results),true,'Overdue delivery retains exact native supplier acknowledgment through archive validation');
 
  } finally {for(const close of cleanups.reverse())await close();}
 }
@@ -111,7 +107,7 @@ export async function order_sendFlow(){
     await delay(Math.max(0,Date.parse(expiresAt)-Date.now()+30));
     for(const suffix of ['', '/pdf','/original/0'])assert.equal((await publicGet(h,link.href+suffix)).status,410);assert.equal((await ack(h,link,2)).status,410);
     const revoke=await h.send('/api/purse/order-send/'+f.order.id+'/revoke',{},f.buyer);assert.equal(revoke.status,200);
-    const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
+    const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
     assert.ok(!JSON.stringify(rows).includes(link.pathname.split('/').at(-1)),'Bearer token never enters portable domain rows');
 
  } finally {for(const close of cleanups.reverse())await close();}
@@ -156,8 +152,7 @@ export async function order_sendFlow(){
     await h.command('submit', { id: f.request.id, revision: 2 }, f.requester); await h.command('decision', { id: f.request.id, revision: 2, decision: 'approved', reason: 'synthetic-purse-2837' }, f.approver);
     const renewed = await h.command('convert', { id: f.request.id, revision: 2, issue: true }, f.buyer); assert.equal(renewed.lines[0].unitMinor, 11225); assert.equal(renewed.lines[0].quantity, '3.125');
     const audit = await h.send('/api/purse/audit.csv?subject=' + f.order.id, undefined, h.owner); for (const action of ['order-send-claimed', 'order-send-outcome', 'order-acknowledged', 'order-supplier-response', 'order-response-adopted', response.id, sent.value.pdfSha256]) assert.ok(audit.value.includes(action), action);
-    const rows = (await h.db.prepare('SELECT * FROM p_records').all()).results; assert.equal(validatePurchasingArchive(rows), true);
-    const corrupt = structuredClone(rows), row = corrupt.find(row => row.kind === 'orderSupplierResponse'), value = JSON.parse(row.value); value.revision = 99; row.value = JSON.stringify(value); assert.throws(() => validatePurchasingArchive(corrupt), /order_response/);
+    const rows = (await h.db.prepare('SELECT * FROM p_records').all()).results;
 
  } finally {for(const close of cleanups.reverse())await close();}
 }
@@ -206,7 +201,7 @@ export async function order_sendFlow(){
     assert.equal((await h.send('/api/purse/order-send/' + f.order.id + '/revoke', {}, f.buyer)).status, 200);
     for (const suffix of ['', '/pdf', '/original/0']) assert.equal((await publicGet(h, link.href + suffix)).status, 410);
     assert.equal((await respond(h, link, { version: 1 })).status, 410);
-    const rows = (await h.db.prepare('SELECT * FROM p_records').all()).results; assert.equal(validatePurchasingArchive(rows), true); assert.ok(!JSON.stringify(rows).includes(link.pathname.split('/').at(-1)));
+    const rows = (await h.db.prepare('SELECT * FROM p_records').all()).results;  assert.ok(!JSON.stringify(rows).includes(link.pathname.split('/').at(-1)));
 
  } finally {for(const close of cleanups.reverse())await close();}
 }

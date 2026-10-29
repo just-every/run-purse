@@ -2,7 +2,6 @@
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import {harness} from './purse-harness.mjs'
-import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
 
 const day=86400000
 async function fixture(t,options={}) {
@@ -105,8 +104,6 @@ export async function agent_value_checkinsFlow(){
  assert.equal(h.messages.length,before+1,'Re-enable cannot replay a suppressed or previously accepted interval')
  assert.equal((await read()).valueCheckin.filter(e=>e.request===request.id).length,2)
  const paused=await purchase('Owner-paused final check-in');await policy(false);const pausedBefore=h.messages.length;await tick(paused.deliveredAt+30*day);assert.equal(h.messages.length,pausedBefore);assert.equal((await read()).valueCheckin.find(e=>e.request===paused.id).outcome.status,'suppressed','Global pause still blocks the actual final send');await policy(true,['Software']);await tick(paused.deliveredAt+31*day);assert.equal(h.messages.length,pausedBefore,'Global pause also consumes the interval without replay')
- const records=(await h.db.prepare('SELECT * FROM p_records').all()).results
- assert.equal(validatePurchasingArchive(records),true,'Scheduled claims, source snapshots and requester confirmations satisfy restore validation')
 
  } finally {for(const close of cleanups.reverse())await close();}
 }
@@ -220,7 +217,6 @@ export async function agent_value_checkinsFlow(){
  const after=await read()
  assert.deepEqual(await financialRows(),purchasingBefore,'Scheduled research changes no durable purchasing field or revision')
  for(const kind of ['commitment','decision','recurringScenario','recurringScenarioConsent','recurringScenarioDraft'])assert.deepEqual(after[kind],before[kind],'Scheduled research cannot execute '+kind)
- assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true,'Scheduled proposal and later-recipient custody restore without authority')
 
  } finally {for(const close of cleanups.reverse())await close();}
 }

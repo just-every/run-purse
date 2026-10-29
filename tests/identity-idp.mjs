@@ -40,7 +40,7 @@ export async function identityIdp(){
     return json({id_token:unsigned+'.'+signature});
    }
    res.writeHead(404);res.end();
-  }catch{res.writeHead(400,{'content-type':'application/json'});res.end(JSON.stringify({error:'invalid_request'}))}
+  }catch(error){const site=error.stack?.split('\n').find(line=>line.includes('identity-idp.mjs:'))?.trim();console.error('Local IdP refused '+new URL(req.url,origin).pathname+' at '+(site??error.name));res.writeHead(400,{'content-type':'application/json'});res.end(JSON.stringify({error:'invalid_request'}))}
   function json(body){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify(body))}
  });
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));origin='http://127.0.0.1:'+server.address().port;

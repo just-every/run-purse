@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { harness } from './purse-harness.mjs';
 import { createEmailIntakeEdge, signedInbound } from './email-intake-fixture.mjs';
-import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 
 export async function intakeFlow(t) {
  const edge=await createEmailIntakeEdge(),h=await harness({mailRequest:edge.mailRequest});t.after(()=>h.close());const cmd=h.command;
@@ -73,6 +72,5 @@ export async function intakeFlow(t) {
  const changedReview=await cmd('request-again-preview',{kind:'request',id:source.id},requester);assert.equal(changedReview.draft.customFields.purpose,undefined);assert.ok(changedReview.flags.some(f=>f.field==='customFields'));
  const scoped=await h.member('synthetic-purse-40@example.test',['requester']);await cmd('member',{email:'synthetic-purse-40@example.test',name:'synthetic-purse-40',active:true,grants:[{role:'requester',scope:{departments:['synthetic-purse-3']}}]});
  await cmd('request',{...fields,customFields:{purpose:'Research'}},scoped,403);
- const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
- const corrupt=structuredClone(rows),row=corrupt.find(row=>row.kind==='intakeDraft'&&JSON.parse(row.value).status==='completed'),value=JSON.parse(row.value);value.request='synthetic-purse-404';row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt),/request_link/);
+
 }

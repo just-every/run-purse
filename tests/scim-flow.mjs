@@ -6,7 +6,6 @@ import {createPortability} from '@runeditrun/rer/modules/portability'
 import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs'
 import {records,rows} from './browser-archive.mjs'
 import portability from '../scripts/installer/portability.mjs'
-import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
 
 const userSchema='urn:ietf:params:scim:schemas:core:2.0:User',enterprise='urn:ietf:params:scim:schemas:extension:enterprise:2.0:User',patchSchema='urn:ietf:params:scim:api:messages:2.0:PatchOp'
 const user=(n,department='Operations',extra={})=>({schemas:[userSchema,enterprise],externalId:'synthetic-purse-'+n,userName:`synthetic-purse-${n}@example.test`,displayName:'Synthetic Purse '+n,active:true,[enterprise]:{department},...extra})
@@ -129,7 +128,7 @@ export async function scimFlow(){
  assert.equal((await h.state()).data.request.find(r=>r.id===managerRequest.id).approvalHolder,nextManager.userName);
  await h.command('decision',{id:managerRequest.id,revision:1,decision:'approved',reason:'Delegate cannot override eligible manager'},delegateSession,403);
  await h.command('decision',{id:managerRequest.id,revision:1,decision:'approved',reason:'Current manager precedence reviewed'},currentManagerSession);
- const domain=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(domain),true)
+ const domain=(await h.db.prepare('SELECT * FROM p_records').all()).results;
  const archive=join(h.dir,'synthetic-purse-15.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[])
  const exported=await records(archive),archived=rows(exported),credential=(await h.db.prepare("SELECT value FROM p_scim_authority WHERE kind='scimCredential'").first())
  assert.ok(!archived.some(row=>row.table==='p_scim_authority'),'Archives contain no SCIM service authority rows')

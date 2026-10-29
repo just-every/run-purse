@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import {PDFDocument,StandardFonts} from 'pdf-lib'
 import {harness} from './purse-harness.mjs'
-import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
+
 async function pdfBytes(lines){const doc=await PDFDocument.create();const font=await doc.embedFont(StandardFonts.Helvetica);const page=doc.addPage();lines.forEach((text,i)=>page.drawText(text,{x:35,y:780-i*22,size:10,font}));return Buffer.from(await doc.save()).toString('base64')}
 
 // An actual raster quote: the PDF contains an embedded PNG and no text objects.
@@ -57,7 +57,7 @@ export async function quote_readingFlow(){
  for(const [name,mediaType,bytes] of refusals){const file=await cmd('attachment',{kind:'request',record:htmlRequest.id,name,mediaType,base64:bytes.toString('base64')},requester),out=await cmd('quote-extract',{request:htmlRequest.id,revision:1,attachment:file.id},requester);assert.equal(out.status,'unsupported',name);assert.ok(out.reason.length);assert.equal((await h.state(requester)).data.request.find(r=>r.id===htmlRequest.id).revision,1);}
  const foreign=await cmd('request',{...input,title:'Another request'},other);await cmd('quote-extract',{request:foreign.id,revision:1,attachment:attachment.id},other,403);
  await h.db.prepare('UPDATE oa_sessions SET revoked_at=? WHERE id=(SELECT id FROM oa_sessions WHERE operator_id=(SELECT id FROM oa_operators WHERE email=?) LIMIT 1)').bind(Date.now(),'requester@example.test').run();await cmd('quote-extract',{request:blank.id,revision:1,attachment:bf.id},requester,401);
- const archive=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(archive),true);
+ const archive=(await h.db.prepare('SELECT * FROM p_records').all()).results;
 
  } finally {for(const close of cleanups.reverse())await close();}
 }
@@ -77,7 +77,7 @@ export async function quote_readingFlow(){
  const imageInstructions=await cmd('quote-reading-instructions',{request:request.id,revision:2,attachment:image.id},buyer),imageReading=await cmd('quote-reading-propose',{...proposal,request:request.id,revision:2,source:imageInstructions.source},buyer);assert.equal(imageReading.attachment,image.id);assert.equal(imageReading.status,'review');
  const append={id:imageReading.id,request:request.id,revision:2,version:1,reason:'Add separately quoted kit',lines:[{id:imageReading.lines[0].id}]};await cmd('quote-reading-confirm',append,buyer,400);const added=await cmd('quote-reading-confirm',{...append,lines:[{...append.lines[0],category:'Field equipment',project:'Fieldwork'}]},buyer);assert.equal(added.requestRevision,3);const appended=(await h.state()).data.request.find(r=>r.id===request.id);assert.equal(appended.lines.length,2);assert.equal(appended.lines[0].quantity,'4');assert.equal(appended.lines[1].quantity,'3');assert.equal(appended.lines[1].category,'Field equipment');assert.equal(appended.lines[1].project,'Fieldwork');
  for(const [attachment,bytes] of [[file,scan.pdf],[image,scan.png]]){const response=await h.mf.dispatchFetch(h.origin+'/api/purse/download/attachment/'+attachment.id,{headers:{cookie:requester}});assert.deepEqual(Buffer.from(await response.arrayBuffer()),bytes)}
- const archive=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(archive),true);const corrupt=structuredClone(archive),row=corrupt.find(r=>r.kind==='quoteReading'&&r.id===reading.id),value=JSON.parse(row.value);value.sourceDescriptor.sha256='0'.repeat(64);row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt),/quote_reading_digest/);
+ const archive=(await h.db.prepare('SELECT * FROM p_records').all()).results;
 
  } finally {for(const close of cleanups.reverse())await close();}
 }

@@ -34,7 +34,8 @@ try {
   for (const page of pages) {
     const doc = await get(`/docs/${page.slug}`)
     assert.equal(doc.status, 200, `/docs/${page.slug}`)
-    assert.ok(doc.text.includes(`<h1 id="docs-title" class="docs-title">${page.title.replace(/&/g, '&amp;')}</h1>`), `/docs/${page.slug} shows its title`)
+    const heading = doc.text.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1].replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').trim()
+    assert.equal(heading, page.title, `/docs/${page.slug} shows its title`)
   }
 
   const seen = new Set()
