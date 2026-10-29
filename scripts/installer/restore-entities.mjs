@@ -12,12 +12,12 @@ export function validateEntities(all, get, check, same) {
     }
     for (const policy of all('policy')) if (id(policy) !== 'main') check(get('entity',id(policy)).currency === policy.currency, 'entity_policy');
     for (const profile of all('poProfile')) if (id(profile) !== 'main') check(Number.isSafeInteger(profile.entityVersion) && profile.entityVersion > 0 && profile.entityVersion <= get('entity',id(profile)).version, 'entity_profile');
-    const numbers = new Set();
-    for (const order of all('order')) { check(!numbers.has(order.number), 'entity_number_unique'); numbers.add(order.number); }
+    for (const order of all('order')) if (id(order) !== 'main') check(!all('order').some(other=>other.id!==order.id && other.number===order.number), 'entity_number_unique');
     for (const kind of ['request','revision','order']) for (const record of all(kind)) {
         if (id(record) === 'main') { check(!record.entitySnapshot, 'entity_snapshot'); continue; }
         const entity = get('entity',id(record)), snapshot = record.entitySnapshot;
         check(snapshot?.id === entity.id && snapshot.currency === 'USD' && snapshot.country === 'US' && snapshot.prefix === entity.prefix && Number.isSafeInteger(snapshot.version) && snapshot.version > 0 && snapshot.version <= entity.version && ['legalName','billTo','shipTo'].every(field=>nonempty(snapshot[field])), 'entity_snapshot');
+        check(all('audit').some(event=>event.action==='entity' && event.record===entity.id && event.after?.version===snapshot.version && same(snapshot,Object.fromEntries(['id','version','legalName','billTo','shipTo','currency','prefix','country'].map(field=>[field,event.after[field]])))), 'entity_snapshot_audit');
         check(record.currency === 'USD' && !record.imported && !record.adoption && !record.amends && !record.cancellation && !record.recurring && !record.supplierGroup && !record.buyerConversion && !record.travel && !record.poDetails?.blanket && !record.poDetails?.depositTerms, 'entity_purchase_boundary');
         check(record.lines.every(line=>!line.service && !line.allocations?.length && (!line.supplier || line.supplier === record.supplier) && (!line.entity || line.entity === entity.id)), 'entity_lines');
         if (record.policy) check(id(get('policy',record.policy)) === entity.id, 'entity_budget');

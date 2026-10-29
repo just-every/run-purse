@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 SUPPLIER-008 PO-012 PO-006`. Current candidate counts: 54 done, 33 partial, 26 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 SUPPLIER-008 PO-012 PO-006 ACCESS-003`. Current candidate counts: 54 done, 34 partial, 25 missing; 113 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `PUR-017` | Current-session authorization on every door | done |
 | `ACCESS-001` | Full procurement role model | done |
 | `ACCESS-002` | Single sign-on and provisioning | partial |
-| `ACCESS-003` | Multiple entities and subsidiaries | missing |
+| `ACCESS-003` | Multiple entities and subsidiaries | partial |
 | `INTAKE-001` | Guided intake by category | done |
 | `INTAKE-002` | Slack intake, approvals and updates | missing |
 | `INTAKE-003` | Microsoft Teams intake, approvals and updates | missing |

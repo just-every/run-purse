@@ -76,6 +76,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             requireThat(!old.imported, 'Imported historical records cannot grant native authority', 409);
         }
         const entityBinding = bindRequestEntity(s, b, old);
+        requireThat(!entityBinding.entity || Boolean(a.session), 'Additional entities require native interactive request creation',409);
         const counterparty = requestSupplier(s, a, b.supplier, old);
         currency(s, b.currency);
         const id = old?.id ?? uid();

@@ -1,5 +1,5 @@
 import { all, audit, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
-import { allowed } from './access';
+import { accessGrants } from './access';
 
 export const entityId = (record: Data) => record.entity ?? 'main';
 export function activeEntity(s: State, id: string) {
@@ -31,7 +31,8 @@ export function entities(s: State, a: Actor, op: string, input: Data): Data | un
     return next;
 }
 export function visibleEntities(s: State, a: Actor) {
-    return all(s, 'entity').filter(entity => a.owner || ['request.create','request.read','po.read','report.read','audit.read'].some(permission => allowed(s, a, permission, { entity: entity.id })));
+    return all(s, 'entity').filter(entity => a.owner || accessGrants(s,a).some(grant => ['request.create','request.read','po.read','report.read','audit.read'].some(permission=>grant.permissions.includes(permission)) && [grant.scope,grant.roleScope ?? {}].every(scope=>!scope.entities || scope.entities.includes(entity.id))))
+        .map(entity=>a.owner ? entity : {id:entity.id,legalName:entity.legalName,active:entity.active,currency:entity.currency,prefix:entity.prefix,connection:entity.connection});
 }
 /** The new door is deliberately limited to ordinary native goods. Shared
  * registers and historical main records keep their existing behaviour. */
@@ -45,14 +46,17 @@ export function requireEntityPurchase(s: State, record: Data) {
     requireThat(record.lines.every((line: Data) => !line.service && !line.allocations?.length && (!line.supplier || line.supplier === record.supplier) && (!line.entity || line.entity === entity.id)), 'Additional entities require unsplit goods from one supplier', 409);
 }
 export function bindRequestEntity(s: State, input: Data, prior?: Data) {
-    const id = input.entity ?? prior?.entity ?? 'main';
+    const id = text(input.entity ?? prior?.entity ?? 'main','Legal entity',200);
+    requireThat(input.entityId===undefined || input.entityId===id, 'Entity alias differs from the request',409);
+    if(input.policy)requireThat(entityId(get(s,'policy',input.policy))===id,'A request cannot charge another entity policy',409);
     requireThat(!prior || id === entityId(prior), 'A request cannot transfer between legal entities', 409);
     for (const line of input.lines ?? []) {
+        requireThat(id==='main' || !line.supplier || line.supplier===input.supplier, 'Additional entities require one supplier',409);
         requireThat(!line.entity || line.entity === id, 'A line cannot charge a different legal entity', 409);
         requireThat(!line.entityId || line.entityId === id, 'A line cannot charge a different legal entity', 409);
-        for (const allocation of line.allocations ?? []) requireThat(!allocation.entity || allocation.entity === id, 'A split cannot charge a different legal entity', 409);
+        for (const allocation of line.allocations ?? []) requireThat((!allocation.entity || allocation.entity === id) && (!allocation.entityId || allocation.entityId === id), 'A split cannot charge a different legal entity', 409);
     }
-    for (const charge of input.charges ?? []) requireThat(!charge.entity || charge.entity === id, 'A charge cannot use another legal entity', 409);
+    for (const charge of input.charges ?? []) requireThat((!charge.entity || charge.entity === id) && (!charge.entityId || charge.entityId === id), 'A charge cannot use another legal entity', 409);
     const entity = activeEntity(s, id);
     if (!entity) return {};
     requireThat(!prior || !all(s, 'order').some(order => order.request === prior.id), 'Additional-entity amendments and allocated revisions are not qualified', 409);
@@ -69,9 +73,16 @@ export function entityCommandGuard(s: State, op: string, input: Data) {
             if (record) records.push(record, ...(record.request ? [s.get('request:' + record.request)?.value ?? {}] : []));
         }
     }
-    const added = input.entity && input.entity !== 'main' || records.some(record => entityId(record) !== 'main');
+    const nested: Data[] = [input]; let suppliedEntity = false;
+    for (let index=0;index<nested.length;index++) {
+        const value = nested[index];
+        if (value.entity && value.entity !== 'main') suppliedEntity = true;
+        for (const child of Object.values(value)) if (child && typeof child === 'object') nested.push(...(Array.isArray(child) ? child.filter(item=>item && typeof item==='object') : [child]));
+    }
+    const added = suppliedEntity || records.some(record => entityId(record) !== 'main');
     if (!added) return;
     requireThat(['request','amend','submit','decision','convert','issue','attachment'].includes(op), 'This door is not qualified for additional entities', 409);
+    requireThat(!input.documentProfile && !input.poProfile && !input.entitySnapshot,'Entity profile substitution is refused',409);
     requireThat(!input.conversionEdits, 'Additional-entity conversion edits are not qualified', 409);
     if (input.entity && op !== 'request' && op !== 'amend') requireThat(records.every(record => entityId(record) === input.entity), 'Entity substitution is refused', 409);
     for (const record of records) if (entityId(record) !== 'main') {
