@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002`. Current candidate counts: 54 done, 31 partial, 28 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 AGENT-010`. Current candidate counts: 53 done, 32 partial, 28 missing; 113 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -115,5 +115,5 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `AGENT-007` | Supplier onboarding and compliance agent | missing |
 | `AGENT-008` | Coding and policy agent | done |
 | `AGENT-009` | Price benchmark and negotiation brief | partial |
-| `AGENT-010` | Agent governance | done |
+| `AGENT-010` | Agent governance | partial |
 | `AGENT-011` | Spend questions in plain language | done |
