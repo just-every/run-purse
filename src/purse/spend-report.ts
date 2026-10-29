@@ -49,12 +49,11 @@ export function spendReport(data: Data, filters: Data = {}) {
         if (!request || request.imported) continue;
         const candidates = data.order.filter((o: Data) => o.request === b.request && (o.issuedAt || o.adoption) && ['issued', 'adopted', 'amendment-pending', 'closed'].includes(o.status)).sort((a: Data, b: Data) => b.revision - a.revision);
         const latest=candidates[0],orders:Data[]=latest?.supplierGroup?candidates.filter((o:Data)=>o.supplierGroup?.key===latest.supplierGroup.key):latest?[latest]:[];
+        if(orders.some((order:Data)=>order.poDetails?.deposit)) continue;
         let available=b.amount;
         for(const order of orders) {
             if(order.currency!==b.currency||order.policy!==b.policy)continue;
-            const depositActual = order.poDetails?.deposit ? data.invoice.filter((invoice:Data)=>invoice.order===order.id&&invoice.paymentApproval).reduce((sum:number,invoice:Data)=>sum+invoice.totalMinor,0) : 0;
-            const physical = Math.min(available,outstanding(order)); available-=physical;
-            const amount=Math.max(0,physical-depositActual);
+            const amount=Math.min(available,outstanding(order));available-=amount;
             if(!amount)continue;
             const revision=data.revision.find((r:Data)=>r.request===request.id&&r.revision===order.revision)||request;
             const eligible=order.poDetails?.blanket?order.lines:order.lines.filter((line:Data)=>order.positions.find((position:Data)=>position.line===line.id)?.outstanding>0);
@@ -66,6 +65,11 @@ export function spendReport(data: Data, filters: Data = {}) {
             const values=distribute(available,request.lines);
             request.lines.forEach((line:Data,index:number)=>{if(values[index])rows.push({...source({...request,supplier:line.supplier??request.supplier,supplierSnapshot:line.supplierSnapshot??request.supplierSnapshot},line),kind:'reserved',amountMinor:values[index],policy:b.policy,currency:b.currency,date:request.needDate,order:null,number:null});});
         }
+    }
+    for(const order of data.order.filter((order:Data)=>order.poDetails?.deposit && order.issuedAt && !order.amendedBy && ['issued','amendment-pending'].includes(order.status))) {
+        const approved=data.invoice.filter((invoice:Data)=>invoice.order===order.id&&invoice.paymentApproval).reduce((sum:number,invoice:Data)=>sum+invoice.totalMinor,0);
+        const remaining=Math.max(0,order.totalMinor-approved),values=distribute(remaining,order.lines);
+        order.lines.forEach((line:Data,index:number)=>{if(values[index])rows.push({...source(order,line),kind:'committed',amountMinor:values[index],policy:order.policy,currency:order.currency,date:order.needDate,order:order.id,number:order.number,sourceBasis:'Unbilled native deposit PO liability including received goods'});});
     }
     for (const invoice of data.invoice) {
         if (invoice.depositKind && !invoice.paymentApproval) continue;

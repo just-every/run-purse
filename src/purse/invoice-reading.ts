@@ -43,6 +43,7 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
             document = retained;
         }
         const metadata = documentMetadata(document), id=uid(), attachment=uid(), at=new Date().toISOString();
+        if(order.poDetails?.deposit) requireThat(!all(s,'attachment').some(file=>file.erasure && file.sha256===metadata.sha256),'Deposit original was withdrawn by erasure; capture replay is refused',409);
         put(s,'invoiceSource',id,{ order:order.id, orderRevision:order.revision, attachment, actor:a.id, at });
         put(s,'attachment',attachment,{ ...metadata, kind:'invoiceSource', record:id, base64:document.base64, actor:a.id, at });
         audit(s,a,'attachment',id,{attachment}); audit(s,a,op,order.id,{source:id}); return get(s,'invoiceSource',id);

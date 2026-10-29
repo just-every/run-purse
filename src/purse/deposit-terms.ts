@@ -31,9 +31,9 @@ export function requireDepositAmendment(s: State, old: Data, next: Data) {
     const previous = old.poDetails?.deposit, current = next.poDetails?.deposit;
     if (!previous && !current) return;
     const orders = all(s, 'order').filter(order => order.request === old.id && order.issuedAt), ids = new Set(orders.map(order => order.id));
-    if (JSON.stringify(previous) !== JSON.stringify(current) || old.supplier !== next.supplier || old.currency !== next.currency || old.totalMinor !== next.totalMinor) {
+    if (orders.length) {
         requireThat(!all(s, 'receipt').some(row => ids.has(row.order)) && !all(s, 'invoice').some(row => ids.has(row.order)),
-            'Deposit terms cannot change once receiving or invoice evidence exists', 409);
+            'Deposit PO amendments are unavailable once receiving or invoice evidence exists', 409);
     }
 }
 export function depositTermText(term: Data, currency: string) {

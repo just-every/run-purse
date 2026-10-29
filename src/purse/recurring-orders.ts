@@ -12,7 +12,7 @@ export function recurringOrders(s: State, a: Actor, op: string, b: Data): Data |
         requireThat(a.owner, 'Current native owner must consent to scheduled purchasing', 403);
         const order = get(s,'order',b.order), request = get(s,'request',order.request);
         requirePermission(s,a,'procurement.manage',order);
-        requireThat(order.status === 'issued' && !order.imported && !order.poDetails?.blanket && !order.recurring && !order.conversionVariance && request.revision === order.revision,'Use a current issued ordinary or service PO as the exact recurring template',409);
+        requireThat(order.status === 'issued' && !order.imported && !order.poDetails?.blanket && !order.poDetails?.deposit && !order.recurring && !order.conversionVariance && request.revision === order.revision,'Use a current issued ordinary or service PO as the exact recurring template',409);
         currentDecision(s,request);
         requireThat(!all(s,'recurringSeries').some(series => series.order === order.id && series.status !== 'ended'),'End the existing series before configuring another',409);
         const nextDate=date(b.nextDate,'First scheduled order date'), endDate=date(b.endDate,'Series end date');

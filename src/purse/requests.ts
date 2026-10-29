@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { depositTerm, requireDepositAmendment } from './deposit-terms';
 import { linePosition } from './orders';
 import { hasSupplierGroups, supplierLineRemaining } from './po-supplier-groups';
@@ -238,6 +239,10 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             requireThat(false, 'Invalid attachment bytes');
         }
         requireThat(bytes!.length<=1000000,'Attachment must contain up to 1 MB of bytes');
+        if(kind==='invoice' && get(s,'order',r.order).poDetails?.deposit) {
+            const digest=createHash('sha256').update(Buffer.from(bytes!,'binary')).digest('hex');
+            requireThat(!r.sourceValuesErased && !r.erasure && !all(s,'attachment').some(file=>file.erasure && file.sha256===digest),'Deposit original was withdrawn by erasure; attachment replay is refused',409);
+        }
         const id = uid();
         put(s, 'attachment', id, { kind, record: r.id, ...(b.privateSupplierDocument ? { privateSupplierDocument: true } : {}), name: text(b.name, 'Filename', 200), mediaType: text(b.mediaType ?? 'application/octet-stream', 'Media type', 150), base64: b.base64, size: bytes!.length, actor: a.id, at: new Date().toISOString() });
         audit(s, a, op, r.id, { attachment: id });

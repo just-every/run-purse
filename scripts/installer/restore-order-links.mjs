@@ -47,7 +47,7 @@ export function validateOrderLinks({get,all}) {
   check(typeof i.reference === 'string' && i.reference.trim() === i.reference && i.reference.length && i.supplier === o.supplier && !identities.has(identity),'invoice_identity');
   identities.add(identity);
   check(Array.isArray(i.allocations) && i.allocations.length > 0 && new Set(i.allocations.map(a=>a.line)).size===i.allocations.length,'invoice_allocations');
-  for (const a of i.allocations) { const l=o.lines.find(l=>l.id===a.line); check(l && money(a.amountMinor) && (i.depositKind==='deposit' ? a.quantity==='0' && a.q===0 && a.orderedMinor===a.amountMinor : quantity(a.quantity)===a.q && a.orderedMinor===amount(a.q,l.unitMinor)),'invoice_line'); }
+  for (const a of i.allocations) { const l=o.lines.find(l=>l.id===a.line); check(l && money(a.amountMinor) && (i.depositKind==='deposit' ? a.quantity==='0' && a.q===0 && a.orderedMinor===a.amountMinor : quantity(a.quantity)===a.q && (i.depositKind==='deposit-final' ? a.q===l.q && a.orderedMinor===a.amountMinor : a.orderedMinor===amount(a.q,l.unitMinor))),'invoice_line'); }
   const gross = i.allocations.reduce((n,a)=>n+a.amountMinor,0), credit = i.depositAppliedMinor ?? 0;
   check(money(credit) && credit <= gross && i.totalMinor === gross - credit && (!credit || i.grossMinor === gross),'invoice_total');
  }

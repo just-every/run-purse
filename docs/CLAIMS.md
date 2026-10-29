@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 SUPPLIER-008 PO-012`. Current candidate counts: 54 done, 32 partial, 27 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 SUPPLIER-008 PO-012 PO-011`. Current candidate counts: 54 done, 33 partial, 26 missing; 113 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -67,7 +67,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `PO-008` | Automatic PO creation and sending after approval | partial |
 | `PO-009` | PO document content, labels and terms | done |
 | `PO-010` | Manual PO close and reopen | done |
-| `PO-011` | Deposits and prepayments | missing |
+| `PO-011` | Deposits and prepayments | partial |
 | `PO-012` | Buyer edits at conversion within a price variance limit | partial |
 | `RECEIVE-001` | Receiver prompts and invoice holds | done |
 | `RECEIVE-002` | Credit memos, RMAs and supplier balances | partial |

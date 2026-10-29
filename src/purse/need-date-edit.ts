@@ -13,6 +13,7 @@ export function changeNeedDate(s: State, a: Actor, input: Data) {
     const own=previous.requester===a.id||previous.requesterEmail===a.email;
     requireThat(a.owner || own&&allowed(s,a,'request.edit',previous) || allowed(s,a,'request.approve',previous),'Only this requester or a scoped approver may correct the need date',403);
     currentDecision(s,previous);
+    requireThat(!previous.poDetails?.deposit,'Structured deposit date changes require a supported purchase amendment before receiving or invoice evidence',409);
     requireThat(!all(s,'orderClosure').some(closure=>closure.active&&get(s,'order',closure.order).request===previous.id),'Reopen closed balances before correcting this purchase date',409);
     const policy=get(s,'policy',previous.policy), kind=previous.purchaseType??previous.lines[0].category.toLowerCase(), rule=policy.editRules?.[kind]??policy.editRules?.['*'];
     requireThat(!(rule?.material??[]).includes('needDate'),'This policy classifies need date as material; amend and renew approval',409);

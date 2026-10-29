@@ -1,3 +1,5 @@
+import { allocateInvoiceCharges, readingAmounts } from './invoice-amounts';
+import { apportionSupplied } from './po-supplier-groups';
 import type { Bindings } from '../auth.server';
 import { all, audit, get, put, requireThat, text, type Actor, type Data, type State } from './types';
 import { allowed, requirePermission } from './access';
@@ -44,12 +46,16 @@ export function prepareNativeDeposit(s: State, order: Data, candidate: Data, inp
     requireThat(reading.order === order.id && reading.status === 'review', 'Current source-bound reading required', 409);
     Object.assign(candidate, { depositKind: kind, depositTerm: structuredClone(term), depositTermKey: depositTermKey(order) });
     if (kind === 'deposit') {
-        candidate.allocations = candidate.allocations.map((line: Data) => ({ ...line, q: 0, quantity: '0', orderedMinor: line.amountMinor }));
+        const amounts=apportionSupplied(candidate.totalMinor,order.lines.map((line:Data)=>line.totalMinor));
+        candidate.allocations = order.lines.map((line:Data,index:number) => ({line:line.id, q:0, quantity:'0', amountMinor:amounts[index], orderedMinor:amounts[index],receivedQ:0,...(order.intakeForm?{customFields:structuredClone(line.customFields),sourceOrderRevision:order.revision}:{})}));
         return;
     }
+    const sourceAmounts=readingAmounts(reading), expected=allocateInvoiceCharges(order.lines.map((line:Data)=>({line:line.id,amountMinor:line.totalMinor})),order.freightMinor+order.taxMinor+(order.otherChargesMinor??0));
     requireThat(candidate.totalMinor === order.totalMinor && candidate.allocations.length === order.lines.length
-        && candidate.allocations.every((line: Data) => { const original = order.lines.find((item: Data) => item.id === line.line); return original && original.q === line.q && line.amountMinor === line.orderedMinor; }),
-        'Final bill must match the complete gross goods value and quantities exactly', 409);
+        && sourceAmounts.freightMinor===order.freightMinor+(order.otherChargesMinor??0) && sourceAmounts.taxMinor===order.taxMinor
+        && candidate.allocations.every((line: Data) => { const original = order.lines.find((item: Data) => item.id === line.line); return original && original.q === line.q && line.amountMinor === expected.find(item=>item.line===line.line)?.amountMinor; }),
+        'Final bill must match the complete gross goods value, charges and quantities exactly', 409);
+    candidate.allocations=candidate.allocations.map((line:Data)=>({...line,orderedMinor:expected.find(item=>item.line===line.line)!.amountMinor}));
     const deposits = all(s, 'invoice').filter(invoice => invoice.order === order.id && invoice.depositKind === 'deposit' && depositApprovalEligible(s, invoice));
     requireThat(deposits.length === 1 && deposits[0].totalMinor === term.amountMinor, 'One currently eligible approved deposit obligation required', 409);
     requireThat(!all(s, 'depositApplication').some(row => row.depositInvoice === deposits[0].id)
@@ -75,17 +81,20 @@ export async function approveNativeDeposits(env: Bindings, s: State, a: Actor) {
             if (!depositApprovalEligible(s, deposit) || all(s, 'depositApplication').some(row => row.depositInvoice === deposit.id)
                 || order.lines.some((line: Data) => linePosition(s, order.id, line).accepted !== line.q)
                 || discrepancies(s).some(row => row.invoiceId === invoice.id && (row.priceMismatch || row.quantityMismatch || row.receiptShortfall || row.closedBalance || row.exception))) continue;
-            put(s, 'depositApplication', invoice.id, { order: order.id, invoice: invoice.id, depositInvoice: deposit.id, amountMinor: invoice.depositAppliedMinor,
-                currency: invoice.currency, termKey: depositTermKey(order), actor: a.id, at: new Date().toISOString() });
-            audit(s, a, 'deposit-application', invoice.id, { order: order.id, invoice: invoice.id, depositInvoice: deposit.id, amountMinor: invoice.depositAppliedMinor });
         }
+        const term = order.poDetails.deposit, due = invoice.depositKind === 'deposit' ? (term.trigger === 'date' ? term.dueDate : order.issuedAt.slice(0, 10)) : invoice.invoiceDate;
+        const sourceTerms = get(s,'invoiceReading',invoice.confirmedReading).terms?.value;
+        if(invoice.depositKind==='deposit-final' && !['Net 15','Net 30','Net 60','2/10 Net 30','Due on receipt'].includes(sourceTerms)) continue;
         const at = new Date().toISOString(), entry = { invoice: invoice.id, order: order.id, revision: order.revision, ruleVersion: rule.version,
             termKey: depositTermKey(order), owner: rule.actor, operatorVersion: rule.operatorVersion, documentSha256: invoice.document.sha256,
             reading: invoice.confirmedReading, amountMinor: invoice.totalMinor, currency: invoice.currency, actor: a.id, at,
             match: invoice.depositKind === 'deposit' ? 'deposit-two-way' : 'deposit-final-three-way' };
+        if(invoice.depositKind==='deposit-final') {
+            put(s,'depositApplication',invoice.id,{order:order.id,invoice:invoice.id,depositInvoice:invoice.nativeDepositInvoice,amountMinor:invoice.depositAppliedMinor,currency:invoice.currency,termKey:depositTermKey(order),actor:a.id,at});
+            audit(s,a,'deposit-application',invoice.id,{order:order.id,invoice:invoice.id,depositInvoice:invoice.nativeDepositInvoice,amountMinor:invoice.depositAppliedMinor});
+        }
         put(s, 'invoice', invoice.id, { ...invoice, paymentApproval: entry });
-        const term = order.poDetails.deposit, due = invoice.depositKind === 'deposit' ? (term.trigger === 'date' ? term.dueDate : order.issuedAt.slice(0, 10)) : invoice.invoiceDate;
-        const history = { ...termDates(due, invoice.depositKind === 'deposit' ? 'Due on receipt' : 'Net 30'), reason: 'Exact source-confirmed native deposit approval', actor: a.id, at, version: 1 };
+        const history = { ...termDates(due, invoice.depositKind === 'deposit' ? 'Due on receipt' : sourceTerms), reason: 'Exact source-confirmed native deposit approval', actor: a.id, at, version: 1 };
         put(s, 'payable', invoice.id, { invoice: invoice.id, ...history, history: [history], version: 2, approvedAt: at, approvedBy: a.id, approvalReason: history.reason, approvedMinor: invoice.totalMinor });
         audit(s, a, 'deposit-invoice-approved', invoice.id, entry);
     }

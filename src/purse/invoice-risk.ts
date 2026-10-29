@@ -134,7 +134,7 @@ export function invoiceRisk(s: State, order: Data, candidate: Data, input: Data)
     }
     const billedMinor = deposits.amountMinor + invoices.filter(i => orderIds.has(i.order) && i.currency === candidate.currency).reduce((n, i) => n + i.totalMinor, 0);
     result.balance = { basis: 'current-issued-po-face-across-request-amendments', currency: candidate.currency, faceMinor, billedMinor, candidateMinor: candidate.totalMinor,
-        remainingMinor: faceMinor === null ? null : Math.max(0, faceMinor - billedMinor), depositAccounting: order.poDetails?.deposit ? 'native-once-only-deposit-obligation' : deposits.sources.length ? 'imported-prepaid-balance-and-once-only-credit' : 'not-implemented', unappliedDepositMinor: deposits.unappliedMinor };
+        remainingMinor: faceMinor === null ? null : Math.max(0, faceMinor - billedMinor), depositAccounting: order.poDetails?.deposit ? 'native-once-only-deposit-obligation' : deposits.sources.length ? 'imported-prepaid-balance-and-once-only-credit' : 'not-implemented', unappliedDepositMinor: order.poDetails?.deposit ? Math.max(0,invoices.filter(invoice=>invoice.order===order.id&&invoice.depositKind==='deposit'&&invoice.paymentApproval).reduce((n,invoice)=>n+invoice.totalMinor,0)-all(s,'depositApplication').filter(row=>row.order===order.id).reduce((n,row)=>n+row.amountMinor,0)) : deposits.unappliedMinor };
     if (faceMinor !== null && billedMinor + candidate.totalMinor > faceMinor) {
         flags.push({ code: 'po-balance', reason: 'Invoice plus prior invoice evidence exceeds the current issued PO face total across request amendments' });
     }
