@@ -27,6 +27,53 @@
       ]
     },
     {
+      "name": "purse.invoices.capture",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "standard"
+      ],
+      "clauses": [
+        "PUR-011",
+        "INVOICE-003"
+      ]
+    },
+    {
+      "name": "purse.orders.convert",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "standard"
+      ],
+      "clauses": [
+        "PUR-008"
+      ]
+    },
+    {
+      "name": "purse.orders.issue",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "money",
+        "commitment"
+      ],
+      "clauses": [
+        "PUR-009"
+      ]
+    },
+    {
+      "name": "purse.orders.position",
+      "scope": "purchasing:read",
+      "readOnly": true,
+      "classes": [
+        "standard"
+      ],
+      "clauses": [
+        "PUR-010",
+        "PUR-017"
+      ]
+    },
+    {
       "name": "purse.preparations.create",
       "scope": "purchasing:write",
       "readOnly": false,
@@ -61,6 +108,17 @@
       ],
       "clauses": [
         "AGENT-010"
+      ]
+    },
+    {
+      "name": "purse.receipts.record",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "standard"
+      ],
+      "clauses": [
+        "PUR-010"
       ]
     },
     {
@@ -101,6 +159,19 @@
       ]
     },
     {
+      "name": "purse.requests.awaiting_decision",
+      "scope": "purchasing:read",
+      "readOnly": true,
+      "classes": [
+        "standard",
+        "sensitive"
+      ],
+      "clauses": [
+        "PUR-007",
+        "PUR-017"
+      ]
+    },
+    {
       "name": "purse.requests.create",
       "scope": "purchasing:write",
       "readOnly": false,
@@ -110,6 +181,20 @@
       "clauses": [
         "PUR-004",
         "INTAKE-001"
+      ]
+    },
+    {
+      "name": "purse.requests.decide",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "standard",
+        "money",
+        "commitment"
+      ],
+      "clauses": [
+        "PUR-007",
+        "PUR-006"
       ]
     },
     {
@@ -377,7 +462,14 @@
         {
           "class": "standard"
         }
-      ]
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "draft",
+          "pointer": "/id"
+        }
+      }
     },
     {
       "id": "submit",
@@ -396,7 +488,14 @@
         {
           "class": "standard"
         }
-      ]
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "amend",
+          "pointer": "/id"
+        }
+      }
     },
     {
       "id": "preparation",
@@ -440,7 +539,14 @@
         {
           "class": "standard"
         }
-      ]
+      ],
+      "target": {
+        "kind": "agentRun",
+        "id": {
+          "$from": "preparation",
+          "pointer": "/id"
+        }
+      }
     },
     {
       "id": "proposal",
@@ -459,7 +565,14 @@
         {
           "class": "standard"
         }
-      ]
+      ],
+      "target": {
+        "kind": "agentRun",
+        "id": {
+          "$from": "edit",
+          "pointer": "/id"
+        }
+      }
     },
     {
       "id": "snapshot",
@@ -476,6 +589,258 @@
       "tool": "purse.events.list",
       "args": {
         "limit": 100
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ]
+    },
+    {
+      "id": "awaiting",
+      "tool": "purse.requests.awaiting_decision",
+      "args": {},
+      "expect": [
+        {
+          "class": "sensitive"
+        }
+      ]
+    },
+    {
+      "id": "decision",
+      "tool": "purse.requests.decide",
+      "args": {
+        "id": {
+          "$from": "awaiting",
+          "pointer": "/records/0/id"
+        },
+        "revision": {
+          "$from": "awaiting",
+          "pointer": "/records/0/revision"
+        },
+        "decision": "approved",
+        "reason": "Independently reviewed exact source purchase"
+      },
+      "expect": [
+        {
+          "class": "money",
+          "facts": {
+            "measure": 3000,
+            "currency": "USD",
+            "counterparty": "known"
+          }
+        },
+        {
+          "class": "commitment",
+          "facts": {
+            "measure": 3000,
+            "currency": "USD",
+            "counterparty": "known"
+          }
+        }
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "awaiting",
+          "pointer": "/records/0/id"
+        }
+      }
+    },
+    {
+      "id": "conversion",
+      "tool": "purse.orders.convert",
+      "args": {
+        "id": {
+          "$from": "decision",
+          "pointer": "/id"
+        },
+        "revision": {
+          "$from": "decision",
+          "pointer": "/revision"
+        }
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "decision",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "issuance",
+      "tool": "purse.orders.issue",
+      "args": {
+        "id": {
+          "$from": "conversion",
+          "pointer": "/id"
+        },
+        "revision": {
+          "$from": "conversion",
+          "pointer": "/revision"
+        },
+        "reason": "Issue this approved exact order; no supplier mail"
+      },
+      "expect": [
+        {
+          "class": "money",
+          "facts": {
+            "measure": 3000,
+            "currency": "USD",
+            "counterparty": "known"
+          }
+        },
+        {
+          "class": "commitment",
+          "facts": {
+            "measure": 3000,
+            "currency": "USD",
+            "counterparty": "known"
+          }
+        }
+      ],
+      "target": {
+        "kind": "order",
+        "id": {
+          "$from": "conversion",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "position",
+      "tool": "purse.orders.position",
+      "args": {
+        "id": {
+          "$from": "issuance",
+          "pointer": "/id"
+        }
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ]
+    },
+    {
+      "id": "receipt",
+      "tool": "purse.receipts.record",
+      "args": {
+        "order": {
+          "$from": "issuance",
+          "pointer": "/id"
+        },
+        "line": {
+          "$from": "issuance",
+          "pointer": "/lines/0/id"
+        },
+        "quantity": "1",
+        "event": "receive",
+        "reason": "One pair physically delivered",
+        "receiptVersion": {
+          "$from": "position",
+          "pointer": "/receiptVersion"
+        }
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ],
+      "target": {
+        "kind": "order",
+        "id": {
+          "$from": "issuance",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "invoice",
+      "tool": "purse.invoices.capture",
+      "args": {
+        "order": {
+          "$from": "issuance",
+          "pointer": "/id"
+        },
+        "reference": {
+          "$from": "issuance",
+          "pointer": "/number"
+        },
+        "source": "Labelled supplier invoice for one delivered pair",
+        "allocations": [
+          {
+            "line": {
+              "$from": "issuance",
+              "pointer": "/lines/0/id"
+            },
+            "quantity": "1",
+            "amountMinor": 1500
+          }
+        ]
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ],
+      "target": {
+        "kind": "order",
+        "id": {
+          "$from": "issuance",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "awaiting-return",
+      "tool": "purse.requests.awaiting_decision",
+      "args": {},
+      "expect": [
+        {
+          "class": "sensitive"
+        }
+      ]
+    },
+    {
+      "id": "return",
+      "tool": "purse.requests.decide",
+      "args": {
+        "id": {
+          "$from": "awaiting-return",
+          "pointer": "/records/0/id"
+        },
+        "revision": {
+          "$from": "awaiting-return",
+          "pointer": "/records/0/revision"
+        },
+        "decision": "returned",
+        "reason": "Need a current supplier source"
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "awaiting-return",
+          "pointer": "/records/0/id"
+        }
+      }
+    },
+    {
+      "id": "pending-empty",
+      "tool": "purse.requests.awaiting_decision",
+      "args": {
+        "limit": 0
       },
       "expect": [
         {
@@ -500,6 +865,18 @@
         "https://data.trade.gov"
       ]
     },
-    "journey": "tests/agent-door-journey.mjs"
+    "journey": "tests/agent-door-journey.mjs",
+    "reviewers": [
+      {
+        "label": "requester",
+        "email": "synthetic-requester@example.invalid",
+        "initializer": "tests/initialize-agent-door-requester.mjs"
+      }
+    ],
+    "replayAdmission": {
+      "prepare": [
+        "preparation"
+      ]
+    }
   }
 }

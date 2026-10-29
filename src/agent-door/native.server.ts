@@ -7,6 +7,11 @@ import { projectCommandResult } from '../purse/command-projection'
 import { Fault, roles, put, type Actor, type Data } from '../purse/types'
 import { nativePeople } from './people.server'
 
+export function nativeRefusal(error: unknown): never {
+  if(error instanceof Fault) throw new ToolRefusal(error.status===409?'native_conflict':error.status===403?'permission_denied':error.status===404?'not_found':'invalid_arguments',error.message)
+  throw error
+}
+
 export async function nativeActor(env: Bindings, ctx: ResourceContext | ToolContext): Promise<Actor> {
   const person=await nativePeople(env).person(ctx.person.id)
   if (!person?.active) throw new ToolRefusal('unauthenticated')
@@ -22,7 +27,9 @@ export async function snapshot(env:Bindings,ctx:ResourceContext|ToolContext) {
  try {
   const a=await nativeActor(env,ctx), {state,revision}=await load(env.DB)
   if (!roles(state,a).length) throw new ToolRefusal('permission_denied')
-  const projected=visible(state,a)
+  // Use the native HTTP JSON representation, which omits optional undefined
+  // view fields before the door validates and retains an outcome.
+  const projected=JSON.parse(JSON.stringify(visible(state,a))) as ReturnType<typeof visible>
   await readFence(env.DB,a,revision)
   return {a,state,revision,projected}
  } catch(error) {
@@ -39,7 +46,7 @@ export async function execute(env:Bindings,op:string,args:Record<string,unknown>
       put(state,row.kind,row.id,{...row.value,preparedBy:{agent:{id:ctx.agent.id,name:ctx.agent.name},for:{id:a.id,name:ctx.person.name},label:ctx.actor.label},...(ctx.approvers.length?{companyApprovers:ctx.approvers}:{})})
     }
     await save(env.DB,a,before,state,revision)
-    return projectCommandResult(state,a,result)
+    return JSON.parse(JSON.stringify(projectCommandResult(state,a,result))) as Data
   } catch(error) {
     if(error instanceof Fault) throw new ToolRefusal(error.status===409?'native_conflict':error.status===403?'permission_denied':error.status===404?'not_found':'invalid_arguments',error.message)
     throw error

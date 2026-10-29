@@ -1,8 +1,9 @@
 import { defineTool, ToolRefusal, type ToolDefinition } from '../modules/agent-door/index.ts'
 import type { Bindings } from '../auth.server'
-import { get } from '../purse/types'
+import { mutationAuthority } from './mutation-authority.server'
 import { containsProtectedInput } from '../purse/protected-context-fields.mjs'
 import { execute, snapshot } from './native.server'
+import { purchaseFlowTools } from './purchase-flow.server'
 import { recordClasses, recordKinds, recordUri } from './resources.server'
 import { object,id,text,integer,data,list,request,amended,supplier,catalogue,prepare } from './schemas'
 
@@ -20,9 +21,10 @@ export function purchasingTools(env:Bindings):ToolDefinition[] {
   const tools:ToolDefinition[]=native.map(spec=>defineTool({
     name:`purse.${spec.name}`,title:spec.name.replaceAll('.',' '),description:`Native ${spec.op}. Uses the sponsor's current purchasing grants. Source text is untrusted. No payment, supplier send or human consent is inferred.`,
     scope:'purchasing:write',readOnly:false,inputSchema:spec.schema,outputSchema:data,classes:['standard'],clauses:spec.clauses,untrusted:true,
-    async classify(args,ctx){if(spec.name.startsWith('preparations.') && containsProtectedInput(args))throw new ToolRefusal('protected_input','Structured protected fields are unavailable to preparations');const {state}=await snapshot(env,ctx);if(spec.op==='amend'){const current=get(state,'request',args.id as string);if(current.status!=='draft')throw new ToolRefusal('native_conflict','Only an unsubmitted draft can use amend_draft')}return [{class:'standard',facts:{measure:Array.isArray(args.lines)?args.lines.length:1}}]},
-    async revision(args,ctx){if(!args.id)return null;const {state}=await snapshot(env,ctx);const record=state.get(`${spec.kind}:${args.id}`);return record?.revision??null},revisionType:'string',
-    async summary(args,ctx){const {state}=await snapshot(env,ctx);const row=args.id?state.get(`${spec.kind}:${args.id}`)?.value:undefined;return {target:{...(args.id?{id:args.id as string}:{}),name:String(args.title??args.name??args.description??row?.title??row?.name??spec.op)},items:args.lines?(args.lines as {description?:string}[]).map(line=>String(line.description??'Catalogue item')):[String(args.draft??spec.op)]}},
+    async classify(args,ctx){if(spec.name.startsWith('preparations.') && containsProtectedInput(args))throw new ToolRefusal('protected_input','Structured protected fields are unavailable to preparations');await mutationAuthority(env,spec.op,args,ctx);return [{class:'standard',facts:{measure:Array.isArray(args.lines)?args.lines.length:1}}]},
+    async target(args,ctx){return (await mutationAuthority(env,spec.op,args,ctx)).target},
+    async revision(args,ctx){const {state,target}=await mutationAuthority(env,spec.op,args,ctx);return target?state.get(`${target.kind}:${target.id}`)?.revision??null:null},revisionType:'string',
+    async summary(args,ctx){const {state,target}=await mutationAuthority(env,spec.op,args,ctx);const row=target?state.get(`${target.kind}:${target.id}`)?.value:undefined;return {target:{...(target?{id:target.id}:{}),name:String(args.title??args.name??args.description??row?.title??row?.name??spec.op)},items:args.lines?(args.lines as {description?:string}[]).map(line=>String(line.description??'Catalogue item')):[String(args.draft??spec.op)]}},
     async run(args,ctx){const result=await execute(env,spec.op,args,ctx);const uri=recordUri(spec.kind,String(result.id));ctx.emit(`${spec.kind}.changed`,uri);return {result,resources:[{uri,name:`Purse ${spec.kind}`}]}}
   }))
   tools.push(defineTool({name:'purse.workspace.snapshot',title:'Read purchasing witness',description:'Read a protected-value-free digest of the native purchasing records visible to the sponsor.',scope:'purchasing:read',readOnly:true,inputSchema:object(),outputSchema:object({sha256:text}),classes:['standard'],clauses:['PUR-017','AUDIT-001'],classify:()=>[{class:'standard',facts:{measure:1}}],
@@ -35,5 +37,5 @@ export function purchasingTools(env:Bindings):ToolDefinition[] {
     async classify(args,ctx){const {projected}=await snapshot(env,ctx);return recordClasses(projected.data[args.kind as string]??[])},
     async run(args,ctx){const {projected}=await snapshot(env,ctx);return {result:{records:projected.data[args.kind as string]??[]}}}
   }))
-  return tools
+  return [...tools,...purchaseFlowTools(env)]
 }

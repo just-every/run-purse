@@ -9,12 +9,9 @@ apply to the ordinary application.
 
 The current declaration is deliberately bounded. It supports safe native
 record inspection, supplier and catalogue maintenance, request drafts and
-submission, and editable source-bound preparations and proposed actions. It
+submission, independently authorized native decisions, PO conversion and issuance, physical receiving, invoice evidence capture, and editable source-bound preparations and proposed actions. It
 **does not cover all native purchasing actions**. Company approval of a
-proposal does not execute its proposed purchase. There is no delegated native
-approval, PO conversion/issue, receiving, invoice capture, supplier send,
-payment, ledger post, protected-data reveal, erasure or grant administration in
-this registry. Those remain their existing native doors. Target-only card,
+proposal does not execute its proposed purchase. The sponsor must be the current designated approver or delegate for a native decision, and self approval is refused even when company policy is autonomous. Issuance is a separate explicit tool; conversion cannot smuggle an issue flag. There is no supplier send, payment, ledger post, protected-data reveal, erasure or grant administration in this registry. Those remain their existing native doors. Target-only card,
 provider and connector capabilities are not advertised.
 
 | Tool | Classes | Native clauses |
@@ -24,6 +21,13 @@ provider and connector capabilities are not advertised.
 | `purse.requests.create` | standard | PUR-004, INTAKE-001 |
 | `purse.requests.amend_draft` | standard | PUR-004 |
 | `purse.requests.submit` | standard | PUR-006 |
+| `purse.requests.awaiting_decision` | standard, sensitive | PUR-007, PUR-017 |
+| `purse.requests.decide` | standard for return/reject; money and commitment for approval | PUR-007, PUR-006 |
+| `purse.orders.convert` | standard | PUR-008 |
+| `purse.orders.issue` | money, commitment | PUR-009 |
+| `purse.orders.position` | standard | PUR-010, PUR-017 |
+| `purse.receipts.record` | standard | PUR-010 |
+| `purse.invoices.capture` | standard | PUR-011, INVOICE-003 |
 | `purse.preparations.create` | standard | AGENT-001, AGENT-002, AGENT-004, AGENT-009, AGENT-010 |
 | `purse.preparations.edit` | standard | AGENT-010 |
 | `purse.preparations.propose` | standard | AGENT-010 |
@@ -33,7 +37,7 @@ provider and connector capabilities are not advertised.
 
 All mutations require `purchasing:write`; purchasing reads require
 `purchasing:read`. The inherited event reader requires `events:read`. Scope
-never supplies a missing native purchasing grant. Mutations call Purse's native
+never supplies a missing native purchasing grant. Classification, native targets, revisions and approval summaries enforce the same current native grants before disclosing record facts. Money and commitment facts and summaries retain exact native minor currency units. A receipt carries its current native receiving-position revision. Mutations call Purse's native
 command service and final D1 transaction. The transaction checks the native
 operator version and purchasing revision, the exact policy envelope, local
 Pause and agent/consent revocation. A concurrent change refuses the write.
@@ -66,8 +70,7 @@ parser. No payments, OAuth, models, ledger or supplier-mail edge is reachable
 from the declared tools. Existing native mail adapters remain unchanged.
 
 Structured protected fields are refused during classification, before a pending
-approval or review can retain them. The native conformance fixture additionally
-proves one-effect replay, changed-argument conflict and stale native versions.
+approval or review can retain them. The native conformance fixture additionally proves one-effect preparation, order issue, receipt and invoice replay, changed-argument conflicts, stale native versions and receiving positions, unchanged witnesses on self approval refusal, ignored caller authority flags, current native target identity, and matching native activity and door audit. Its independent requester joins through the real membership, invitation, accepted mail and confirmation lifecycle. The decision history and request thread show the agent for its sponsor; company approvers remain separately named.
 
 The additive migrations are 0042 (Business settings), 0043 (Business person
 bindings) and 0044 (agent door). Runtime modules and the CLI are pinned to Base
@@ -83,3 +86,23 @@ reader and runs event assertions. This is inherited transport behavior, not a
 claim that Purse's specialist event family or the wider ct seeded week is
 complete. Native agent jobs retain their existing evidence and human consent
 requirements until their own company-door adapters and journeys are added.
+
+The declaration contains 19 tools including Base's inherited event reader, 11
+resource templates, and the standard, sensitive, money and commitment classes.
+The pending-decision reader returns only requests the current sponsor can decide;
+its empty bounded view is standard. The receiving-position reader returns native
+quantities without supplier contacts. Other purchasing records retain their
+normal native field projection and computed sensitivity. JSON outputs use the
+same serialization as the native HTTP door, including omission of optional
+undefined view fields.
+
+The separate ct proposal at
+`36f0d9c9f9984ebecc95a201462367df15fb2420` remains unjudged and is not merged.
+Its 116 planned capability names, nine proposed resource URI shapes and wider
+seeded week are not a claim of this declared subset. In particular supplier
+communications, paid providers, ledger posting, broad access/security changes
+and the existing scheduled specialist executors need their own current-authority,
+network-edge and conformance journeys. Existing native work keeps its native
+governance; this adoption does not claim company policy covers those executors.
+Base 0.2.86 still advertises resource subscriptions without a seed capability
+selector; that inherited advertisement cannot establish an undeclared family.
