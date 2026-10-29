@@ -159,9 +159,14 @@ test('Native notification preferences hold Pacific quiet hours across daylight s
     const dispatch = async () => { const r=await h.send('/api/purse/notification-deliveries',{},h.owner); assert.equal(r.status,200,JSON.stringify(r.value)); return r.value.events; };
     const mention=async attempt => h.command('comment-add',{kind:'request',record:f.pending.id,attempt,body:attempt,mentions:[f.requesterId]},f.approver);
     const deliveries=()=>h.messages.filter(m=>(m.subject==='Your Purse notification'||m.subject==='Your Purse daily digest')&&m.to.includes(f.email(2802)));
-    // Saturday 9 pm PDT becomes Sunday 7 am PST: the hold crosses the fall-back transition.
+    // A pending 7 pm digest switches to immediate at 9:01 pm; quiet hours still hold across fall-back.
     await h.command('notification-preferences',{...preference,version:0},f.approver);
-    await h.setClock('2026-11-01T04:00:00Z'); await mention('synthetic-purse-6201');
+    await h.command('notification-preferences',{...preference,version:saved.version,cadence:'daily'},f.requester);
+    await h.setClock('2026-11-01T02:00:00Z'); await mention('synthetic-purse-6201');
+    assert.equal(deliveries().length,0,'The daily preference holds the pending notice');
+    await h.setClock('2026-11-01T04:01:00Z');
+    await h.command('notification-preferences',{...preference,version:saved.version+1},f.requester);
+    assert.equal(deliveries().length,0,'Switching to immediate at 21:01 Pacific cannot bypass current quiet hours');
     const approval=await h.command('request',{...f.second,id:undefined,title:'synthetic-purse-6213 approval'},f.requester);await h.command('submit',{id:approval.id,revision:1},f.requester);
     const approvalMail=()=>h.messages.filter(m=>m.subject==='Your Purse notification'&&m.to.includes(f.email(2803)));assert.equal(approvalMail().length,0);
     await dispatch(); assert.equal(deliveries().length,0);

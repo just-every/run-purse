@@ -112,7 +112,7 @@ export function scopeAuditRows(s: State, a: Actor, data: Data) {
         if (action.startsWith('cash-') && !allowed(s, a, 'cash.read', event)) return false;
         if (auditEventAllowed(s, a, event)) return true;
         if (event.rfq && !allowed(s, a, 'rfq.read', event)) return false;
-        const sources = [...s.values()].filter(row => row.id === event.record && row.kind !== 'audit');
+        const sources = [...s.values()].filter(row => row.id === event.record && row.kind !== 'audit' && row.kind !== 'notificationRequestHead');
         if (sources.length === 1) {
             const row = sources[0];
             if (row.kind === 'supplier') return unrestrictedPermission(s, a, 'procurement.manage');
