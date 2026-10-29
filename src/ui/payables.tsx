@@ -6,7 +6,7 @@ export function Payables({ data, mutate, openOrder }: { data: D; mutate: (op: st
     if (!cash) return null;
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     return <section className="panel"><h3>Payment terms and cash requirements</h3>
-        <p>Manually confirmed cash planning only. No payment is scheduled or sent. Weeks start Monday; currencies stay separate. Expected PO liability includes received but unbilled goods, excludes canceled and closed balances, and subtracts approved bills once. Forecast dates default to the PO need date.</p>
+        <p>Source-approved invoices and manually confirmed cash planning. No payment is scheduled or sent. Weeks start Monday; currencies stay separate. Expected PO liability includes received but unbilled goods, excludes canceled and closed balances, and subtracts approved bills once. Forecast dates default to the PO need date.</p>
         {data.invoice.some((i:D)=>i.maySetTerms||i.mayApprove)&&<Details label="Record bill terms and cash-planning approval">{data.invoice.filter((i: D) => (!i.imported||i.sourceConfirmation==='confirmed')&&(i.maySetTerms||i.mayApprove)).map((i: D) => {
             const p = data.payable.find((p: D) => p.invoice === i.id), o = data.order.find((o: D) => o.id === i.order);
             return <section className="invoice" key={i.id}><h4>{i.reference} · {o.number} · {money(i.totalMinor, i.currency)}</h4>

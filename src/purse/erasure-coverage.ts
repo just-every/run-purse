@@ -2,6 +2,7 @@ import type { Data } from './types';
 
 const orderKinds = ['shipmentReference', 'orderSend', 'orderAcknowledgment', 'orderSupplierResponse', 'orderThreadMessage'];
 const stores: { store: string; covers: (field: Data) => boolean }[] = [
+ { store: 'Matching rule consent actors and immutable approvals', covers: f => f.kind === 'matchingRule' || f.kind === 'invoice' && f.path.includes('paymentApproval') },
  { store: 'Supplier tax review actors, reasons and private W-9 bindings', covers: f => f.kind === 'supplierTaxReview' },
  { store: 'Cross-team review assignments, questions, decisions and files', covers: f => f.kind === 'crossTeamReview' },
  { store: 'Internal comment authors, mentions, versions and notices', covers: f => ['comment','commentNotice'].includes(f.kind) },
