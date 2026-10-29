@@ -1,4 +1,4 @@
-import { supplierLineRemaining } from './po-supplier-groups';
+import { hasSupplierGroups, supplierLineExposure, supplierLineRemaining } from './po-supplier-groups';
 import { budgetCoding, budgetScopeMatches, selectBudgetPolicy } from './budget-dimensions';
 import { budgetApportion } from './budget-allocations';
 import { date, requireThat, type Data } from './types';
@@ -62,7 +62,9 @@ export function spendReport(data: Data, filters: Data = {}) {
             eligible.forEach((line:Data,index:number)=>{if(values[index])rows.push({...source({...revision,...order},line),kind:'committed',amountMinor:values[index],policy:b.policy,currency:b.currency,date:order.needDate,order:order.id,number:order.number});});
         }
         if(available) {
-            const values=distribute(available,request.lines);
+            const exposure=hasSupplierGroups(request)?supplierLineExposure(request):undefined;
+            const weights=exposure?request.lines.map((line:Data,index:number)=>({...line,totalMinor:exposure[index]})):request.lines;
+            const values=distribute(available,weights);
             request.lines.forEach((line:Data,index:number)=>{if(values[index])rows.push({...source({...request,supplier:line.supplier??request.supplier,supplierSnapshot:line.supplierSnapshot??request.supplierSnapshot},line),kind:'reserved',amountMinor:values[index],policy:b.policy,currency:b.currency,date:request.needDate,order:null,number:null});});
         }
     }

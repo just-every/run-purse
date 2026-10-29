@@ -932,7 +932,7 @@
       "executable": false
     },
     "scripts/installer/restore-conversion-variance.mjs": {
-      "sha256": "933dc6d732ec645083501ee1531f07916295ae5b32662056cc48643566ef1621",
+      "sha256": "b8d71f9ee1b4b7a5841062ba2232197298a2b07901f093335ed34144e16893c7",
       "executable": false
     },
     "scripts/installer/restore-cross-team-reviews.mjs": {
@@ -3124,7 +3124,7 @@
       "executable": false
     },
     "src/purse/conversion-variance.ts": {
-      "sha256": "d49abf7af1cb50bcf7b8d1552d5778f98f60a1912a8ef59d87dfbd676b343fbb",
+      "sha256": "3816138918129e1be2885bab515eb131f8c1988a4822ece19a09886f989771d4",
       "executable": false
     },
     "src/purse/cross-team-reviews.ts": {
@@ -3808,7 +3808,7 @@
       "executable": false
     },
     "src/purse/spend-report.ts": {
-      "sha256": "801e091fb16488cd2025689c790fe8d8b5acdff71fa8216014e754e4187e6fed",
+      "sha256": "229cb5308f22021fbb765985e2485d480392abf6317e13c25b2f12963546f9cb",
       "executable": false
     },
     "src/purse/stockroom.ts": {
@@ -5248,7 +5248,7 @@
       "executable": false
     },
     "tests/po-supplier-groups.test.mjs": {
-      "sha256": "2864cce9ebf7effccd38998f2ec15b06943ef64dc284c2c15295886817bbfaf1",
+      "sha256": "b9662eec12dd2c531ba5b7b1216a2d9969b75f2a41c04617a9d8d5a11f5a1bf4",
       "executable": false
     },
     "tests/private-schedule.mjs": {
