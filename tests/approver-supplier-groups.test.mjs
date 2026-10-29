@@ -43,6 +43,33 @@ test('Current approver supplier corrections renew exact decisions and reconcile 
  const restored=await harness();t.after(()=>restored.close());await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
  for(const kind of ['request','revision','decision','order','commitment','audit']){const rows=async db=>(await db.prepare('SELECT * FROM p_records WHERE kind=? ORDER BY id').bind(kind).all()).results;assert.deepEqual(await rows(restored.db),await rows(h.db),kind);}
  assert.equal((await restored.send('/api/purse/command/approver-edit',f.change(edited),f.editor)).status,401);
+ // Supplied line tax changes the allocation basis when a correction first
+ // forms supplier groups, even though the aggregate reservation is unchanged.
+ const contact={name:'synthetic-purse-8230 departed contact',email:groupMail(8230),phone:'synthetic-purse-8231',address:'synthetic-purse-8232'};
+ const second=(await h.state()).data.supplier.find(row=>row.id===f.suppliers[1].id);
+ await cmd('supplier',{...second,contacts:[contact],reason:'Record the exact supplier contact before correction'});
+ const taxed=await f.pending({taxMinor:10000,lines:f.draft.lines.map((line,index)=>({...line,lineTaxMinor:index===1?10000:0}))});
+ assert.deepEqual(await f.exposure(taxed),{total:110000,positions:[[66000,60000,0],[44000,40000,0]]});
+ const corrected=await cmd('approver-edit',f.change(taxed),f.editor);
+ assert.deepEqual(await f.exposure(taxed),{total:110000,positions:[[60000,60000,0],[50000,40000,0]]});
+ await unchangedRefusal(h,'convert',{id:taxed.id,revision:2,issue:true},f.buyer,409);
+ // Before any PO exists, only the second line's frozen supplier identity
+ // retains this departed contact. Both the picker and direct review must work.
+ await cmd('supplier',{...second,contacts:[],reason:'Departed supplier contact removed from the current register'});
+ const contactInventory=await h.send('/api/purse/erasure',undefined,h.owner);assert.equal(contactInventory.status,200);
+ assert.ok(contactInventory.value.choices.some(subject=>subject.kind==='contact'&&subject.id===second.id&&subject.email===contact.email));
+ const contactPreview=await h.send('/api/purse/erasure/preview',{kind:'contact',id:second.id,email:contact.email,revision:contactInventory.value.revision},h.owner);assert.equal(contactPreview.status,200,JSON.stringify(contactPreview.value));
+ await reauthenticateErasure(h);
+ const contactErased=await h.send('/api/purse/erasure/execute',{...contactPreview.value.subject,revision:contactPreview.value.revision,review:contactPreview.value.review,fingerprint:contactPreview.value.fingerprint,consent:true},h.owner);assert.equal(contactErased.status,200,JSON.stringify(contactErased.value));
+ for(const value of Object.values(contact))assert.ok((await h.db.prepare('SELECT * FROM p_records').all()).results.every(row=>!row.value.includes(value)),'Retained product records anonymize the line contact');
+ const anonymous=(await h.state()).data.request.find(row=>row.id===taxed.id);
+ assert.equal(anonymous.lines[1].supplierSnapshot.id,second.id);assert.ok(anonymous.lines[1].supplierSnapshot.contacts[0].email.endsWith(String.fromCharCode(64)+'erased.invalid'));
+ await f.approve(corrected,f.approver);await f.approve(corrected,f.editor);
+ const charged=await cmd('convert',{id:taxed.id,revision:2,issue:true},f.buyer);
+ assert.deepEqual(charged.supplierOrders.map(group=>group.totalMinor),[60000,50000]);
+ assert.deepEqual(await f.exposure(taxed),{total:110000,positions:[[0,120000,0],[0,90000,0]]});
+ assert.deepEqual((await f.report()).totals,[{currency:'USD',reservedMinor:0,committedMinor:210000,actualMinor:0}]);
+ assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
  const historical=await f.pending();await cmd('approver-edit',f.change(historical),f.editor);
  await cmd('member',{email:groupMail(8104),name:'Former supplier corrector',roles:['approver'],active:false});await reauthenticateErasure(h);
  const inventory=await h.send('/api/purse/erasure',undefined,h.owner),preview=await h.send('/api/purse/erasure/preview',{kind:'member',id:groupMail(8104),revision:inventory.value.revision},h.owner);assert.equal(preview.status,200,JSON.stringify(preview.value));
@@ -50,6 +77,10 @@ test('Current approver supplier corrections renew exact decisions and reconcile 
  assert.equal((await h.send('/api/purse/state',undefined,f.editor)).status,401);assert.equal((await h.send('/api/purse/command/approver-edit',f.change(historical),f.editor)).status,401);
  const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(erasedRows.every(row=>!row.value.includes(groupMail(8104))));assert.equal(validatePurchasingArchive(erasedRows),true);
  const journal=join(h.dir,'synthetic-purse-8204.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),journal,[]);
+ const anonymousRestore=await harness();t.after(()=>anonymousRestore.close());await importArchive(await createPortability({db:anonymousRestore.db,buckets:{ORIGINALS:anonymousRestore.originals},policy:portability}),journal,[]);
+ const anonymousRows=(await anonymousRestore.db.prepare('SELECT * FROM p_records').all()).results;
+ for(const value of Object.values(contact))assert.ok(anonymousRows.every(row=>!row.value.includes(value)),'Archive restoration cannot resurrect the line contact');
+ assert.equal(validatePurchasingArchive(anonymousRows),true);
  const fenced=await harness({empty:true});t.after(()=>fenced.close());await assert.rejects(importArchive(await createPortability({db:fenced.db,buckets:{ORIGINALS:fenced.originals},policy:portability}),archive,[],journal),/erasure_epoch/);assert.equal((await fenced.db.prepare('SELECT count(*) AS n FROM p_records').first()).n,0);
 });
 
@@ -81,4 +112,20 @@ test('Supplier corrections refuse unsafe sources and revoked authority while ret
  await unchangedRefusal(bh,'convert',{id:budget.id,revision:2},b.buyer,409);await b.approve(corrected,b.approver);await unchangedRefusal(bh,'convert',{id:budget.id,revision:2},b.buyer,409);await b.approve(corrected,b.ownerB);
  const issued=await bcmd('convert',{id:budget.id,revision:2,issue:true},b.buyer);assert.deepEqual(issued.supplierOrders.map(group=>group.totalMinor),[60000,40000]);assert.equal((await bh.state()).data.commitment.filter(event=>event.request===budget.id).reduce((sum,event)=>sum+event.amountMinor,0),100000);
  assert.equal(validatePurchasingArchive((await bh.db.prepare('SELECT * FROM p_records').all()).results),true);
+ // Moving supplied tax to its corrected supplier can require a budget owner
+ // even when the request's total does not increase.
+ const th=await harness();t.after(()=>th.close());const taxed=await approverSupplierFixture(th);
+ for(const [index,policy]of taxed.policies.entries())await taxed.cmd('policy',{...policy,budgetMinor:[66000,44000][index]});
+ const taxedSource=await taxed.pending({taxMinor:10000,lines:taxed.draft.lines.map((line,index)=>({...line,lineTaxMinor:index===1?10000:0}))});
+ const taxedEdit=await taxed.cmd('approver-edit',taxed.change(taxedSource),taxed.editor);
+ assert.ok(taxedEdit.approvalRoute.some(step=>step.budgetPolicy===taxed.policies[1].id&&step.email===groupMail(8105)));
+ await taxed.approve(taxedEdit,taxed.approver);await taxed.approve(taxedEdit,taxed.editor);
+ await unchangedRefusal(th,'convert',{id:taxedEdit.id,revision:2,issue:true},taxed.buyer,409);
+ await taxed.approve(taxedEdit,taxed.ownerB);
+ await unchangedRefusal(th,'convert',{id:taxedEdit.id,revision:2,issue:true},taxed.buyer,409);
+ await taxed.approve(taxedEdit,taxed.ownerA);
+ const taxedOrders=await taxed.cmd('convert',{id:taxedEdit.id,revision:2,issue:true},taxed.buyer);
+ assert.deepEqual(taxedOrders.supplierOrders.map(group=>group.totalMinor),[60000,50000]);
+ assert.deepEqual(await taxed.exposure(taxedSource),{total:110000,positions:[[0,60000,0],[0,50000,0]]});
+ assert.equal(validatePurchasingArchive((await th.db.prepare('SELECT * FROM p_records').all()).results),true);
 });
