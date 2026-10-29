@@ -46,7 +46,8 @@ export function orderChasing(s: State, a: Actor, op: string, b: Data): Data | un
 function eligible(s: State, order: Data, now: number): boolean {
     if (order.imported || !order.issuedAt || order.status !== 'issued' || order.amendedBy
         || !order.lines.some((line: Data) => linePosition(s, order.id, line).outstanding > 0)) return false;
-    if (all(s,'orderSend').some(event => event.order === order.id && event.revision === order.revision && event.response?.decision === 'reject')) return false;
+    const response = all(s, 'orderSend').filter(event => event.order === order.id && event.revision === order.revision && event.response).sort((left, right) => (right.attempt ?? 1) - (left.attempt ?? 1))[0]?.response;
+    if (response?.decision === 'reject') return false;
     try {
         const currentSupplier = canonicalSupplier(s, order.supplier);
         supplier(s, currentSupplier);
@@ -56,7 +57,7 @@ function eligible(s: State, order: Data, now: number): boolean {
 
 function due(s: State, order: Data, policy: Data, now: number): { reason: string; evidence: Data | null; supplierAcknowledgment: Data | null } | null {
     const evidence = all(s, 'supplierOrderEvidence').find(row => row.order === order.id) ?? null;
-    const sent = all(s, 'orderSend').find(row => row.order === order.id && row.revision === order.revision && row.acknowledgment?.revision === order.revision);
+    const sent = all(s, 'orderSend').filter(row => row.order === order.id && row.revision === order.revision && row.acknowledgment?.revision === order.revision).sort((left, right) => (right.attempt ?? 1) - (left.attempt ?? 1))[0];
     const supplierAcknowledgment = sent ? { send: sent.id, revision: sent.revision, pdfSha256: sent.pdf.sha256, at: sent.acknowledgment.at } : null;
     const parts = calendar.formatToParts(now), part = (name: string) => parts.find(p => p.type === name)!.value;
     const today = `${part('year')}-${part('month')}-${part('day')}`;

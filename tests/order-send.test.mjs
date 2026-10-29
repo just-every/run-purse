@@ -119,6 +119,7 @@ test('Explicit native buyer change send freezes exact numbered PDF and originals
     assert.equal(validatePurchasingArchive((await adoptionHarness.db.prepare('SELECT * FROM p_records').all()).results),true,'Amendment responses and exact proposal adoption remain portable history');
     const latestSend=await adoptionSource.send({order:renewed.id,revision:renewed.revision});assert.equal(latestSend.status,200);
     const lastLink=new URL(adoptionHarness.messages.filter(message=>message.subject.startsWith('Change order ')).at(-1).text.split(/\s+/).find(word=>word.startsWith(adoptionHarness.origin+'/api/purse/order-link/')));
+    await adoptionHarness.command('receipt',{order:renewed.id,line:renewed.lines[0].id,event:'receive',quantity:'1',reason:'synthetic-purse-2909'},adoptionHarness.owner);
     const cancel={id:renewed.id,revision:renewed.revision,reason:'synthetic-purse-2894 cancel remaining supply'};
     assert.equal((await adoptionHarness.send('/api/purse/command/propose-order-cancellation',cancel,adoptionSource.requester)).status,403);
     assert.equal((await adoptionHarness.send('/api/purse/command/propose-order-cancellation',{...cancel,revision:2},adoptionSource.buyer)).status,409);
@@ -128,7 +129,7 @@ test('Explicit native buyer change send freezes exact numbered PDF and originals
     assert.equal(adoptionHarness.messages.filter(message=>message.subject.startsWith('Change order ')).length,2,'Preparing cancellation sends nothing');
     await adoptionHarness.command('submit',{id:cancellationDraft.id,revision:4},adoptionSource.requester);
     await adoptionHarness.command('decision',{id:cancellationDraft.id,revision:4,decision:'approved',reason:'synthetic-purse-2895 independent cancellation approval'},adoptionSource.approver);
-    const cancelled=await adoptionHarness.command('convert',{id:cancellationDraft.id,revision:4,issue:true},adoptionSource.buyer);assert.equal(cancelled.status,'cancelled');
+    const cancelled=await adoptionHarness.command('convert',{id:cancellationDraft.id,revision:4,issue:true},adoptionSource.buyer);assert.equal(cancelled.status,'cancelled');assert.equal(cancelled.lines[0].carriedAccepted,1000);assert.equal(cancelled.cancellation.lines[0].q,3125);
     const cancellationSent=await adoptionSource.send({order:cancelled.id,revision:4});assert.equal(cancellationSent.status,200,JSON.stringify(cancellationSent.value));assert.equal(cancellationSent.value.changeLabel,'Change order 3');
     const cancellationMessage=adoptionHarness.messages.filter(message=>message.subject.startsWith('Change order ')).at(-1),cancellationLink=new URL(cancellationMessage.text.split(/\s+/).find(word=>word.startsWith(adoptionHarness.origin+'/api/purse/order-link/')));
     const face=await (await publicGet(adoptionHarness,cancellationLink)).text();assert.ok(face.includes('Approved cancellation'));assert.ok(face.includes(renewed.number));
@@ -165,6 +166,11 @@ test('Native current buyer scope, exact approval and claim-before-send prevent s
     const sends=await Promise.all([f.send(),f.send()]);assert.deepEqual(sends.map(result=>result.status).sort(),[200,409]);assert.equal(sends.find(result=>result.status===200).value.status,'uncertain');assert.equal(claimed,true);
     assert.equal((await f.send()).status,409);assert.equal(h.messages.filter(message=>message.subject.startsWith('Change order ')).length,1);
     const link=orderLink(h);assert.equal((await publicGet(h,link)).status,200);
+    assert.equal((await respond(h,link,{revision:2,decision:'reject',promisedDate:null,note:'synthetic-purse-2908'})).status,200);
+    const invoiceConsent={revision:2,enabled:true,consent:true,reason:'synthetic-purse-2910'};
+    assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent',invoiceConsent,h.owner)).status,200);
+    await h.command('supplier-invoice-rule',{order:f.order.id,revision:2,version:0,enabled:true,consent:true,reason:invoiceConsent.reason},h.owner);
+    assert.equal((await publicGet(h,link.href+'/invoices')).status,200);
     const first=(await h.send('/api/purse/order-send/'+f.order.id,undefined,f.buyer)).value.event;
     const originalBytes=Buffer.from(await (await publicGet(h,link.href+'/pdf')).arrayBuffer());
     const resend={resendOf:first.id,reason:'synthetic-purse-2890 reviewed uncertain outcome'};
@@ -177,9 +183,19 @@ test('Native current buyer scope, exact approval and claim-before-send prevent s
     assert.equal((await respond(h,link,{revision:2})).status,410);
     assert.deepEqual(Buffer.from(await (await publicGet(h,renewedLink.href+'/pdf')).arrayBuffer()),originalBytes);
     for(let index=0;index<2;index++)assert.deepEqual(Buffer.from(await (await publicGet(h,renewedLink.href+'/original/'+index)).arrayBuffer()),Buffer.from(index?f.certificate:f.terms,'base64'));
+    assert.equal((await publicGet(h,renewedLink.href+'/invoices')).status,410,'Resending document access cannot copy the old invoice or standing approval authority');
     const attempts=(await h.send('/api/purse/order-send/'+f.order.id,undefined,f.requester)).value.attempts;assert.equal(attempts.length,2);assert.deepEqual(attempts.map(event=>event.status),['uncertain','uncertain']);assert.ok(attempts[0].revokedAt);
     assert.equal(h.messages.filter(message=>message.subject.startsWith('Change order ')).length,2,'Only the one consented new claim sends');
     const audit=await h.send('/api/purse/audit.csv?subject='+f.order.id,undefined,h.owner);assert.ok(audit.value.includes(second.id));assert.ok(audit.value.includes(resend.reason));
+    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
+    assert.equal((await respond(h,renewedLink,{revision:2,promisedDate:'2026-11-08'})).status,200);
+    assert.equal((await publicGet(h,renewedLink.href+'/invoices')).status,410,'Acknowledging the new link also cannot restore old owner consent');
+    assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent',invoiceConsent,h.owner)).status,200);
+    const renewedRule=await h.command('supplier-invoice-rule',{order:f.order.id,revision:2,version:0,enabled:true,consent:true,reason:invoiceConsent.reason},h.owner);assert.equal(renewedRule.send,second.id);assert.equal((await publicGet(h,renewedLink.href+'/invoices')).status,200);
+    const buyerMember=(await h.state()).data.member.find(member=>member.roles.includes('buyer'));
+    await h.command('order-chase-policy',{order:f.order.id,version:0,enabled:true,cadenceDays:1,maxChases:2,escalateTo:buyerMember.email},f.buyer);
+    assert.equal((await h.mf.dispatchFetch(h.origin+'/cdn-cgi/local/scheduled?time='+Date.parse('2026-11-10T17:00:00Z'))).status,200);
+    const chases=(await h.state()).data.orderChaseEvent.filter(event=>event.order===f.order.id);assert.equal(chases.length,1,'An accepted response on the replacement attempt supersedes the earlier rejection for delivery chasing');assert.equal(chases[0].supplierAcknowledgment.send,second.id);
     assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
     const next=await h.command('need-date-edit',{id:f.request.id,revision:2,needDate:'2026-11-09',reason:'New exact correction'},f.requester);assert.equal(next.revision,3);assert.equal((await publicGet(h,link)).status,410);assert.equal((await ack(h,link,2)).status,410);assert.equal((await respond(h,link,{revision:2})).status,410);
     await h.command('member',{email:'synthetic-purse-2804@example.test',name:'synthetic-purse-2804',active:false,roles:['buyer']});assert.equal((await f.send()).status,403,'Deactivated purchasing membership refuses its retained native session');
