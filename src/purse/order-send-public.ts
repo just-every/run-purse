@@ -52,7 +52,8 @@ export async function supplierOrderChange(request: Request, env: Bindings, token
     requireThat(body && typeof body === 'object' && !Array.isArray(body), 'Supplier response object required');
     if (event.mode === 'initial') {
         const response = await recordOrderResponse(env, state, revision, event, hash, body);
-        return page(`<h1>Supplier response recorded</h1><p>${escape(event.number)} · approved revision ${event.revision} · response ${response.version}: ${escape(response.decision)}.</p><p>Promised delivery: ${escape(response.promisedDate || 'No promise on rejected order')}. The buyer and requester can review this evidence. Proposed changes require an amendment and renewed approval.</p><p><a href="">View order and response</a></p>`);
+        const reference = response.shipment;
+        return page(`<h1>Supplier response recorded</h1><p>${escape(event.number)} · approved revision ${event.revision} · response ${response.version}: ${escape(response.decision)}.</p>${reference ? `<p>${escape(reference.carrier)} · ${escape(reference.trackingNumber)} · Supplier-reported · Carrier status unknown. This reference does not confirm delivery or record receiving.</p>` : ''}<p>Promised delivery: ${escape(response.promisedDate || 'No promise on rejected order')}. The buyer and requester can review this evidence. Proposed changes require an amendment and renewed approval.</p><p><a href="">View order and response</a></p>`);
     }
     requireThat(body.shipment === undefined, 'Shipment references are not supported on change-order acknowledgments', 409);
     requireThat(body.decision === 'acknowledge', 'Only acknowledgment is supported here. Contact the buyer to propose changes or reject this order.', 409);

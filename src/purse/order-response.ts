@@ -41,7 +41,7 @@ export function normalizeOrderResponse(body: Data, order: Data, event: Data) {
 }
 
 /** Supplier input is evidence. Only the authenticated adoption door can create a draft. */
-export async function recordOrderResponse(env: Bindings, state: State, revision: number, event: Data, hash: string, body: Data) {
+export async function recordOrderResponse(env: Bindings, state: State, revision: number, event: Data, hash: string, body: Data): Promise<Data> {
     const order = get(state, 'order', event.order), normalized = normalizeOrderResponse(body, order, event), at = new Date().toISOString();
     const version = (event.response?.version ?? 0) + 1;
     const response: Data = { id: event.id + ':' + version, send: event.id, order: event.order, request: event.request, revision: event.revision, pdfSha256: event.pdf.sha256, version, ...normalized, actor: 'supplier-link', identityVerified: false, at };
@@ -65,7 +65,7 @@ export async function recordOrderResponse(env: Bindings, state: State, revision:
         insertOrderSendRecord(env.DB, 'audit', { id: uid(), action: 'order-supplier-response', record: event.order, send: event.id, response: response.id, decision: response.decision, promisedDate: response.promisedDate, actor: 'supplier-link', name: response.name, identityVerified: false, revision: event.revision, pdfSha256: event.pdf.sha256, at }),
         env.DB.prepare('DELETE FROM p_guard'),
     ]); } catch (error) { requireThat(!/CHECK constraint|UNIQUE constraint/.test(String(error)), 'Order, authority, link or response changed; reload', 409); throw error; }
-    return response;
+    return { ...response, shipment };
 }
 
 export async function adoptOrderResponse(env: Bindings, actor: Actor, orderId: string, body: Data) {

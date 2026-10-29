@@ -3392,11 +3392,11 @@
       "executable": false
     },
     "src/purse/order-response-public.ts": {
-      "sha256": "e5f9784d340b63bc1a4b8111822ec316fad2ca12c65c974b6902659c32b5a2a1",
+      "sha256": "49ecbe3f2e8c5feba8217e5db707be690265aeea29f5f12428ae1dc47bc6c1eb",
       "executable": false
     },
     "src/purse/order-response.ts": {
-      "sha256": "14e53306802c9a602b472303d0c11bc8f0bec48dee3edd24fe982e197dd4139e",
+      "sha256": "4ce5712464ed539140ac411fc90e2e928de4e547d01d46d8ceccde4124d5b982",
       "executable": false
     },
     "src/purse/order-send-api.ts": {
@@ -3412,7 +3412,7 @@
       "executable": false
     },
     "src/purse/order-send-public.ts": {
-      "sha256": "d0868dc6f0460f8efd795217119b485bbf966a9317b5033b36e552a46a160fd2",
+      "sha256": "12315438c1551e971aac6e9b49a454a06820871ed1c1a0e9ca49dd8254e6ec7f",
       "executable": false
     },
     "src/purse/order-send.ts": {
@@ -4936,7 +4936,7 @@
       "executable": false
     },
     "tests/browser-shipment-references.mjs": {
-      "sha256": "9baace49485ab2c1b3a7d2bf1efaa95560090aee0858b3cadd2199d3cf5c54a7",
+      "sha256": "f31a1d16ba2e030dcbc8d22effd3beae04d8870234f8b16e5bc073e52a6e57ee",
       "executable": false
     },
     "tests/browser-spend-questions.mjs": {
@@ -5292,7 +5292,7 @@
       "executable": false
     },
     "tests/shipment-references.test.mjs": {
-      "sha256": "d7f05ccccede943bb2837fa9e45d167cf84956b9e68d181b67608cd0d89e46fa",
+      "sha256": "3bd8bf4918ae63fb884c0ae289f6f444fd3defdbfb8dee50848bdde310e66cf2",
       "executable": false
     },
     "tests/spend-question-fixture.mjs": {

@@ -93,6 +93,8 @@ test('Shipment history survives archive and erasure while expired, withdrawn, su
     const anonymous = await rows(h); for (const value of ['synthetic-purse-6604','synthetic-purse-6605','synthetic-purse-6612',shipmentAddress(6603),'Replacement tracking label']) assert.ok(!JSON.stringify(anonymous).includes(value),value);
     const history = (await h.state()).data.order.find(order=>order.id===f.order.id).shipmentReferences; assert.equal(history.length,2); assert.ok(history.every(entry=>entry.erasure&&entry.trackingNumber==='Personal data erased')); assert.equal(history[1].correctionOf,first.id);
     assert.equal(validatePurchasingArchive(anonymous),true);
+    const erasedExport = await h.send('/api/purse/audit.csv?subject='+f.order.id,undefined,h.owner); assert.equal(erasedExport.status,200);
+    for(const value of ['synthetic-purse-6605','synthetic-purse-6612','Replacement tracking label']) assert.ok(!erasedExport.value.includes(value));
     await unchangedRefusal(h, () => f.respond(f.input({version:2})),410);
     const erasedArchive = join(h.dir,'anonymous-shipments.rer'); await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),erasedArchive,[]);
     const erasedCopy = await harness({empty:true}); t.after(()=>erasedCopy.close());

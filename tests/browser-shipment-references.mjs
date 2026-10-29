@@ -24,6 +24,7 @@ try {
     const submit = supplier.waitForResponse(response=>response.url()===f.link().href&&response.request().method()==='POST');
     await supplier.getByRole('button',{name:'Record supplier response',exact:true}).click(); assert.equal((await submit).status(),200);
     await supplier.getByRole('heading',{name:'Supplier response recorded',exact:true}).waitFor();
+    assert.ok((await supplier.locator('main').innerText()).includes('synthetic-purse-6621'));
     await supplier.getByRole('link',{name:'View order and response',exact:true}).click();
     const first = (await f.references())[0];
     await supplier.getByLabel('Your name',{exact:true}).fill('synthetic-purse-6620');
@@ -35,8 +36,12 @@ try {
     await supplier.getByRole('checkbox').check();
     const correction = supplier.waitForResponse(response=>response.url()===f.link().href&&response.request().method()==='POST');
     await supplier.getByRole('button',{name:'Record supplier response',exact:true}).click(); assert.equal((await correction).status(),200);
+    assert.ok((await supplier.locator('main').innerText()).includes('synthetic-purse-6622'));
     await supplier.getByRole('heading',{name:'Supplier response recorded',exact:true}).waitFor();
     await supplier.getByRole('link',{name:'View order and response',exact:true}).click();
+    await supplier.getByText('Shipment reference history (2)',{exact:true}).click();
+    const supplierHistory = await supplier.locator('details').innerText();
+    for (const field of ['synthetic-purse-6621','synthetic-purse-6622','Corrects reference 1','Supplier corrected its label']) assert.ok(supplierHistory.includes(field),field);
     for (const width of [1440,390]) {
         await supplier.setViewportSize({width,height:1000});
         const context = await nativeWebContext(browser,h,width,bundle.outputFiles[0].text,f.receiver); contexts.push(context);
