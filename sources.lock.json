@@ -3156,7 +3156,7 @@
       "executable": false
     },
     "src/purse/erasure-api.ts": {
-      "sha256": "6f1876ff8cde43e115dc706fd4df38a15d149c16f929b3215752fb947701aad5",
+      "sha256": "07d2c6e0e7b9abb4807b02076e439baa41b1160a3e862694530f649a1dbdd00d",
       "executable": false
     },
     "src/purse/erasure-checkpoint.d.mts": {
@@ -5088,7 +5088,7 @@
       "executable": false
     },
     "tests/erasure-retention-flow.mjs": {
-      "sha256": "e68fbfb0d3ae74363038c136235db74db25c81311f4f7cd83be13150d7d3ab65",
+      "sha256": "1fa809b77591bf3b53287b0f00cadd15954e53cb9d623ad5708538c4bea339c9",
       "executable": false
     },
     "tests/fixtures/boulder-logo.png": {
