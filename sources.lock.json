@@ -3024,7 +3024,7 @@
       "executable": false
     },
     "src/purse/api.ts": {
-      "sha256": "f3a26ef674f85ccf3f6b73dfd6a9ada30e6934ccc8d92c0791a8b00b9fa7871f",
+      "sha256": "63962f4887d60a41c9a118d815a607c2fd6ff63a7baa4d07a826eb783122b072",
       "executable": false
     },
     "src/purse/approval-chain-authority.ts": {
@@ -3196,7 +3196,7 @@
       "executable": false
     },
     "src/purse/erasure-plan.ts": {
-      "sha256": "be2c44842aaedc97a1c8701c90f7ee246f45668073ada94fd141091b73ea0fce",
+      "sha256": "37317fe020c8b4cd1bee972603fb1a08ce2bbecf7097adecbb230ad399087ceb",
       "executable": false
     },
     "src/purse/erasure-refusal.ts": {
