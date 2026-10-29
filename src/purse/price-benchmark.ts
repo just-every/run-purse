@@ -99,7 +99,7 @@ export async function priceBenchmark(s: State, a: Actor, op: string, input: Data
     const inputs = { target: preview.target, mappings, sources, governance: preview.governance, fingerprint: preview.fingerprint,
         reviewed: true, reason, actor: a.id, operatorVersion: a.version };
     const inputDigest = await digest(inputs);
-    const existing = all(s, 'agentRun').find(run => run.agent === 'AGENT-009' && run.inputDigest === inputDigest && !run.sourceValuesErased);
+    const existing = all(s, 'agentRun').find(run => run.agent === 'AGENT-009' && run.inputDigest === inputDigest);
     if (existing) { requireThat(priceBenchmarkVisible(s, a, existing), 'Benchmark sources outside your current scope', 403); return existing; }
     const references = [...new Map([{ kind: 'request', id: preview.target.request, version: preview.targetVersion },
         { kind: 'revision', id: preview.target.request + ':' + preview.target.revision, version: preview.revisionVersion },
