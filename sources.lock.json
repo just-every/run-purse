@@ -4552,7 +4552,7 @@
       "executable": false
     },
     "src/ui/supplier-proposals.tsx": {
-      "sha256": "63cf1f2322f9c64a973a9e3daa9dbd5a057f1207772be067911248300739eca5",
+      "sha256": "d6bfd58f9615163a55184677e0406ff575db38f19a20e9d84c330c09b25a03e4",
       "executable": false
     },
     "src/ui/supplier-protected.tsx": {
@@ -4968,7 +4968,7 @@
       "executable": false
     },
     "tests/browser-supplier-proposals.mjs": {
-      "sha256": "3a986d2fe0dbcdc9eb4f14f3651caffdec9a7502245fa5a3d731af7bd24d71aa",
+      "sha256": "8a16363059802aa4756cde713ea9d8240f18b66c0be95af8407d274dfab17642",
       "executable": false
     },
     "tests/browser-supplier-screening.mjs": {

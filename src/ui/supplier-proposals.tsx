@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { call, Details, Field, Form, when, type D } from './shared';
 
 export function ProposalMatches({review,onChoose}:{review:D;onChoose:(id:string)=>void}) {
@@ -11,14 +11,15 @@ export function ProposalMatches({review,onChoose}:{review:D;onChoose:(id:string)
     </div>;
 }
 export function SupplierProposals({data,actor,mutate,onChoose}:{data:D;actor:D;mutate:(op:string,b:D)=>Promise<any>;onChoose:(id:string)=>void}) {
+    const checkedVersion=useRef(0);
     const [review,setReview]=useState<D>(),[input,setInput]=useState<D>(),[chosen,setChosen]=useState('');
     return <section className="panel" aria-label="Supplier proposals"><h3>Supplier proposals</h3>
         {actor.permissions.includes('request.create')&&<Details label="Propose a supplier without a request">
-            <Form label="Check existing suppliers" onSubmit={async b=>{setReview(await call('command/supplier-proposal-choices',b));setInput(b);setChosen('');}}>
+            <div onChange={()=>{checkedVersion.current++;setReview(undefined);setInput(undefined);setChosen('');}}><Form label="Check existing suppliers" onSubmit={async b=>{const version=checkedVersion.current,choices=await call('command/supplier-proposal-choices',b);if(version!==checkedVersion.current)return;setReview(choices);setInput(b);setChosen('');}}>
                 <Field label="Proposed supplier name" name="name"/><Field label="Proposed contact name" name="contactName" required={false}/>
                 <Field label="Proposed contact email" name="contactEmail" type="email"/><Field label="Proposed website" name="website" required={false}/>
                 <Field label="Proposed phone" name="phone" required={false}/><Field label="Why this supplier" name="reason"/>
-            </Form>
+            </Form></div>
             {review&&<ProposalMatches review={review} onChoose={id=>{setChosen('Existing supplier selected. No proposal was created.');setInput(undefined);onChoose(id);}}/>}
             {chosen&&<p role="status">{chosen}</p>}
             {review&&input&&review.matches.length===0&&!review.needsAdministrator&&<Form label="Send supplier proposal" onSubmit={async b=>{await mutate('supplier-propose',{...input,consent:b.consent==='on'});setReview(undefined);setInput(undefined);}}>
