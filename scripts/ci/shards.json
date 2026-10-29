@@ -90,7 +90,8 @@
   ],
   "25": [
     ["tests/browser.mjs", "--width=390", "--journey=email-intake"],
-    ["tests/browser-coding-agent.mjs", "--width=1440"]
+    ["tests/browser-coding-agent.mjs", "--width=1440"],
+    ["tests/browser-price-benchmark.mjs"]
   ],
   "26": [
     ["tests/browser.mjs", "--width=390", "--journey=protected-preparation"],

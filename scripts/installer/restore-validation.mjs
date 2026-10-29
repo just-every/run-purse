@@ -5,6 +5,7 @@ import { validateCrossTeamReviews } from './restore-cross-team-reviews.mjs';
 import { validateReceivedDates } from './restore-received-dates.mjs';
 import { validateSavedReports } from './restore-saved-reports.mjs';
 import { validateComments } from './restore-comments.mjs';
+import { validatePriceBenchmarks } from './restore-price-benchmark.mjs';
 import { validateCodingAgent } from './restore-coding-agent.mjs';
 import { validateRecurringDiscovery } from './restore-recurring-discovery.mjs';
 import { validateRecurringScenarios } from './restore-recurring-scenarios.mjs';
@@ -187,5 +188,5 @@ export function validatePurchasingArchive(rows) {
  validateInvoiceReadings(all,get,check);
  validateQuoteReadings(all,get,check);
  validateReceiptRouting(all,get,check);
- validateInvoiceRisk(all,get,check); validateQuoteAwards(all,get,check); validatePayables(all,get,check); validatePantry(all,get,check); validateOrderLinks({get,all}); validateSupplierPerformance({get,all}); validateSupplierDocuments(all,get,check); validatePoDocuments(all,get); validateOrderChasing(all,get,check); validateAgentGovernance(all,get,check); validateCodingAgent(all,get,check); validateOrderThreads(all,get,check); validateQuoteAgents(all,get,check); validateSupplierInvoices(all,get,check); validateSupplierInvoiceApprovals(all,get,check); validatePoGeneration(all,get,check); return true;
+ validateInvoiceRisk(all,get,check); validateQuoteAwards(all,get,check); validatePayables(all,get,check); validatePantry(all,get,check); validateOrderLinks({get,all}); validateSupplierPerformance({get,all}); validateSupplierDocuments(all,get,check); validatePoDocuments(all,get); validateOrderChasing(all,get,check); validateAgentGovernance(all,get,check); validateCodingAgent(all,get,check); validatePriceBenchmarks(all,get,check); validateOrderThreads(all,get,check); validateQuoteAgents(all,get,check); validateSupplierInvoices(all,get,check); validateSupplierInvoiceApprovals(all,get,check); validatePoGeneration(all,get,check); return true;
 }

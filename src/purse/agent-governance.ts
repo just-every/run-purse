@@ -1,7 +1,7 @@
 import { rejectProtectedInput } from './protected-input';
 import { all, audit, get, put, requireThat, text, type Actor, type Data, type State } from './types';
 
-export const governedAgents = ['AGENT-002', 'AGENT-003', 'AGENT-006', 'AGENT-011', 'AGENT-008'];
+export const governedAgents = ['AGENT-002', 'AGENT-003', 'AGENT-006', 'AGENT-011', 'AGENT-008', 'AGENT-009'];
 export function purchaseTypes(subject: Data): string[] {
     const declared=subject.purchaseType??subject.intakeFormSnapshot?.purchaseType;
     if(typeof declared==='string'&&declared.trim())return [declared.trim().toLowerCase()];
@@ -33,6 +33,7 @@ function write(s: State, a: Actor, input: Data) {
         maxChases: input.maxChases, version: (previous?.version ?? 0) + 1, actor: a.id, operatorVersion: a.version,
         at: new Date().toISOString(), reason: text(input.reason, 'Agent control reason') };
     put(s, 'agentPolicy', id, { ...entry, history: [...(previous?.history ?? []), entry] });
+    if (entry.agent === 'AGENT-009') put(s, 'nativeBenchmarkAuthority', id, { version: entry.version, actor: a.id, operatorVersion: a.version });
     audit(s, a, 'agent-policy', id, { agent: entry.agent, purchaseType, version: entry.version, enabled: entry.enabled, reason: entry.reason });
     return get(s, 'agentPolicy', id);
 }

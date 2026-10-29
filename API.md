@@ -1113,3 +1113,11 @@ service, blanket, recurring or adopted groups remain unavailable. Grouped date
 changes and amendments require a separately supported disposition; this door
 refuses them. Native group issuance sends no supplier message and records no
 payment or connected-ledger posting.
+
+## Native price benchmark
+
+A current procurement member can preview a current ordinary native goods request with `POST /api/purse/price-benchmark/preview`, passing `{request,revision}`. The preview writes nothing and returns permitted issued PO lines and recorded quotation lines, exact source revisions, recorded dates and a fingerprint. Only identical nonempty item identifiers, units and currencies are eligible; description similarity has no authority. Quotation dates are recording times, not proof of current validity.
+
+After explicitly reviewing the mappings, `price-benchmark-run` takes `{request,revision,fingerprint,reviewed:true,reason,mappings:[{targetLine,kind,id,line}]}`. Each mapping selects an exact `order` or `quote` source line from that preview. Current permissions, source versions and owner controls are checked again. The nonbinding target is the minimum of the requested and selected recorded unit prices, in integer minor units. Unmapped lines have no target. Freight, tax, volume terms, availability and the qualified current PunchOut price remain explicit missing evidence. No model, provider, offer, purchasing action or supplier message executes.
+
+The current native owner enables or pauses `AGENT-009` per purchase type in Settings. Benchmark enablement belongs to this installation and is excluded from archives. Restored records remain downloadable under current procurement and source scope; new execution requires fresh owner enablement and a fresh reviewed preview. A repeated identical reviewed run returns the original immutable record.
