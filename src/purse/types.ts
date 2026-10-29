@@ -16,6 +16,7 @@ export type Actor = {
     session: string; version:number;
     owner: boolean;
     dev: boolean;
+    agent?: { id: string; name: string; label: string; consent?: string; envelope: string | null; localRevision: number; approvers: readonly { id: string; name: string }[] };
 };
 export class Fault extends Error {
     constructor(public status: number, message: string) { super(message); }
@@ -33,7 +34,7 @@ export function quantity(v: unknown): number { requireThat(typeof v === 'string'
 export const extended = (q: number, cost: number) => { const n = (BigInt(q) * BigInt(cost) + 500n) / 1000n; requireThat(n <= 1000000000000n, 'Line amount too large'); return Number(n); };
 export const qty = (n: number) => (n / 1000).toFixed(3).replace(/\.?0+$/, '');
 export function date(v: unknown, label = 'Date') { const x = text(v, label); requireThat(/^\d{4}-\d{2}-\d{2}$/.test(x) && Number.isFinite(Date.parse(x)) && new Date(x).toISOString().slice(0, 10) === x, 'Use a valid YYYY-MM-DD date'); return x; }
-export const audit = (s: State, a: Actor, action: string, record: string, detail: Data = {}) => { const id = uid(); put(s, 'audit', id, { actor: a.id, email: a.email, action, record, at: new Date().toISOString(), ...detail }); };
+export const audit = (s: State, a: Actor, action: string, record: string, detail: Data = {}) => { const id = uid(); put(s, 'audit', id, { actor: a.id, email: a.email, action, record, at: new Date().toISOString(), ...detail, ...(a.agent ? { agent: { id: a.agent.id, name: a.agent.name }, sponsor: { id: a.id, email: a.email }, actorLabel: a.agent.label, approvers: a.agent.approvers } : {}) }); };
 export function roles(s: State, a: Actor): string[] {
     if (a.owner) return ['owner', 'requester', 'approver', 'buyer', 'receiver'];
     return [...new Set(accessGrants(s, a).map(grant => grant.role))];

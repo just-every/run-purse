@@ -20,6 +20,7 @@ export interface Bindings extends IdentityBindings {
  RER_VERSION?: { id: string }
  ORIGINALS: R2Bucket
  DB: D1Database
+ RER_BUSINESS_TRUST?: string
  AUTH_ORIGIN: string
  AUTH_LOCAL?: string
  RER_DEV_ORIGIN?: string
