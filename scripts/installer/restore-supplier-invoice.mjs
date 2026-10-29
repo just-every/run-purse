@@ -41,7 +41,7 @@ export function validateSupplierInvoiceApprovals(all, get, check) {
     for (const invoice of all('invoice')) {
         const approval = invoice.paymentApproval;
         check(!invoice.paymentSchedule || approval, 'supplier_invoice_schedule_approval');
-        if (!approval) continue;
+        if (!approval || approval.kind === 'native-matching') continue;
         const source = get('supplierInvoiceSubmission', invoice.supplierSubmission), event = get('orderSend', source.send), rule = event.invoiceApprovalRuleHistory?.find(rule => rule.version === approval.ruleVersion);
         check(rule?.enabled && approval.invoice === invoice.id && approval.order === invoice.order && approval.send === event.id && approval.revision === source.revision && approval.owner === rule.actor && approval.operatorVersion === rule.operatorVersion && approval.documentSha256 === invoice.document.sha256 && approval.reading === invoice.confirmedReading && invoice.sourceConfirmation === 'confirmed' && approval.amountMinor === invoice.totalMinor && approval.currency === invoice.currency && approval.match === 'three-way' && Date.parse(approval.at) >= Date.parse(invoice.confirmedAt), 'supplier_invoice_payment_approval');
         check(all('audit').some(entry => entry.action === 'supplier-invoice-approved' && entry.record === invoice.id && entry.ruleVersion === approval.ruleVersion && entry.documentSha256 === approval.documentSha256 && entry.actor === approval.actor && entry.at === approval.at), 'supplier_invoice_approval_audit');

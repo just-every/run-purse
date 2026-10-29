@@ -34,12 +34,12 @@ export function savingsReport(data: Data) {
     }
     // Realized savings retain each issued revision's own exact source, including history.
     const orderById = new Map<string, Data>(data.order.map((o: Data) => [o.id, o]));
-    const paidPlanning = new Set(data.payable.filter((p: Data) => p.approvedAt).map((p: Data) => p.invoice));
+    const approvedInvoices = new Set(data.invoice.filter((i:Data) => i.paymentApproval && i.sourceConfirmation === 'confirmed' && !i.sourceValuesErased && !i.erasure).map((i:Data)=>i.id));
     const byRevision = new Map<string, Data>(awards.map(a => [a.request + ':' + a.revision, a]));
     const used = new Map<string, number>();
     for (const invoice of [...data.invoice].sort((a: Data, b: Data) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id))) {
         const order = orderById.get(invoice.order);
-        if (!order?.issuedAt || order.imported || !paidPlanning.has(invoice.id) || invoice.exception || invoice.disputed || openInvoiceFlags(invoice).length) continue;
+        if (!order?.issuedAt || order.imported || !approvedInvoices.has(invoice.id) || invoice.exception || invoice.disputed || openInvoiceFlags(invoice).length) continue;
         const award = byRevision.get(order.request + ':' + order.revision);
         if (!award || !approved.has(award.request + ':' + award.revision)) continue;
         for (const allocation of invoice.allocations) {
@@ -64,7 +64,7 @@ export function savingsReport(data: Data) {
             used.set(key, prior + q);
             if (!q) continue;
             // Allocate a partially eligible invoice's cents once, half-up.
-            const billedMinor = Number((BigInt(allocation.amountMinor) * BigInt(q) + BigInt(allocation.q) / 2n) / BigInt(allocation.q));
+            const billedMinor = Number((BigInt((invoice.paymentApproval.kind === 'native-matching' ? invoice.paymentApproval.lines.find((l:Data)=>l.line===allocation.line).billedMinor : allocation.amountMinor)) * BigInt(q) + BigInt(allocation.q) / 2n) / BigInt(allocation.q));
             const firstMinor = extended(q, baseline.firstUnitMinor);
             realizedRows.push({ ...award.source, award: award.id, request: order.request, revision: order.revision, order: order.id,
                 number: order.number, invoice: invoice.id, reference: invoice.reference, line: line.id, agreementLine: baseline.agreementLine, description: line.description, currency: invoice.currency,
