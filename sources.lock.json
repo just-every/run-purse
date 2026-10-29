@@ -380,7 +380,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "5f6d5ea97a77dbd7167df42c9fb04882d4d0f2d685a215b026511dafe2f0b96d",
+      "sha256": "fc78bda77b2e099747bdc23b40fc8215c7cc4f4910f416e45427546185959986",
       "executable": false
     },
     "packaging.json": {
@@ -4736,7 +4736,11 @@
       "executable": false
     },
     "tests/browser-archive.mjs": {
-      "sha256": "12947f3ad35feda5b83fa56353e04769110bda3d03e1b9953c217473652ab1d1",
+      "sha256": "d1074ed7eff33a7caa0fa7b2e1969569cecfbac6110b7fbd92c3734ec1b6f4b5",
+      "executable": false
+    },
+    "tests/browser-archive.test.mjs": {
+      "sha256": "0707d52f64a98581155bbbd1aa0feab7bbcf8152cb1e0e4e4d38cbb61ddd9d85",
       "executable": false
     },
     "tests/browser-audit-log.mjs": {
@@ -4984,7 +4988,7 @@
       "executable": false
     },
     "tests/browser.mjs": {
-      "sha256": "247eb19a2a7746d34ae9287335edefaf0c541c6a1ba59d4a034ffff5a87ce569",
+      "sha256": "1777900b2f834ae2f34c736d809fdfff8685304f24ea706548298c574c699102",
       "executable": false
     },
     "tests/budget-disposition-fixture.mjs": {

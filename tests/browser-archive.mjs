@@ -8,15 +8,27 @@ import { session, current, api } from './browser-journey.mjs';
 export const records = async path => (await readFile(path,'utf8')).trim().split('\n').map(line => JSON.parse(line));
 export const rows = archive => archive.filter(r => r.kind === 'part').flatMap(r => r.items);
 
-// Compliance is a current-calendar projection, not retained archive data.
-// Compare every retained field; an archive must not freeze yesterday's status.
-export function assertArchiveRecords(before,after,kinds) {
+// Compliance and the suggested receiving date are current-calendar projections.
+// Assert each suggested date at the time its HTTP snapshot was read, then compare
+// every retained field. Restoring an archive must not freeze yesterday's date.
+export function assertArchiveRecords(before,after,kinds,windows) {
+ const day=(at,timezone)=>{
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(at);
+  const part=name=>parts.find(p=>p.type===name).value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
+ };
  for(const kind of kinds) {
-  const retained=records=>records.map(record=>{
+  const retained=(records,snapshot,window)=>records.map(record=>{
+   if(kind==='order') {
+    assert.ok(window && Number.isFinite(window.from) && Number.isFinite(window.to) && window.to>=window.from,'Order snapshot needs its actual HTTP observation window');
+    const zone=snapshot.business[0]?.timezone || 'America/New_York';
+    assert.ok([day(window.from,zone),day(window.to,zone)].includes(record.receivingDate),'Suggested receiving date equals the current installation day at snapshot time');
+    const {receivingDate,...source}=record;return source;
+   }
    if(kind!=='supplierDocument')return record;
    const {compliance,...source}=record;return source;
   }).sort((a,b)=>a.id.localeCompare(b.id));
-  assert.deepEqual(retained(after[kind]),retained(before[kind]),`${kind.startsWith('supplierDocument')?'SUPPLIER-004 ':kind.startsWith('orderChase')?'PO-003 ':''}${kind} preserved across archive restore`);
+  assert.deepEqual(retained(after[kind],after,windows?.after),retained(before[kind],before,windows?.before),`${kind.startsWith('supplierDocument')?'SUPPLIER-004 ':kind.startsWith('orderChase')?'PO-003 ':''}${kind} preserved across archive restore`);
  }
 }
 
