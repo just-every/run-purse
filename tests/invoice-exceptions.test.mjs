@@ -28,6 +28,8 @@ test('Invoice exception assignment and receiver correction preserve age, source 
     assert.deepEqual(await raw('invoiceException'), deniedBefore);
     const stale = assign(item, f.ids.receiver);
     await h.command('assign-invoice-exception', stale, f.buyer);
+    const notices=(await h.send('/api/purse/notifications',undefined,f.receiver)).value.items;assert.ok(notices.some(n=>n.type==='exception-assigned'&&!n.canRead),'Assignment never exposes private invoice context to an operational receiver');
+    assert.ok(!JSON.stringify(notices).includes(f.invoice.id));
     item = (await f.queue())[0]; assert.equal(item.assigneeCurrent, true); assert.equal(item.openedAt, openedAt);
     await h.command('assign-invoice-exception', stale, f.buyer, 409);
     await h.command('assign-invoice-exception', assign(item, f.ids.second, 'Second receiver checks the signed count sheet'), f.buyer);

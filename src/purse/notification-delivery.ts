@@ -1,3 +1,4 @@
+import { runNotificationNudges } from './notification-nudges';
 import type { Bindings } from '../auth.server';
 import { operatorMail } from '../mail.server.mjs';
 import { notificationView } from './notifications';
@@ -7,7 +8,8 @@ import { all, roles, uid, type Actor, type Data } from './types';
 
 /** One durable claim per source notification. Interrupted or uncertain sends are never automatically repeated. */
 export async function runNotificationDeliveries(env: Bindings, now = Date.now()) {
-    const {state,revision} = await load(env.DB);
+    await runNotificationNudges(env,now);
+    const {state} = await load(env.DB);
     const operators = (await env.DB.prepare("SELECT id,email,role,version FROM oa_operators WHERE status='active'").all<Data>()).results;
     const groups = new Map<string,{a:Actor;p:Data;items:Data[]}>();
     for (const o of operators) {
@@ -32,7 +34,7 @@ export async function runNotificationDeliveries(env: Bindings, now = Date.now())
         if (!live || !roles(current,a).length || notificationPreference(current,a).version !== p.version) continue;
         const items = group.items.filter(n => !current.has('notificationDelivery:' + notificationId(['delivery',n.id])));
         if (!items.length) continue;
-        const eligible = items.filter(n => { const v=notificationView(current,a,n); return v.canRead && !n.dismissed && (!['approval-needed','receipt-needed'].includes(n.type) || v.actionable); });
+        const eligible = items.filter(n => { const v=notificationView(current,a,n); return v.canRead && !n.dismissed && (!['approval-needed','approver-nudge','receipt-needed'].includes(n.type) || v.actionable); });
         const at = new Date(now).toISOString();
         const rows = items.map(n => ({id:notificationId(['delivery',n.id]),notification:n.id,recipient:a.id,preferenceVersion:p.version,
             channel:p.channel,cadence:p.cadence,batch,count:eligible.length,at,status:'uncertain',code:'claimed'}));
@@ -44,7 +46,7 @@ export async function runNotificationDeliveries(env: Bindings, now = Date.now())
         const currentItems = eligible.filter(n => notificationView(fresh,a,n).canRead);
         const valid = roles(fresh,a).length && notificationPreference(fresh,a).version === p.version;
         const fence = await env.DB.prepare("SELECT 1 AS ok WHERE (SELECT revision FROM p_meta WHERE id=1)=? AND EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active')").bind(freshRevision,a.id,a.version).first();
-        let status = 'suppressed', code = 'source-unavailable';
+        let status = 'suppressed', code = 'source-unavailable', provider: string|null=null, providerMessageId: string|null=null;
         if (valid && fence && currentItems.length) {
             code = 'in-app';
             if (p.channel === 'in-app') status = 'available';
@@ -58,18 +60,19 @@ export async function runNotificationDeliveries(env: Bindings, now = Date.now())
                             subject:p.cadence==='daily' ? 'Your Purse daily digest' : 'Your Purse notification',
                             text:`${currentItems.length} purchasing notification${currentItems.length===1?'':'s'} available. Sign in to see current authorized details: ${new URL('/app',env.AUTH_ORIGIN).href}`,
                             html:'',headers:{}});
-                        status=result.status==='development'?'suppressed':['accepted','uncertain','rejected'].includes(result.status)?result.status:'unavailable';
+                        status=result.status==='development'?'suppressed':['accepted','uncertain','rejected','rate_limited'].includes(result.status)?result.status:'unavailable';
                         code=result.status==='development'?'local-mail-suppressed':'mail-provider';
+                        provider=result.provider; providerMessageId=typeof result.providerMessageId==='string' && /^[A-Za-z0-9_-]{1,128}$/.test(result.providerMessageId)?result.providerMessageId:null;
                     } catch { status='uncertain'; code='mail-outcome-unknown'; }
                 }
             }
         }
         const updates = rows.map(row => {
             const served = valid && fence && currentItems.some(n => n.id===row.notification);
-            const value = {...row,status:served?status:'suppressed',code:served?code:'source-unavailable'};
+            const value = {...row,status:served?status:'suppressed',code:served?code:'source-unavailable',provider:served?provider:null,providerMessageId:served?providerMessageId:null};
             events.push(value);
             // JSON updates preserve concurrent erasure and never restore a scrubbed recipient.
-            return env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.status',?,'$.code',?) WHERE business='main' AND kind='notificationDelivery' AND id=?").bind(uid(),value.status,value.code,row.id);
+            return env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.status',?,'$.code',?,'$.provider',?,'$.providerMessageId',?) WHERE business='main' AND kind='notificationDelivery' AND id=?").bind(uid(),value.status,value.code,value.provider,value.providerMessageId,row.id);
         });
         await env.DB.batch(updates);
     }

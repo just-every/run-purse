@@ -1,3 +1,4 @@
+import { notificationInserts } from './notifications';
 import type { Bindings } from '../auth.server';
 import { operatorMail } from '../mail.server.mjs';
 import { agentPolicies, purchaseTypes, requireAgentPolicies } from './agent-governance';
@@ -189,14 +190,17 @@ async function attempt(env: Bindings, policyId: string, escalation: boolean, now
     event.outcome = await send(env, event, order, policy, now);
     // An erasure/cleanup while mail is in flight changes these row revisions.
     // Never replace that newer source record with a pre-erasure snapshot.
+    const outcomeVersion=uid();
+    const notificationRows=await notificationInserts(env.DB,(await load(env.DB)).state,[{kind:'orderChaseEvent',value:event}],{kind:'orderChaseEvent',id,revision:outcomeVersion});
     await env.DB.batch([
         env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.outcome',json(?)) WHERE business='main' AND kind='orderChaseEvent' AND id=? AND revision=?")
-            .bind(uid(), JSON.stringify(event.outcome), id, claimVersion),
+            .bind(outcomeVersion, JSON.stringify(event.outcome), id, claimVersion),
         ...(policy.agent === 'AGENT-003' ? [env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.outcomes[0]',json(?)) WHERE business='main' AND kind='agentRun' AND id=? AND revision=?")
             .bind(uid(), JSON.stringify(event.outcome), chaseRun(event, policy).id, runVersion)] : []),
         env.DB.prepare("INSERT OR IGNORE INTO p_records(business,kind,id,revision,value) VALUES('main','audit',?,?,?)")
             .bind('chase-outcome:'+id, uid(), JSON.stringify({ id: 'chase-outcome:'+id, actor: 'scheduled', email: '', action: 'order-chase-outcome',
                 record: order.id, revision: order.revision, chase: id, claim: 'chase-claim:'+id, status: event.outcome.status, at: new Date().toISOString() })),
+        ...notificationRows,
     ]);
     return event;
 }

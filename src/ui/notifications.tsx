@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Form, Field, call, when, type D } from './shared';
-const labels: D = { 'approval-needed': 'Approval needed', returned: 'Request returned', approved: 'Request approved', 'comment-mention': 'Comment mention', 'receipt-needed': 'Receipt needed' };
+const labels: D = { 'approver-nudge':'Approval reminder', 'approval-needed': 'Approval needed', returned: 'Request returned', approved: 'Request approved', 'comment-mention': 'Comment mention', 'receipt-needed': 'Receipt needed', 'comment-reply':'Comment reply', 'approver-edit':'Approver edited request', 'buyer-edit':'Buyer edited conversion', 'po-acknowledged':'PO acknowledged', 'chase-sent':'Supplier chase sent', delivered:'Delivery received', 'exception-assigned':'Exception assigned', 'document-expiring':'Supplier document due' };
 export function Notifications({ refresh }: { refresh: unknown }) {
     const [items, setItems] = useState<D[]>([]), [error, setError] = useState(''), [history, setHistory] = useState(false);
     async function reload() { const result = await call('notifications'); setItems(result.items); setError(''); }
@@ -38,10 +38,13 @@ export function NotificationSettings({ owner }: { owner: boolean }) {
             <Field label="Daily digest time" name="digestAt" type="time" defaultValue={p.digestAt}/>
         </Form>
         <p>Only owner-marked urgent events bypass your digest and quiet hours. Pending sends follow your current settings. Delivery attempts are consumed once; an uncertain outcome is never automatically resent.</p>
-        {owner && <details><summary>Urgent notification events</summary><p>Mark only event families that need immediate attention for all recipients.</p><Form label="Save notification urgency" onSubmit={async b => { const current=await call('notification-settings'); await call('command/notification-urgency',{type:b.type,version:current.urgency.find((u:D)=>u.type===b.type)?.version??0,urgent:b.urgent==='true'}); await reload(); }}>
+        {owner && <><details><summary>Approval reminder schedule</summary><Form key={settings.nudgePolicy.version} label="Save approval reminder schedule" onSubmit={async b=>{await call('command/notification-nudge-policy',{...b,version:settings.nudgePolicy.version,enabled:b.enabled==='true',hours:Number(b.hours)});await reload();}}>
+            <Field label="Approval reminders" name="enabled" defaultValue={String(settings.nudgePolicy.enabled)} options={[{value:'false',label:'Off'},{value:'true',label:'Remind current approvers'}]}/>
+            <Field label="Hours between reminders" name="hours" type="number" defaultValue={settings.nudgePolicy.hours}/>
+        </Form><p>Reminders retain the current approval step and original queue age. Escalation and out-of-office routing remain separate approval controls.</p></details><details><summary>Urgent notification events</summary><p>Mark only event families that need immediate attention for all recipients.</p><Form label="Save notification urgency" onSubmit={async b => { const current=await call('notification-settings'); await call('command/notification-urgency',{type:b.type,version:current.urgency.find((u:D)=>u.type===b.type)?.version??0,urgent:b.urgent==='true'}); await reload(); }}>
             <Field label="Notification event" name="type" options={Object.entries(labels).map(([value,label])=>({value,label}))}/>
             <Field label="Urgency" name="urgent" defaultValue="false" options={[{value:'false',label:'Respect recipient schedule'},{value:'true',label:'Deliver immediately'}]}/>
-        </Form><p>Immediate event families: {settings.urgentTypes.map((type:string)=>labels[type]).join(', ') || 'None'}</p></details>}
+        </Form><p>Immediate event families: {settings.urgentTypes.map((type:string)=>labels[type]).join(', ') || 'None'}</p></details></>}
         <details><summary>Notification delivery history</summary>{!settings.deliveries.length?<p>No delivery attempts yet.</p>:<ul className="ruled-list">{Array.from(new Map<string,D>(settings.deliveries.map((d:D)=>[d.batch,d])).values()).reverse().map((d:D)=><li key={d.batch}>{when(d.at)} · {d.channel} · {d.cadence==='daily'?'Daily digest':'Individual notice'} · {d.status} · {d.count} notification{d.count===1?'':'s'}{d.code==='channel-not-connected'?' · Connect this channel before delivery can succeed.':d.code==='mail-not-configured'?' · Email is not configured.':d.code==='source-unavailable'?' · Source or recipient access changed.':''}</li>)}</ul>}</details>
     </section>;
 }

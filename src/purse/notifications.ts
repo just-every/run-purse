@@ -1,6 +1,7 @@
+import { linePosition } from './orders';
 import { notificationPreference } from './notification-preferences';
 import { createHash } from 'node:crypto';
-import { canReadCommentParent, canReadRecord } from './access-records';
+import { canReadCommentParent, canReadRecord, mayReadPrivateSupplier } from './access-records';
 import { actorStep } from './approval-chain';
 import { authorizedApproval } from './requests';
 import { mayReceive, receiptPrompts } from './receipt-routing';
@@ -19,7 +20,7 @@ export async function captureNotifications(db: D1Database, before: State, s: Sta
     const changed = (kind: string) => all(s, kind).filter(row => before.get(kind + ':' + row.id)?.revision !== s.get(kind + ':' + row.id)?.revision);
     const requests = changed('request'), mentions = changed('commentNotice').filter(n => !before.has('commentNotice:' + n.id));
     const prompts = changed('receiptPromptEvent').filter(n => !before.has('receiptPromptEvent:' + n.id));
-    if (!requests.length && !mentions.length && !prompts.length) return;
+
     const operators = (await db.prepare("SELECT id,email,role,version FROM oa_operators WHERE status='active'").all<Data>()).results;
     const directory: Actor[] = operators.map(o => ({ id: o.id, email: o.email, owner: o.role === 'owner', version: o.version, session: '', dev: false }))
         .filter(a => roles(s, a).length > 0);
@@ -41,6 +42,7 @@ export async function captureNotifications(db: D1Database, before: State, s: Sta
                 if (!previous || previous.revision !== request.revision || previous.approvalAttempt !== request.approvalAttempt || step !== priorStep)
                     add(a, 'approval-needed', 'audit', event, 'request', request, { step, approvalAttempt: request.approvalAttempt ?? null });
             }
+            if (a.id === request.requester && ['approver-edit','buyer-conversion-revision'].includes(event.action)) add(a,event.action==='approver-edit'?'approver-edit':'buyer-edit','audit',event,'request',request);
             if (['returned', 'approved'].includes(request.status) && previous?.status !== request.status && a.id === request.requester)
                 add(a, request.status, 'audit', event, 'request', request);
         }
@@ -49,6 +51,41 @@ export async function captureNotifications(db: D1Database, before: State, s: Sta
         const a = directory.find(a => a.id === notice.recipient), comment = s.get('comment:' + notice.comment)?.value;
         const record = comment && s.get(comment.kind + ':' + comment.record)?.value;
         if (a && record) add(a, 'comment-mention', 'commentNotice', notice, comment.kind, record, { commentVersion: notice.commentVersion ?? comment.version });
+    }
+    for (const comment of changed('comment').filter(c => !before.has('comment:' + c.id) && !c.erasure)) {
+        const record=s.get(comment.kind+':'+comment.record)?.value;
+        if (!record) continue;
+        const authors=new Set(all(before,'comment').filter(c => c.kind===comment.kind && c.record===comment.record && !c.erasure).map(c => c.author));
+        for (const a of directory) if (a.id!==comment.author && authors.has(a.id) && !mentions.some(n => n.comment===comment.id && n.recipient===a.id))
+            add(a,'comment-reply','comment',comment,comment.kind,record,{commentVersion:1});
+    }
+    for (const event of newAudits.filter(e => e.action==='approval-nudge')) {
+        const request=s.get('request:'+event.record)?.value;
+        if (request && request.revision===event.revision && (request.approvalAttempt??null)===(event.approvalAttempt??null))
+            for (const a of directory) if (approvalRecipient(s,a,request) && (actorStep(s,a,request)?.id??'primary')===event.step)
+                add(a,'approver-nudge','audit',event,'request',request,{step:event.step,approvalAttempt:event.approvalAttempt??null,approvalSource:event.approvalSource});
+    }
+    for (const event of newAudits.filter(e => e.action==='assign-invoice-exception')) {
+        const a=directory.find(a => a.id===event.assignee), record=s.get('invoiceException:'+event.exception)?.value;
+        if (a && record) add(a,'exception-assigned','audit',event,'invoiceException',record,{assignmentVersion:event.version});
+    }
+    const orderFollowers = (order: Data) => directory.filter(a => a.id===s.get('request:'+order.request)?.value.requester || a.id===order.issuedBy || a.id===order.buyer);
+    for (const event of changed('receipt').filter(e => !before.has('receipt:'+e.id))) {
+        const order=s.get('order:'+event.order)?.value;
+        if (order && ['receive','correction'].includes(event.event) && order.lines.every((l:Data) => linePosition(s,order.id,l).accepted>=l.q))
+            for (const a of orderFollowers(order)) add(a,'delivered','receipt',event,'order',order);
+    }
+    for (const event of changed('orderAcknowledgment').filter(e => !before.has('orderAcknowledgment:'+e.id))) {
+        const order=s.get('order:'+event.order)?.value;
+        if (order) for (const a of orderFollowers(order)) add(a,'po-acknowledged','orderAcknowledgment',event,'order',order);
+    }
+    for (const event of changed('orderChaseEvent').filter(e => !e.erasure && ['accepted','development'].includes(e.outcome?.status) && !['accepted','development'].includes(before.get('orderChaseEvent:'+e.id)?.value.outcome?.status))) {
+        const order=s.get('order:'+event.order)?.value;
+        if (order) for (const a of orderFollowers(order)) add(a,'chase-sent','orderChaseEvent',event,'order',order);
+    }
+    for (const event of changed('supplierDocumentReminder').filter(e => !before.has('supplierDocumentReminder:'+e.id))) {
+        const supplier=s.get('supplier:'+event.supplier)?.value;
+        if (supplier) for (const a of directory) if (mayReadPrivateSupplier(s,a,supplier)) add(a,'document-expiring','supplierDocumentReminder',{...event,at:event.createdAt},'supplier',supplier);
     }
     for (const event of prompts) {
         const order = s.get('order:' + event.order)?.value, a = directory.find(a => a.email.toLowerCase() === event.receiver.toLowerCase());
@@ -63,8 +100,8 @@ export function notificationView(s: State, a: Actor, n: Data): Data {
     let accessible = !n.erasure && Boolean(record && source);
     let body: string | undefined;
     let displayRecord = record;
-    if (accessible && n.type === 'comment-mention') {
-        const comment = s.get('comment:' + source!.comment)?.value, version = comment?.versions[n.commentVersion - 1];
+    if (accessible && ['comment-mention','comment-reply'].includes(n.type)) {
+        const comment = n.type==='comment-reply'?source:s.get('comment:' + source!.comment)?.value, version = comment?.versions[n.commentVersion - 1];
         accessible = Boolean(comment && !comment.erasure && version && canReadCommentParent(s, a, n.recordKind, record!));
         if (accessible) body = version.body || 'Comment deleted';
     } else if (accessible) {
@@ -72,11 +109,13 @@ export function notificationView(s: State, a: Actor, n: Data): Data {
         displayRecord = historical;
         accessible = Boolean(historical && canReadRecord(s, a, n.recordKind, record!) && canReadRecord(s, a, n.recordKind, historical));
     }
+    if (accessible && n.type==='document-expiring') accessible=mayReadPrivateSupplier(s,a,record!);
     if (!accessible) return { ...safe, canRead: false, message: 'This notification’s source is no longer available to you.' };
     let actionable = true;
-    if (n.type === 'approval-needed') actionable = record!.revision === n.sourceRevision && (record!.approvalAttempt ?? null) === n.approvalAttempt
+    if (n.type==='exception-assigned') actionable=record!.version===n.assignmentVersion && record!.assignee===a.id && record!.assigneeVersion===a.version;
+    if (['approval-needed','approver-nudge'].includes(n.type)) actionable = record!.revision === n.sourceRevision && (record!.approvalAttempt ?? null) === n.approvalAttempt
         && approvalRecipient(s, a, record!) && (actorStep(s, a, record!)?.id ?? 'primary') === n.step
-        && (Boolean(record!.approvalRoute) || all(s, 'audit').filter(event => event.record === n.record && event.action === 'submit').at(-1)?.id === n.source);
+        && (Boolean(record!.approvalRoute) || all(s, 'audit').filter(event => event.record === n.record && event.action === 'submit').at(-1)?.id === (n.type==='approver-nudge'?n.approvalSource:n.source));
     if (n.type === 'receipt-needed') actionable = record!.revision === n.sourceRevision && mayReceive(s, a, record!)
         && receiptPrompts(s).some(prompt => prompt.order === record!.id && prompt.receiver.toLowerCase() === a.email.toLowerCase() && prompt.reason === source!.reason);
     if (['returned', 'approved'].includes(n.type)) actionable = record!.revision === n.sourceRevision && record!.status === n.type;
@@ -104,4 +143,16 @@ export function notifications(s: State, a: Actor, op: string, b: Data): Data | u
     if (!n.read || op === 'notification-dismiss' && !n.dismissed)
         put(s, 'notification', n.id, { ...n, read: true, dismissed: n.dismissed || op === 'notification-dismiss' });
     return notificationView(s, a, get(s, 'notification', n.id));
+}
+
+/** Append these statements to the source writer's existing fenced transaction. */
+export async function notificationInserts(db: D1Database, before: State, rows: {kind:string;value:Data}[], sourceFence?: {kind:string;id:string;revision:string}) {
+    const next=structuredClone(before);
+    for (const {kind,value} of rows) put(next,kind,value.id,value);
+    await captureNotifications(db,before,next);
+    return [...next.values()].filter(r => r.kind==='notification' && !before.has('notification:'+r.id)).map(r => {
+        const suffix=sourceFence?" WHERE EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind=? AND id=? AND revision=?)":'';
+        return db.prepare("INSERT OR IGNORE INTO p_records(business,kind,id,revision,value) SELECT 'main','notification',?,?,?"+suffix)
+            .bind(r.id,r.revision,JSON.stringify(r.value),...(sourceFence?[sourceFence.kind,sourceFence.id,sourceFence.revision]:[]));
+    });
 }

@@ -26,6 +26,7 @@ test('PO-003 overdue and unacknowledged POs chase on cadence, escalate once, sha
  assert.equal(h.messages.length,initial+1)
  assert.deepEqual(h.messages.at(-1).to,['orders@summit.example.test'],'Chases retain the approved PO contact after a directory edit')
  let events=(await state(requester)).data.orderChaseEvent.filter(e=>e.order===order.id)
+ const notices=(await h.send('/api/purse/notifications',undefined,requester)).value.items;assert.equal(notices.filter(n=>n.type==='chase-sent'&&n.record===order.id&&n.canRead).length,1,'A genuine accepted chase reaches its requester once');
  assert.equal(events.length,1);assert.equal(events[0].reason,'unacknowledged');assert.equal(events[0].outcome.status,'accepted')
  assert.equal((await state(other)).data.orderChaseEvent.length,0)
  await tick(2);assert.equal(h.messages.length,initial+1)

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { all, audit, get, put, requireThat, roles, text, type Actor, type Data, type State } from './types';
-export const notificationTypes = ['approval-needed','returned','approved','comment-mention','receipt-needed','approver-edit','buyer-edit','po-acknowledged','chase-sent','delivered','exception-assigned','document-expiring'] as const;
+export const notificationTypes = ['approver-nudge','approval-needed','returned','approved','comment-mention','comment-reply','receipt-needed','approver-edit','buyer-edit','po-acknowledged','chase-sent','delivered','exception-assigned','document-expiring'] as const;
 export const notificationId = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const time = (value: unknown) => typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 export function notificationPreference(s: State, a: Actor): Data {
@@ -12,10 +12,18 @@ export function notificationPreference(s: State, a: Actor): Data {
 }
 export function notificationSettings(s: State, a: Actor) {
     const preferences = notificationPreference(s,a);
-    return { preferences, urgency: a.owner ? all(s,'notificationUrgency') : [], urgentTypes: all(s,'notificationUrgency').filter(p => p.urgent).map(p => p.type),
-        deliveries: all(s,'notificationDelivery').filter(d => d.recipient === a.id && !d.erasure).map(({ id, channel, cadence, status, code, at, batch, count }) => ({ id, channel, cadence, status, code, at, batch, count })) };
+    return { preferences, nudgePolicy: a.owner ? (s.get('notificationNudgePolicy:main')?.value ?? {version:0,enabled:false,hours:24}) : undefined, urgency: a.owner ? all(s,'notificationUrgency') : [], urgentTypes: all(s,'notificationUrgency').filter(p => p.urgent).map(p => p.type),
+        deliveries: all(s,'notificationDelivery').filter(d => d.recipient === a.id && !d.erasure).map(({ id, channel, cadence, status, providerStatus, code, at, batch, count }) => ({ id, channel, cadence, status:providerStatus??status, code, at, batch, count })) };
 }
 export function notificationPreferences(s: State, a: Actor, op: string, b: Data): Data | undefined {
+    if (op === 'notification-nudge-policy') {
+        requireThat(a.owner,'Current native owner required',403);
+        const previous=s.get('notificationNudgePolicy:main')?.value;
+        requireThat(b.version===(previous?.version??0),'Reminder schedule changed; reload',409);
+        requireThat(typeof b.enabled==='boolean' && Number.isInteger(b.hours) && b.hours>=1 && b.hours<=168,'Choose a whole-hour reminder cadence from 1 to 168');
+        put(s,'notificationNudgePolicy','main',{version:(previous?.version??0)+1,enabled:b.enabled,hours:b.hours,actor:a.id,operatorVersion:a.version});
+        audit(s,a,op,'main',{enabled:b.enabled,hours:b.hours});return get(s,'notificationNudgePolicy','main');
+    }
     if (op === 'notification-urgency') {
         requireThat(a.owner, 'Current native owner required',403);
         requireThat(notificationTypes.includes(b.type) && typeof b.urgent === 'boolean','Choose a supported event and urgency');

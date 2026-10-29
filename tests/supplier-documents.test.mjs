@@ -28,6 +28,7 @@ test('SUPPLIER-004 dated evidence, clock-driven supplier/owner reminders, lapse 
  const mailBefore=h.messages.length
  await tick(-10);assert.equal(h.messages.length,mailBefore)
  await tick(-7);assert.equal(h.messages.length,mailBefore+2)
+ const notices=(await h.send('/api/purse/notifications',undefined,buyer)).value.items;assert.ok(notices.some(n=>n.type==='document-expiring'&&n.record===supplier.id&&n.canRead),'Genuine expiring document reminder creates a private native notice');
  const reminders=h.messages.slice(mailBefore)
  assert.ok(reminders.some(m=>m.to.includes('compliance@summit.example.test')))
  assert.ok(reminders.some(m=>m.to.includes('owner@example.test')))
