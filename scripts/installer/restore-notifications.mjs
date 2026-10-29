@@ -1,4 +1,19 @@
 export function validateNotifications(all, get, check) {
+    const recipient = r => check(typeof r.recipient === 'string' && r.recipient.length > 0, 'notification_recipient');
+    const time = v => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+    for (const p of all('notificationPreference')) {
+        recipient(p); check(/^[a-f0-9]{64}$/.test(p.id) && Number.isInteger(p.version) && p.version > 0, 'notification_preference');
+        check(['in-app','email','slack','teams','push'].includes(p.channel) && ['immediate','daily'].includes(p.cadence), 'notification_channel');
+        try { new Intl.DateTimeFormat('en-US',{timeZone:p.timezone}).format(0); } catch { check(false,'notification_timezone'); }
+        check(typeof p.quiet === 'boolean' && typeof p.weekends === 'boolean' && time(p.quietStart) && time(p.quietEnd) && p.quietStart !== p.quietEnd && time(p.digestAt),'notification_quiet');
+    }
+    for (const p of all('notificationUrgency')) check(p.id === p.type && typeof p.urgent === 'boolean' && Number.isInteger(p.version) && p.version > 0,'notification_urgency');
+    for (const d of all('notificationDelivery')) {
+        recipient(d); const n=get('notification',d.notification);
+        check(n.recipient === d.recipient && /^[a-f0-9]{64}$/.test(d.id) && /^[a-f0-9]{64}$/.test(d.batch),'notification_delivery');
+        check(['in-app','email','slack','teams','push'].includes(d.channel) && ['immediate','daily'].includes(d.cadence) && ['uncertain','accepted','rejected','suppressed','available','unavailable'].includes(d.status), 'notification_outcome');
+        check(Number.isFinite(Date.parse(d.at)) && Number.isInteger(d.preferenceVersion) && d.preferenceVersion > 0 && Number.isInteger(d.count) && d.count >= 0 && typeof d.code === 'string','notification_delivery_state');
+    }
     for (const n of all('notification')) {
         check(/^[a-f0-9]{64}$/.test(n.id) && typeof n.recipient === 'string' && n.recipient.length > 0, 'notification_recipient');
         check(['approval-needed','returned','approved','comment-mention','receipt-needed'].includes(n.type), 'notification_type');

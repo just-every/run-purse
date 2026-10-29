@@ -1,3 +1,4 @@
+import { notificationPreference } from './notification-preferences';
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { operatorMail } from '../mail.server.mjs';
 import { activeReceiver, receiptAssignment, receiptDay, receiptPrompts, receiptRecipient } from './receipt-routing';
@@ -27,6 +28,8 @@ async function send(env: Bindings, event: Data, now: number): Promise<Data> {
     if (!receiptRecipient(state, event.receiver, scopedOrder)) return { ...outcome, code: 'obsolete' };
     const recipient = { id: '', email: event.receiver, owner: false, dev: false, session: '', version: 0 };
     const member = activeReceiver(state,event.receiver,scopedOrder) || !assignment.explicit && allowed(state,recipient,'request.edit',scopedOrder);
+    const native = await env.DB.prepare("SELECT id,role,version FROM oa_operators WHERE lower(email)=? AND status='active'").bind(event.receiver).first<Data>();
+    if (native && notificationPreference(state,{...recipient,id:native.id,owner:native.role==='owner',version:native.version}).version) return {...outcome,code:'notification-preferences'};
     const sender = operatorMail(env);
     if (!sender || !env.MAIL_FROM) return { ...outcome, status: 'unavailable' };
     const url = new URL('/app', env.AUTH_ORIGIN);
