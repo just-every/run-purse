@@ -5079,12 +5079,16 @@
       "sha256": "1f287263447671338034657abcc71fdec7f36dc8674b1bcc4ef790dbe9512c97",
       "executable": false
     },
+    "tests/agent-door-browser-session.mjs": {
+      "sha256": "83939c9a6684f1394a6085b4626a3128f15d0619d5a9d7e3155faac1fe7504fc",
+      "executable": false
+    },
     "tests/agent-door-browser.mjs": {
-      "sha256": "1f47feddfbd5e7cadc0cdde66d6847a8800e11f84596f008c0144bdca419a061",
+      "sha256": "20a2aafde851a827630800d69ae102ae5c178837ca4fc351dec455dc14ce6a20",
       "executable": false
     },
     "tests/agent-door-journey.mjs": {
-      "sha256": "1ad600b6b077a3404370684d398e876d0808c78041957518bdb8e66789bbcf25",
+      "sha256": "a8ac918474412899ba82bc64a4024626f0172bb5f64e47ea94099d4b908df00f",
       "executable": false
     },
     "tests/agent-door-provider-edge.mjs": {

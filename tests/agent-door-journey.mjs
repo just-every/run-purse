@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
-import {agentDoorBrowser} from './agent-door-browser.mjs'
+import {agentDoorBrowser,agentPendingBrowser} from './agent-door-browser.mjs'
+
+export async function afterStep({phase,step,tool,request,origin,cookie}) {
+ if(phase!=='held'||step.id!=='snapshot')return
+ const pending=await tool('purse.records.list',{kind:'supplier'})
+ const approval=pending.result?._meta?.['com.runeditrun/approval']
+ assert.ok(approval?.id)
+ await agentPendingBrowser({request,origin,cookie,approval})
+}
 
 // Real native persistence, policy and audit; no application or auth stand-ins.
 export default async function({tool,request,origin,cookie,email}) {
