@@ -95,6 +95,10 @@
       "sha256": "35854e92f5ef3a942024b34425cd948e8d7ff73c972945ec4c2bce181c7a1773",
       "executable": false
     },
+    "agent-surface.json": {
+      "sha256": "b3d187e68f7a5137773bab98faa35918a13795be279990bb94ed805f5c7d08ad",
+      "executable": false
+    },
     "AGENTS.consumer.md": {
       "sha256": "5f05d6a34ef42b09dbc627dcad160ccf14940d1904f76a03ebf491b5f04bfe50",
       "executable": false
