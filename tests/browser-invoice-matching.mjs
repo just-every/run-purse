@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {mkdir} from 'node:fs/promises';
+import {mkdir,readFile} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {build} from 'esbuild';
 import {nativeWebContext} from './native-web-fixture.mjs';
@@ -24,26 +24,33 @@ try {
         await rules.getByLabel('Matching category (* means all)',{exact:true}).fill('*');
         await rules.getByLabel('Price tolerance percent',{exact:true}).fill('2');await rules.getByLabel('Price tolerance amount',{exact:true}).fill('20.00');
         await rules.getByLabel('Quantity tolerance percent',{exact:true}).fill('2');await rules.getByLabel('Quantity tolerance amount',{exact:true}).fill('20.00');
+        await rules.getByLabel('Unplanned charge tolerance percent',{exact:true}).fill('5');await rules.getByLabel('Unplanned charge tolerance amount',{exact:true}).fill('50.00');
+        await rules.getByLabel('Unplanned freight GL account',{exact:true}).fill('Freight expense');await rules.getByLabel('Unplanned fuel GL account',{exact:true}).fill('Fuel expense');
         await rules.getByLabel('Matching consent reason',{exact:true}).fill('Owner explicitly consents to exact received goods and both variance limits');await rules.getByRole('checkbox').check();
         await rules.getByRole('button',{name:'Save matching consent',exact:true}).click();await rules.getByText('Active owner consent',{exact:true}).waitFor();await snap(page,'owner-matching-consent',rules);
-        for(const [name,received,unitMinor,approved,reason] of [['exact','6',10000,true,null],['within-two-percent','6',10200,true,null],['above-tolerance','6',10201,false,'Price exceeds tolerance for Safety equipment'],['before-receipt','0',10000,false,'Receipt shortfall for Safety equipment']]) {
-            const order=await f.order({received}),source=await f.stage(order,{unitMinor,reference:'synthetic-purse-'+name});
+        for(const [name,received,unitMinor,approved,reason,extra={}] of [['exact','6',10000,true,null],['within-two-percent','6',10200,true,null],['above-tolerance','6',10201,false,'Price exceeds tolerance for Safety equipment'],['before-receipt','0',10000,false,'Receipt shortfall for Safety equipment'],['unplanned-freight','10',10000,true,null,{quantity:'10',freightMinor:3500}],['unplanned-fuel','10',10000,false,'Unplanned charges exceed tolerance',{quantity:'10',charges:[{type:'fuel',amountMinor:12000}]}],['unplanned-before-receipt','0',10000,false,'Receipt shortfall for Safety equipment',{freightMinor:2500}]]) {
+            const order=await f.order({received}),source=await f.stage(order,{unitMinor,reference:'synthetic-purse-'+name,...extra});
             await ap.goto(f.h.origin+'/app?tab=Orders');
             await ap.getByRole('row').filter({hasText:order.number}).getByRole('button',{name:'Open order',exact:true}).click();
             // Select and confirm the staged original through the same source-bound web form.
             await ap.getByText('Confirm reviewed invoice',{exact:true}).click();
             await ap.getByRole('link',{name:source.document.name,exact:true}).waitFor();
             await ap.getByLabel('Invoice item 1 PO line',{exact:true}).selectOption(order.lines[0].id);
+            for(const [index,charge] of (extra.charges??[]).entries())await ap.getByLabel('Invoice item '+(index+2)+' PO line',{exact:true}).selectOption('charge:'+charge.type);
             await ap.getByLabel('Invoice confirmation reason',{exact:true}).fill('AP compared every value with the private original');
             await ap.getByLabel('I reviewed every invoice field and original',{exact:true}).check();
             await ap.getByRole('button',{name:'Create invoice from reviewed original',exact:true}).click();
             const matching=ap.getByRole('region',{name:'Automatic matching synthetic-purse-'+name,exact:true});await matching.waitFor();
             if(approved)await matching.getByText('Approved automatically under owner-consented matching',{exact:true}).waitFor();else await matching.getByText(reason,{exact:true}).waitFor();
+            if(name==='unplanned-freight')await matching.getByText('Unplanned freight: $35.00 · GL account Freight expense',{exact:true}).waitFor();
             await snap(ap,'invoice-'+name,matching.locator('..'));
             const state=(await f.h.state()).data,invoice=state.invoice.find(i=>i.reference==='synthetic-purse-'+name);assert.equal(Boolean(invoice.paymentApproval),approved);
-            if(approved){const cash=state.cashRequirements.bills.find(b=>b.invoice===invoice.id);assert.equal(cash.dueDate,new Date(Date.parse(invoice.invoiceDate+'T12:00:00Z')+30*86400000).toISOString().slice(0,10));assert.equal(cash.amountMinor,unitMinor*6);}else assert.ok(!state.cashRequirements.bills.some(b=>b.invoice===invoice.id));
+            if(approved){const cash=state.cashRequirements.bills.find(b=>b.invoice===invoice.id);assert.equal(cash.dueDate,new Date(Date.parse(invoice.invoiceDate+'T12:00:00Z')+30*86400000).toISOString().slice(0,10));assert.equal(cash.amountMinor,unitMinor*Number(extra.quantity??6)+(extra.freightMinor??0));}else assert.ok(!state.cashRequirements.bills.some(b=>b.invoice===invoice.id));
         }
-        const awardedOrder=await f.order({unitMinor:90000,awardFirstUnitMinor:100000}),awardedSource=await f.stage(awardedOrder,{unitMinor:90000,reference:'synthetic-purse-awarded'}),awarded=await f.confirm(awardedSource);
+        const [download]=await Promise.all([ap.waitForEvent('download'),ap.getByRole('link',{name:'Download coded invoice CSV',exact:true}).click()]);
+        const {parse}=await import('csv-parse/sync'),exportRows=parse(await readFile(await download.path(),'utf8'),{columns:true}).filter(row=>row.invoice==='synthetic-purse-unplanned-freight');
+        assert.deepEqual(exportRows.map(row=>[row.amount_minor,row.gl_account,row.charge_type]),[['100000','',''],['3500','Freight expense','freight']]);
+        const awardedOrder=await f.order({unitMinor:90000,awardFirstUnitMinor:100000}),awardedSource=await f.stage(awardedOrder,{unitMinor:90000,reference:'synthetic-purse-awarded',freightMinor:3500}),awarded=await f.confirm(awardedSource);
         assert.equal(awarded.paymentApproval.kind,'native-matching');
         const unapproved=await f.cmd('invoice',{order:awardedOrder.id,reference:'synthetic-purse-unapproved',source:'Unconfirmed extra supplier evidence',allocations:[{line:awardedOrder.lines[0].id,quantity:'1',amountMinor:90000}]},f.buyer);
         const report=await f.h.send('/api/purse/performance-report',undefined,f.buyer);assert.equal(report.status,200);assert.equal(report.value.savings.totals[0].realizedMinor,60000);assert.ok(!report.value.savings.realizedRows.some(r=>r.invoice===unapproved.id));

@@ -55,11 +55,13 @@ test('Native invoice matching approves exact and bounded goods once, holds excep
     const legacyOrder=await f.order(),legacySource=await f.stage(legacyOrder),legacy=await cmd('invoice',{order:legacyOrder.id,reference:legacySource.reading.reference.value,invoiceDate:legacySource.reading.invoiceDate.value,source:'Private AP original',document:legacySource.document,allocations:[{line:legacyOrder.lines[0].id,quantity:'6',amountMinor:60000}]},buyer);
     assert.deepEqual((await h.state(capture)).data.invoice,[]);const beforeOriginalRead=(await h.state()).data;
     await cmd('invoice-source',{order:legacyOrder.id,invoice:legacy.id},capture,403);assert.deepEqual((await h.state()).data,beforeOriginalRead,'Capture permission never lends retained-original read authority');
+    const quotedFreightOrder=await f.order({freightMinor:2000}),quotedFreight=await f.confirm(await f.stage(quotedFreightOrder,{freightMinor:1200}));assert.equal(quotedFreight.paymentApproval.amountMinor,61200);assert.equal(quotedFreight.paymentApproval.charges,undefined,'Quoted freight matches its PO without using unplanned charge authority');
     const feeSupplier=await cmd('supplier',{name:'Native charge supplier',status:'active',reason:'Independent fee source'});
     const feeRule=await f.rule({supplier:feeSupplier.id,chargeBps:500,chargeMinor:5000,chargeCodes:{freight:'Freight expense',fuel:'Fuel expense',handling:'Handling expense'}});
     const feeOrder=await f.order({supplierId:feeSupplier.id,received:'10'}),feeSource=await f.stage(feeOrder,{quantity:'10',freightMinor:3500}),feeBill=await f.confirm(feeSource);
     assert.equal(feeBill.paymentApproval.amountMinor,103500);assert.deepEqual(feeBill.paymentApproval.charges,[{sourceLine:'freightAmount',type:'freight',amountMinor:3500,glAccount:'Freight expense'}]);assert.ok(!feeBill.flags.some(flag=>flag.code==='po-balance'));
     const originalFee=await h.mf.dispatchFetch(h.origin+'/api/purse/download/attachment/'+feeSource.source.attachment,{headers:{cookie:buyer}});assert.equal(Buffer.from(await originalFee.arrayBuffer()).toString('base64'),feeSource.document.base64);
+    const smallFuelOrder=await f.order({supplierId:feeSupplier.id,received:'10'}),smallFuel=await f.confirm(await f.stage(smallFuelOrder,{quantity:'10',charges:[{type:'fuel',amountMinor:3500}]}));assert.equal(smallFuel.paymentApproval.amountMinor,103500);assert.equal(smallFuel.allocations[0].q,10000,'The fee item never invents goods quantity');assert.equal(smallFuel.paymentApproval.charges[0].glAccount,'Fuel expense');
     const fuelOrder=await f.order({supplierId:feeSupplier.id,received:'10'}),fuel=await f.confirm(await f.stage(fuelOrder,{quantity:'10',charges:[{type:'fuel',amountMinor:12000}]}));
     assert.equal(fuel.paymentApproval,undefined);assert.ok(fuel.matching.reasons.includes('Unplanned charges exceed tolerance'));
     const combinedOrder=await f.order({supplierId:feeSupplier.id,received:'10'}),combined=await f.confirm(await f.stage(combinedOrder,{quantity:'10',freightMinor:3500,charges:[{type:'handling',amountMinor:2500}]}));assert.equal(combined.paymentApproval,undefined);assert.ok(combined.matching.reasons.includes('Unplanned charges exceed tolerance'),'Caps bind the sum, never each fee separately');
@@ -73,8 +75,12 @@ test('Native invoice matching approves exact and bounded goods once, holds excep
     const noGoods=await f.stage(await f.order({supplierId:feeSupplier.id}),{charges:[{type:'fuel',amountMinor:1000}]}),invalidBefore=(await h.state()).data;
     await cmd('invoice-reading-confirm',{...noGoods.body,lines:noGoods.body.lines.map(line=>({id:line.id,chargeType:'fuel'}))},buyer,400);assert.deepEqual((await h.state()).data,invalidBefore);
     const feeQueue=await h.send('/api/purse/invoice-exceptions',undefined,buyer);for(const held of [fuel,combined,earlyFee,percent,missingCode])assert.ok(feeQueue.value.queue.some(row=>row.invoice===held.id&&row.status==='open'));
-    const {parse}=await import('csv-parse/sync'),accounting=await h.send('/api/purse/accounting',undefined,buyer);assert.equal(accounting.status,200);
+    const {parse}=await import('csv-parse/sync'),accounting=await h.send('/api/purse/accounting?charges=separate',undefined,buyer);assert.equal(accounting.status,200);
     const feeRows=parse(accounting.value,{columns:true}).filter(row=>row.invoice===feeBill.reference);assert.deepEqual(feeRows.map(row=>[row.amount_minor,row.gl_account,row.charge_type]),[['100000','',''],['3500','Freight expense','freight']]);assert.equal(feeRows.reduce((sum,row)=>sum+Number(row.amount_minor),0),103500);
+    const legacyCsv=await h.send('/api/purse/accounting',undefined,buyer),legacyRows=parse(legacyCsv.value,{columns:true}).filter(row=>row.invoice===feeBill.reference);assert.equal(legacyRows.length,1);assert.equal(legacyRows[0].amount_minor,'103500','The original CSV keeps its inclusive invoice allocation');
+    const feeAwardOrder=await f.order({supplierId:feeSupplier.id,unitMinor:90000,awardFirstUnitMinor:100000}),feeAward=await f.confirm(await f.stage(feeAwardOrder,{unitMinor:90000,freightMinor:3500}));assert.equal(feeAward.paymentApproval.amountMinor,543500);
+    const feeSavings=await h.send('/api/purse/performance-report',undefined,buyer),realized=feeSavings.value.savings.realizedRows.find(row=>row.invoice===feeAward.id);assert.equal(realized.billedMinor,540000);assert.equal(realized.firstMinor,600000);assert.equal(realized.savingsMinor,60000,'Coded fees never distort genuine goods savings');
+    assert.equal((await h.send('/api/purse/accounting?charges=separate',undefined,noRead)).status,403);assert.equal((await h.send('/api/purse/accounting?charges=separate',undefined,'')).status,401);const scopedFees=await h.send('/api/purse/accounting?charges=separate',undefined,scoped);assert.equal(scopedFees.status,200);assert.ok(!scopedFees.value.includes(feeBill.reference));
     const historicalFee=structuredClone(feeBill.paymentApproval);await cmd('matching-rule',{...feeRule,consent:true,chargeMinor:0,chargeCodes:{freight:'New expense code'},reason:'Future charges require separate review'});assert.deepEqual((await f.current(feeBill.id)).paymentApproval,historicalFee,'Editing consent cannot rewrite genuine approval or original coding');
     const feeAudit=await h.send('/api/purse/audit.csv?subject='+feeBill.id,undefined,h.owner);assert.equal(feeAudit.status,200);assert.match(feeAudit.value,/Freight expense/);
     const exportAudit=await h.send('/api/purse/audit.csv?subject='+exact.id,undefined,h.owner);assert.equal(exportAudit.status,200);assert.match(exportAudit.value,/invoice-matched-approved/);
@@ -89,7 +95,7 @@ test('Native invoice matching approves exact and bounded goods once, holds excep
     const restored=(await fresh.send('/api/purse/state',undefined,boot.cookie)).value.data;
     assert.equal(restored.matchingRule.find(r=>r.id===rule.id).currentConsent,false);
     assert.equal((await fresh.send('/api/purse/command/match-invoice',{invoice:above.id,rule:renewed.id,version:renewed.version},boot.cookie)).status,409);
-    assert.deepEqual(restored.invoice.find(i=>i.id===exact.id).paymentApproval,exact.paymentApproval);
+    assert.deepEqual(restored.invoice.find(i=>i.id===exact.id).paymentApproval,exact.paymentApproval);assert.deepEqual(restored.invoice.find(i=>i.id===feeBill.id).paymentApproval,feeBill.paymentApproval);
     // A revoked native owner cannot authorize a new match under historical consent.
     const otherOwner=await h.member(matchingMail(8605),['buyer'],'owner');
     await cmd('matching-rule',{...renewed,version:renewed.version,consent:true,reason:'Second owner consents'},otherOwner);
@@ -105,6 +111,7 @@ test('Native invoice matching approves exact and bounded goods once, holds excep
     assert.equal((await h.send('/api/purse/download/attachment/'+exactSource.source.attachment,undefined,h.owner)).status,410);
     assert.equal((await h.send('/api/purse/command/invoice-reading-confirm',exactSource.body,buyer)).status,401);
     const anonymous=(await h.state()).data.invoice.find(i=>i.id===exact.id);assert.ok(anonymous.paymentApproval);assert.equal(anonymous.paymentApproval.documentSha256,exact.paymentApproval.documentSha256);assert.ok(!JSON.stringify(anonymous).includes(f.emails.buyer));
+    assert.equal((await h.send('/api/purse/download/attachment/'+feeSource.source.attachment,undefined,h.owner)).status,410);
     const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(erasedRows),true);
 
 });
