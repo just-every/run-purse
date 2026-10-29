@@ -1,3 +1,4 @@
+import { codedChargePortions } from './invoice-charges';
 import { liveMatchingRule } from './matching-rules';
 import { supplierTaxView } from './supplier-tax';
 import { visibleSupplierCredits } from './supplier-credits';
@@ -183,15 +184,7 @@ export function accounting(s: State, a: Actor, separateCharges = false) {
             const order = get(s, 'order', invoice.order);
             if(!separateCharges)return invoice.allocations.map((line:Data)=>{const discrepancy=byAllocation.get(JSON.stringify([invoice.id,line.line]))!;return [invoice.reference,order.number,line.line,invoice.currency,line.quantity,line.amountMinor,discrepancy.priceMismatch,discrepancy.quantityMismatch,discrepancy.receiptShortfall];});
             const charges:Data[]=invoice.paymentApproval?.charges??[];
-            const total=charges.reduce((sum,charge)=>sum+charge.amountMinor,0);
-            const reading=invoice.confirmedReading?s.get('invoiceReading:'+invoice.confirmedReading)?.value:undefined;
-            const bases=invoice.allocations.map((allocation:Data,index:number)=>{
-                const mapping=reading?.lineMappings?.find((map:Data)=>map.orderLine===allocation.line);
-                return mapping?reading!.amounts.lines.find((line:Data)=>line.id===mapping.id).amountMinor:reading?.amounts?.lines[index]?.amountMinor??allocation.amountMinor;
-            });
-            const base=bases.reduce((sum:number,amount:number)=>sum+amount,0);
-            const parts=bases.map((amount:number)=>base?Number(BigInt(total)*BigInt(amount)/BigInt(base)):0);
-            if(parts.length)parts[0]+=total-parts.reduce((sum:number,amount:number)=>sum+amount,0);
+            const parts=codedChargePortions(invoice);
             return [...invoice.allocations.map((line:Data,index:number) => {
                 const source=order.lines.find((item:Data)=>item.id===line.line),discrepancy=byAllocation.get(JSON.stringify([invoice.id,line.line]))!;
                 return [invoice.reference,order.number,line.line,invoice.currency,line.quantity,line.amountMinor-parts[index],discrepancy.priceMismatch,discrepancy.quantityMismatch,discrepancy.receiptShortfall,source.glAccount??order.glAccount??'',''];

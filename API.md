@@ -1150,7 +1150,9 @@ coded charges from goods without changing the original total, with explicit
 `gl_account` and `charge_type` columns. The ordinary accounting download retains
 its original columns and inclusive allocation amounts. Cash retains the full
 approved bill and the unchanged remaining goods liability; realized savings
-uses goods line amounts alone. This creates no ledger posting or payment.
+uses goods line amounts alone. Spend reporting retains each approved charge
+under its frozen GL account, with source drill-through and unchanged total actual.
+This creates no ledger posting or payment.
 
 Existing unconfirmed native evidence can be selected with `invoice-source` and
 its invoice ID. Its retained original is reused, or an actual original is staged
