@@ -34,8 +34,13 @@ export async function withAgentBrowser({request,origin,cookie},visit) {
     }
     await page.setViewportSize({width:1440,height:1000})
    }
-   await visit({page,capture})
-  } finally {await context.close()}
+   stage='visit'
+   try {await visit({page,capture})}
+   catch(error) {
+    console.error('Native browser visit failed at',stage,'with',error.name,String(error.message).split('\n')[0].replace(/https?:\/\/[^\s]+/g,'[url]'))
+    throw error
+   }
+  } finally {if(browser.isConnected())await context.close()}
  } catch(error) {
   console.error('Native agent browser failed at',stage,'with',error.name,String(error.message).split('\n')[0].replace(/https?:\/\/[^\s]+/g,'[url]'))
   throw error
