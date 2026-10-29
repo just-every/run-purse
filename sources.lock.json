@@ -3152,7 +3152,7 @@
       "executable": false
     },
     "src/purse/entities.ts": {
-      "sha256": "9331c3dfdc288c6dcf604c25e90089b743cdb54f5ce5c748c38f3ededfa03f15",
+      "sha256": "a1b55115e1adf826f6bd6e465615fcc4a6b885a51dd9ea26bbcee44863b54f54",
       "executable": false
     },
     "src/purse/erasure-api.ts": {
@@ -5088,7 +5088,7 @@
       "executable": false
     },
     "tests/entities.test.mjs": {
-      "sha256": "ab8d7b98fac31b01a3d45d939b1f980fd73e37f485c72cb5a135b31baf485368",
+      "sha256": "03b9b2732644d1dd17e9656839a4538d14c23f5511f4c83bd48355aa5cbe288d",
       "executable": false
     },
     "tests/erasure-flow.mjs": {

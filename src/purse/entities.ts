@@ -66,17 +66,26 @@ export function bindRequestEntity(s: State, input: Data, prior?: Data) {
 export function entityCommandGuard(s: State, op: string, input: Data) {
     if (['entity','policy','po-profile','member','access-role','buyer-role-limit'].includes(op)) return;
     const records: Data[] = [];
+    const visited = new Set<string>();
+    const reference = (kind: string, id: unknown) => {
+        if (typeof id !== 'string' || visited.has(kind + ':' + id)) return;
+        visited.add(kind + ':' + id);
+        const record = s.get(kind + ':' + id)?.value;
+        if (!record) return;
+        records.push(record);
+        reference('request',record.request);
+        reference('order',record.order);
+        if (typeof record.kind === 'string') reference(record.kind,record.record);
+        for (const source of record.references ?? []) if (typeof source.kind === 'string') reference(source.kind,source.id);
+    };
     for (const kind of ['request','order','invoice','intakeDraft','agentRun','proposedAction']) {
-        for (const id of [input.id, input[kind], input.record]) {
-            if (typeof id !== 'string') continue;
-            const record = s.get(kind + ':' + id)?.value;
-            if (record) records.push(record, ...(record.request ? [s.get('request:' + record.request)?.value ?? {}] : []));
-        }
+        for (const id of [input.id, input[kind], input.record, input.run]) reference(kind,id);
     }
     const nested: Data[] = [input]; let suppliedEntity = false;
     for (let index=0;index<nested.length;index++) {
         const value = nested[index];
         if (value.entity && value.entity !== 'main') suppliedEntity = true;
+        for (const source of value.references ?? []) if (typeof source.kind === 'string') reference(source.kind,source.id);
         for (const child of Object.values(value)) if (child && typeof child === 'object') nested.push(...(Array.isArray(child) ? child.filter(item=>item && typeof item==='object') : [child]));
     }
     const added = suppliedEntity || records.some(record => entityId(record) !== 'main');

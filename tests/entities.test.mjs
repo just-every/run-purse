@@ -27,6 +27,9 @@ test('Native entity purchasing reconciles two independent budgets and frozen PDF
     const requests=[await f.submit(first,60000),await f.submit(second,40000)];
     const queue=(await h.state(f.approver)).data.request.filter(request=>request.mayApprove);assert.deepEqual(new Set(queue.map(request=>request.id)),new Set(requests.map(request=>request.id)));
     for(const request of requests)await f.approve(request);
+    await refused(f,'prepare',{workflow:'negotiation',draft:'Review this equipment purchase',references:[{kind:'request',id:requests[0].id}]},h.owner,409);
+    const referencedFile=await h.command('attachment',{kind:'request',record:requests[0].id,name:'synthetic-purse-7461.txt',mediaType:'text/plain',base64:Buffer.from('synthetic-purse-7461').toString('base64')});
+    await refused(f,'prepare',{workflow:'negotiation',draft:'Review linked evidence',references:[{kind:'attachment',id:referencedFile.id}]},h.owner,409);
     const reservation=(await h.state()).data.commitment;
     for(const [index,amount]of [[0,60000],[1,40000]])assert.equal(reservation.filter(event=>event.policy===f.policies[index].id).reduce((sum,event)=>sum+event.amountMinor,0),amount);
     await refused(f,'request',{...f.requestInput(first,60000),lines:[{...f.requestInput(first,60000).lines[0],entity:second.id}]},f.requester,409);
