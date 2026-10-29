@@ -1144,8 +1144,11 @@ In `invoice-reading-confirm`, each reviewed item maps to `{id,orderLine}` or to
 freight above the proportional quoted PO freight is an unplanned freight charge.
 Quoted freight and tax must otherwise match the PO; a shortfall is held. Original
 amounts and classifications remain source-bound. Approval freezes the charge
-amounts, GL accounts and exact rule snapshots. The accounting CSV splits coded
-charges from goods without changing the original total. Cash retains the full
+amounts, GL accounts and exact rule snapshots. The expanded accounting CSV at
+`/api/purse/accounting?charges=separate` splits
+coded charges from goods without changing the original total, with explicit
+`gl_account` and `charge_type` columns. The ordinary accounting download retains
+its original columns and inclusive allocation amounts. Cash retains the full
 approved bill and the unchanged remaining goods liability; realized savings
 uses goods line amounts alone. This creates no ledger posting or payment.
 

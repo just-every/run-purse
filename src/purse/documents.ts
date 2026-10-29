@@ -176,13 +176,15 @@ export function download(s: State, a: Actor, kind: string, id: string) {
         'content-disposition': `attachment; filename="${record.number.replace(/[^a-zA-Z0-9._-]/g, '_')}.html"`,
         'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; img-src data:" } });
 }
-export function accounting(s: State, a: Actor) {
+export function accounting(s: State, a: Actor, separateCharges = false) {
     requirePermission(s, a, 'invoice.read');
     const cell = (value: unknown) => '"' + String(value).replace(/"/g, '""').replace(/^[=+@-]/, "' $&") + '"';
     const byAllocation = new Map(discrepancies(s).map(discrepancy => [JSON.stringify([discrepancy.invoiceId, discrepancy.lineId]), discrepancy]));
-    const rows = [['invoice', 'po', 'line', 'currency', 'quantity', 'amount_minor', 'price_mismatch', 'quantity_mismatch', 'receipt_shortfall', 'gl_account', 'charge_type'],
+    const rows = [['invoice', 'po', 'line', 'currency', 'quantity', 'amount_minor', 'price_mismatch', 'quantity_mismatch', 'receipt_shortfall', ...(separateCharges ? ['gl_account', 'charge_type'] : [])],
         ...all(s, 'invoice').filter(invoice => allowed(s, a, 'invoice.read', invoice)).flatMap(invoice => {
-            const order = get(s, 'order', invoice.order), charges:Data[]=invoice.paymentApproval?.charges??[];
+            const order = get(s, 'order', invoice.order);
+            if(!separateCharges)return invoice.allocations.map((line:Data)=>{const discrepancy=byAllocation.get(JSON.stringify([invoice.id,line.line]))!;return [invoice.reference,order.number,line.line,invoice.currency,line.quantity,line.amountMinor,discrepancy.priceMismatch,discrepancy.quantityMismatch,discrepancy.receiptShortfall];});
+            const charges:Data[]=invoice.paymentApproval?.charges??[];
             const total=charges.reduce((sum,charge)=>sum+charge.amountMinor,0);
             const reading=invoice.confirmedReading?s.get('invoiceReading:'+invoice.confirmedReading)?.value:undefined;
             const bases=invoice.allocations.map((allocation:Data,index:number)=>{
