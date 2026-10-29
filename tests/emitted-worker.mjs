@@ -53,7 +53,17 @@ export async function emittedInstallation(root,port){
   assert.equal(url.origin,'https://api.resend.com','Only the declared mail and screening network edges are fixtures');
   assert.equal(request.method,'POST');messages.push(await request.json());return Response.json({id:crypto.randomUUID()});
  };
- options.unsafeTriggerHandlers=true;
+ const scheduleKey=crypto.randomUUID()+crypto.randomUUID();
+ options.workers.unshift({
+  name:'purse-owned-proof-ingress',
+  modulesRoot:root,
+  compatibilityDate:'2026-09-08',
+  modules:[{type:'ESModule',path:join(root,'proof-ingress.mjs'),contents:"export default {async fetch(request,env){const url=new URL(request.url);if(url.pathname.startsWith('/cdn-cgi/'))return new Response('Not found',{status:404});if(url.pathname==='/__owned_proof_schedule'){if(request.method!=='POST'||request.headers.get('x-owned-proof')!==env.KEY)return new Response('Not found',{status:404});const {time}=await request.json();await env.APP.scheduled({scheduledTime:new Date(time)});return new Response(null,{status:204});}return env.APP.fetch(request);}}"}],
+  serviceBindings:{APP:worker.name},
+  bindings:{KEY:scheduleKey},
+  ...(worker.assets?{assets:worker.assets}:{})
+ });
+ options.unsafeTriggerHandlers=false;
  const mf=new Miniflare({...convertV4MiniflareOptions(options),resourcePersistencePath:join(root,'.wrangler/state/v3')});
  let site;
  try{
@@ -103,7 +113,7 @@ export async function emittedInstallation(root,port){
     response=await call('/auth/step-up',{action:'export'},cookie);assert.equal(response.status,202,await response.text());await confirm(cookie);
     return new Response(null,{status:login.status,headers:login.headers});
    },
-   async schedule(time){const r=await mf.dispatchFetch(origin+'/cdn-cgi/local/scheduled?time='+time);assert.equal(r.status,200,await r.text());},
+   async schedule(time){const response=await fetch(origin+'/__owned_proof_schedule',{method:'POST',headers:{'content-type':'application/json','x-owned-proof':scheduleKey},body:JSON.stringify({time}),signal:AbortSignal.timeout(30000)});assert.equal(response.status,204,await response.text());},
    async close(){site.closeAllConnections();await new Promise((resolve,reject)=>site.close(e=>e?reject(e):resolve()));await mf.dispose();}
   };
  }catch(error){site?.close();await mf.dispose();throw error;}
