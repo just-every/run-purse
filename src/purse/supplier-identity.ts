@@ -45,3 +45,9 @@ export function canonicalSupplier(s: State, id: string) {
     }
     return supplier.id as string;
 }
+
+/** Standalone reviews and rejected or erased proposal history never confer purchasing authority. */
+export function hasSupplierReviewHold(s: State, id: string) {
+    const proposal = s.get('supplierProposal:' + id)?.value;
+    return Boolean(proposal && (proposal.source === 'standalone' || proposal.status !== 'pending' || proposal.erasure));
+}

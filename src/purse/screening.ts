@@ -1,4 +1,5 @@
 import { requireThat, type Data } from './types';
+import { fetchScreeningSource } from './screening-fetch';
 
 // Commerce's public CSL consolidates OFAC's SDN names, aliases and addresses.
 // Use one authoritative transport, without substituting an empty list on failure.
@@ -34,7 +35,7 @@ function* csvRows(raw: string): Generator<string[]> {
 }
 export async function screenSupplier(name: string, address: string) {
     let response: Response;
-    try { response = await fetch(sourceUrl, { signal: AbortSignal.timeout(30000) }); }
+    try { response = await fetchScreeningSource(sourceUrl, { signal: AbortSignal.timeout(30000) }); }
     catch { throw new Error('OFAC source unavailable; supplier was not saved'); }
     requireThat(response.ok, 'OFAC source unavailable; supplier was not saved', 503);
     const raw = await response.text(), sourceDate = response.headers.get('last-modified');

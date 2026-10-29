@@ -33,7 +33,7 @@ export function validateIntake(all,get,check) {
  }
  for(const proposal of all('supplierProposal')){
   get('supplier',proposal.supplier);
-  check(proposal.id===proposal.supplier&&proposal.status==='pending'&&proposal.consent===true&&typeof proposal.requester==='string'&&typeof proposal.contactEmail==='string'&&typeof proposal.reason==='string','intake_supplier_proposal');
+  check(proposal.id===proposal.supplier&&['pending','rejected'].includes(proposal.status)&&proposal.consent===true&&typeof proposal.requester==='string'&&typeof proposal.contactEmail==='string'&&typeof proposal.reason==='string','intake_supplier_proposal');
   check(all('audit').some(e=>e.action==='supplier-proposal'&&e.record===proposal.id&&e.consent===true),'intake_supplier_proposal_audit');
  }
  for(const kind of ['request','revision','order'])for(const request of all(kind)){

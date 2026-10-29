@@ -6,6 +6,7 @@ export function unrestrictedAccess(s:State,a:Actor,permission:string) {
 }
 /** Resolve a historical subject before attaching its revision or policy evidence. */
 export function auditEventAllowed(s:State,a:Actor,event:Data,permission='audit.read') {
+ if(event.action.startsWith('supplier-proposal'))return a.owner;
  if(event.action==='supplier-tax-review')return a.owner;
  if(unrestrictedAccess(s,a,permission))return true;
  if(!allowed(s,a,permission))return false;
