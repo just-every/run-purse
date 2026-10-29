@@ -47,7 +47,7 @@ try {
     await settings.reload();await panel.getByRole('button',{name:'Edit absence',exact:true}).click();
     await panel.getByLabel('Absence starts',{exact:true}).fill('2026-11-02T09:00');await panel.getByLabel('Absence ends',{exact:true}).fill('2026-11-02T17:00');
     await panel.getByLabel('Absence reason',{exact:true}).fill('Updated future absence');await panel.getByRole('button',{name:'Save absence',exact:true}).click();await panel.getByRole('heading',{name:'Absence review policy · version 2',exact:true}).waitFor();
-    await panel.getByRole('button',{name:'Window history',exact:true}).count();
+    await panel.getByText('Window history',{exact:true}).click();await panel.getByText('Version 1 · scheduled',{exact:false}).waitFor();
     await panel.getByLabel('Cancellation reason',{exact:true}).fill('Availability restored');await panel.getByRole('button',{name:'Cancel absence',exact:true}).click();await panel.getByText('Cancelled · Updated future absence',{exact:true}).waitFor();
     assert.equal((await f.h.state()).data.approvalAbsenceSettings.configs[0].history.length,3);
     assert.deepEqual(errors,[]);console.log('Scheduled approval absence browser journey passed at '+width);

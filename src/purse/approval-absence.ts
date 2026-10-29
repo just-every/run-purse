@@ -86,6 +86,8 @@ export function validateAbsenceDecision(s: State, r: Data, step: Data, decision:
     const config=get(s,'approvalAbsence',decision.absence), version=config.history.find((h:Data)=>h.version===decision.absenceVersion&&h.action==='scheduled');
     const proof=version&&{...version,id:config.id};
     requireThat(proof&&absenceProof(s,proof)&&version.authority===decision.absenceAuthority&&version.from===step.email&&version.delegate===decision.email&&version.delegateActor===decision.actor&&version.delegateVersion===decision.operatorVersion&&decision.at>=version.startsAt&&decision.at<version.endsAt&&!config.erasure,'Absence decision has no current native authority; renew approval',409);
+    const origin=identity(s,version.from), delegate=identity(s,version.delegate);
+    requireThat(origin&&delegate&&sameScope(s,nativeApprover(origin),nativeApprover(delegate))&&allowed(s,nativeApprover(origin),'request.approve',r),'Original approver scope revoked; renew approval',409);
     requireThat(allowed(s,{id:decision.actor,email:decision.email,owner:decision.owner===true,version:decision.operatorVersion,dev:false,session:''},'request.approve',r),'Delegate authority revoked; renew approval',409);
 }
 /** Append transitions only for undecided steps; neither requests nor decisions are rewritten. */
@@ -108,7 +110,9 @@ export function absenceView(s: State, r: Data) {
     const step=absenceSteps(s,r).find(step=>!stepDone(s,r,step));
     if(!step)return;
     const route=absenceRoute(s,r,step), transfer=s.get('approvalAbsenceTransfer:'+ [r.id,r.revision,r.approvalAttempt??'native',step.id].join(':'))?.value;
-    return {step:step.id,holder:route?(route.status==='held'?'Held for owner review':route.to):step.email,reason:route?.reason??transfer?.reason,detail:route?.detail??(transfer?.status==='returned'?transfer.detail:undefined),since:r.submittedAt??transfer?.since,held:route?.status==='held'};
+    if(!route&&!transfer)return;
+    const assignment=currentScimAssignment(s,r,r.approvalRoute?step.id:undefined);
+    return {step:step.id,holder:route?(route.status==='held'?'Held for owner review':route.to):assignment?.to??step.email,reason:route?.reason??transfer?.reason,detail:route?.detail??(transfer?.status==='returned'?transfer.detail:undefined),since:r.submittedAt??transfer?.since,held:route?.status==='held'};
 }
 export function absenceSettings(s: State, a: Actor) {
     const canConfigure=a.owner||allowed(s,a,'request.approve');
