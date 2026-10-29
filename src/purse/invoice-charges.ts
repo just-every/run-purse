@@ -35,3 +35,14 @@ export function matchInvoiceCharges(charges: Data[], rules: Data[], totalMinor: 
     if (charges.length && (!rules.length || rules.some(rule => total > (rule.chargeMinor ?? 0) || BigInt(total)*10000n > BigInt(totalMinor)*BigInt(rule.chargeBps ?? 0)))) reasons.push('Unplanned charges exceed tolerance');
     return {reasons,evidence};
 }
+
+/** Split immutable approved fee cents using the same source-goods weights as capture. */
+export function codedChargePortions(invoice: Data): number[] {
+    const approval=invoice.paymentApproval?.kind==='native-matching'?invoice.paymentApproval:undefined;
+    const total=(approval?.charges??[]).reduce((sum:number,charge:Data)=>sum+charge.amountMinor,0);
+    const bases=invoice.allocations.map((allocation:Data)=>approval?.lines.find((line:Data)=>line.line===allocation.line)?.billedMinor??allocation.amountMinor);
+    const base=bases.reduce((sum:number,amount:number)=>sum+amount,0);
+    const portions=bases.map((amount:number)=>base?Number(BigInt(total)*BigInt(amount)/BigInt(base)):0);
+    if(portions.length)portions[0]+=total-portions.reduce((sum:number,amount:number)=>sum+amount,0);
+    return portions;
+}

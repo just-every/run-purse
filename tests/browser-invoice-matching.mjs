@@ -50,6 +50,9 @@ try {
         const [download]=await Promise.all([ap.waitForEvent('download'),ap.getByRole('link',{name:'Download coded invoice CSV',exact:true}).click()]);
         const {parse}=await import('csv-parse/sync'),exportRows=parse(await readFile(await download.path(),'utf8'),{columns:true}).filter(row=>row.invoice==='synthetic-purse-unplanned-freight');
         assert.deepEqual(exportRows.map(row=>[row.amount_minor,row.gl_account,row.charge_type]),[['100000','',''],['3500','Freight expense','freight']]);
+        await ap.goto(f.h.origin+'/app?tab=Reports');await ap.getByLabel('Group by',{exact:true}).selectOption('glAccount');await ap.getByRole('button',{name:'Filter spend',exact:true}).click();
+        await ap.getByRole('button',{name:'Freight expense actual USD',exact:true}).click();const feeDetail=ap.getByRole('region',{name:'Report source records',exact:true});
+        const feeRow=feeDetail.getByRole('row').filter({hasText:'Invoice synthetic-purse-unplanned-freight'});await feeRow.getByText('$35.00',{exact:true}).waitFor();await feeRow.getByText('Source record',{exact:true}).click();await feeRow.getByText('Invoice synthetic-purse-unplanned-freight · Confirmed invoice reading ',{exact:false}).waitFor();await snap(ap,'coded-fee-report',feeDetail);
         const awardedOrder=await f.order({unitMinor:90000,awardFirstUnitMinor:100000}),awardedSource=await f.stage(awardedOrder,{unitMinor:90000,reference:'synthetic-purse-awarded',freightMinor:3500}),awarded=await f.confirm(awardedSource);
         assert.equal(awarded.paymentApproval.kind,'native-matching');
         const unapproved=await f.cmd('invoice',{order:awardedOrder.id,reference:'synthetic-purse-unapproved',source:'Unconfirmed extra supplier evidence',allocations:[{line:awardedOrder.lines[0].id,quantity:'1',amountMinor:90000}]},f.buyer);
