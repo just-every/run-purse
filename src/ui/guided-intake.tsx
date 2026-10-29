@@ -1,3 +1,4 @@
+import { IntakeAgent } from './intake-agent';
 import { useEffect, useRef, useState } from 'react';
 import { call, amountText, type D } from './shared';
 import { activeChoices } from '../purse/custom-fields';
@@ -13,6 +14,7 @@ export function GuidedIntake({data,mutate,intake}:{data:D;mutate:(op:string,b:D)
     const draft=drafts.find((draft:D)=>draft.id===selected)??(resuming?.id===selected?resuming:undefined),form=forms.find((form:D)=>form.id===(draft?.fields.intakeForm??selected));
     if(!forms.length)return null;
     return <section className="panel" aria-label="Guided purchase intake"><h3>Purchase by category</h3>
+        {!intake&&<IntakeAgent data={data} mutate={mutate} onDraft={next=>{setSelected(next.id);setResuming(next);setSerial(serial+1);}}/>}
         <label>Start a category request<select aria-label="Start a category request" value={form?.id??''} onChange={e=>{setSelected(e.target.value);setResuming(undefined);setSerial(serial+1);}}><option value="">Choose a form…</option>{forms.map((form:D)=><option key={form.id} value={form.id}>{form.name}</option>)}</select></label>
         {drafts.length>0&&<ul>{drafts.map((draft:D)=><li key={draft.id}><button type="button" onClick={()=>{setSelected(draft.id);setResuming(draft);setSerial(serial+1);}}>Resume {draft.fields.title||'Untitled draft'}</button></li>)}</ul>}
         {form&&<GuidedForm key={serial} data={data} form={form} initial={draft} intake={intake} mutate={mutate}/>}

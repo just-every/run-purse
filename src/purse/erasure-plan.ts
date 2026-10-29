@@ -35,7 +35,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   if(row.kind==='order'&&linked.has(row.id)&&!linked.has(row.value.request)){linked.add(row.value.request);changed=true;}
 
   if(row.kind==='supplierTaxReview' && linked.has(row.value.supplier) && !linked.has(row.id)){linked.add(row.id);changed=true;}
-  if(!['invoiceException','supplierTaxReview','supplierRma','supplierCredit','supplierCreditApplication','crossTeamReview','audit','comment','commentNotice','agentRun','orderChaseEvent','orderThreadMessage','supplierInvoiceSubmission','orderSupplierResponse','orderSend','orderAcknowledgment','travelExpense','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
+  if(!['invoiceException','supplierTaxReview','supplierRma','supplierCredit','supplierCreditApplication','crossTeamReview','audit','comment','commentNotice','intakeAgentReview','agentRun','orderChaseEvent','orderThreadMessage','supplierInvoiceSubmission','orderSupplierResponse','orderSend','orderAcknowledgment','travelExpense','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
   const v=row.value;
   // RMA-only participants can be identified inside the linked credit original.
   // Withdraw that source and retain its applications as anonymous history.
@@ -63,7 +63,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   return value;
  };
  for(const [oldKey,row]of before) {
-  if(['nativeReviewAuthority','nativeTaxAuthority'].includes(row.kind))continue;
+  if(['nativeReviewAuthority','nativeTaxAuthority','nativeIntakeAuthority'].includes(row.kind))continue;
   if(row.kind==='erasureReceipt'&&row.value.actor===subject.operator){const value={...row.value,actor:alias};state.set(oldKey,{...row,value});fields.push({kind:row.kind,id:row.id,path:['actor'],before:erasureDigest(row.value.actor),after:erasureDigest(alias)});continue;}
   if(['supplierMatchingKey','invoiceEvidenceKey','erasureReceipt'].includes(row.kind))continue;
   const affected=linked.has(row.id),value=visit(row.value,'',affected);
@@ -73,7 +73,8 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   if(row.kind==='emailIntakeMailEvent'&&value.status==='pending'&&contains(row.value)){value.status='suppressed';}
   if(row.kind==='rfq')for(let index=0;index<value.suppliers.length;index++)if(contains(row.value.suppliers[index]))value.suppliers[index].contactErased=id;
   if((['recurringScenario','recurringScenarioDraft','recurringDiscoveryNotice'].includes(row.kind)||row.kind==='agentRun'&&row.value.workflow==='recurring-discovery')&&JSON.stringify(value)!==JSON.stringify(row.value))value.sourceValuesErased=id;
-  if(row.kind==='agentRun'&&row.value.agent==='AGENT-008'&&JSON.stringify(value)!==JSON.stringify(row.value))value.sourceValuesErased=id;
+  if(row.kind==='agentRun'&&row.value.agent==='AGENT-001'&&(row.value.references??[]).some((ref:Data)=>linked.has(ref.id)))value.sourceValuesErased=id;
+  if(row.kind==='agentRun'&&['AGENT-001','AGENT-008'].includes(row.value.agent)&&JSON.stringify(value)!==JSON.stringify(row.value))value.sourceValuesErased=id;
   if(row.kind==='invoice'&&row.value.evidenceHash&&JSON.stringify(value)!==JSON.stringify(row.value)) {
    requireThat(row.value.evidence,'Migrate legacy invoice evidence before erasure',409);
    value.sourceValuesErased=id;
