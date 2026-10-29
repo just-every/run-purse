@@ -5456,7 +5456,7 @@
       "executable": false
     },
     "tests/browser.mjs": {
-      "sha256": "247eb19a2a7746d34ae9287335edefaf0c541c6a1ba59d4a034ffff5a87ce569",
+      "sha256": "2dadf4002df8587ab8836a372a5e0aca3fae1201f7418819a980b12624646e49",
       "executable": false
     },
     "tests/budget-import-fixture.mjs": {
