@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "a24810bbeebcb42061838a9c44be51abf849d08d73a5a8c888a5962957aa7e06",
+      "sha256": "5db76b10cef0a1078f444fbda07d9c214632d0546f7c1bddb2359873bae4e411",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "bc6731c28c92cff45f7f94503a43291bb2df11a4e60c4d9c7986a5912df13166",
+      "sha256": "39bc1fa49560a288637225f1e925779ad481e81026bad918c22940c82374e74c",
       "executable": false
     },
     "DEMO.md": {
@@ -3172,7 +3172,7 @@
       "executable": false
     },
     "src/purse/erasure-execute.ts": {
-      "sha256": "66fda9687fd4c146d83df2f1ffd329c6325d485b644a8450105f7e60188af65c",
+      "sha256": "c470bf8303fb1c2860889aa4bb4f8e961747e4fb938e28c0ed312c51f67e5baf",
       "executable": false
     },
     "src/purse/erasure-history-text.d.mts": {
@@ -5232,7 +5232,7 @@
       "executable": false
     },
     "tests/price-benchmark.test.mjs": {
-      "sha256": "ed3b47b220015bc990d91d2a8f40781b5eec9d0abf3e98e2558c27df18255f42",
+      "sha256": "afb840a528879c293c73f600da35082bcde3e00affa8e9a6e9a220dd7c41fa3f",
       "executable": false
     },
     "tests/private-schedule.mjs": {
