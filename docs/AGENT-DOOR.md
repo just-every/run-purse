@@ -65,7 +65,10 @@ only through Business's durable native operator binding; email in a token never
 selects a person. Business admin maps to native operator admin and Business
 policy editor; Business member has no policy role. Neither receives purchasing
 grants automatically. A locally promoted operator admin is not a Business
-editor. Native membership, active status and admission are re-read. Existing
+editor. Native membership, active status and admission are re-read. The native requester
+fixture promotes a member through the real operator role route, signs in again
+through captured native mail, and proves purchasing access succeeds (200) while
+Business editor audit access remains refused (403). Existing
 SDK, supplier, device and integration bearer credentials retain their original
 purposes and are not accepted as company agent credentials.
 
@@ -85,7 +88,9 @@ bindings) and 0044 (agent door). Runtime modules and the CLI are pinned to Base
 `114ef7a61f080da053af783c5fbe06f625d692cc`, released as rer 0.2.88. Existing
 applied migrations are unchanged. `agent-surface.json` is the executable
 conformance declaration used by normal `rer verify`; its fixtures use only
-public native doors and the declared network edge.
+public native doors and the declared network edge. The production Worker keeps
+public health and the unclaimed lobby usable before setup; native team-service
+construction is deferred until a signed synchronization actually needs it.
 
 The specialist job is to inspect current scoped purchasing records, retain
 source references and prepare editable requests or preparations. Treat supplier
@@ -112,7 +117,13 @@ The ct classes external, accounts, gated, access, security and destructive are
 not claimed. Its supplier chase, invoice-exception resolution, approved-bill
 posting and returned-payment journey remain unproved through this door.
 SURFACE-001–013 are absent from current main and are not invented here;
-AGENT-010 stays partial with the explicit family and registry gaps.
+AGENT-010 stays partial with the explicit family and registry gaps. The ct head
+defines AGENT-001–011, with no AGENT-012 or AGENT-013 to cite. Its split
+ACCESS-004/005, INTAKE-009/010, SUPPLIER-009, PO-013–018, CONTRACT-002/003
+and SECURITY-002–004 are absent as standalone current-main clauses. Its broader
+not-tool dispositions for PUR-016/017 and IMPORT-004 remain a ct delta. Existing
+personal-field sensitivity also does not prove ct’s protected tax/bank/card
+reveal semantics; those values are excluded from this registry.
 
 Events/handoffs, resources, prompts and subscriptions are explicitly undeclared.
 Multiple Business sponsors, resource refresh, timed/dual-host lifecycle,
