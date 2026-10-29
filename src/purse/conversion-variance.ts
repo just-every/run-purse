@@ -1,4 +1,4 @@
-import { apportionSupplied, hasSupplierGroups, requireGroupable } from './po-supplier-groups';
+import { supplierLineExposure, hasSupplierGroups, requireGroupable } from './po-supplier-groups';
 import { allocateLineTax } from './po-line-tax';
 import { splitValues } from './intake-fields';
 import { buyerLimits, type BuyerLimit } from './access';
@@ -25,11 +25,10 @@ function price(before: number, after: number, limit: BuyerLimit) {
 }
 /** A single scoped grant must cover the whole edit; grants never lend each other limits. */
 function covers(limit: BuyerLimit, request: Data, face: Data) {
-    const sourceCharges=apportionSupplied(request.totalMinor-request.lines.reduce((sum:number,line:Data)=>sum+line.totalMinor,0),request.lines.map((line:Data)=>line.totalMinor));
-    const editedCharges=apportionSupplied(face.totalMinor-face.lines.reduce((sum:number,line:Data)=>sum+line.totalMinor,0),face.lines.map((line:Data)=>line.totalMinor));
+    const sourceTotals=supplierLineExposure(request),editedTotals=supplierLineExposure(face);
     return limit.unlimited || price(request.totalMinor, face.totalMinor, limit) && request.lines.every((before: Data, index: number) => {
         const after = face.lines[index];
-        return after?.id === before.id && price(before.unitMinor, after.unitMinor, limit) && price(before.totalMinor+sourceCharges[index], after.totalMinor+editedCharges[index], limit) && percentage(before.q, after.q, limit.quantityPercent);
+        return after?.id === before.id && price(before.unitMinor, after.unitMinor, limit) && price(sourceTotals[index], editedTotals[index], limit) && percentage(before.q, after.q, limit.quantityPercent);
     });
 }
 export function currentConversionLimit(s: State, a: Actor, request: Data, face: Data) {

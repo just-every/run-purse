@@ -33,12 +33,12 @@ export function ConversionVariance({ request, limit, suppliers = [], mutate }: {
                     for(let index=charges.length-1;index>=0;index--)if(charges[index].kind===kind&&charges[index]!==charge)charges.splice(index,1);
                 }
                 const supplier=String(input.supplier??'');
-                return mutate('convert', { id: request.id, revision: request.revision, issue:true, ...(lines.length || chargesChanged || supplier&&supplier!==request.supplier ? { conversionEdits: { lines, ...(chargesChanged?{charges}:{}), ...(supplier?{supplier}:{}), reason: input.reason } } : {}) });
+                return mutate('convert', { id: request.id, revision: request.revision, issue:true, ...(lines.length || chargesChanged || supplier&&supplier!==request.supplier ? { conversionEdits: { lines, ...(chargesChanged?{charges}:{}), ...(supplier&&supplier!==request.supplier?{supplier}:{}), reason: input.reason } } : {}) });
             }}>
                 {request.lines.map((line: D, index: number) => <fieldset className="wide" key={line.id} style={{ minWidth: 0 }}>
                     <legend>Line {index + 1}: {line.description}</legend>
                     <p>Approved quantity {line.quantity} {line.unit}; unit price {money(line.unitMinor, request.currency)}; line total {money(line.totalMinor, request.currency)}.</p>
-                    <label className="field">Conversion supplier for line {index+1}<select aria-label={'Conversion supplier for line '+(index+1)} name={'supplier:'+line.id} defaultValue=""><option value="">Use conversion supplier</option>{suppliers.map(supplier=><option key={supplier.id} value={supplier.id}>{supplier.name} · {supplier.status}</option>)}</select></label>
+                    <label className="field">Conversion supplier for line {index+1}<select aria-label={'Conversion supplier for line '+(index+1)} name={'supplier:'+line.id} defaultValue=""><option value="">Keep approved supplier</option>{suppliers.map(supplier=><option key={supplier.id} value={supplier.id}>{supplier.name} · {supplier.status}</option>)}</select></label>
                     <label className="field">Conversion unit price for line {index + 1}<input name={'price:' + line.id} inputMode="decimal" placeholder={amountText(line.unitMinor)} autoComplete="off"/></label>
                     <label className="field">Conversion quantity for line {index + 1}<input name={'quantity:' + line.id} inputMode="decimal" placeholder={line.quantity} autoComplete="off"/></label>
                     <label className="field">Conversion unit of measure for line {index+1}<input name={'unit:'+line.id} placeholder={line.unit} maxLength={200}/></label>

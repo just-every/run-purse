@@ -1,7 +1,7 @@
 import { all, get, requireThat, type Data, type State } from './types';
 export function apportionSupplied(amount: number, weights: number[]) {
     const sum=weights.reduce((total,weight)=>total+BigInt(weight),0n),denominator=sum||BigInt(weights.length);
-    const parts=weights.map((weight,index)=>{const numerator=BigInt(amount)*(sum?BigInt(weight):1n);return {index,value:Number(numerator/denominator),remainder:numerator%denominator};});
+    const parts=weights.map((weight,index)=>{const numerator=BigInt(amount)*(sum?BigInt(weight):1n);return {index,value:Number(numerator / denominator),remainder:numerator%denominator};});
     let left=amount-parts.reduce((total,part)=>total+part.value,0);
     for(const part of [...parts].sort((a,b)=>a.remainder===b.remainder?a.index-b.index:a.remainder>b.remainder?-1:1)){if(!left)break;part.value++;left--;}
     const values=parts.map(part=>part.value);
