@@ -1,3 +1,4 @@
+import { supplierLineRemaining } from './po-supplier-groups';
 import { budgetPositionDimensions } from './budget-dimensions';
 import { budgetPortion, eventBudgetPortion, requestBudgetShares } from './budget-allocations';
 import { all, date, get, requireThat, type Data, type State } from './types';
@@ -8,8 +9,12 @@ export function periodBudgetPosition(s: State, policy: Data) {
  const requests=all(s,'request'),orders=all(s,'order'),invoices=all(s,'invoice'),events=all(s,'commitment'),sources:Data[]=[];
  for(const request of requests) {
   const ledger=events.filter(event=>event.request===request.id&&event.currency===policy.currency).reduce((sum,event)=>sum+eventBudgetPortion(event,policy.id),0);
-  const issued=orders.filter(order=>order.request===request.id&&order.currency===policy.currency&&budgetPortion(s,order,order.totalMinor,policy.id)>0&&(order.issuedAt||order.adoption)&&['issued','adopted','amendment-pending','closed','cancelled'].includes(order.status)).sort((a,b)=>b.revision-a.revision)[0];
-  const sourceOrders=orders.filter(order=>order.request===request.id&&order.currency===policy.currency&&budgetPortion(s,order,order.totalMinor,policy.id)>0&&(order.issuedAt||order.adoption)),ids=new Set(sourceOrders.map(order=>order.id));
+  const candidates=orders.filter(order=>order.request===request.id&&order.currency===policy.currency&&budgetPortion(s,order,order.totalMinor,policy.id)>0&&(order.issuedAt||order.adoption)&&['issued','adopted','amendment-pending','closed','cancelled'].includes(order.status)).sort((a,b)=>b.revision-a.revision);
+  const latest=candidates[0],issuedOrders=latest?.supplierGroup?candidates.filter(order=>order.supplierGroup?.key===latest.supplierGroup.key):latest?[latest]:[];
+  const scopes=issuedOrders.length?issuedOrders:[undefined];
+  let exposure=0;const start=sources.length;
+  for(const issued of scopes) {
+  const sourceOrders=orders.filter(order=>order.request===request.id&&(!issued?.supplierGroup||order.supplierGroup?.key===issued.supplierGroup.key&&order.supplier===issued.supplier)&&order.currency===policy.currency&&budgetPortion(s,order,order.totalMinor,policy.id)>0&&(order.issuedAt||order.adoption)),ids=new Set(sourceOrders.map(order=>order.id));
   const billPart=(bill:Data)=>{const order=get(s,'order',bill.order);const lines=bill.allocations.map((allocation:Data)=>({...order.lines.find((line:Data)=>line.id===allocation.line),totalMinor:allocation.amountMinor}));return budgetPortion(s,{...order,lines},bill.totalMinor,policy.id);};
   const bills=invoices.filter(invoice=>ids.has(invoice.order)&&invoice.currency===policy.currency&&billPart(invoice)>0);
   const deposits=all(s,'deposit').filter(deposit=>ids.has(deposit.order));
@@ -21,13 +26,17 @@ export function periodBudgetPosition(s: State, policy: Data) {
    const remaining=issued.lines.reduce((sum:number,line:Data)=>{
     if(line.service){const cancelled=(line.carriedCancelledMinor??0)+all(s,'receipt').filter(event=>event.order===issued.id&&event.line===line.id&&event.event==='cancel').reduce((n,event)=>n+(event.valueMinor??0),0);const closed=all(s,'orderClosure').filter(event=>event.order===issued.id&&event.active).flatMap(event=>event.lines).filter((event:Data)=>event.line===line.id).reduce((n:number,event:Data)=>n+(event.valueMinor??0),0);return sum+Math.max(0,line.totalMinor-cancelled-closed);}
     const cancelled=(line.carriedCancelled??0)+all(s,'receipt').filter(event=>event.order===issued.id&&event.line===line.id&&event.event==='cancel').reduce((n,event)=>n+event.q,0),closed=all(s,'orderClosure').filter(event=>event.order===issued.id&&event.active).flatMap(event=>event.lines).filter((event:Data)=>event.line===line.id).reduce((n:number,event:Data)=>n+event.q,0);
+    if(issued.supplierGroup)return sum+supplierLineRemaining(issued,line,line.q-cancelled-closed);
     return sum+Number((BigInt(Math.max(0,line.q-cancelled-closed))*BigInt(line.unitMinor)+500n)/1000n);
    },0);
-   faceMinor=budgetPortion(s,issued,base?Number((BigInt(issued.totalMinor)*BigInt(remaining)+BigInt(base)/2n)/BigInt(base)):issued.totalMinor,policy.id);
+   faceMinor=budgetPortion(s,issued,issued.supplierGroup?remaining:base?Number((BigInt(issued.totalMinor)*BigInt(remaining)+BigInt(base)/2n)/BigInt(base)):issued.totalMinor,policy.id);
   }
-  const committedMinor=Math.max(0,faceMinor-actualMinor),reservedMinor=Math.max(0,ledger-Math.max(faceMinor,actualMinor));
-  if(!issued) sources.push({request:request.id,title:request.title,order:null,number:null,reservedMinor:Math.max(0,ledger),committedMinor:0,actualMinor,invoiceIds:bills.map(bill=>bill.id),depositIds:deposits.map(deposit=>deposit.id)});
+  exposure+=Math.max(faceMinor,actualMinor);
+  const committedMinor=Math.max(0,faceMinor-actualMinor),reservedMinor=0;
+  if(!issued) sources.push({request:request.id,title:request.title,order:null,number:null,reservedMinor:0,committedMinor:0,actualMinor,invoiceIds:bills.map(bill=>bill.id),depositIds:deposits.map(deposit=>deposit.id)});
   else sources.push({request:request.id,title:request.title,order:issued.id,number:issued.number,reservedMinor,committedMinor,actualMinor,invoiceIds:bills.map(bill=>bill.id),depositIds:deposits.map(deposit=>deposit.id)});
+  }
+  if(sources.length>start)sources[start].reservedMinor=Math.max(0,ledger-exposure);
  }
  const total=(field:string)=>sources.reduce((sum,source)=>sum+source[field],0);
  const reservedMinor=total('reservedMinor'),committedMinor=total('committedMinor'),actualMinor=total('actualMinor');

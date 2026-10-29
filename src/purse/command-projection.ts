@@ -10,5 +10,6 @@ export function projectCommandResult(s: State, a: Actor, result: Data): Data {
     if (projected.inputs?.sources && projected.agent !== 'AGENT-008') projected = projectValueRecord(s, a, projected);
     for (const field of ['request', 'order', 'result']) if (projected[field] && typeof projected[field] === 'object' && !Array.isArray(projected[field]))
         projected = { ...projected, [field]: projectCommandResult(s, a, projected[field]) };
+    if(Array.isArray(projected.supplierOrders))projected={...projected,supplierOrders:projected.supplierOrders.map((order:Data)=>projectCommandResult(s,a,order))};
     return projected;
 }

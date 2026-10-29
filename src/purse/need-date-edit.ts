@@ -33,6 +33,7 @@ export function changeNeedDate(s: State, a: Actor, input: Data) {
     requireThat(policies(s,next).some(candidate=>candidate.id===previous.policy),'Need date moves the purchase outside its approved budget period; amend and renew approval',409);
     next.needDateEdit={fromRevision:previous.revision,actor:a.id,email:a.email,at:new Date().toISOString(),reason,differences,carried:[],supplierDelivery:'not-issued'};
     next.needDateEdit.carried=carryApprovalDecisions(s,a,previous,next);
+    requireThat(!all(s,'order').some(order=>order.request===previous.id&&order.supplierGroup),'Existing supplier groups require a separate supported disposition; grouped amendments are unavailable',409);
     const prior=all(s,'order').find(order=>order.request===previous.id&&order.revision===previous.revision&&['issued','prepared'].includes(order.status));
     if(prior) {
         requireThat(!prior.imported&&!prior.adoption&&!prior.cancellation&&!prior.poDetails?.blanket,'This order requires its native amendment path',409);
