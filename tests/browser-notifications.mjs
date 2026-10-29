@@ -12,7 +12,7 @@ const bundle = await build({ stdin: { contents: "import React from 'react';impor
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox','--use-mock-keychain','--password-store=basic'], ...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PURSE_CHROMIUM_EXECUTABLE_PATH } : {}) });
 try {
     for (const width of widths) {
-        const f = await commentsFixture(), { h } = f, contexts = [], errors = [];
+        const f = await commentsFixture(undefined, { worker: 'tests/accrual-worker.ts', clock: '2026-10-29T12:00:00Z' }), { h } = f, contexts = [], errors = [];
         const context = async cookie => { const c = await nativeWebContext(browser,h,width,bundle.outputFiles[0].text,cookie); contexts.push(c); return c; };
         const open = async cookie => { const p = await (await context(cookie)).newPage(); p.on('pageerror',e => errors.push(e.message)); await p.goto(h.origin + '/app'); const region = p.getByRole('region',{name:'Notifications',exact:true}); await region.locator('summary').click(); return { page:p, region }; };
         const capture = async (screen,name) => {

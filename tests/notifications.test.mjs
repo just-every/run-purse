@@ -17,7 +17,7 @@ const rows = async h => (await h.db.prepare('SELECT * FROM p_records').all()).re
 const purchasing = state => Object.fromEntries(['request','revision','decision','commitment','order'].map(kind => [kind, state.data[kind]]));
 
 test('Native notifications bind recipient and source events, replay read and dismiss once, and preserve purchasing and current scope', async t => {
-    const f = await commentsFixture(t), { h } = f;
+    const f = await commentsFixture(t, { worker: 'tests/accrual-worker.ts', clock: '2026-10-29T12:00:00Z' }), { h } = f;
     assert.equal((await h.send('/api/purse/notifications')).status, 401);
     const initial = await list(h, f.approver), waiting = initial.find(n => n.record === f.pending.id && n.type === 'approval-needed');
     assert.ok(waiting?.canRead && waiting.actionable); assert.equal(waiting.sourceRevision, 1);
