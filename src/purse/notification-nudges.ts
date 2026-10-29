@@ -18,7 +18,7 @@ export async function runNotificationNudges(env: Bindings, now: number) {
         const a:Actor={...principal,owner:principal.role==='owner',session:'',dev:false} as Actor;
         const v=notificationView(state,a,n), slot=Math.floor((now-Date.parse(n.at))/(policy.hours*3600000));
         if (!v.canRead || !v.actionable || slot<1) continue;
-        const id=notificationId(['nudge',policy.version,n.record,n.sourceRevision,n.approvalAttempt,n.step,slot]);
+        const id=notificationId(['nudge',policy.version,n.source,n.record,n.sourceRevision,n.approvalAttempt,n.step,slot]);
         if (!state.has('audit:'+id)) candidates.set(id,{notice:n,slot});
     }
     for (const [id,{notice,slot}] of candidates) {

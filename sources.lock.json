@@ -972,7 +972,7 @@
       "executable": false
     },
     "scripts/installer/restore-notifications.mjs": {
-      "sha256": "17c01b916c29ce4161bd6c8b19e2b4098064b506512975b468041001ddbfcdd2",
+      "sha256": "46ca0c1126d3b811999d2fc1d052202b8e3f164818e52f459f25450e58a49363",
       "executable": false
     },
     "scripts/installer/restore-order-adoption.mjs": {
@@ -1096,7 +1096,7 @@
       "executable": false
     },
     "scripts/installer/restore-validation.mjs": {
-      "sha256": "165d84206a8c87b85905764e29ae943f24d4ed9e5807f22dc87ef32ef673ea63",
+      "sha256": "9ddf89ef5becb4077ad3676a111f5986ac0b20f594eba64e593e2642cc2ff747",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -3160,7 +3160,7 @@
       "executable": false
     },
     "src/purse/erasure-coverage.ts": {
-      "sha256": "516b300f3d00c95969526c09f0203096a887208fabb7900da6fb9b3798bcadb5",
+      "sha256": "de1bf336fb88ecccf409387d38aa29cde0e910cde3b871e8ba05ca04c91d739a",
       "executable": false
     },
     "src/purse/erasure-diff.ts": {
@@ -3196,7 +3196,7 @@
       "executable": false
     },
     "src/purse/erasure-plan.ts": {
-      "sha256": "7f212a978112421b23c704dbff228b3b501a3ce833f36871240bc190895ac2de",
+      "sha256": "980dd2ce64a238d3deb7d6c3f4a7d2c7552a7b9fa6ef3a05430d7f6f065b3b58",
       "executable": false
     },
     "src/purse/erasure-refusal.ts": {
@@ -3388,7 +3388,7 @@
       "executable": false
     },
     "src/purse/notification-nudges.ts": {
-      "sha256": "7d00aa0183f89aa84f0b51517cebb052b43d0d603964c3c399c9248d7b2c60ad",
+      "sha256": "1e0c79ec6568be8d92dd125839be21a415258a6276c388228293320dde26c246",
       "executable": false
     },
     "src/purse/notification-preferences.ts": {
@@ -3396,7 +3396,7 @@
       "executable": false
     },
     "src/purse/notifications.ts": {
-      "sha256": "e21646ea8a33a7cbb886fcaaa8c8abd73e9d66acc3513c1080b52636c8180dfe",
+      "sha256": "a57bf6e8a572970519f67f33617f9eebb76bd82fd05ca04e8ecab6f85c737606",
       "executable": false
     },
     "src/purse/order-adoption.ts": {
@@ -4828,7 +4828,7 @@
       "executable": false
     },
     "tests/browser-identity.mjs": {
-      "sha256": "ed6dd15f7ddde249a662a61bc10e6e0821ffe1becabe9264fb7cfb3809d199dc",
+      "sha256": "4a7bcc540622a9239a1391268f079620604d8ecc5d42aa9069fd6bc410603bcf",
       "executable": false
     },
     "tests/browser-import-adoption.mjs": {

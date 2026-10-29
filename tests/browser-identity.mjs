@@ -97,7 +97,10 @@ try {
                 const state = await response.json();
                 assert.deepEqual(state.actor.roles, ['requester']); assert.deepEqual(state.actor.grants[0].scope, scope);
                 assert.ok(!state.actor.permissions.includes('access.manage')); assert.deepEqual(state.data.member, []);
-                assert.equal(await requester.page.getByRole('navigation').getByRole('button', { name: 'Settings', exact: true }).count(), 0);
+                await requester.page.getByRole('navigation').getByRole('button', { name: 'Settings', exact: true }).click();
+                await requester.page.getByRole('region', { name: 'Notification preferences', exact: true }).waitFor();
+                assert.equal(await requester.page.getByRole('link', { name: 'Manage single sign-on', exact: true }).count(), 0);
+                for (const name of ['Save business','Save member','Save role grant','Save notification urgency']) assert.equal(await requester.page.getByRole('button', { name, exact: true }).count(), 0);
                 assert.equal((await requester.context.request.get(settingsPath)).status(), 403);
                 const forged = await requester.context.request.post(h.origin + '/api/purse/command/member', { headers: { origin: h.origin }, data: { email: 'forged-owner@example.test', name: 'Forbidden provider claim', roles: ['owner'] } });
                 assert.equal(forged.status(), 403);
