@@ -1,4 +1,5 @@
-import { allowed, requirePermission } from './access';
+import { accessGrants, allowed, requirePermission } from './access';
+import { performanceAgreementSources } from './access-agreement-sources';
 import { purchaseTypes, requireAgentPolicies } from './agent-governance';
 import { rejectProtectedInput } from './protected-input';
 import { all, audit, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
@@ -9,6 +10,27 @@ const lineFact = (line: Data) => ({ line: line.id, partNumber: typeof line.partN
 const nativeGoods = (row: Data) => !row.imported && !row.adoption && row.purchaseType !== 'travel' && !row.poDetails?.blanket && !row.recurring && row.lines.every((line: Data) => !line.service);
 const sameItem = (target: Data, source: Data) => typeof target.partNumber === 'string' && target.partNumber.trim().length > 0
     && typeof target.unit === 'string' && target.unit.trim().length > 0 && target.partNumber === source.partNumber && target.unit === source.unit;
+const sameSource = (source: Data, mapping: Data) => source.kind === mapping.kind && source.id === mapping.id
+    && source.line === mapping.line && source.agreementVersion === mapping.agreementVersion;
+
+function agreementAllowed(s: State, a: Actor, id: string, version: number): boolean {
+    return accessGrants(s, a).some(grant => grant.permissions.includes('procurement.manage')
+        && Object.keys(grant.scope).length === 0 && Object.keys(grant.roleScope ?? {}).length === 0)
+        || performanceAgreementSources(s, a).versions.get(id)?.has(version) === true;
+}
+
+/** Renewal preparation uses an existing human award mapping, never an inferred relationship. */
+function renewalContext(s: State, a: Actor, request: Data, awardId: unknown) {
+    if (awardId === undefined) return;
+    const award = get(s, 'agreementAward', text(awardId, 'Renewal award', 200));
+    requireThat(award.request === request.id && award.revision === request.revision, 'Renewal award must map this exact request revision', 409);
+    const agreement = get(s, 'agreement', award.agreement);
+    requireThat(agreementAllowed(s, a, agreement.id, award.agreementVersion), 'Renewal agreement outside your current source scope', 403);
+    requireThat(agreement.version === award.agreementVersion, 'Agreement terms changed; map a fresh request revision before renewal benchmarking', 409);
+    return { award: award.id, awardVersion: s.get('agreementAward:' + award.id)!.revision,
+        agreement: agreement.id, agreementVersion: agreement.version, agreementRecordVersion: s.get('agreement:' + agreement.id)!.revision,
+        startDate: agreement.startDate, endDate: agreement.endDate, noticeDeadline: agreement.noticeDeadline };
+}
 
 function subject(s: State, a: Actor, id: string) {
     const request = get(s, 'request', id);
@@ -32,6 +54,7 @@ export async function previewPriceBenchmark(s: State, a: Actor, input: Data) {
         return authority?.version === policy.version && authority?.actor === policy.actor && authority?.operatorVersion === policy.operatorVersion;
     }), 'Current owner must enable benchmarking in this installation', 409);
     const target = { request: request.id, revision: request.revision, currency: request.currency, lines: request.lines.map(lineFact) };
+    const renewal = renewalContext(s, a, request, input.renewalAward);
     const sources: Data[] = [];
     for (const kind of ['order', 'quote']) for (const row of all(s, kind)) {
         if (kind === 'order' && !row.issuedAt || row.sourceValuesErased || row.erasure) continue;
@@ -48,10 +71,24 @@ export async function previewPriceBenchmark(s: State, a: Actor, input: Data) {
                 missing: kind === 'quote' ? [...(row.missing ?? []), 'Current quotation validity not verified'] : [] });
         }
     }
-    sources.sort((x, y) => JSON.stringify([x.kind, x.id, x.line]).localeCompare(JSON.stringify([y.kind, y.id, y.line])));
+    if (renewal) {
+        const agreement = get(s, 'agreement', renewal.agreement);
+        for (const version of agreement.history) {
+            if (!agreementAllowed(s, a, agreement.id, version.version) || version.currency !== target.currency) continue;
+            for (const [index, line] of (version.priceLines ?? []).entries()) {
+                if (!target.lines.some((wanted: Data) => sameItem(wanted, line))) continue;
+                sources.push({ kind: 'agreement', id: agreement.id, version: renewal.agreementRecordVersion,
+                    agreementVersion: version.version, supplier: version.supplier, line: String(index + 1),
+                    partNumber: line.partNumber, unit: line.unit, unitMinor: line.awardedUnitMinor, currency: version.currency,
+                    at: version.at, dateBasis: 'Agreement terms confirmed', startDate: version.startDate, endDate: version.endDate,
+                    noticeDeadline: version.noticeDeadline, missing: ['Recorded agreement schedule does not prove a currently available renewal offer'] });
+            }
+        }
+    }
+    sources.sort((x, y) => JSON.stringify([x.kind, x.id, x.agreementVersion, x.line]).localeCompare(JSON.stringify([y.kind, y.id, y.agreementVersion, y.line])));
     const governance = policies.map(policy => ({ ...ref(s, 'agentPolicy', policy.id), policyVersion: policy.version }));
     const review = { actor: a.id, operatorVersion: a.version, target, targetVersion: s.get('request:' + request.id)!.revision,
-        revisionVersion: s.get('revision:' + request.id + ':' + request.revision)!.revision, sources, governance };
+        revisionVersion: s.get('revision:' + request.id + ':' + request.revision)!.revision, sources, governance, ...(renewal ? { renewal } : {}) };
     rejectProtectedInput(review);
     return { ...review, fingerprint: await digest(review) };
 }
@@ -62,7 +99,10 @@ export function priceBenchmarkVisible(s: State, a: Actor, run: Data): boolean {
     try {
         subject(s, a, run.request);
         const target = get(s, 'revision', run.request + ':' + run.revision);
+        const renewal = run.inputs.renewal;
+        if (renewal && !agreementAllowed(s, a, renewal.agreement, renewal.agreementVersion)) return false;
         return allowed(s, a, 'request.read', target) && run.sources.every((source: Data) => {
+            if (source.kind === 'agreement') return agreementAllowed(s, a, source.id, source.agreementVersion);
             const row = get(s, source.kind, source.id), revision = get(s, 'revision', source.request + ':' + source.revision);
             return sourceAllowed(s, a, source.kind, row, revision);
         });
@@ -79,31 +119,35 @@ export async function priceBenchmark(s: State, a: Actor, op: string, input: Data
     const mappings: Data[] = [], sources: Data[] = [];
     for (const mapping of input.mappings) {
         const wanted = preview.target.lines.find((line: Data) => line.line === mapping.targetLine);
-        const source = preview.sources.find(row => row.kind === mapping.kind && row.id === mapping.id && row.line === mapping.line);
+        const source = preview.sources.find(row => sameSource(row, mapping));
         requireThat(wanted && source && sameItem(wanted, source) && source.currency === preview.target.currency, 'Source is unavailable or item, unit and currency are incomparable', 409);
-        requireThat(!mappings.some(row => row.targetLine === wanted.line && row.kind === source.kind && row.id === source.id && row.line === source.line), 'Duplicate source mapping');
-        mappings.push({ targetLine: wanted.line, kind: source.kind, id: source.id, line: source.line });
-        if (!sources.some(row => row.kind === source.kind && row.id === source.id && row.line === source.line)) sources.push(source);
+        requireThat(!mappings.some(row => row.targetLine === wanted.line && sameSource(source, row)), 'Duplicate source mapping');
+        mappings.push({ targetLine: wanted.line, kind: source.kind, id: source.id, line: source.line,
+            ...(source.kind === 'agreement' ? { agreementVersion: source.agreementVersion } : {}) });
+        if (!sources.some(row => sameSource(row, source))) sources.push(source);
     }
     mappings.sort((x, y) => JSON.stringify(x).localeCompare(JSON.stringify(y)));
     const results = preview.target.lines.map((wanted: Data) => {
-        const selected = mappings.filter(mapping => mapping.targetLine === wanted.line).map(mapping => sources.find(source => source.kind === mapping.kind && source.id === mapping.id && source.line === mapping.line)!);
+        const selected = mappings.filter(mapping => mapping.targetLine === wanted.line).map(mapping => sources.find(source => sameSource(source, mapping))!);
         const targetMinor = selected.length ? Math.min(wanted.unitMinor, ...selected.map(source => source.unitMinor)) : null;
         return { ...wanted, currency: preview.target.currency, targetMinor, differenceMinor: targetMinor === null ? null : wanted.unitMinor - targetMinor,
             calculation: 'Minimum of requested unit price and buyer-reviewed comparable recorded unit prices; integer minor units, no currency conversion',
-            arguments: selected.length ? 'These exact recorded comparable prices support asking the supplier to match the lowest price. Historical purchases and recorded quotations do not prove a currently available offer.' : 'No reviewed comparable evidence; no target proposed',
+            arguments: selected.length ? 'These exact recorded comparable prices support asking the supplier to match the lowest price. Historical purchases, recorded quotations and agreement schedules do not prove a currently available offer.' : 'No reviewed comparable evidence; no target proposed',
             citations: selected, missing: ['Qualified current PunchOut price unavailable', 'Freight, tax, volume breaks and current availability not compared',
                 ...(!selected.some(source => source.kind === 'order') ? ['No reviewed historical PO'] : []),
                 ...(!selected.some(source => source.kind === 'quote') ? ['No reviewed recorded quotation'] : [])] };
     });
     const inputs = { target: preview.target, mappings, sources, governance: preview.governance, fingerprint: preview.fingerprint,
-        reviewed: true, reason, actor: a.id, operatorVersion: a.version };
+        reviewed: true, reason, actor: a.id, operatorVersion: a.version, ...(preview.renewal ? { renewal: preview.renewal } : {}) };
     const inputDigest = await digest(inputs);
     const existing = all(s, 'agentRun').find(run => run.agent === 'AGENT-009' && run.inputDigest === inputDigest);
     if (existing) { requireThat(priceBenchmarkVisible(s, a, existing), 'Benchmark sources outside your current scope', 403); return existing; }
     const references = [...new Map([{ kind: 'request', id: preview.target.request, version: preview.targetVersion },
         { kind: 'revision', id: preview.target.request + ':' + preview.target.revision, version: preview.revisionVersion },
-        ...preview.governance.map(({kind,id,version}) => ({kind,id,version})), ...sources.flatMap(source => [
+        ...preview.governance.map(({kind,id,version}) => ({kind,id,version})),
+        ...(preview.renewal ? [{ kind: 'agreement', id: preview.renewal.agreement, version: preview.renewal.agreementRecordVersion },
+            { kind: 'agreementAward', id: preview.renewal.award, version: preview.renewal.awardVersion }] : []),
+        ...sources.flatMap(source => source.kind === 'agreement' ? [{ kind: source.kind, id: source.id, version: source.version }] : [
             { kind: source.kind, id: source.id, version: source.version },
             { kind: 'revision', id: source.request + ':' + source.revision, version: source.revisionVersion }])].map(reference => [reference.kind + ':' + reference.id, reference])).values()];
     const outcomes = [{ status: 'nonbinding-brief', purchasingChange: 'none', outbound: 'none', offer: 'none' }];

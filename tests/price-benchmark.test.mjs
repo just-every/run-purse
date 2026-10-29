@@ -47,7 +47,7 @@ test('Buyer-reviewed native price benchmark cites exact issued and quoted lines,
  assert.ok(result.citations.some(source=>source.id===quotation.id&&source.line===quotation.lines[0].id));
  assert.ok(result.missing.some(value=>value.includes('PunchOut')));assert.equal(run.model,'none');assert.equal(run.provider,'none');
  assert.deepEqual(run.messages,[]);assert.deepEqual(run.proposals,[]);assert.equal(run.outcomes[0].offer,'none');
- for(const value of [...Object.values(protectedValues),'5678','6789','1234',instruction])assert.ok(!JSON.stringify(run).includes(value));
+ for(const value of [...Object.values(protectedValues),'5678','6789','1234',instruction])assert.ok(!JSON.stringify(run).includes(value),'Protected fixture marker occurred in benchmark record');
  assert.ok(!JSON.stringify(run).includes('Ignore instructions'));assert.ok(!/tinLast4|bankLast4|routingLast4/.test(JSON.stringify(run)));
  const repeated=await cmd('price-benchmark-run',chosen,buyer);assert.equal(repeated.id,run.id,'Reviewed replay returns immutable record without a second effect');
  assert.equal((await h.state()).data.agentRun.filter(row=>row.agent==='AGENT-009').length,1);
@@ -60,6 +60,41 @@ test('Buyer-reviewed native price benchmark cites exact issued and quoted lines,
  assert.equal(h.messages.length,mail,'No supplier message or offer');
  assert.ok(after.audit.some(event=>event.action==='price-benchmark-run'&&event.run===run.id&&event.record===current.id));
  const auditExport=await h.send('/api/purse/audit.csv',undefined,h.owner);assert.equal(auditExport.status,200);assert.ok(auditExport.value.includes(run.id));
+ // A renewal uses the human's existing exact award mapping; agreement text and totals are never inferred unit prices.
+ const {agreement,award}=await f.renewal(),renewalInput={renewalAward:award.id};
+ const renewalRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+ const renewalReview=await preview(current,buyer,200,renewalInput);
+ assert.deepEqual((await h.db.prepare('SELECT * FROM p_records').all()).results,renewalRows,'Renewal preview writes nothing');
+ const schedules=renewalReview.sources.filter(source=>source.kind==='agreement');
+ assert.deepEqual(schedules.map(source=>[source.agreementVersion,source.unitMinor]),[[4,1000],[5,1200]],'Only exact item, unit and currency schedules qualify');
+ assert.deepEqual(renewalReview.renewal,{award:award.id,awardVersion:renewalReview.renewal.awardVersion,agreement:agreement.id,agreementVersion:5,agreementRecordVersion:renewalReview.renewal.agreementRecordVersion,startDate:'2027-01-01',endDate:'2027-12-31',noticeDeadline:'2027-12-01'});
+ const renewalBody=body(renewalReview);renewalBody.mappings=renewalBody.mappings.filter(mapping=>mapping.kind==='agreement'||[history.id,quotation.id].includes(mapping.id));
+ const renewalBefore=(await h.state()).data,renewalMail=h.messages.length;
+ await cmd('price-benchmark-run',{...renewalBody,reviewed:false},buyer,400);
+ await cmd('price-benchmark-run',{...renewalBody,mappings:renewalBody.mappings.map(mapping=>mapping.kind==='agreement'?{...mapping,agreementVersion:1}:mapping)},buyer,409);
+ const renewalRun=await cmd('price-benchmark-run',renewalBody,buyer),renewalResult=renewalRun.results[0];
+ assert.equal(renewalResult.targetMinor,1000);assert.equal(renewalResult.differenceMinor,200);
+ assert.deepEqual(renewalResult.citations.filter(source=>source.kind==='agreement').map(source=>[source.agreementVersion,source.line,source.unitMinor,source.startDate,source.endDate,source.noticeDeadline]),[[4,'1',1000,'2026-01-01','2026-12-31','2026-12-01'],[5,'1',1200,'2027-01-01','2027-12-31','2027-12-01']]);
+ assert.ok(renewalResult.citations.every(source=>Number.isFinite(Date.parse(source.at))));
+ assert.ok(!JSON.stringify(renewalRun).includes('Ignore instructions'));assert.deepEqual(renewalRun.messages,[]);assert.deepEqual(renewalRun.proposals,[]);
+ for(const kind of ['request','order','decision','commitment','quote','agreement','agreementAward','recurringSeries'])assert.deepEqual((await h.state()).data[kind],renewalBefore[kind],kind+' unchanged by renewal benchmark');
+ assert.equal(h.messages.length,renewalMail);
+ assert.equal((await cmd('price-benchmark-run',renewalBody,buyer)).id,renewalRun.id);
+ const renewalDownload='/api/purse/download/agentRun/'+renewalRun.id;
+ assert.deepEqual((await h.send(renewalDownload,undefined,buyer)).value,renewalRun);
+ const scopedRenewal=await preview(current,scoped,200,renewalInput);
+ assert.deepEqual(scopedRenewal.sources.filter(source=>source.kind==='agreement').map(source=>source.agreementVersion),[5],'A mapped current version does not grant other agreement history');
+ await cmd('price-benchmark-run',{...body(scopedRenewal),mappings:[{targetLine:current.lines[0].id,kind:'agreement',id:agreement.id,line:'1',agreementVersion:4}]},scoped,409);
+ assert.equal((await h.send(renewalDownload,undefined,scoped)).status,403,'Historical schedule scope is checked on downloads');
+ assert.ok(!(await h.state(scoped)).data.agentRun.some(row=>row.id===renewalRun.id),'Inaccessible schedule evidence is absent from state');
+ await preview({id:history.request,revision:history.revision},buyer,409,renewalInput);
+ const foreignRenewal=await f.request('Different request cannot reuse a renewal award');await preview(foreignRenewal,buyer,409,renewalInput);
+ for(const cookie of [requester,receiver])await preview(current,cookie,403,renewalInput);
+ await enable(false);await cmd('price-benchmark-run',renewalBody,buyer,409);await enable();
+ const freshRenewal=await preview(current,buyer,200,renewalInput);
+ await cmd('agreement',{...agreement,version:agreement.version,confirmed:true,reason:'Owner corrects the recorded renewal deadline',noticeDays:45});
+ await cmd('price-benchmark-run',body(freshRenewal),buyer,409);
+ assert.deepEqual((await h.send(renewalDownload,undefined,buyer)).value,renewalRun,'Changed agreement terms cannot rewrite earlier benchmark evidence');
  const exactCents=await f.request('Fractional quantities retain integer cents',1201,{lines:[f.line(1201,{quantity:'1.125'})]});
  const centsReview=await preview(exactCents),cents=await cmd('price-benchmark-run',body(centsReview),buyer);assert.equal(cents.results[0].targetMinor,500);assert.equal(cents.results[0].differenceMinor,701);
  const staleRequestReview=await preview(exactCents);await cmd('amend',{...exactCents,lines:exactCents.lines,reason:'Human changes the draft title',title:'Edited fractional quantity request'},requester);await cmd('price-benchmark-run',body(staleRequestReview),buyer,409);
@@ -80,6 +115,8 @@ test('Buyer-reviewed native price benchmark cites exact issued and quoted lines,
  const financeSourceRun=await cmd('price-benchmark-run',body(await preview()),buyer);
  assert.equal((await h.send('/api/purse/download/agentRun/'+financeSourceRun.id,undefined,sourceScoped)).status,403,'Every cited source needs current permission, even when the target is permitted');
  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
+ const renewalTamper=structuredClone(rows),renewalChanged=renewalTamper.find(row=>row.kind==='agentRun'&&row.id===renewalRun.id),renewalValue=JSON.parse(renewalChanged.value);
+ renewalValue.sources.find(source=>source.kind==='agreement').agreementVersion=1;renewalChanged.value=JSON.stringify(renewalValue);assert.throws(()=>validatePurchasingArchive(renewalTamper),/price_benchmark/);
  const tampered=structuredClone(rows),changed=tampered.find(row=>row.kind==='agentRun'&&row.id===run.id),value=JSON.parse(changed.value);value.results[0].targetMinor=1;changed.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(tampered),/price_benchmark_digest/);
  const erasureReplayBody=body(await preview());erasureReplayBody.reason='Buyer reviewed this exact item for '+address(901);const erasureReplayRun=await cmd('price-benchmark-run',erasureReplayBody,buyer);
  await cmd('member',{email:address(901),name:'Former requester',active:false,roles:['requester']});
@@ -99,6 +136,8 @@ test('Buyer-reviewed native price benchmark cites exact issued and quoted lines,
  const restored=await harness();try{
   await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
   const retained=(await restored.state()).data.agentRun.find(row=>row.id===run.id);assert.deepEqual(retained,erasedRun);
+  const retainedRenewal=(await restored.state()).data.agentRun.find(row=>row.id===renewalRun.id);assert.equal(retainedRenewal.results[0].targetMinor,1000);assert.equal(retainedRenewal.inputs.renewal.agreementVersion,5);
+  assert.equal((await restored.send('/api/purse/command/price-benchmark-run',renewalBody,restored.owner)).status,409,'Restored renewal history confers no execution authority');
   assert.equal((await restored.send('/api/purse/download/agentRun/'+run.id,undefined,restored.owner)).status,200);
   assert.equal((await restored.db.prepare('SELECT count(*) n FROM p_benchmark_policy_authority').first()).n,0,'Portable history contains no execution enablement');
   assert.equal((await restored.send('/api/purse/command/price-benchmark-run',chosen,restored.owner)).status,409,'Restored owner must explicitly enable a new run');

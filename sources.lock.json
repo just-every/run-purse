@@ -1016,7 +1016,7 @@
       "executable": false
     },
     "scripts/installer/restore-price-benchmark.mjs": {
-      "sha256": "a24fe4d16c35491aabefcf031b4bdb494abb19dcd662ca10fb75859c23696c4d",
+      "sha256": "0f364e071a555cd35ff0c1c9ed77cbe7fff92514ef5a522cef340b78376b47d5",
       "executable": false
     },
     "scripts/installer/restore-quote-agent.mjs": {
@@ -3524,7 +3524,7 @@
       "executable": false
     },
     "src/purse/price-benchmark.ts": {
-      "sha256": "188863c49b80bec305eb9e40bd2eb50203bbf7aff72dc10df12baac09c60fa1e",
+      "sha256": "621c63c73056b35055585037a7144b2cde10b7f400d66fd290db3406314aa427",
       "executable": false
     },
     "src/purse/protected-archive-codec.ts": {
@@ -4428,7 +4428,7 @@
       "executable": false
     },
     "src/ui/price-benchmark.tsx": {
-      "sha256": "0ef5b943929b3a3685ffea994dd46ad870066d7f6f0213a3df062d5eadc50a5a",
+      "sha256": "0bb510ebfbf10b2e0248a4fb7fce51edca348089a7505d59f953e2418544604e",
       "executable": false
     },
     "src/ui/protected-archive.tsx": {
@@ -4900,7 +4900,7 @@
       "executable": false
     },
     "tests/browser-price-benchmark.mjs": {
-      "sha256": "63ede3289150435a88d10f95cb0d76c100f1f54ffad99fb992ed6db45fe888c3",
+      "sha256": "66587b51e2568cdbcf6ba8b55742a78a3a477c83476a11082fe88f0517f8ac5c",
       "executable": false
     },
     "tests/browser-protected-web.mjs": {
@@ -5236,11 +5236,11 @@
       "executable": false
     },
     "tests/price-benchmark-fixture.mjs": {
-      "sha256": "02392c9f75ec02ac26c8cd210d01292c3dbe27dcd0945917f65e0536d303c4a8",
+      "sha256": "041395ac60934cfa92c4b6bf9f1c0885ce37f185749625158c63aece676cfe3e",
       "executable": false
     },
     "tests/price-benchmark.test.mjs": {
-      "sha256": "b558a8eb27895098d342a1b9900850e02935e5a57cbe1e1c0d45e09b322cf927",
+      "sha256": "ecb3e81b462c2a8ca295bb5180ac68dc4ed90802c07b4eb9d99afec5c2dd0df5",
       "executable": false
     },
     "tests/private-schedule.mjs": {
