@@ -1,3 +1,4 @@
+import { browserInvoiceApproval } from './genuine-invoice-fixture.mjs';
 import assert from 'node:assert/strict'
 import {join} from 'node:path'
 import {session,api,current} from './browser-journey.mjs'
@@ -21,6 +22,7 @@ export async function performanceReportJourney(browser,root,origin,width,evidenc
   const invoice=await api(buyer.context,origin,'invoice',{order:o.id,reference:'Performance-'+tag,source:'Supplier original for six safety sets',allocations:[{line:o.lines[0].id,quantity:'6',amountMinor:540000}]});
   for(const flag of invoice.flags??[])await api(buyer.context,origin,'invoice-risk-review',{invoice:invoice.id,flag:flag.id,version:(await current(buyer.context,origin)).data.invoice.find(x=>x.id===invoice.id).riskVersion,reason:'Distinct awarded PO and six accepted safety sets for '+tag});
   await api(buyer.context,origin,'payable-terms',{invoice:invoice.id,version:0,invoiceDate:'2026-10-19',term:'Net 30',reason:'Recorded invoice terms'});await api(buyer.context,origin,'approve-payable',{invoice:invoice.id,version:1,reason:'Accepted for cash forecast'});
+ await browserInvoiceApproval(owner.context,origin,invoice);
   await buyer.page.reload();await buyer.page.getByRole('navigation').getByRole('button',{name:'Reports',exact:true}).click();await buyer.page.getByRole('button',{name:'Procurement performance',exact:true}).click();await buyer.page.getByRole('heading',{name:'Procurement performance',exact:true}).waitFor();await buyer.page.getByRole('button',{name:'Negotiated savings USD',exact:true}).waitFor();
   await buyer.page.screenshot({path:join(evidence,`REPORT-003-dashboard-${width}.png`),fullPage:true});assert.equal(await buyer.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`REPORT-003 fits ${width}`);
   for(const label of ['Request to PO','Approval cycle','On-time delivery','Invoice exception rate','PO coverage USD','Off-contract evidence USD','Unapproved purchase evidence USD']){await buyer.page.getByRole('button',{name:label,exact:true}).click();await buyer.page.getByRole('region',{name:'Performance source records'}).getByRole('button',{name:'Close performance detail'}).click();}

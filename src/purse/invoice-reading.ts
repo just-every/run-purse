@@ -29,6 +29,7 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
     if (op === 'invoice-source') {
         const order = get(s,'order',b.order); requirePermission(s, a, permission, order); requireThat(operationalOrder(s, order) && ['issued','adopted','closed','cancelled'].includes(order.status),'Use a current issued native PO',409);
         let document = b.document;
+        let nativeInvoice: string | undefined;
         if (b.invoice) {
             const historical = get(s, 'invoice', b.invoice);
             if(historical.supplierSubmission){
@@ -37,13 +38,21 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
                 requireThat(source.order===order.id && source.orderRevision===order.revision && retained.kind==='invoiceSource' && retained.record===source.id && retained.sha256===historical.document?.sha256 && !retained.erasure && retained.base64,'Supplier invoice original is unavailable',409);
                 audit(s,a,op,order.id,{source:source.id,invoice:historical.id});return source;
             }
+            if (!historical.imported && !historical.supplierSubmission) {
+                requireThat(!historical.evidenceHash || historical.evidence?.representation==='v2','Legacy invoice evidence must retain its independent migration and re-entry history',409);
+                requireThat(historical.order === order.id && !historical.paymentApproval && !historical.confirmedReading,'Choose unconfirmed native invoice evidence on this PO',409);
+                const retained=all(s,'attachment').find(file=>file.kind==='invoice'&&file.record===historical.id&&file.sha256===historical.document?.sha256);
+                if(historical.document)requireThat(retained?.base64&&!retained.erasure,'Private original unavailable',409);
+                document=retained??b.document;nativeInvoice=historical.id;
+            } else {
             requireThat(historical.imported && historical.adoptedVia && historical.order === order.id, 'Choose a historical bill on this adopted PO', 409);
             const retained = all(s, 'attachment').find(file => file.kind === 'invoice' && file.record === historical.id && file.sha256 === historical.document?.sha256);
             requireThat(retained && !retained.erased, 'Retained private original is unavailable; stage the actual original for source confirmation', 409);
             document = retained;
+            }
         }
         const metadata = documentMetadata(document), id=uid(), attachment=uid(), at=new Date().toISOString();
-        put(s,'invoiceSource',id,{ order:order.id, orderRevision:order.revision, attachment, actor:a.id, at });
+        put(s,'invoiceSource',id,{ ...(nativeInvoice?{invoice:nativeInvoice}:{}), order:order.id, orderRevision:order.revision, attachment, actor:a.id, at });
         put(s,'attachment',attachment,{ ...metadata, kind:'invoiceSource', record:id, base64:document.base64, actor:a.id, at });
         audit(s,a,'attachment',id,{attachment}); audit(s,a,op,order.id,{source:id}); return get(s,'invoiceSource',id);
     }

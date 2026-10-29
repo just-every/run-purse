@@ -1,3 +1,4 @@
+import { harnessInvoiceApproval } from './genuine-invoice-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -133,6 +134,7 @@ test('AGENT-005 receipt need-date and confirmed quoted-saving evidence reuse REP
  const invoice=await cmd('invoice',{order:order.id,reference:'VALUE-SIX',source:'Original six-bundle invoice',allocations:[{line:order.lines[0].id,quantity:'6',amountMinor:540000}]},buyer);
  assert.equal((await financialReport(request)).report.realizedMinor,0,'Unapproved invoice evidence is not realized savings');
  await cmd('payable-terms',{invoice:invoice.id,version:0,invoiceDate:'2026-10-20',term:'Net 30',reason:'Original invoice terms'},buyer);await cmd('approve-payable',{invoice:invoice.id,version:1,reason:'Cash planning approval'},buyer);
+ await harnessInvoiceApproval(h,invoice);
  let run=await financialReport(request);assert.equal(run.report.negotiatedMinor,100000);assert.equal(run.report.realizedMinor,60000);assert.equal(run.report.rows[0].award,award.id);assert.equal(run.report.rows[0].invoice,invoice.id);assert.equal(run.sources.find(s=>s.kind==='quote'&&s.id===first.id).value.source,undefined,'Private source prose stays behind the existing quote/source door');
  const receiver=await h.member('receiver@example.test',['receiver']);
  for(const cookie of [requester,approver,receiver]){

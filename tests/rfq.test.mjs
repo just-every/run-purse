@@ -1,3 +1,4 @@
+import { harnessInvoiceApproval } from './genuine-invoice-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {harness} from './purse-harness.mjs';
@@ -51,6 +52,7 @@ assert.equal(historical.lines[0].unitMinor,95000);assert.equal(winner.lines[0].u
  const order=await cmd('convert',{id:request.id,revision:2},buyer);await cmd('issue',{id:order.id,revision:2,reason:'Issued approved quotation'},buyer);await cmd('receipt',{order:order.id,line:order.lines[0].id,event:'receive',quantity:'6',reason:'Six accepted'});
  const invoice=await cmd('invoice',{order:order.id,reference:'RFQ-SIX',source:'Original supplier invoice',allocations:[{line:order.lines[0].id,quantity:'6',amountMinor:540000}]},buyer);assert.equal((await report()).totals[0].realizedMinor,0);
  await cmd('payable-terms',{invoice:invoice.id,version:0,invoiceDate:'2026-10-20',term:'Net 30',reason:'Invoice terms'},buyer);await cmd('approve-payable',{invoice:invoice.id,version:1,reason:'Cash planning approved'},buyer);
+ await harnessInvoiceApproval(h,invoice);
  const savings=await report();assert.deepEqual(savings.totals,[{currency:'USD',negotiatedMinor:100000,realizedMinor:60000}]);assert.equal(savings.rows[0].firstQuote,firstQuote.id);assert.equal(savings.rows[0].awardedQuote,wonQuote.id);assert.equal(savings.realizedRows[0].invoice,invoice.id);assert.equal(savings.realizedRows[0].award,award.id);const audit=await h.send('/api/purse/audit?subject='+request.id,undefined,h.owner);assert.equal(audit.status,200);for(const action of ['rfq-create','rfq-invitation','rfq-link-reissue','rfq-mail-outcome','rfq-reminder','rfq-nonresponse','rfq-deadline','rfq-response','rfq-award'])assert.ok(audit.value.events.some(e=>e.action===action),action);const exported=await h.send('/api/purse/audit.csv?subject='+request.id,undefined,h.owner);assert.equal(exported.status,200);assert.match(exported.value,/rfq-mail-outcome/);
  assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
  const singleRequest=await cmd('request',{...draft,title:'Award the first offer itself'},requester),single=await cmd('rfq-create',{...config,request:singleRequest.id},buyer);

@@ -1,3 +1,4 @@
+import { harnessInvoiceApproval } from './genuine-invoice-fixture.mjs';
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {harness} from './purse-harness.mjs'
@@ -28,6 +29,8 @@ test('REPORT-003 public performance measures drill to exact events and approved 
  assert.equal((await report()).savings.totals[0].realizedMinor,0,'unapproved invoice evidence does not realize savings');
  await cmd('payable-terms',{invoice:invoice.id,version:0,invoiceDate:'2026-10-19',term:'Net 30',reason:'Supplier terms'},buyer);
  await cmd('approve-payable',{invoice:invoice.id,version:1,reason:'Cash planning checked'},buyer);
+ assert.equal((await report()).savings.totals[0].realizedMinor,0,'Cash-planning approval alone never realizes savings');
+ await harnessInvoiceApproval(h,invoice);
  r=await report();assert.deepEqual(r.savings.totals,[{currency:'USD',negotiatedMinor:100000,realizedMinor:60000}]);
  assert.equal(r.savings.realizedRows[0].invoice,invoice.id);assert.equal(r.savings.realizedRows[0].order,order.id);assert.equal(r.savings.realizedRows[0].quantity,6);
  assert.equal(r.requestToPo.denominator,1);assert.equal(r.approvalCycle.denominator,1);const state=(await h.state()).data;

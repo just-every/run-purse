@@ -1,3 +1,5 @@
+import { v2Hash } from './invoice-evidence-crypto.mjs';
+import { evidenceKey } from './invoice-evidence-history';
 import { invoiceCustomFields } from './custom-fields';
 import { adoptionDeposits, operationalOrder } from './adoption-position';
 import { publicInvoice } from './invoice-status';
@@ -84,7 +86,8 @@ export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: 
         requireThat(deposits.sources.length && depositAppliedMinor <= deposits.unappliedMinor + (identityPrior?.depositAppliedMinor ?? 0) && depositAppliedMinor <= grossMinor, 'Deposit credit exceeds the imported unapplied balance or invoice amount', 409);
         Object.assign(candidate, { grossMinor, depositAppliedMinor, totalMinor: grossMinor - depositAppliedMinor });
     }
-    const priorSource = confirmation ? all(s, 'invoice').find(i => (i.imported || i.supplierSubmission && i.sourceConfirmation === 'pending') && i.order === o.id && i.reference === reference) : undefined;
+    const nativeConfirmation = confirmation && s.get('invoiceSource:' + get(s,'invoiceReading',confirmation.reading).source)?.value.invoice;
+    const priorSource = confirmation ? all(s, 'invoice').find(i => (i.imported || i.supplierSubmission && i.sourceConfirmation === 'pending' || i.id === nativeConfirmation && !i.confirmedReading && !i.paymentApproval) && i.order === o.id && i.reference === reference) : undefined;
     if (priorSource) { candidate.id = priorSource.id; if (priorSource.imported) candidate.imported = true; }
     Object.assign(candidate, invoiceEvidence(s, o, candidate, b));
     const existing = all(s, 'invoice').filter(i => canonicalSupplier(s, get(s, 'order', i.order).supplier) === canonicalSupplier(s, o.supplier) && i.reference === reference);
@@ -92,6 +95,11 @@ export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: 
         if (priorSource && existing.length === 1) {
             const reading = get(s, 'invoiceReading', confirmation!.reading);
             requireThat(reading.status === 'review' && reading.order === o.id && reading.sourceDescriptor.sha256 === candidate.document?.sha256, 'Historical evidence requires the current source-bound reading', 409);
+            if (nativeConfirmation) {
+                candidate.source = priorSource.source;
+                const retained=priorSource.flags??[];candidate.flags=[...retained,...candidate.flags.filter((flag:Data)=>!retained.some((old:Data)=>old.code===flag.code&&old.relatedInvoice===flag.relatedInvoice&&old.documentHash===flag.documentHash))];
+                candidate.riskReviews=priorSource.riskReviews??[];candidate.riskVersion=(priorSource.riskVersion??1)+1;
+            }
             if (priorSource.supplierSubmission) {
                 requireThat(reading.source === priorSource.supplierSource && priorSource.invoiceDate === candidate.invoiceDate && priorSource.document?.sha256 === candidate.document?.sha256, 'Confirm the exact supplier submission original and date; reconcile conflicting evidence separately', 409);
                 candidate.source = priorSource.source;
@@ -102,9 +110,17 @@ export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: 
             }
             requireThat(priorSource.totalMinor === candidate.totalMinor && JSON.stringify(priorSource.allocations.map((x: Data) => [x.line,x.q,x.amountMinor])) === JSON.stringify(candidate.allocations.map((x: Data) => [x.line,x.q,x.amountMinor])) && (!priorSource.document || priorSource.document.sha256 === candidate.document?.sha256), 'Confirmed source conflicts with the imported invoice balances or original; reconcile instead of overwriting', 409);
             const at = new Date().toISOString();
-            put(s, 'invoice', priorSource.id, { ...priorSource, ...candidate, sourceConfirmation: 'confirmed', confirmedReading: reading.id, confirmedAt: at, confirmedBy: actorId, sourceOriginalDate: priorSource.invoiceDate, at: priorSource.at });
+            const confirmed:Data={ ...priorSource, ...candidate, sourceConfirmation:'confirmed', confirmedReading:reading.id, confirmedAt:at, confirmedBy:actorId, sourceOriginalDate:priorSource.invoiceDate, at:priorSource.at };
+            if(nativeConfirmation && confirmed.evidence?.representation==='v2') {
+                // Retain prior matching-only bank evidence when the reading has no bank input.
+                if(!b.remit && priorSource.remit)confirmed.remit=priorSource.remit;
+                if(!b.senderEmail && priorSource.sender)confirmed.sender=priorSource.sender;
+                if(!b.remit && priorSource.evidence?.representation==='v2') confirmed.evidence={...confirmed.evidence,bankBinding:priorSource.evidence.bankBinding};
+                confirmed.evidenceHash=v2Hash(evidenceKey(s),confirmed,confirmed.evidence.bankBinding);
+            }
+            put(s,'invoice',priorSource.id,confirmed);
             if (!priorSource.document) storeOriginal(get(s, 'invoice', priorSource.id));
-            recordAudit(priorSource.supplierSubmission ? 'confirm-supplier-invoice' : 'confirm-imported-invoice', priorSource.id, { reading: reading.id, source: reading.source, ...(priorSource.imported ? { historicalApproval: 'Imported evidence only' } : {}) });
+            recordAudit(priorSource.supplierSubmission ? 'confirm-supplier-invoice' : priorSource.imported ? 'confirm-imported-invoice' : 'confirm-native-invoice', priorSource.id, { reading: reading.id, source: reading.source, ...(priorSource.imported ? { historicalApproval: 'Imported evidence only' } : {}) });
             return result(get(s, 'invoice', priorSource.id));
         }
         requireThat(existing.length === 1 && evidence(existing[0]) === evidence(candidate),

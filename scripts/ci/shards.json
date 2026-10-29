@@ -43,7 +43,7 @@
     ["tests/browser.mjs", "--width=1440", "--journey=protected-storage"]
   ],
   "12": [
-    ["tests/browser.mjs", "--width=390", "--journey=rfq"]
+    ["tests/browser.mjs", "--width=1440", "--journey=payables"]
   ],
   "13": [
     ["tests/browser.mjs", "--width=1440", "--journey=invoice-risk"]
@@ -69,7 +69,7 @@
     ["tests/browser-accrual-report.mjs"]
   ],
   "20": [
-    ["tests/browser.mjs", "--width=390", "--journey=performance-report"]
+    ["tests/browser-invoice-matching.mjs", "--width=1440"]
   ],
   "21": [
     ["tests/browser.mjs", "--width=390", "--journey=quote-reading"],
@@ -174,8 +174,7 @@
     ["tests/browser.mjs", "--width=390", "--journey=invoice-inbox"]
   ],
   "42": [
-    ["tests/browser.mjs", "--width=1440", "--journey=performance-report"],
-    ["tests/browser.mjs", "--width=1440", "--journey=payables"]
+    ["tests/browser.mjs", "--width=1440", "--journey=performance-report"]
   ],
   "43": [
     ["tests/browser.mjs", "--width=1440", "--journey=protected-preparation"],

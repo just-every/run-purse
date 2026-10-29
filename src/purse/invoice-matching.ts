@@ -18,16 +18,18 @@ export function evaluateInvoiceMatch(s: State, a: Actor, invoiceId: string) {
     if (invoice.paymentApproval) return invoice;
     const order = get(s,'order',invoice.order), request = get(s,'request',order.request), reasons:string[] = [];
     const reading = all(s,'invoiceReading').find(r => r.id === invoice.confirmedReading && r.status === 'confirmed' && r.invoice === invoice.id);
-    if (order.imported || order.adoption || order.supplierGroup || order.recurring || order.recurringSeries || order.poDetails?.blanket || order.lines.some((l:Data)=>l.service || l.supplier && l.supplier !== order.supplier) || request.purchaseType && request.purchaseType !== 'goods') reasons.push('Only ordinary native goods invoices are supported');
+    if (order.imported || order.adoption || order.supplierGroup || order.recurring || order.recurringSeries || order.poDetails?.blanket || order.lines.some((l:Data)=>l.service || l.allocations?.length || l.supplier && l.supplier !== order.supplier) || request.purchaseType && request.purchaseType !== 'goods') reasons.push('Only ordinary native goods invoices are supported');
     if (order.status !== 'issued' || request.status !== 'approved' || request.revision !== order.revision) reasons.push('Current issued approved purchase revision required');
     if (invoice.sourceConfirmation !== 'confirmed' || !reading || reading.sourceDescriptor.sha256 !== invoice.document?.sha256 || invoice.erasure || invoice.sourceValuesErased) reasons.push('Current source-confirmed private original required');
     const attachment = reading && s.get('attachment:' + reading.sourceDescriptor.attachment)?.value;
     if (!attachment?.base64 || attachment.erasure || attachment.erased) reasons.push('Private original is unavailable');
     if (invoice.depositAppliedMinor || all(s,'deposit').some(d=>d.order===order.id)) reasons.push('Deposit matching requires qualified deposit terms');
+    if (!['active','preferred'].includes(get(s,'supplier',order.supplier).status)) reasons.push('Supplier must remain active for automatic approval');
     if (invoice.disputed) reasons.push('Invoice is disputed');
     for (const flag of openInvoiceFlags(invoice)) reasons.push('Unresolved invoice risk: ' + flag.code);
     if (invoice.exception) reasons.push(invoice.exception);
-    const term = reading?.terms?.value;
+    const term = reading?.terms?.value, priorTerms=s.get('payable:'+invoice.id)?.value;
+    if(priorTerms?.approvedAt && (priorTerms.invoiceDate!==invoice.invoiceDate || priorTerms.term!==term)) reasons.push('Approved planning terms differ from the confirmed source');
     if (!paymentTerms.includes(term)) reasons.push('Confirm a supported source payment term');
     if (reading && paymentTerms.includes(term) && reading.dueDate?.value && reading.dueDate.value !== termDates(invoice.invoiceDate,term).dueDate) reasons.push('Source due date conflicts with the payment term');
     const proofs:Data[] = [], rows = discrepancies(s).filter(r=>r.invoiceId===invoice.id);
@@ -63,8 +65,6 @@ export function evaluateInvoiceMatch(s: State, a: Actor, invoiceId: string) {
             const dates=termDates(invoice.invoiceDate,term), version=(old?.version ?? 0)+1;
             const entry={...dates,version,reason:'Source-confirmed terms under owner-consented matching',actor:a.id,at};
             put(s,'payable',invoice.id,{invoice:invoice.id,...entry,version:version+1,history:[...(old?.history??[]),entry],approvedAt:at,approvedBy:a.id,approvalReason:'Genuine native matching approval',approvedMinor:invoice.totalMinor,matchingApprovalAt:at});
-        } else {
-            requireThat(old.invoiceDate===invoice.invoiceDate && old.term===term,'Approved planning terms differ from the confirmed source',409);
         }
         audit(s,a,'invoice-matched-approved',invoice.id,approval);
     }
@@ -81,5 +81,5 @@ export function matchInvoice(s: State, a: Actor, op: string, b: Data): Data | un
     return scopedInvoice(s,a,evaluateInvoiceMatch(s,a,invoice.id));
 }
 export function matchConfirmedInvoices(s: State, a: Actor) {
-    for (const invoice of all(s,'invoice')) if (invoice.confirmedReading && !invoice.paymentApproval && !invoice.supplierSubmission && allowed(s,a,'payable.approve',invoice)) evaluateInvoiceMatch(s,a,invoice.id);
+    for (const invoice of all(s,'invoice')) if (invoice.confirmedReading && !invoice.paymentApproval && !invoice.supplierSubmission && all(s,'matchingRule').length && allowed(s,a,'payable.approve',invoice)) evaluateInvoiceMatch(s,a,invoice.id);
 }

@@ -124,7 +124,7 @@ export async function buildValueSnapshot(s: State, request: Data, revision: numb
         }
         assessment = { kind: 'quoted-saving', status: rows.length ? 'evidence' : 'no-evidence', promisedMinor: promise.amountMinor, currency: promise.currency,
             realizedMinor: rows.reduce((n, r) => n + r.savingsMinor, 0), negotiatedMinor: negotiated.reduce((n, r) => n + r.savingsMinor, 0),
-            rows, statement: rows.length ? 'Existing source-backed invoice savings; cash-planning approval is not payment approval' : 'no evidence yet' };
+            rows, statement: rows.length ? 'Source-backed savings from genuine approved invoices; no payment is inferred' : 'no evidence yet' };
     }
     const sources = [...selected.values()].sort((a, b) => a.kind.localeCompare(b.kind) || a.id.localeCompare(b.id));
     const inputs = { request: request.id, revision, requester: request.requester, promise, sources, assessment, mode: valueMode, model: 'none', provider: 'none' };
