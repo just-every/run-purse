@@ -916,7 +916,7 @@
       "executable": false
     },
     "scripts/installer/restore-approval-chain.mjs": {
-      "sha256": "9168965adb2fd289094f20a2e51664c6c04c68232fada7545e63d71e880d439d",
+      "sha256": "744c1ff42b5ac249304239267900a8e4d7aa6ded9abb8e8a836d0ab622c06318",
       "executable": false
     },
     "scripts/installer/restore-coding-agent.mjs": {
@@ -3036,7 +3036,7 @@
       "executable": false
     },
     "src/purse/approver-corrections.ts": {
-      "sha256": "aaf1673aad30d047c88fbb83f601ca67f4cc076bb5de09cbc1685ab8ced661fe",
+      "sha256": "fab1df2e82fa9a3e2aba7293b04857c0e5fee03a1327b9202733d5d651e4dc3f",
       "executable": false
     },
     "src/purse/audit-log.ts": {
@@ -4620,7 +4620,7 @@
       "executable": false
     },
     "tests/access.test.mjs": {
-      "sha256": "05f03ce254661598cf86a5c426c91be8735abf8535308e023b0ef3fd3c013fb0",
+      "sha256": "e1ad37ff705712a7a81c26e46c982b085ff1d852bfe1bf698999247231846286",
       "executable": false
     },
     "tests/accrual-fixture.mjs": {
@@ -4671,6 +4671,14 @@
       "sha256": "7f48f90f6ab6fbedde2c215da01626a1249e24a742f77acd1db3ce5691162321",
       "executable": false
     },
+    "tests/approver-supplier-groups-fixture.mjs": {
+      "sha256": "5e39b4743937732f2525a8d853e904591f7042b49ebb6d5c2ed9e2e8a14d56ad",
+      "executable": false
+    },
+    "tests/approver-supplier-groups.test.mjs": {
+      "sha256": "b6b70695015bda163c9147688c0a637e6433b25fdbafc2ef6234816a5abbb1ec",
+      "executable": false
+    },
     "tests/audit-log.test.mjs": {
       "sha256": "a57c99c6250a096a20a6ec43ee3c4e406b186953e838c5bc506e50ef35e4ffb1",
       "executable": false
@@ -4717,6 +4725,10 @@
     },
     "tests/browser-approver-edits.mjs": {
       "sha256": "55ba7ac966001af26df8bc27e39a0142d4c4bffd93b3d60386162d70e8b99585",
+      "executable": false
+    },
+    "tests/browser-approver-supplier-groups.mjs": {
+      "sha256": "43a6d84a46d3a29a7db5d52262f5de7afa64dcb7a51ade433476934dc9a2f958",
       "executable": false
     },
     "tests/browser-archive.mjs": {

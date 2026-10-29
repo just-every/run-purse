@@ -20,7 +20,7 @@ test('Current approver supplier corrections renew exact decisions and reconcile 
  assert.deepEqual(await f.exposure(source),{total:100000,positions:[[60000,0,0],[40000,0,0]]});
  const edited=await cmd('approver-edit',f.change(source),f.editor);
  assert.equal(edited.revision,2);assert.equal(edited.status,'pending');assert.equal(edited.approverEdit.renewed.length,1);assert.deepEqual(edited.approverEdit.carried,[]);
- assert.deepEqual(edited.lines.map(line=>[line.id,line.quantity,line.q,line.unitMinor,line.totalMinor]),original.lines.map(line=>[line.id,line.quantity,line.q,line.unitMinor,line.totalMinor]));assert.equal(edited.currency,original.currency);assert.equal(edited.totalMinor,100000);
+ assert.deepEqual(edited.lines.map(line=>[line.id,line.quantity,line.q,line.unitMinor,line.totalMinor]),original.lines.map(line=>[line.id,line.quantity,line.q,line.unitMinor,line.totalMinor]));assert.equal(edited.currency,original.currency);assert.equal(edited.totalMinor,100000);assert.equal(edited.approverEdit.differences[0].before,f.suppliers[0].id);assert.equal(edited.approverEdit.differences[0].after,f.suppliers[1].id);
  assert.deepEqual(edited.lines.map(line=>[line.supplier,line.supplierSnapshot.name]),f.suppliers.map(supplier=>[supplier.id,supplier.name]));
  assert.deepEqual(await f.exposure(source),{total:100000,positions:[[60000,0,0],[40000,0,0]]});
  assert.deepEqual((await h.state()).data.revision.find(row=>row.request===source.id&&row.revision===1).lines,original.lines);
@@ -64,6 +64,7 @@ test('Supplier corrections refuse unsafe sources and revoked authority while ret
  for(const [field,value]of [['quantity','2'],['unitMinor',1],['id','synthetic-purse-8216']])await unchangedRefusal(h,'approver-edit',f.change(source,{changes:{lines:[{id:source.lines[1].id,[field]:value,supplier:f.suppliers[1].id}]}}),f.editor,403);
  await unchangedRefusal(h,'approver-edit',f.change(source,{revision:0}),f.editor,409);await unchangedRefusal(h,'approver-edit',f.change(source),f.requester,403);await unchangedRefusal(h,'approver-edit',f.change(source),f.approver,403);
  await unchangedRefusal(h,'approver-edit',f.change(source,{changes:{currency:'EUR'}}),f.editor,403);
+ const self=await h.member(groupMail(8220),['requester','approver']);await cmd('policy',{name:'synthetic-purse-8221',currency:'USD',category:'synthetic-purse-8221',project:'General',approver:groupMail(8220),limitMinor:2000000,budgetMinor:2000000,approvalSteps:[],editRules:{'*':{allowed:['supplier'],material:['supplier']}}});const own=await cmd('request',{...f.draft,lines:f.draft.lines.map(line=>({...line,category:'synthetic-purse-8221',allocations:undefined}))},self);await cmd('submit',{id:own.id,revision:1},self);await unchangedRefusal(h,'approver-edit',f.change(own),self,403);
  const item=await cmd('catalogue',{supplier:f.suppliers[0].id,description:'synthetic-purse-8217',currency:'USD',unitMinor:40000,category:'goods',project:'General',approved:true});
  const catalogue=await f.pending({lines:[f.draft.lines[0],{...f.draft.lines[1],catalogue:item.id}]});await unchangedRefusal(h,'approver-edit',f.change(catalogue),f.editor,409);
  // A non-goods revision retains its existing refusal to form supplier groups.

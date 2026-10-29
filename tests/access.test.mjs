@@ -102,7 +102,7 @@ test('Native mutation and value snapshots keep private policies and revisions sc
  assert.equal(moved.approverEdit.sourcePolicy,null);
  for(const cookie of [requester,manager]){
   const data=(await h.state(cookie)).data;assert.ok(!data.request.some(row=>row.id===movedSource.id));
-  const notice=data.approvalEditNotice.find(row=>row.request===movedSource.id);assert.deepEqual(notice.differences.map(({field,before,after})=>({field,before,after})),[{field:'costCentre',before:'Operations',after:'Research'},{field:'lines.'+movedSource.lines[0].id+'.supplier',before:null,after:alternate.id},{field:'supplier',before:supplier.id,after:alternate.id}]);
+  const notice=data.approvalEditNotice.find(row=>row.request===movedSource.id);assert.deepEqual(notice.differences.map(({field,before,after})=>({field,before,after})),[{field:'costCentre',before:'Operations',after:'Research'},{field:'lines.'+movedSource.lines[0].id+'.supplier',before:supplier.id,after:alternate.id},{field:'supplier',before:supplier.id,after:alternate.id}]);
   assert.equal(notice.policy,undefined);assert.equal(notice.lines,undefined);assert.equal(notice.terms,undefined);
  }
  const supplierAudit=await h.send('/api/purse/audit?subject='+movedSource.id,undefined,h.owner),supplierCsv=await h.send('/api/purse/audit.csv?subject='+movedSource.id,undefined,h.owner);assert.equal(supplierAudit.status,200);assert.ok(supplierAudit.value.events.some(event=>event.action==='approver-edit'&&event.differences.some(change=>change.line===movedSource.lines[0].id&&change.after===alternate.id)));assert.equal(supplierCsv.status,200);assert.ok(supplierCsv.value.includes(alternate.id));
