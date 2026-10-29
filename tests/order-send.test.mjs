@@ -173,7 +173,7 @@ test('Native current buyer scope, exact approval and claim-before-send prevent s
     assert.equal((await publicGet(h,link.href+'/invoices')).status,200);
     const first=(await h.send('/api/purse/order-send/'+f.order.id,undefined,f.buyer)).value.event;
     const originalBytes=Buffer.from(await (await publicGet(h,link.href+'/pdf')).arrayBuffer());
-    const resend={resendOf:first.id,reason:'synthetic-purse-2890 reviewed uncertain outcome'};
+    const resend={resendOf:first.id,recipient:'synthetic-purse-2911'+String.fromCharCode(64)+'example.test',reason:'synthetic-purse-2890 reviewed uncertain outcome'};
     for(const [body,cookie,status] of [[resend,f.requester,403],[{...resend,consent:false},f.buyer,400],[{...resend,reason:''},f.buyer,400],[{...resend,resendOf:first.id+':stale'},f.buyer,409]])assert.equal((await f.send(body,cookie)).status,status);
     const retry=await Promise.all([f.send(resend),f.send(resend)]);assert.deepEqual(retry.map(result=>result.status).sort(),[200,409]);
     const second=retry.find(result=>result.status===200).value;assert.equal(second.attempt,2);assert.equal(second.resendOf,first.id);assert.equal(second.pdfSha256,first.pdfSha256);
@@ -188,7 +188,7 @@ test('Native current buyer scope, exact approval and claim-before-send prevent s
     assert.equal(h.messages.filter(message=>message.subject.startsWith('Change order ')).length,2,'Only the one consented new claim sends');
     const audit=await h.send('/api/purse/audit.csv?subject='+f.order.id,undefined,h.owner);assert.ok(audit.value.includes(second.id));assert.ok(audit.value.includes(resend.reason));
     assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
-    assert.equal((await respond(h,renewedLink,{revision:2,promisedDate:'2026-11-08'})).status,200);
+    assert.equal((await respond(h,renewedLink,{revision:2,promisedDate:'2026-11-08',name:'synthetic-purse-2912'})).status,200);
     assert.equal((await publicGet(h,renewedLink.href+'/invoices')).status,410,'Acknowledging the new link also cannot restore old owner consent');
     assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent',invoiceConsent,h.owner)).status,200);
     const renewedRule=await h.command('supplier-invoice-rule',{order:f.order.id,revision:2,version:0,enabled:true,consent:true,reason:invoiceConsent.reason},h.owner);assert.equal(renewedRule.send,second.id);assert.equal((await publicGet(h,renewedLink.href+'/invoices')).status,200);
@@ -197,6 +197,26 @@ test('Native current buyer scope, exact approval and claim-before-send prevent s
     assert.equal((await h.mf.dispatchFetch(h.origin+'/cdn-cgi/local/scheduled?time='+Date.parse('2026-11-10T17:00:00Z'))).status,200);
     const chases=(await h.state()).data.orderChaseEvent.filter(event=>event.order===f.order.id);assert.equal(chases.length,1,'An accepted response on the replacement attempt supersedes the earlier rejection for delivery chasing');assert.equal(chases[0].supplierAcknowledgment.send,second.id);
     assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
+    // A corrected recipient still receives a copy of the first attempt's private source.
+    await reauthenticateErasure(h);
+    const erasureMeta=await h.send('/api/purse/erasure',undefined,h.owner);
+    const erasurePreview=await h.send('/api/purse/erasure/preview',{kind:'contact',id:f.supplier.id,email:first.recipient,revision:erasureMeta.value.revision},h.owner);
+    assert.equal(erasurePreview.status,200,JSON.stringify(erasurePreview.value));
+    const reviewed=erasurePreview.value;
+    const erased=await h.send('/api/purse/erasure/execute',{...reviewed.subject,revision:reviewed.revision,review:reviewed.review,fingerprint:reviewed.fingerprint,consent:true},h.owner);
+    assert.equal(erased.status,200,JSON.stringify(erased.value));
+    assert.equal((await publicGet(h,renewedLink.href+'/pdf')).status,410,'Erasing the source contact withdraws the copied PDF sent to the corrected contact');
+    for(const attemptLink of [link,renewedLink]) {
+        for(const suffix of ['', '/original/0','/original/1','/invoices'])assert.equal((await publicGet(h,attemptLink.href+suffix)).status,410);
+        assert.equal((await respond(h,attemptLink,{revision:2,version:1})).status,410);
+    }
+    assert.equal((await f.send({resendOf:second.id,recipient:resend.recipient})).status,409,'Erased source bytes cannot be restored by another resend');
+    const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+    for(const attemptId of [first.id,second.id]) {
+        const retained=JSON.parse(erasedRows.find(row=>row.kind==='orderSend'&&row.id===attemptId).value);
+        assert.ok(retained.erasure);assert.equal(retained.pdf.base64,'');assert.equal(retained.pdf.sha256,first.pdfSha256);
+    }
+    assert.equal(validatePurchasingArchive(erasedRows),true,'Erased copied sources remain inert portable history');
     const next=await h.command('need-date-edit',{id:f.request.id,revision:2,needDate:'2026-11-09',reason:'New exact correction'},f.requester);assert.equal(next.revision,3);assert.equal((await publicGet(h,link)).status,410);assert.equal((await ack(h,link,2)).status,410);assert.equal((await respond(h,link,{revision:2})).status,410);
     await h.command('member',{email:'synthetic-purse-2804@example.test',name:'synthetic-purse-2804',active:false,roles:['buyer']});assert.equal((await f.send()).status,403,'Deactivated purchasing membership refuses its retained native session');
     assert.equal((await h.send('/auth/signout',{},f.buyer)).status,204);assert.equal((await f.send()).status,401,'Revoked native session refuses the send door');

@@ -3196,7 +3196,7 @@
       "executable": false
     },
     "src/purse/erasure-plan.ts": {
-      "sha256": "bb9bd3ffbac4fd5c64acf3b53105a5faf4036726e2d0f3d8fd0d3c2bdcb95fd1",
+      "sha256": "752aff45241cae87329062c9363e5668d9eb490f744b725c9d6f63c14c092350",
       "executable": false
     },
     "src/purse/erasure-refusal.ts": {
@@ -5180,7 +5180,7 @@
       "executable": false
     },
     "tests/order-send.test.mjs": {
-      "sha256": "43442b7fd23bf6a53b28bc31a6c656ecf2fc8aeed8db8a95aff4da4f2e8f07cf",
+      "sha256": "7500fd7f7f6991d5c78e13e14fab890c8ef453c353b1fc57bee8c61fefb8270c",
       "executable": false
     },
     "tests/order-thread.test.mjs": {

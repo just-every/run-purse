@@ -40,9 +40,12 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   const v=row.value;
   const shipmentLinked=(row.kind==='shipmentReference'||row.kind==='audit'&&v.action==='shipment-reference-recorded')
    && [v.send,v.response].some(ref=>linked.has(ref));
+  // Resends copy the previous attempt's opaque PDF and original attachments.
+  // A corrected recipient cannot sever that source's erasure lineage.
+  const resendLinked=row.kind==='orderSend'&&linked.has(v.resendOf);
   // RMA-only participants can be identified inside the linked credit original.
   // Withdraw that source and retain its applications as anonymous history.
-  if((shipmentLinked||[v.comment,v.request,v.order,v.record,v.source,v.reading,v.emailIntake,v.apInvoiceEmail,v.attachment,v.rfq,v.rma,v.credit].some(ref=>linked.has(ref)))&&!linked.has(row.id)){linked.add(row.id);changed=true;}
+  if((resendLinked||shipmentLinked||[v.comment,v.request,v.order,v.record,v.source,v.reading,v.emailIntake,v.apInvoiceEmail,v.attachment,v.rfq,v.rma,v.credit].some(ref=>linked.has(ref)))&&!linked.has(row.id)){linked.add(row.id);changed=true;}
  }}
  const eraseFile=(value:Data):Data=>{
   if(typeof value.base64!=='string'&&!value.key)return value;
