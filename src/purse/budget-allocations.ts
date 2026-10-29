@@ -46,6 +46,7 @@ export function requestBudgetShares(s: State, request: Data, amount: number, his
         const codes = line.allocations?.length ? line.allocations : [{ costCentre: line.costCentre ?? request.costCentre, project: line.project, amountMinor: line.totalMinor }];
         const parts = budgetApportion(lineAmounts[index], codes.map((code: Data) => code.amountMinor));
         codes.forEach((code: Data, at: number) => {
+            if (!parts[at]) return;
             const policy=allocationPolicy(request,line,code,primary,policies);
             requireThat(policy, 'No dated budget covers an allocation', 409);
             result.set(policy.id, (result.get(policy.id) ?? 0) + parts[at]);
@@ -54,8 +55,11 @@ export function requestBudgetShares(s: State, request: Data, amount: number, his
     return [...result].map(([policy, amountMinor]) => ({ policy, amountMinor }));
 }
 export function budgetPortion(s: State, request: Data, amount: number, policy: string) {
-    if(request.budgetDisposition) {const shares=request.budgetDisposition.destination;return budgetApportion(amount,shares.map((share:Data)=>share.amountMinor))[shares.findIndex((share:Data)=>share.policy===policy)]??0;}
-    const ids=new Set<string>(all(s,'commitment').filter(event=>event.request===(request.request??request.id)&&event.revision===request.revision&&(event.amountMinor>0||event.kind==='buyer-conversion-reservation')).flatMap(event=>(event.budgetAllocations??[]).map((share:Data)=>share.policy)));
+    // A disposition freezes budget identities, while the supplied lines and
+    // allocations still determine which department actually incurred the amount.
+    const ids=new Set<string>(request.budgetDisposition
+        ? request.budgetDisposition.destination.map((share:Data)=>share.policy)
+        : all(s,'commitment').filter(event=>event.request===(request.request??request.id)&&event.revision===request.revision&&(event.amountMinor>0||event.kind==='buyer-conversion-reservation')).flatMap(event=>(event.budgetAllocations??[]).map((share:Data)=>share.policy)));
     return requestBudgetShares(s, request, amount, ids).find(share => share.policy === policy)?.amountMinor ?? 0;
 }
 export function eventBudgetPortion(event: Data, policy: string) {

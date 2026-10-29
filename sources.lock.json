@@ -3064,7 +3064,7 @@
       "executable": false
     },
     "src/purse/budget-allocations.ts": {
-      "sha256": "ec80e4ce58d746caf52921161bc25c133428e29fe358c02415489ce74d0e4077",
+      "sha256": "661a7985ef5072fdda1794a8ec01b76783d7a6547816f98e4e06ad24aa6d8ae1",
       "executable": false
     },
     "src/purse/budget-dimensions.ts": {
@@ -3080,7 +3080,7 @@
       "executable": false
     },
     "src/purse/budget-position.ts": {
-      "sha256": "6c0fa9a4c72ab2f2891f1cb7872bcd0240d3d234d36fd0998b67f1f27d5977a6",
+      "sha256": "70e6d5b9e2736b9ac0a2c2bf4e5d22092b3bff7b3f06a314cb7d27ac814069b8",
       "executable": false
     },
     "src/purse/budget-view.ts": {
@@ -4992,7 +4992,7 @@
       "executable": false
     },
     "tests/budget-disposition.test.mjs": {
-      "sha256": "1fce077b3d9fb83ec201547de75571832ef2617fdfdf983b3cd4d4b862fe3ad5",
+      "sha256": "6d3e7d373deb277093fec78f8d6f3c9a70d06856b1639f8d9124857107eb8638",
       "executable": false
     },
     "tests/budget-import-fixture.mjs": {

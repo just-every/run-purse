@@ -54,7 +54,9 @@ export function budgetPeriod(input: Data, prior?: Data) {
 }
 export function budgetRoom(s: State, request: Data, policy: Data, delta: number) {
  checkBudgetDisposition(s,request);
- if(request.budgetDisposition)return true;
+ // The live position already includes a reopened issued balance. Check every
+ // destination without counting it twice or reusing move consent for an overage.
+ if(request.budgetDisposition)return request.budgetDisposition.destination.every((share:Data)=>periodBudgetPosition(s,get(s,'policy',share.policy)).availableMinor>=0);
  if(delta<=0)return true;
  if(!policy.budgetPeriod)return undefined;
  const events=all(s,'commitment').filter(event=>event.request===request.id&&event.currency===request.currency);
