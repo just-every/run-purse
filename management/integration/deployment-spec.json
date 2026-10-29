@@ -256,6 +256,12 @@
       "name": "0041_supplier_tax.sql",
       "sha256": "fd3339e2bbb7580ea2d7087d854506a23650eb9a4c1c7cc85178afa4f1fc9439",
       "sql": "-- Current review authority belongs to this installation and is never portable.\nCREATE TABLE p_supplier_tax_authority (\n    review TEXT PRIMARY KEY,\n    actor TEXT NOT NULL,\n    operator_version INTEGER NOT NULL\n);\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0042_approval_absence.sql",
+      "sha256": "92876e6502654f5bb0dae773dd9fbfef8037bb0a45be159e351959b6ac6d44f0",
+      "sql": "-- Installation-local consent is excluded from portable purchasing history.\nCREATE TABLE p_approval_absence_authority (\n id TEXT PRIMARY KEY,\n value TEXT NOT NULL\n);\n"
     }
   ],
   "compatibilityDate": "2026-09-08",

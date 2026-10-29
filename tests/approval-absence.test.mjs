@@ -18,6 +18,7 @@ test('Scheduled native absence transfers new and pending singleton steps once, p
     for(const change of [{timezone:'Invalid zone'},{start:'2026-11-01T01:30',end:'2026-11-01T04:00'},{start:'2027-03-14T02:30',end:'2027-03-14T04:00'},{end:'2026-10-30T08:00'}])await h.command('approval-absence',{...f.config,...change},f.approver,400);
     await h.command('approval-absence',{...f.config,delegate:address(7104)},f.approver,403);
     assert.deepEqual(await f.raw('approvalAbsence'),[]);
+    const foreign=await h.mf.dispatchFetch(h.origin+'/api/purse/command/approval-absence',{method:'POST',headers:{origin:'https://synthetic-purse-7113.example.test',cookie:h.owner,'content-type':'application/json'},body:JSON.stringify(f.config)});assert.equal(foreign.status,403);
     const config=await h.command('approval-absence',f.config,f.approver);
     await h.command('approval-absence',{...f.config,id:config.id,version:0},f.approver,409);
     assert.equal((await f.read(existing.id,f.delegate)).mayApprove,false,'Future windows confer no early authority');
@@ -63,6 +64,17 @@ test('Scheduled native absence transfers new and pending singleton steps once, p
     await h.command('approval-absence',{...f.config,id:config.id,version:5},h.owner);
     assert.equal((await f.read(parallel.id,f.approver)).approvalAbsence.held,true);await f.decide(await f.read(parallel.id,f.approver),f.approver,403);
     assert.equal(parallelPolicy.approvalSteps[0].mode,'all');
+    const orderedPolicy=await h.command('policy',{...parallelPolicy,approver:address(7103),approvalSteps:[{email:address(7102)}]});
+    const orderedConfig=await h.command('approval-absence',{...f.config,id:config.id,version:6},h.owner);
+    const ordered=await f.create();await f.decide(await f.read(ordered.id,f.delegate),f.delegate);
+    const routed=await f.read(ordered.id,f.delegate);assert.equal(routed.approvalStep,'step-0');assert.equal(routed.approvalAbsence.holder,address(7103));
+    await f.decide(routed,f.approver,403);await f.decide(routed,f.delegate);
+    await f.clock(after);await f.tick(after);
+    assert.equal((await f.read(ordered.id)).status,'approved');
+    const orderedOrder=await h.command('convert',{id:ordered.id,revision:1});assert.equal(orderedOrder.approvalProofs.length,2);
+    const issued=await h.command('issue',{id:orderedOrder.id,revision:1,reason:'Both singleton decisions remain valid after absence expiry'});assert.equal(issued.status,'issued');
+    assert.equal(orderedConfig.version,7);assert.equal(orderedPolicy.approvalSteps[0].email,address(7102));
+    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
 });
 
 test('Absence authority obeys current scope and revocation; actual archives and erasure retain history without resurrecting delegated execution',async t=>{
@@ -92,10 +104,10 @@ test('Absence authority obeys current scope and revocation; actual archives and 
     assert.equal((await f.read(pending.id)).approvalAbsence.held,true);await f.decide(pending,f.delegate,403);
     await h.command('member',{email:address(7103),name:'synthetic-purse-7103',active:true,roles:['requester','approver']});
     // Native operator revocation is independent from a purchasing grant.
-    const native=(await h.db.prepare('SELECT id FROM oa_operators WHERE email=?').bind(address(7103)).first()).id;
-    await h.db.prepare("UPDATE oa_operators SET status='inactive',version=version+1 WHERE id=?").bind(native).run();
+    const native=(await h.send('/auth/operators',undefined,h.owner)).value.find(o=>o.email===address(7103)).id;
+    assert.equal((await h.send('/auth/operator/status',{operatorId:native,status:'inactive'},h.owner)).status,200);
     assert.equal((await f.read(pending.id)).approvalAbsence.held,true);assert.equal((await h.send('/api/purse/state',undefined,f.delegate)).status,401);
-    await h.db.prepare("UPDATE oa_operators SET status='active' WHERE id=?").bind(native).run();
+    assert.equal((await h.send('/auth/operator/status',{operatorId:native,status:'active'},h.owner)).status,200);
     config=await h.command('approval-absence',{...f.config,id:config.id,version:1},h.owner);assert.equal(config.version,2);
     await h.command('member',{email:address(7103),name:'synthetic-purse-7103',active:false,roles:['requester','approver']});
     await reauthenticateErasure(h);

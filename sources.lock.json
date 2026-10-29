@@ -196,7 +196,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "a340eb77d05bc9787d82e9e96c06868eb607ca07f17b0b5b3ee5c3bfbd925741",
+      "sha256": "1cf22842978eefde49cbe88bc73bcb1d4dae72db1a408719405118dc567c0b1b",
       "executable": false
     },
     "migrations/core/0001_operator_auth.sql": {
@@ -2932,7 +2932,7 @@
       "executable": false
     },
     "src/purse/access-projection.ts": {
-      "sha256": "82a443bc8fd89bb055a43d1c004cda47c3753727bf89d8969d810004021dfd94",
+      "sha256": "2c4d37cc003a2c92849f0ebfa34d6407cdb42dbf71ecae11a2a246eed81a922c",
       "executable": false
     },
     "src/purse/access-records.ts": {
@@ -3028,7 +3028,7 @@
       "executable": false
     },
     "src/purse/approval-absence.ts": {
-      "sha256": "21443c0e67d47229ea53d7b09d73b4ff17ad900ad2b702e49cd9ca1e35e54d4d",
+      "sha256": "8d11175c62fe8d0ff22f0dbb2d3985f364831ad72c1cbccf502d7579011076aa",
       "executable": false
     },
     "src/purse/approval-chain-authority.ts": {
@@ -4692,7 +4692,7 @@
       "executable": false
     },
     "tests/approval-absence.test.mjs": {
-      "sha256": "fa98017e2eed83e640a0dffa83455cec3ce358c4515e6e981689f55f2a2ce03c",
+      "sha256": "52d5da50c9cfbb538e5041d3d48381da6abf853f6417c3cca5f96ac52d53ebbb",
       "executable": false
     },
     "tests/approval-chain-flow.mjs": {
@@ -4740,7 +4740,7 @@
       "executable": false
     },
     "tests/browser-approval-absence.mjs": {
-      "sha256": "31fecb0833138636b9918400ac38981edfc86f1be1fbf205e59d25dac43c8112",
+      "sha256": "16d1cecec5334144bc6bc51c031f923400c09e539c6f273bde8b5cf0ad17e6b9",
       "executable": false
     },
     "tests/browser-approval-pools.mjs": {
