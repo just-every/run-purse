@@ -44,6 +44,26 @@ export function historicalFields(s: State, definitions: Map<string, Data>, raw: 
         return { definition: definition.id, sourceId, name: definition.name, value };
     });
 }
+/** Source facts stay separate from operational allocations and native decisions. */
+export function historicalLineFacts(row: Data, col: Columns, totalMinor: number, money: (value: string) => number) {
+    const decision = col(row, 'lineDecision'), reason = col(row, 'lineDecisionReason'), evidence = col(row, 'lineDecisionEvidence');
+    requireThat(!decision || ['approved', 'declined', 'pending'].includes(decision), 'Unsupported historical item decision');
+    requireThat(decision || !reason && !evidence, 'Historical item decision required with its reason or evidence');
+    requireThat(reason.length <= 2000 && evidence.length <= 2000 && (decision !== 'declined' || reason.trim().length > 0), 'Declined historical item needs its source reason');
+    const raw = col(row, 'lineAllocations'), allocations = raw ? json(raw, 'Historical account allocations') : [];
+    requireThat(Array.isArray(allocations) && allocations.length <= 20, 'Use up to 20 historical account allocations');
+    const identities = new Set<string>();
+    const splits = allocations.map((allocation: Data) => {
+        requireThat(allocation && typeof allocation === 'object' && !Array.isArray(allocation) && Object.keys(allocation).every(key => ['sourceId', 'accountCodeId', 'amount'].includes(key)), 'Historical account allocation fields invalid');
+        const { sourceId, accountCodeId, amount } = allocation;
+        requireThat(typeof sourceId === 'string' && sourceId.length > 0 && sourceId.length <= 2000 && !identities.has(sourceId), 'Historical allocation needs a unique exact identity');
+        requireThat(typeof accountCodeId === 'string' && accountCodeId.length > 0 && accountCodeId.length <= 2000 && typeof amount === 'string', 'Historical allocation needs an exact account code and amount');
+        identities.add(sourceId);
+        return { sourceId, accountCodeId, code: 'procurify:code:' + accountCodeId, amountMinor: money(amount) };
+    });
+    requireThat(!splits.length || splits.reduce((sum: number, split: Data) => minor(sum + split.amountMinor), 0) === totalMinor, 'Historical account allocations must equal their source line amount');
+    return { ...(decision ? { sourceDecision: { decision, reason, evidence, authority: 'inert-history' } } : {}), ...(splits.length ? { historicalAllocations: splits } : {}) };
+}
 export function mergeHistorical(previous: Data | undefined, value: Data) {
     if (!previous) return value;
     if (value.lines) { value.lines = [...previous.lines, ...value.lines]; value.totalMinor = minor(value.lines.reduce((sum: number, line: Data) => sum + line.totalMinor, 0) + value.freightMinor + value.taxMinor); }
@@ -56,10 +76,11 @@ export function historicalReport(values: Data[]) {
     for (const value of values.filter(v => v.lines || v.allocations)) {
         const kind = value.allocations ? 'invoice' : value.request ? 'order' : 'request';
         const period = (value.invoiceDate || value.needDate || '').slice(0, 7) || 'not-recorded';
-        const supplier = value.supplier, key = canonicalJson([kind, supplier, period, value.currency]);
-        const group = groups.get(key) ?? { kind, supplier, period, currency: value.currency, records: 0, lines: 0, totalMinor: 0 };
+        const supplier = value.supplier, department = value.costCentre || null, key = canonicalJson([kind, supplier, department, period, value.currency]);
+        const group = groups.get(key) ?? { kind, supplier, department, period, currency: value.currency, records: 0, lines: 0, totalMinor: 0 };
         group.records++; group.lines += (value.lines ?? value.allocations).length; group.totalMinor = minor(group.totalMinor + value.totalMinor); groups.set(key, group);
     }
-    return { reconciliation: [...groups.values()], historicalDefinitions: values.filter(v => v.authority === 'inert-history').map(v => ({ sourceId: v.sourceId, name: v.name, recordKind: v.recordKind, scope: v.scope, type: v.type, options: v.options })), historicalRecords: values.filter(v => v.sourceRows).map(v => ({ id: v.id, sourceId: v.sourceId, headerFields: v.historicalFields ?? [], lines: (v.lines ?? v.allocations ?? []).map((line: Data) => ({ sourceLineId: line.sourceLineId, orderLine: line.line ?? null, fields: line.historicalFields ?? [] })), sourceRows: v.sourceRows })) };
+    const reconciliation = [...groups.values()].sort((a, b) => purchaseKinds.indexOf(a.kind) - purchaseKinds.indexOf(b.kind) || canonicalJson([a.supplier,a.department,a.period,a.currency]).localeCompare(canonicalJson([b.supplier,b.department,b.period,b.currency])));
+    return { reconciliation, historicalDefinitions: values.filter(v => v.authority === 'inert-history').map(v => ({ sourceId: v.sourceId, name: v.name, recordKind: v.recordKind, scope: v.scope, type: v.type, options: v.options })), historicalRecords: values.filter(v => v.sourceRows).map(v => ({ id: v.id, sourceId: v.sourceId, headerFields: v.historicalFields ?? [], lines: (v.lines ?? v.allocations ?? []).map((line: Data) => ({ sourceLineId: line.sourceLineId, orderLine: line.line ?? null, quantity: line.quantity, amountMinor: line.amountMinor ?? line.totalMinor, sourceDecision: line.sourceDecision ?? null, historicalAllocations: line.historicalAllocations ?? [], fields: line.historicalFields ?? [] })), sourceRows: v.sourceRows })) };
 }
 export const historicalRowProof = (row: Data, position: number, col: Columns) => ({ row: position, sourceLineId: col(row, 'lineId'), payloadHash: sha256(canonicalJson(row)) });

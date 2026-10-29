@@ -27,6 +27,7 @@ function adoptionReview(s: State, a: Actor, input: Data) {
     requireThat(!budget || !all(s, 'orderAdoption').some(adoption => adoption.policy === policy.id && adoption.budget && adoption.budget !== budget.id), 'This native budget is already mapped to another imported source', 409);
     const budgetMinor = budget && !existingMapping ? budget.amountMinor : policy.budgetMinor;
     const lines = order.lines.map((line: Data) => {
+        requireThat(line.sourceDecision?.decision !== 'declined' && sourceRequest.lines.find((source: Data) => source.id === line.sourceRequestLine)?.sourceDecision?.decision !== 'declined', 'Declined historical items cannot be adopted into purchasing', 409);
         const received = all(s, 'receipt').filter(receipt => receipt.imported && receipt.order === order.id && receipt.line === line.id).reduce((sum, receipt) => sum + receipt.q, 0);
         requireThat(received <= line.q, 'Imported received quantity exceeds ordered quantity; reconcile the source', 409);
         requireThat((!budget?.project || budget.project === line.project) && business.projects.includes(line.project) && (policy.project === '*' || policy.project === line.project) && (policy.category === '*' || policy.category === line.category), 'Map every adopted line to this budget and configured project');

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
+import {parse} from 'csv-parse/sync';
 import {createPortability} from '@runeditrun/rer/modules/portability';
 import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
@@ -16,13 +17,27 @@ test('Reviewed historical multi-line migration reconciles exact source identitie
     const rows=async db=>(await db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results;
     const before=await rows(h.db),jobs=await h.db.prepare('SELECT * FROM ik_jobs').all();
     const preview=await call('preview',source);assert.deepEqual(await rows(h.db),before);assert.deepEqual(await h.db.prepare('SELECT * FROM ik_jobs').all(),jobs);
-    assert.deepEqual(preview.report.reconciliation.map(r=>[r.kind,r.currency,r.period,r.records,r.lines,r.totalMinor]),[
-        ['request','USD','2026-10',1,2,105000],['request','EUR','2026-09',1,1,3000],['order','USD','2026-10',1,2,105000],['order','EUR','2026-09',1,1,3000],['invoice','USD','2026-10',1,2,40000],['invoice','EUR','2026-09',1,1,1500]
+    assert.deepEqual(preview.report.reconciliation.map(r=>[r.kind,r.currency,r.department,r.period,r.records,r.lines,r.totalMinor]),[
+        ['request','USD','Operations','2026-10',1,3,125000],['request','USD','Research','2026-10',1,1,50000],['request','EUR','Research','2026-09',1,1,3000],['order','USD','Operations','2026-10',1,2,105000],['order','EUR','Research','2026-09',1,1,3000],['invoice','USD','Operations','2026-10',1,2,40000],['invoice','EUR','Research','2026-09',1,1,1500]
     ]);
+    const edit=(choose,patch)=>{const rows=parse(source.csv,{columns:true,skip_empty_lines:true}),headers=Object.keys(rows[0]);for(const row of rows)if(choose(row))Object.assign(row,typeof patch==='function'?patch(row):patch);return headers.join(',')+'\n'+rows.map(row=>headers.map(key=>'"'+String(row[key]??'').replaceAll('"','""')+'"').join(',')).join('\n')+'\n';};
     const changed=[{...source,csv:source.csv+'\n'},{...source,mapping:{...source.mapping,columns:{...source.mapping.columns,description:'name'}}},{...source,mapping:{...source.mapping,statuses:{...source.mapping.statuses,approved:'different-history'}}}];
     for(const value of changed)await call('commit',{...value,fingerprint:preview.plan.fingerprint},409);
     const bad=[source.csv.replace(' line 2 ',' line 1 '),source.csv.replace('request, synthetic-purse-request , line 2 ,Synthetic history','request, synthetic-purse-request , line 2 ,Conflicting header'),source.csv.replaceAll(' line 2 ',' missing-line ' ).replace('order, synthetic-purse-order , missing-line ','order, synthetic-purse-order , line 2 '),source.csv.replace('""order-line"": ""Grant B""','""unknown-definition"": ""Grant B""'), source.csv.replace('Source header grant','Vendor bank account'), source.csv.replace('order, synthetic-purse-order , line 1 ,','order, synthetic-purse-order ,,')];
+    const usdInvoice=row=>row.kind==='invoice'&&row.currency==='USD';
+    bad.push(edit(usdInvoice,{lineAllocations:'[{"sourceId":"split","accountCodeId":" source-gl-1 ","amount":"1.00"}]'}),
+        edit(usdInvoice,{lineAllocations:'[{"sourceId":"split","accountCodeId":"absent","amount":"300.00"}]'}),
+        edit(usdInvoice,row=>({lineAllocations:JSON.stringify([{sourceId:'same',accountCodeId:' source-gl-1 ',amount:row.lineId===' line 1 '?'100.00':'25.00'},{sourceId:'same',accountCodeId:' source-gl-2 ',amount:row.lineId===' line 1 '?'200.00':'75.00'}])})),
+        edit(row=>row.kind==='request'&&row.lineId===' declined-line ',{lineDecisionReason:''}),
+        edit(row=>row.kind==='request'&&row.lineId===' line 1 ',{lineDecision:'native-authorized'}),
+        edit(row=>row.kind==='order'&&row.lineId===' line 2 ',{requestLineId:' declined-line '}),
+        edit(row=>row.kind==='order'&&row.currency==='USD',{supplierId:'synthetic-purse-2'}),
+        edit(row=>row.kind==='order'&&row.currency==='USD',{currency:'EUR'}),
+        edit(usdInvoice,{supplierId:'synthetic-purse-2'}));
+    for(const [field,value] of [['request-number','123.5'],['request-boolean','false'],['request-date','2026-02-30'],['request-header','Unknown choice']])bad.push(edit(row=>row.kind==='request',row=>({headerFields:JSON.stringify({...JSON.parse(row.headerFields),[field]:value})})));
     for(const csv of bad){assert.notEqual(csv,source.csv);const response=await h.send('/api/purse/import/preview',{...source,csv},h.owner);assert.ok(response.status>=400 || response.value.report.unresolved.length>0,JSON.stringify(response.value));const attempt=await h.send('/api/purse/import/commit',{...source,csv,fingerprint:response.value.plan?.fingerprint ?? preview.plan.fingerprint},h.owner);assert.ok(attempt.status>=400,JSON.stringify(attempt.value));assert.deepEqual(await rows(h.db),before);}
+    assert.deepEqual(await h.db.prepare('SELECT * FROM ik_jobs').all(),jobs);
+    const noDepartment=await call('preview',{...source,csv:edit(row=>['request','order','invoice'].includes(row.kind),{costCentre:''})});assert.ok(noDepartment.report.reconciliation.every(row=>row.department===null));
     const unauthorized=await h.member(email(9101),['requester']);await call('preview',source,403,unauthorized);assert.equal((await h.send('/api/purse/import/preview',source)).status,401);
     const committed=await call('commit',{...source,fingerprint:preview.plan.fingerprint}),job=committed.job,ref={id:job.id,mappingVersion:job.mappingVersion};
     assert.equal(job.checkpoint,40);assert.ok(job.total>40);assert.equal((await call('resume',ref)).state,'completed');
@@ -31,12 +46,16 @@ test('Reviewed historical multi-line migration reconciles exact source identitie
     assert.deepEqual(status.report.historicalRecords.find(r=>r.id===ids.order).sourceRows.map(r=>r.row),[13,14]);
     let data=(await h.state()).data;const order=data.order.find(r=>r.id===ids.order),invoice=data.invoice.find(r=>r.id===ids.invoice),request=data.request.find(r=>r.id===ids.request);
     assert.equal(order.lines.length,2);assert.deepEqual(order.lines.map(l=>l.sourceLineId),[' line 1 ',' line 2 ']);assert.equal(order.sourceId,' synthetic-purse-order ');assert.equal(order.lines[0].unitMinor,6000);assert.equal(order.lines[1].totalMinor,40000);assert.equal(invoice.totalMinor,40000);assert.deepEqual(invoice.allocations.map(a=>[a.line,a.q,a.amountMinor]),[[order.lines[0].id,5000,30000],[order.lines[1].id,1000,10000]]);
-    assert.deepEqual(order.historicalFields.map(f=>[f.sourceId,f.value]),[['order-header','Grant A']]);assert.deepEqual(order.lines.map(l=>l.historicalFields[0].value),['Grant A','Grant B']);assert.equal(data.importField.length,6);assert.equal(data.intakeForm.length,0);assert.equal(data.decision.length,0);assert.equal(data.commitment.length,0);assert.deepEqual(data.totals,{});assert.equal(order.status,'imported');assert.equal(invoice.paymentApproval,undefined);assert.equal(request.policy,null);assert.ok(data.supplier.filter(s=>s.imported).every(s=>s.status==='pending_review'));
+    assert.equal(request.lines.length,3);assert.deepEqual(request.lines[2].sourceDecision,{decision:'declined',reason:'Source purchase refused',evidence:'Synthetic declined decision',authority:'inert-history'});
+    assert.deepEqual(request.historicalFields.filter(field=>field.sourceId!=='request-header').map(field=>[field.sourceId,field.value]),[['request-text','Source instructions remain data'],['request-number',123.5],['request-date','2026-10-01'],['request-boolean',false]]);
+    assert.deepEqual(invoice.allocations.map(line=>line.historicalAllocations.map(split=>[split.sourceId,split.accountCodeId,split.amountMinor])),[[[' source-split-1 ',' source-gl-1 ',10000],[' source-split-2 ',' source-gl-2 ',10000],[' source-split-3 ',' source-gl-3 ',10000]],[[' source-split-1 ',' source-gl-1 ',2500],[' source-split-2 ',' source-gl-2 ',2500],[' source-split-3 ',' source-gl-3 ',5000]]]);assert.ok(invoice.allocations.every(line=>line.allocations===undefined));
+    assert.deepEqual(order.historicalFields.map(f=>[f.sourceId,f.value]),[['order-header','Grant A']]);assert.deepEqual(order.lines.map(l=>l.historicalFields[0].value),['Grant A','Grant B']);assert.equal(data.importField.length,10);assert.equal(data.intakeForm.length,0);assert.equal(data.decision.length,0);assert.equal(data.commitment.length,0);assert.deepEqual(data.totals,{});assert.equal(order.status,'imported');assert.equal(invoice.paymentApproval,undefined);assert.equal(request.policy,null);assert.ok(data.supplier.filter(s=>s.imported).every(s=>s.status==='pending_review'));
     await h.command('convert',{id:request.id,revision:1},h.owner,409);await h.command('issue',{id:order.id},h.owner,409);assert.deepEqual((await h.state()).data.commitment,[]);
     assert.equal(validatePurchasingArchive(await rows(h.db)),true);
     const archive=join(h.dir,'synthetic-purse-history.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
     const restored=await harness();t.after(()=>restored.close());await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
     let restoredData=(await restored.state()).data;assert.deepEqual(restoredData.order.find(r=>r.id===ids.order).lines,order.lines);assert.deepEqual(restoredData.importField,data.importField);assert.equal(restoredData.decision.length,0);assert.equal(restoredData.commitment.length,0);
+    assert.deepEqual(restoredData.invoice.find(r=>r.id===ids.invoice).allocations,invoice.allocations);assert.deepEqual(restoredData.request.find(r=>r.id===ids.request).lines[2].sourceDecision,request.lines[2].sourceDecision);
     for(const op of ['status','resume','undo'])assert.notEqual((await restored.send('/api/purse/import/'+op,ref,restored.owner)).status,200);
     assert.ok(restoredData.importJobs.find(j=>j.id===job.id).canClaim);await importCall(restored,'claim',ref);await importCall(restored,'resume',ref);const claimed=await importCall(restored,'status',ref);assert.equal(Buffer.from(claimed.originals[0].original.base64,'base64').toString(),source.csv);assert.deepEqual(claimed.report.reconciliation,preview.report.reconciliation);
     await restored.command('convert',{id:request.id,revision:1},restored.owner,409);await restored.command('issue',{id:order.id},restored.owner,409);

@@ -12,7 +12,7 @@ export function importedInvoice(row: Data, col: Columns, parse: { quantity: (v: 
     const document = col(row, 'documentBase64') ? { name: text(col(row, 'documentName'), 'Invoice original filename', 200), mediaType: text(col(row, 'documentMediaType'), 'Invoice original media type', 150), base64: col(row, 'documentBase64') } : null;
     const original = document ? { ...documentMetadata(document), base64: document.base64 } : null;
     return { ...meta, order, reference: text(col(row, 'number') || meta.sourceId, 'Historical invoice number'),
-        source: 'Imported invoice source ' + meta.sourceId, currency: col(row, 'currency'),
+        source: 'Imported invoice source ' + meta.sourceId, currency: col(row, 'currency'), sourceSupplierId: col(row, 'supplierId'), costCentre: col(row, 'costCentre'),
         allocations: [{ line, quantity: col(row, 'quantity').replace(',', '.'), q, amountMinor, orderedMinor: extended(q, unitMinor), receivedQ: 0 }], totalMinor: amountMinor,
         invoiceDate, invoiceDateSource: invoiceDate ? 'imported-source' : 'not-recorded',
         sourceSender: col(row, 'email') ? senderAddress(col(row, 'email')).address : null,

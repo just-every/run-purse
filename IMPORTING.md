@@ -271,12 +271,17 @@ sensitive-column redaction exception; arbitrary free text is not universally
 redacted.
 
 Preview shows distinct header and line counts and totals separately by record
-kind, supplier, currency and source month. Requests and POs use need-date months;
+kind, supplier, department, currency and source month. Departments use the source
+`costCentre`; invoices without one inherit the source PO department. Missing
+departments stay explicitly unrecorded, never guessed from current configuration. Requests and POs use need-date months;
 invoices use invoice-date months, with missing dates explicitly unrecorded.
 Currencies and record kinds never combine into a misleading grand total. The
-example independently reconciles USD request and PO faces of 105000 minor units
-(60000 plus 40000 in lines, 2000 freight and 3000 tax), USD invoices of 40000,
-and separate EUR request and PO faces of 3000 and invoices of 1500.
+example independently reconciles an Operations USD request face of 125000 minor
+units (60000 plus 40000 plus a declined 20000 item, 2000 freight and 3000 tax),
+its PO face of 105000, and invoices of 40000. Research retains a separate USD
+request of 50000 and EUR request and PO faces of 3000 with invoices of 1500.
+A source request face includes declined items as history; it is never a native
+spending authorization. Reopening a batch retains the same sorted reconciliation.
 
 Review exact header and line identities, custom values and logical CSV row
 numbers in the source disclosure. Retained rows include their payload digests;
@@ -296,3 +301,33 @@ prevents replay of erased values; a sanitized resumed batch cannot restore them.
 Actual Procurify exports, API access, attachments, deposits, comments, travel,
 approval pools, split allocations, vendor routing, pending vendors, purchaser
 variance and item decisions retain the IMPORT-001 Gap.
+
+
+### Historical item decisions and account splits
+
+The multi-line fixture also accepts `lineDecision` (approved, declined or pending),
+`lineDecisionReason` and `lineDecisionEvidence`. A declined item needs its exact
+source reason. These facts remain in `sourceDecision`, separate from native
+request approval. A PO line must point to an exact source request line with the
+same supplier and currency, and a declined source line cannot enter a historical
+PO or be adopted into purchasing. The remaining historical request stays inert;
+imported approval never makes its other lines natively convertible.
+
+`lineAllocations` is an optional JSON array with exact `sourceId`,
+`accountCodeId` and decimal-string `amount` per source split. It requires imported
+`code` rows with `codeType` set to `gl`. The split identities are unique within
+the line, referenced codes must exist, and amounts must sum to that source line
+amount using the reviewed decimal convention. They are retained as
+`historicalAllocations`, with their source identities and exact minor-unit
+amounts. For example, the first USD invoice line retains three 10000-minor-unit
+splits and the second retains 2500, 2500 and 5000. Preview and retained-batch
+review show quantities, line amounts, source decisions and every account split.
+
+These source splits do not configure native business codes, provide operational
+CODING-001 allocations or ledger mappings, or change budgets. Source-approved
+items do not grant purchase, payment or member authority. Current native owners
+still use the separate IMPORT-003 adoption review for open POs. Native field
+adoption, operational split mapping, partial-request adoption with native
+approval, and actual Procurify export and API qualification remain open. Restore
+preserves this source history and validates its links and sums before applying
+records; it restores no importing-owner custody grant or approval authority.

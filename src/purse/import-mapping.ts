@@ -1,6 +1,6 @@
 import { erasureDigest, pathValue } from './erasure-journal.mjs';
 import type { TargetEffect } from '../modules/import-kit/src/types';
-import { historicalGroups, historicalLineId, historicalDefinition, historicalFields, mergeHistorical, historicalReport, historicalRowProof } from './procurify-lines';
+import { historicalGroups, historicalLineId, historicalDefinition, historicalFields, historicalLineFacts, mergeHistorical, historicalReport, historicalRowProof } from './procurify-lines';
 import { importedInvoice, importedDeposit } from './import-invoice';
 import { matchingInputs } from './supplier-identity';
 import { sensitiveSupplierColumns, redactSupplierCsv } from './supplier-csv-custody';
@@ -110,8 +110,10 @@ export function mappedSource(s: State, b: Data) {
             value.historicalFields = historicalFields(s, definitions, col(r, 'headerFields'), kind, 'header');
             value.sourceRows = [historicalRowProof(r, rowIndex + 2, col)];
             if (kind === 'invoice') Object.assign(value.allocations[0], { sourceLineId: col(r, 'lineId'), historicalFields: historicalFields(s, definitions, col(r, 'lineFields'), kind, 'line') });
+            const line = (value.lines ?? value.allocations)[0];
+            Object.assign(line, historicalLineFacts(r, col, line.totalMinor ?? line.amountMinor, money));
             value = mergeHistorical(values.get(`${kind}:${sourceId}`), value);
-        } else requireThat(!col(r, 'headerFields') && !col(r, 'lineFields'), 'Historical custom values require explicit lineId');
+        } else requireThat(!['headerFields','lineFields','lineDecision','lineDecisionReason','lineDecisionEvidence','lineAllocations'].some(field => col(r, field)), 'Historical custom values, decisions and splits require explicit lineId');
         values.set(`${kind}:${sourceId}`, value);
     }
     const erasedFields = all(s, 'erasureReceipt').flatMap(receipt => receipt.fields);
@@ -121,9 +123,17 @@ export function mappedSource(s: State, b: Data) {
     }
     const extras = new Map<string, TargetEffect[]>();
     for (const value of values.values()) {
+        for (const line of value.lines ?? value.allocations ?? []) for (const split of line.historicalAllocations ?? []) {
+            const code = [...values.values()].find(v => v.id === split.code) ?? s.get('code:' + split.code)?.value;
+            requireThat(code?.imported && code.codeType === 'gl', 'Historical account allocation must reference an imported GL code');
+        }
         if (value.sourceRows && value.lines && value.request) {
             const request = [...values.values()].find(v => v.id === value.request) ?? s.get('request:' + value.request)?.value;
-            if (request) requireThat(value.lines.every((line: Data) => request.lines.some((l: Data) => l.id === line.sourceRequestLine)), 'Historical PO line must reference an exact request line');
+            if (request) {
+                requireThat(value.currency === request.currency && value.supplier === request.supplier, 'Historical PO supplier and currency must match its source request');
+                requireThat(value.lines.every((line: Data) => request.lines.some((l: Data) => l.id === line.sourceRequestLine)), 'Historical PO line must reference an exact request line');
+                requireThat(value.lines.every((line: Data) => request.lines.find((l: Data) => l.id === line.sourceRequestLine).sourceDecision?.decision !== 'declined' && line.sourceDecision?.decision !== 'declined'), 'Declined historical items cannot enter a PO');
+            }
         }
         if (value.order && !value.allocations && value.line) {
             const order = [...values.values()].find(v => v.id === value.order) ?? s.get('order:' + value.order)?.value;
@@ -139,6 +149,8 @@ export function mappedSource(s: State, b: Data) {
                 requireThat(value.currency === order.currency && value.allocations.every((a: Data) => order.lines.some((l: Data) => l.id === a.line)), 'Imported invoice currency and line must match its source PO');
                 for (const allocation of value.allocations) allocation.orderedMinor = extended(allocation.q, order.lines.find((line: Data) => line.id === allocation.line).unitMinor);
                 value.supplier = order.supplier;
+                requireThat(!value.sourceSupplierId || id('supplier', value.sourceSupplierId) === order.supplier, 'Imported invoice supplier must match its source PO');
+                if (!value.costCentre) value.costCentre = order.costCentre || '';
             }
             if (value.original) {
                 const attachment = { ...value.original, id: id('invoice-original', value.sourceId), kind: 'invoice', record: value.id, actor: 'historical', at: value.at };
@@ -146,6 +158,10 @@ export function mappedSource(s: State, b: Data) {
                 extras.set(value.sourceId, [{ targetKind: 'attachment', targetId: attachment.id, value: attachment }, { targetKind: 'audit', targetId: id('invoice-original-audit', value.sourceId), value: { id: id('invoice-original-audit', value.sourceId), actor: 'historical', action: 'attachment', record: value.id, attachment: attachment.id, at: value.at, imported: true } }]);
             }
             delete value.original;
+        }
+        if (value.appliedMinor !== undefined && value.order) {
+            const order = [...values.values()].find(v => v.id === value.order) ?? s.get('order:' + value.order)?.value;
+            if (order) requireThat(value.currency === order.currency, 'Imported deposit currency must match its source PO');
         }
     }
     const supplierDuplicates: Data[] = [];

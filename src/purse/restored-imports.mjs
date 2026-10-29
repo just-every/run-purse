@@ -47,8 +47,10 @@ export function validateHistoricalImports(all, get, check) {
         check(new Set(values.map(value => value.definition)).size === values.length, 'historical_field_duplicate');
         for (const field of values) {
             const definition = get('importField', field.definition);
-            check(definition.recordKind === kind && definition.scope === scope, 'historical_field_scope');
+            check(definition.recordKind === kind && definition.scope === scope && field.sourceId === definition.sourceId, 'historical_field_scope');
             check(definition.type === 'boolean' ? typeof field.value === 'boolean' : definition.type === 'number' ? typeof field.value === 'number' && Number.isFinite(field.value) : typeof field.value === 'string', 'historical_field_value');
+            if (definition.type === 'choice') check(definition.options.includes(field.value), 'historical_field_choice');
+            if (definition.type === 'date') check(/^\d{4}-\d{2}-\d{2}$/.test(field.value) && new Date(field.value).toISOString().slice(0,10) === field.value, 'historical_field_date');
         }
     };
     for (const kind of ['request','order','invoice']) for (const record of all(kind).filter(r => r.imported && r.sourceRows)) {
@@ -56,11 +58,25 @@ export function validateHistoricalImports(all, get, check) {
         fields(record.historicalFields, kind, 'header');
         const lines = record.lines ?? record.allocations;
         check(Array.isArray(lines) && lines.length === record.sourceRows.length && new Set(lines.map(line => line.sourceLineId)).size === lines.length, 'historical_lines');
-        for (const line of lines) fields(line.historicalFields, kind, 'line');
+        for (const line of lines) {
+            fields(line.historicalFields, kind, 'line');
+            if (line.sourceDecision) check(line.sourceDecision.authority === 'inert-history' && ['approved','declined','pending'].includes(line.sourceDecision.decision) && typeof line.sourceDecision.reason === 'string' && typeof line.sourceDecision.evidence === 'string' && (line.sourceDecision.decision !== 'declined' || line.sourceDecision.reason.trim().length > 0), 'historical_item_decision');
+            if (line.historicalAllocations) {
+                const splits = line.historicalAllocations;
+                check(Array.isArray(splits) && splits.length > 0 && splits.length <= 20 && new Set(splits.map(split => split.sourceId)).size === splits.length, 'historical_account_allocations');
+                for (const split of splits) check(typeof split.sourceId === 'string' && split.sourceId.length > 0 && typeof split.accountCodeId === 'string' && split.code === 'procurify:code:' + split.accountCodeId && get('code',split.code).imported && get('code',split.code).codeType === 'gl' && Number.isSafeInteger(split.amountMinor) && split.amountMinor >= 0, 'historical_account_allocation');
+                check(splits.reduce((sum, split) => sum + split.amountMinor,0) === (line.amountMinor ?? line.totalMinor), 'historical_account_total');
+            }
+        }
+        if (kind === 'order') {
+            const request = get('request', record.sourceRequest ?? record.request);
+            check(record.currency === request.currency && record.supplier === request.supplier && lines.every(line => request.lines.some(source => source.id === line.sourceRequestLine && source.sourceDecision?.decision !== 'declined') && line.sourceDecision?.decision !== 'declined'), 'historical_order_line');
+        }
         if (kind === 'invoice') {
             const order = get('order', record.order);
             check(record.currency === order.currency && lines.every(line => order.lines.some(l => l.id === line.line)), 'historical_invoice_line');
             check(record.totalMinor === lines.reduce((sum, line) => sum + line.amountMinor, 0) && (!record.paymentApproval || record.sourceConfirmation === 'confirmed'), 'historical_invoice_authority');
         }
     }
+    for (const deposit of all('deposit').filter(record => record.imported)) check(deposit.currency === get('order',deposit.order).currency, 'historical_deposit_currency');
 }
