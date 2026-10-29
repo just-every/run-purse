@@ -13,6 +13,7 @@ test('Native invoice matching approves exact and bounded goods once, holds excep
     const f=await invoiceMatchingFixture();t.after(()=>f.h.close());const {h,cmd,buyer}=f;
     const rule=await f.rule();
     const exactOrder=await f.order(),exactSource=await f.stage(exactOrder),exact=await f.confirm(exactSource);
+    const beforeReplay=(await h.state()).data;await cmd('invoice-reading-confirm',exactSource.body,buyer,409);assert.deepEqual((await h.state()).data,beforeReplay);
     assert.equal(exact.paymentApproval.kind,'native-matching');assert.equal(exact.paymentApproval.lines[0].ruleVersion,1);
     let data=(await h.state()).data;
     assert.deepEqual(data.cashRequirements.bills.map(b=>[b.invoice,b.amountMinor,b.dueDate,b.discountDate,b.discountMinor,b.week]),[[exact.id,60000,'2026-11-18','2026-10-29',1200,'2026-11-16']]);
