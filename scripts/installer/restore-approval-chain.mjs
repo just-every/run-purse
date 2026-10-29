@@ -28,6 +28,13 @@ export function validateApprovalChains(all,get,check,same) {
    const edit=request.approverEdit,previous=get('revision',(request.request??request.id)+':'+edit.fromRevision);
    check(Number.isSafeInteger(edit.fromRevision)&&edit.fromRevision<request.revision&&edit.actor!==request.requester&&edit.email!==request.requesterEmail&&typeof edit.reason==='string'&&edit.reason.trim()&&Number.isFinite(Date.parse(edit.at)),'approver_edit_actor');
    check(Array.isArray(edit.differences)&&edit.differences.length&&new Set(edit.differences.map(d=>d.field)).size===edit.differences.length&&edit.differences.every(d=>{const field=d.codingField??d.field,before=d.line?previous.lines.find(line=>line.id===d.line):previous,after=d.line?request.lines.find(line=>line.id===d.line):request;return fields.includes(field)&&edit.rule.allowed.includes(field)&&before&&after&&(!d.line||d.field==='lines.'+d.line+'.'+field&&d.lineDescription===before.description)&&same(d.before,before[field]??null)&&same(d.after,after[field]);}),'approver_edit_difference');
+   check(request.currency===previous.currency&&request.lines.length===previous.lines.length&&request.lines.every((line,index)=>{
+    const before=previous.lines[index];return line.id===before.id&&['quantity','q','unitMinor','totalMinor'].every(field=>same(line[field],before[field]));
+   }),'approver_edit_supply');
+   for(const line of request.lines)if(line.supplier) {
+    get('supplier',line.supplier);
+    check(line.supplierSnapshot?.id===line.supplier&&typeof line.supplierSnapshot.name==='string'&&Array.isArray(line.supplierSnapshot.contacts),'approver_edit_supplier_identity');
+   }
    check(Array.isArray(edit.carried)&&Array.isArray(edit.renewed)&&edit.carried.every(id=>get('decision',id).carriedBy===edit.actor)&&edit.renewed.every(id=>get('decision',id).request===(request.request??request.id)),'approver_edit_decisions');
    check(all('audit').some(event=>event.action==='approver-edit'&&event.record===(request.request??request.id)&&event.revision===request.revision&&event.actor===edit.actor&&same(event.differences,edit.differences)&&same(event.carried,edit.carried)&&same(event.renewed,edit.renewed)),'approver_edit_audit');
   }

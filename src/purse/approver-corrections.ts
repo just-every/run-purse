@@ -1,10 +1,18 @@
 import { supplier } from './admin';
+import { hasSupplierGroups, requireGroupable } from './po-supplier-groups';
+import { lapsedSupplierDocuments } from './supplier-documents';
 import { date, get, requireThat, requirePermission, text, type Actor, type Data, type State } from './types';
 
 export const correctionFields = ['glAccount', 'costCentre', 'location', 'class', 'project', 'needDate', 'shipTo', 'supplier', 'notes'] as const;
 export const defaultMaterialFields = ['glAccount', 'costCentre', 'project', 'supplier'];
 export function supplierIdentity(value: Data) {
     return { id:value.id, name:value.name, address:value.address||'', remitTo:value.remitTo||'', postalState:value.postalState||'', contacts:structuredClone(value.contacts), contractRef:value.contractRef };
+}
+function purchasableIdentity(s: State, id: string) {
+    const value=supplier(s,id);
+    requireThat(['active','preferred'].includes(value.status),'Choose an active purchasable supplier',409);
+    requireThat(!lapsedSupplierDocuments(s,id).length,'Required supplier document has lapsed; refresh and review it before correcting the supplier',409);
+    return supplierIdentity(value);
 }
 /** Only values of existing fields change. Line identity, supply and money stay exact. */
 export function correctApprovalFields(s: State, a: Actor, request: Data, changes: Data, rule: Data) {
@@ -20,7 +28,7 @@ export function correctApprovalFields(s: State, a: Actor, request: Data, changes
             if(field==='project')requireThat(business.projects.includes(normalized),'Use a configured project');
             if(JSON.stringify(before[field])===JSON.stringify(normalized))continue;
             target[field]=normalized;
-            if(field==='supplier')target.supplierSnapshot=supplierIdentity(supplier(s,normalized));
+            if(field==='supplier')target.supplierSnapshot=purchasableIdentity(s,normalized);
             differences.push({field:line?'lines.'+line.id+'.'+field:field, ...(line?{line:line.id,lineDescription:line.description,codingField:field}:{}),before:before[field]??null,after:normalized});
         }
     };
@@ -39,8 +47,26 @@ export function correctApprovalFields(s: State, a: Actor, request: Data, changes
         }
     }
     requireThat(differences.length,'No fields changed');
+    const supplierChanged=differences.some(difference=>(difference.codingField??difference.field)==='supplier');
+    if(supplierChanged && next.lines.some((line:Data)=>line.supplier && line.supplier!==next.supplier)) {
+        requireGroupable(s,request);
+        const destinations=[...new Set<string>(next.lines.map((line:Data)=>line.supplier??next.supplier))];
+        // A sole line destination also supplies the document header.
+        if(destinations.length===1 && destinations[0]!==next.supplier) {
+            next.supplier=destinations[0];next.supplierSnapshot=purchasableIdentity(s,next.supplier);
+            const prior=differences.find(difference=>difference.field==='supplier');
+            if(prior)prior.after=next.supplier;
+            else differences.push({field:'supplier',before:request.supplier,after:next.supplier});
+        }
+    }
+    if(hasSupplierGroups(next)) {
+        requireGroupable(s,request);
+        next.lines=next.lines.map((line:Data)=>{
+            const id=line.supplier??next.supplier,identity=purchasableIdentity(s,id);
+            return {...line,supplier:id,supplierSnapshot:structuredClone(line.supplierSnapshot??(id===next.supplier?next.supplierSnapshot:identity))};
+        });
+    }
     for(const line of next.lines) {
-        requireThat(!line.supplier||line.supplier===next.supplier,'A line supplier must match the request supplier; return this request and create separate requests for different suppliers',409);
         if(line.catalogue)requireThat(get(s,'catalogue',line.catalogue).supplier===(line.supplier??next.supplier),'Catalogue supplier must match; return the request to change its catalogue item',409);
     }
     requirePermission(s,a,'request.approve',next);
