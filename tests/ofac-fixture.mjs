@@ -1,0 +1,4 @@
+// Synthetic CSL transport bytes; never a substitute in application code.
+export const ofacUrl = 'https://data.trade.gov/downloadable_consolidated_screening_list/v1/consolidated.csv';
+export const ofacDate = 'Sun, 18 Oct 2026 12:00:00 GMT';
+export const ofacCsv = 'source,entity_number,name,alt_names,addresses,programs,source_list_url\n"Specially Designated Nationals (SDN) - Treasury Department",901,"Restricted Test Trading","Blocked Alias Test","123 Test Street, Denver, CO 80202, United States",TEST,https://sanctionslist.ofac.treas.gov/Home/SdnList\n"Entity List (EL) - Bureau of Industry and Security",902,"Safe Office Supply",,,TEST,https://www.bis.gov\n"Specially Designated Nationals (SDN) - Treasury Department",36,"AEROCARIBBEAN AIRLINES",,"Havana, Cuba",CUBA,https://sanctionslist.ofac.treas.gov/Home/SdnList\n'

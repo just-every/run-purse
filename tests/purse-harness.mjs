@@ -1,3 +1,5 @@
+import {ofacCsv} from './ofac-fixture.mjs';
+export {ofacCsv} from './ofac-fixture.mjs';
 // Other flows restore the latest archive of their own source; the erasure flows clear this signal to prove the journal-less hold.
 process.env.PURSE_RESTORE_JOURNAL='supplied'
 import {documentProfileFixture} from './document-profile-fixture.mjs'
@@ -26,6 +28,3 @@ export async function harness({ofac,mail,mailRequest,protectedKey,protectedPrevi
   const confirmed=await confirmMail(email);assert.ok(confirmed.cookie,'Invitation confirmation must create a native session');return confirmed.cookie;
  };
  return {db,mf:client,async setClock(value){runtimeOptions.workers[0].config.env.PURSE_TEST_CLOCK={type:'text',value};await mf.setOptions(runtimeOptions);this.db=await mf.getD1Database('DB');this.originals=await mf.getR2Bucket('ORIGINALS');},async configureMail(values){for(const [key,value] of Object.entries(values))runtimeOptions.workers[0].config.env[key]={type:'text',value};await mf.setOptions(runtimeOptions);this.db=await mf.getD1Database('DB');this.originals=await mf.getR2Bucket('ORIGINALS');},originals:await mf.getR2Bucket('ORIGINALS'),dir,origin,get owner(){return owner;},set owner(value){owner=value;},send,command,state,member,messages,async close(){await proxy.close();await mf.dispose();await rm(dir,{recursive:true,force:true})}}}catch(error){await proxy.close();await mf?.dispose();await rm(dir,{recursive:true,force:true});throw error}}
-
-// Synthetic Commerce CSL-format records at the public network edge only.
-export const ofacCsv = 'source,entity_number,name,alt_names,addresses,programs,source_list_url\n"Specially Designated Nationals (SDN) - Treasury Department",901,"Restricted Test Trading","Blocked Alias Test","123 Test Street, Denver, CO 80202, United States",TEST,https://sanctionslist.ofac.treas.gov/Home/SdnList\n"Entity List (EL) - Bureau of Industry and Security",902,"Safe Office Supply",,,TEST,https://www.bis.gov\n'
