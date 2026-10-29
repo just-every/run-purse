@@ -3374,6 +3374,7 @@ const launch=()=>chromium.launch({headless:true,args:['--no-sandbox','--use-mock
 try {
  await command(root,['install']);const port=await freePort();
  await command(root,['setup','--owner-email','owner@example.test','--port',String(port)]);
+ const boundaryPreview=await start(root,await freePort(),'preview');try{const boundary=await fetch(boundaryPreview.origin+'/cdn-cgi/local/scheduled');assert.equal(boundary.status,404,'Actual RER preview keeps its runtime scheduler private');await boundary.body?.cancel();}finally{await boundaryPreview.close();}
  server=await start(root,port);browser=await launch();owner=await session(browser,root,server.origin,'owner',1440);
  await api(owner.context,server.origin,'business',{name:'Canyon Field Services',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Site maintenance']});
  for(const role of ['requester','approver','buyer','receiver'])await api(owner.context,server.origin,'member',{email:role+'@dev.localhost',name:'Canyon '+role,roles:[role],active:true});
