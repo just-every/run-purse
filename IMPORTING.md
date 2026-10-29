@@ -13,9 +13,9 @@ Before moving a department:
 7. Undo untouched imports in reverse order. A native edit or a downstream record referring to an imported target prevents removal; the conflict is visible and preserves the target and decisions. Undo never issues a cancellation. Retained original bytes (redacted under SUPPLIER-003 where applicable) and import history remain after undo.
 8. Export a complete `.rer` archive and restore into an empty installation. Compare request, decision, order, receipt, attachment and import history counts before switching.
 
-The documented shape has one line per historical request/order record. Source keys and reference fields are exact strings, including leading/trailing whitespace, scoped by source kind under `procurify`; duplicate records must agree. CSV quoting is strict: a closing quote must be followed by a delimiter, row end or end of file; malformed quotes are refused before a plan is created. A changed record under the same source key is a conflict, not a silent overwrite. Dates and original statuses remain in original custody and mapping decisions. `code` records retain their source identity and code type; owners review them before configuring native business codes. Attachments are reported missing and must be uploaded against the appropriate native record. No supplier messages, native approvals, invoice posting or payments occur on import.
+The original documented shape keeps one line per historical request or order record. The multi-line extension below preserves that path. Source keys and reference fields are exact strings, including leading/trailing whitespace, scoped by source kind under `procurify`; duplicate records must agree. CSV quoting is strict: a closing quote must be followed by a delimiter, row end or end of file; malformed quotes are refused before a plan is created. A changed record under the same source key is a conflict, not a silent overwrite. Dates and original statuses remain in original custody and mapping decisions. `code` records retain their source identity and code type; owners review them before configuring native business codes. Attachments are reported missing and must be uploaded against the appropriate native record. No supplier messages, native approvals, invoice posting or payments occur on import.
 
-The complete owner-export checklist, supplier acceptance, real multi-line export normalization and operating-cost comparison remain pilot evidence obligations. Precoro, Coupa, ERPNext and Odoo kits are later work.
+The complete owner-export checklist, supplier acceptance, actual Procurify export normalization and operating-cost comparison remain pilot evidence obligations. Precoro, Coupa, ERPNext and Odoo kits are later work.
 
 After restore, native accounts and sessions are new. In Imports, choose **Take
 custody of restored batch** for each batch you need to continue. Only a current
@@ -230,3 +230,69 @@ a corrected file with personal data removed.
 
 This native CSV door does not connect a PunchOut supplier, return carts, transmit
 POs or receive supplier confirmations. PUNCHOUT-002 retains those qualifications.
+
+
+## Fixture-qualified multi-line history
+
+`public/fixtures/procurify-multiline.csv` extends the synthetic format. It is not
+an actual Procurify Export Data layout or API adapter. Keep the vendor archive
+and reconcile the intended full period before switching.
+
+Use repeated `request`, `order` or `invoice` rows with the same exact `sourceId`
+and a distinct, nonempty `lineId` on every row. Identity includes spaces and
+case. Repeated header attributes must agree exactly, including supplier,
+currency, source status, dates, terms, charges, approval evidence, original
+invoice metadata and header custom values. A duplicate line is refused, even
+when its bytes agree. Legacy rows without `lineId` retain their original IDs.
+A source key cannot mix explicit lines with the legacy format.
+
+Each order row names its source `requestId` and exact `requestLineId`. Each
+invoice row names `orderId` and exact `orderLineId`, with its own `lineId`.
+Receipts use `orderId` and `orderLineId`. References must resolve to an actual
+source line, either in this batch or in retained history. Broken references
+cannot commit. `quantity`, `unitPrice`, description, category and project belong
+to the line. Freight and tax are repeated header values counted once per
+request or PO. Invoice `amount` is a line amount, defaulting to quantity times
+unit price; the invoice total sums its source lines. Invoice originals and
+source payment evidence remain header facts, retained once.
+
+A `field` row declares a source-only definition: `sourceId`, `name`, explicit
+`status`, `recordKind` (request, order or invoice), `fieldScope` (header or line),
+`fieldType` (text, choice, number, date or boolean), and `fieldOptions` (a JSON
+array for choice fields). Names, choice strings and definition identities are
+retained exactly. `headerFields` and `lineFields` are JSON objects whose keys
+are exact definition IDs and whose values use the declared JSON types. Header
+values repeat unchanged across a header's lines. Missing definitions, wrong
+scope, invalid values and unsupported protected definitions are refused.
+Definitions can refer only to historical records, never native intake forms.
+Operational field adoption, ledger mappings and full protected-value storage
+remain unimplemented. Supplier matching inputs still use only the existing
+sensitive-column redaction exception; arbitrary free text is not universally
+redacted.
+
+Preview shows distinct header and line counts and totals separately by record
+kind, supplier, currency and source month. Requests and POs use need-date months;
+invoices use invoice-date months, with missing dates explicitly unrecorded.
+Currencies and record kinds never combine into a misleading grand total. The
+example independently reconciles USD request and PO faces of 105000 minor units
+(60000 plus 40000 in lines, 2000 freight and 3000 tax), USD invoices of 40000,
+and separate EUR request and PO faces of 3000 and invoices of 1500.
+
+Review exact header and line identities, custom values and logical CSV row
+numbers in the source disclosure. Retained rows include their payload digests;
+original bytes and reviewed mappings stay in Base import-kit custody. Selecting
+a new file clears its previous browser review. A retained batch reopens with
+its current reconciliation and values. Resume is bounded and idempotent, and
+undo preserves edited records and any surviving dependent source history.
+Native approval, issuance, commitment, configuration and member authority never
+come from historical statuses, field definitions or approval evidence. Open-PO
+adoption still needs IMPORT-003's separate owner review.
+
+Archive restoration preserves this history and the original batch identity;
+a current owner must explicitly claim batch custody before reading its originals,
+resuming or undoing it. Custody grants no purchasing or member authority. Personal
+erasure removes matching source values, withdraws affected original custody and
+prevents replay of erased values; a sanitized resumed batch cannot restore them.
+Actual Procurify exports, API access, attachments, deposits, comments, travel,
+approval pools, split allocations, vendor routing, pending vendors, purchaser
+variance and item decisions retain the IMPORT-001 Gap.
