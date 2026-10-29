@@ -969,6 +969,36 @@ all rows before any writes, and returns `changes`, `sourceHash` and item IDs.
 An unchanged import writes nothing. The column format and supplier identity
 rules are documented in IMPORTING.md. There is no outbound supplier action.
 
+
+### Native invoice exceptions and receipt corrections
+
+`GET /api/purse/invoice-exceptions` returns current matching context only for
+invoices the session may already read. Each row retains its first recorded time,
+reasoned assignment history, current assignee availability and a source version.
+Candidates are current native members who can already act as the buyer,
+requester or receiver on the current PO. An assignment grants no access. Assignees without invoice read permission
+receive a deduplicated PO task with only their existing purchase and aggregate
+receiving context; no invoice identity, amounts, reason or private thread is
+returned. Reassignment removes the previous assignee's task.
+
+`POST /api/purse/command/assign-invoice-exception` requires existing scoped
+invoice review and read permissions, the exception `id`, `version`,
+`sourceVersion`, a current candidate `assignee` and a `reason`. Reassignment
+retains the first recorded time. Exception comments use the existing private
+comment door with `kind: "invoiceException"`; mentions never widen access.
+
+`POST /api/purse/command/receipt-correction` requires the current receiver
+authority and an original native goods `receipt`, current `receiptVersion`,
+`expectedQ` in thousandths, corrected decimal-string `quantity`, a unique
+`attempt` and the receiver's `reason`. Zero is supported as the corrected
+quantity. The append-only delta retains the original and refuses stale,
+replayed, excessive, imported, service and superseded-receipt changes.
+Receivers continue to see only the PO's aggregate invoice matching state.
+Correction recalculates matching context and commitment position, preserves
+invoice originals and all risk holds, and creates no invoice or payment
+approval. Existing independent cash-planning review remains required. An open matching
+exception suspends current cash eligibility while retaining historical approval.
+
 ## Native received-not-billed report
 
 Receivers can pass `effectiveDate` to the existing `receipt` and

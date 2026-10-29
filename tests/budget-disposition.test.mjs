@@ -68,6 +68,24 @@ test('Reviewed quarter disposition moves unchanged 60 and 40 shares exactly once
    const tinyArchive=join(continuity.dir,'synthetic-purse-2822.rer');await exportArchive(await createPortability({db:continuity.db,buckets:{ORIGINALS:continuity.originals},policy:portability}),tinyArchive,[]);
    const roundedRestore=await harness();try {await importArchive(await createPortability({db:roundedRestore.db,buckets:{ORIGINALS:roundedRestore.originals},policy:portability}),tinyArchive,[]);const budgets=(await roundedRestore.state()).data.periodBudgets;assert.deepEqual(c.budgets.map(b=>{const row=budgets.find(row=>row.id===b.id);return [row.amountMinor,row.reservedMinor,row.committedMinor,row.actualMinor,row.availableMinor];}),roundedFigures,'A rounded commitment remains restorable with exact currency amounts');}finally{await roundedRestore.close();}
   }finally{await continuity.close();}
+  const billing=await harness();let billingRestore;
+  try {
+   const b=await dispositionFixture(billing),split=await b.purchase({title:'synthetic-purse-2824 separately billed departments',lines:['Operations','Research'].map((costCentre,index)=>({...b.input.lines[0],description:costCentre,unitMinor:index?40000:60000,allocations:[{costCentre,project:'Office',basisPoints:10000}]}))});
+   const moved=await b.amend(await b.preview(split.o,1));await b.approveMove(moved);
+   const issued=await b.cmd('convert',{id:moved.id,revision:moved.revision,issue:true},b.buyer);
+   const invoice={order:issued.id,reference:'synthetic-purse-2825',source:'Operations goods bill',allocations:[{line:issued.lines[0].id,quantity:'1',amountMinor:60000}]};
+   const bill=await b.cmd('invoice',invoice,b.buyer);await b.cmd('invoice',invoice,b.buyer);
+   const figures=[[200000,0,60000,0,140000],[200000,0,40000,0,160000],[200000,0,0,60000,140000],[200000,0,40000,0,160000]];
+   assert.deepEqual(await b.figures(),figures,'Only the billed Operations allocation becomes actual, once; Research remains committed');
+   const positions=await b.positions();assert.deepEqual(positions.find(row=>row.id===b.budgets[2].id).sources.find(row=>row.request===moved.id).invoiceIds,[bill.id]);
+   assert.deepEqual(positions.find(row=>row.id===b.budgets[3].id).sources.find(row=>row.request===moved.id).invoiceIds,[],'Research has no Operations bill source');
+   const billedArchive=join(billing.dir,'synthetic-purse-2826.rer');await exportArchive(await createPortability({db:billing.db,buckets:{ORIGINALS:billing.originals},policy:portability}),billedArchive,[]);
+   billingRestore=await harness();await importArchive(await createPortability({db:billingRestore.db,buckets:{ORIGINALS:billingRestore.originals},policy:portability}),billedArchive,[]);
+   const restoredPositions=(await billingRestore.state()).data.periodBudgets;
+   assert.deepEqual(b.budgets.map(budget=>{const row=restoredPositions.find(row=>row.id===budget.id);return [row.amountMinor,row.reservedMinor,row.committedMinor,row.actualMinor,row.availableMinor];}),figures,'Restored billed allocations retain their exact destination budgets');
+   await b.cmd('invoice',{order:issued.id,reference:'synthetic-purse-2827',source:'Research goods bill',allocations:[{line:issued.lines[1].id,quantity:'1',amountMinor:40000}]},b.buyer);
+   assert.deepEqual((await b.figures()).slice(2),[[200000,0,0,60000,140000],[200000,0,0,40000,160000]],'Each department actual comes from its own bill line');
+  }finally{await billingRestore?.close();await billing.close();}
  }finally{await restored?.close();await h.close();}
 });
 
@@ -104,5 +122,23 @@ test('Unsafe quarter moves refuse changed sources, insufficient capacity, unrevi
   const billed=await f.purchase({title:'synthetic-purse-2814 bill boundary'});
   await f.cmd('invoice',{order:billed.o.id,reference:'synthetic-purse-2815',source:'Original bill evidence',allocations:[{line:billed.o.lines[0].id,quantity:'0.1',amountMinor:10000}]},f.buyer);
   await f.unchanged(()=>f.cmd('budget-disposition-preview',{id:billed.o.id,revision:1,needDate:'2027-05-15'},h.owner,409));
+  const reopening=await harness();
+  try {
+   const g=await dispositionFixture(reopening),moved=await g.amend(await g.preview());await g.approveMove(moved);
+   const issued=await g.cmd('convert',{id:moved.id,revision:moved.revision,issue:true},g.buyer);
+   await g.cmd('close-order',{id:issued.id,version:0,reason:'Close moved supply'},g.buyer);
+   const competing=await g.purchase({title:'synthetic-purse-2828 destination capacity consumed',needDate:'2027-05-15',lines:g.input.lines.map(line=>({...line,unitMinor:280000}))});
+   assert.deepEqual((await g.figures()).slice(2),[[200000,0,168000,0,32000],[200000,0,112000,0,88000]]);
+   await g.unchanged(()=>g.cmd('reopen-order',{id:issued.id,version:1,reason:'Old disposition cannot bypass current capacity'},g.buyer,409));
+   await g.cmd('close-order',{id:competing.o.id,version:0,reason:'Release competing capacity'},g.buyer);
+   const research=await g.purchase({title:'synthetic-purse-2830 Research capacity consumed',needDate:'2027-05-15',lines:['Operations','Research'].map((costCentre,index)=>({...g.input.lines[0],description:costCentre,unitMinor:index?170000:140000,allocations:[{costCentre,project:'Office',basisPoints:10000}]}))});
+   await g.unchanged(()=>g.cmd('reopen-order',{id:issued.id,version:1,reason:'Research capacity also governs reopening'},g.buyer,409));
+   await g.cmd('close-order',{id:research.o.id,version:0,reason:'Release Research capacity'},g.buyer);
+   await g.purchase({title:'synthetic-purse-2829 exact remaining capacity',needDate:'2027-05-15',lines:['Operations','Research'].map((costCentre,index)=>({...g.input.lines[0],description:costCentre,unitMinor:index?160000:140000,allocations:[{costCentre,project:'Office',basisPoints:10000}]}))});
+   const outcomes=await Promise.all([1,2].map(()=>reopening.send('/api/purse/command/reopen-order',{id:issued.id,version:1,reason:'Reopen within exact destination capacity'},g.buyer)));
+   assert.deepEqual(outcomes.map(row=>row.status).sort(),[200,409],'Reopening within capacity succeeds once');
+   assert.deepEqual((await g.figures()).slice(2),[[200000,0,200000,0,0],[200000,0,200000,0,0]],'Reopening consumes each destination budget exactly without double counting');
+   assert.equal((await reopening.state()).data.commitment.filter(row=>row.request===moved.id&&row.kind==='reopen-reservation').length,1);
+  }finally{await reopening.close();}
  }finally{await restored?.close();await h.close();}
 });

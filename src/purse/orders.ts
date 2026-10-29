@@ -12,7 +12,7 @@ import { lapsedSupplierDocuments } from './supplier-documents';
 const documentHold = (s: State, id: string) => requireThat(!lapsedSupplierDocuments(s, id).length, 'Required supplier document has lapsed; refresh and review it before a new PO', 409);
 import { ledger, policies, approvalAmount, reservationAvailable } from './requests';
 import { invoice } from './invoices';
-import { receipt } from './receiving';
+import { receipt, correctReceipt } from './receiving';
 import { requirePermission } from './access';
 import { conversionEdits, requireConversionSource } from './conversion-variance';
 import { reviseForConversion } from './conversion-revision';
@@ -97,20 +97,25 @@ export function orders(s: State, a: Actor, op: string, b: Data): Data | undefine
     }
     if (op === 'service-receipt') return serviceReceipt(s, a, b);
     if (op === 'receipt') return receipt(s, a, b);
+    if (op === 'receipt-correction') return correctReceipt(s, a, b);
     if (op === 'invoice') return invoice(s, a, b);
 }
 // An issued amendment continues the same request-line purchase. Earlier orders
 // remain immutable evidence; their invoice quantities still consume this line.
 export function discrepancies(s: State) {
-    const invoices = all(s, 'invoice'), orders = all(s, 'order');
-    return invoices.flatMap(i => i.allocations.map((x: Data) => {
+    const invoices = all(s, 'invoice').sort((a, b) => (a.entrySequence ?? 0) - (b.entrySequence ?? 0)
+        || (a.at ?? '').localeCompare(b.at ?? '') || a.id.localeCompare(b.id)), orders = all(s, 'order');
+    return invoices.flatMap((i, index) => i.allocations.map((x: Data) => {
         const o = get(s, 'order', i.order), l = o.lines.find((l: Data) => l.id === x.line);
         const lineage = orders.filter(p => p.request === o.request && operationalOrder(s, p) && p.lines.some((z: Data) => z.id === l.id));
         const current = lineage.reduce((latest, p) => p.revision > latest.revision ? p : latest, o);
         const currentLine = current.lines.find((z: Data) => z.id === l.id);
         const orderIds = new Set(lineage.map(p => p.id));
         const service = Boolean(currentLine.service), valueMatch = service ? serviceInvoiceMatches(s, current, currentLine).has(i.id) : false;
-        const totalInvoiced = invoices.filter(z => orderIds.has(z.order)).flatMap(z => z.allocations).filter((z: Data) => z.line === l.id).reduce((n: number, z: Data) => n + z.q, 0);
+        // Later evidence consumes the remaining balance; it cannot retroactively
+        // hold an earlier bill. Current returns and closures still apply to each
+        // bill's cumulative position across issued amendments.
+        const totalInvoiced = invoices.slice(0, index + 1).filter(z => orderIds.has(z.order)).flatMap(z => z.allocations).filter((z: Data) => z.line === l.id).reduce((n: number, z: Data) => n + z.q, 0);
         return { invoiceId: i.id, orderId: o.id, lineId: l.id, invoice: i.reference, exception: i.exception ?? (openInvoiceFlags(i).length ? 'Unresolved invoice risk flags' : service && !valueMatch ? 'Invoice exceeds received service value' : null), order: o.number, line: l.description, currency: i.currency, invoiceMinor: x.amountMinor, expectedMinor: x.orderedMinor, priceMismatch: service ? false : x.amountMinor !== x.orderedMinor, closedBalance: linePosition(s, current.id, currentLine).closed > 0 && totalInvoiced > currentLine.q - linePosition(s, current.id, currentLine).closed, quantityMismatch: service ? false : totalInvoiced > currentLine.q, receiptShortfall: service ? !valueMatch : totalInvoiced > linePosition(s, current.id, currentLine).accepted };
     }));
 }

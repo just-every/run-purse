@@ -19,6 +19,7 @@
   ],
   "5": [
     ["tests/browser.mjs", "--width=390", "--journey=audit-log"],
+    ["tests/browser-invoice-exceptions.mjs", "--width=1440"],
     ["tests/browser-custom-fields.mjs"]
   ],
   "6": [

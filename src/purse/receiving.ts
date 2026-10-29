@@ -36,3 +36,41 @@ export function receipt(s: State, a: Actor, b: Data) {
     audit(s, a, 'receipt', o.id, { event, line: l.id, quantity: b.quantity, effectiveDate: record.effectiveDate, recordedDate: record.recordedDate, ownerOverride: a.owner, replenishmentStatus: held ? 'held' : 'authorized' });
     return get(s, 'receipt', id);
 }
+
+/** Corrections are signed deltas against one retained native receive event.
+ * They are physical evidence only and never invoice or payment approval. */
+export function correctReceipt(s: State, a: Actor, b: Data) {
+    const original = get(s, 'receipt', text(b.receipt, 'Original receipt', 200)), o = get(s, 'order', original.order);
+    requireThat(mayReceive(s, a, o), 'Receipt outside your receiver assignment', 403);
+    requireThat(['issued', 'adopted'].includes(o.status) && operationalOrder(s, o) && !o.amendedBy,
+        'Correct the current issued PO receipt only', 409);
+    const line = o.lines.find((l: Data) => l.id === original.line);
+    requireThat(line && !line.service && original.event === 'receive' && !original.imported && !original.correctionOf,
+        'Choose an original native goods receipt', 409);
+    requireThat(b.receiptVersion === receiptVersion(s, o), 'Receipt position changed; reload before correcting', 409);
+    const corrections = [...s.values()].filter(r => r.kind === 'receipt' && r.value.correctionOf === original.id).map(r => r.value);
+    const beforeQ = original.q + corrections.reduce((n, r) => n + r.correctionDelta, 0);
+    requireThat(b.expectedQ === beforeQ, 'Original receipt correction changed; reload', 409);
+    const correctedQ = b.quantity === '0' ? 0 : quantity(b.quantity), delta = correctedQ - beforeQ;
+    const position = linePosition(s, o.id, line);
+    requireThat(correctedQ <= line.q && delta !== 0 && position.accepted + delta >= 0 && position.outstanding - delta >= 0,
+        'Correction exceeds current received or outstanding quantity, or changes nothing', 409);
+    const attempt = text(b.attempt, 'Correction capture identifier', 100);
+    requireThat(![...s.values()].some(r => r.kind === 'receipt' && r.value.correctionAttempt === attempt),
+        'Receipt correction capture already recorded', 409);
+    const id = uid(), record = { order: o.id, line: line.id, event: delta > 0 ? 'receive' : 'return',
+        q: Math.abs(delta), quantity: String(Math.abs(delta) / 1000), correctionOf: original.id,
+        correctionAttempt: attempt, correctionSequence: corrections.length + 1, correctionBeforeQ: beforeQ, correctedQ, correctionDelta: delta,
+        reason: text(b.reason, 'Receiver correction reason'), actor: a.id, at: new Date().toISOString() };
+    put(s, 'receipt', id, record);
+    const request = get(s, 'request', o.request), difference = remainingValue(s, o) - commitment(s, request);
+    const held = difference > 0 && (o.replenishmentStatus === 'held' || !reservationAvailable(s, request, difference));
+    if (held) {
+        const reason = 'Receipt correction replenishment held; amend the request and obtain renewed approval.';
+        put(s, 'receipt', id, { ...record, replenishmentStatus: 'held', replenishmentMinor: difference, replenishmentReason: reason });
+        put(s, 'order', o.id, { ...o, replenishmentStatus: 'held', replenishmentMinor: difference, replenishmentReason: reason });
+    } else if (difference) ledger(s, a, request, difference, 'receipt-correction');
+    audit(s, a, 'receipt-correction', o.id, { receipt: id, originalReceipt: original.id, line: line.id,
+        beforeQ, correctedQ, delta, reason: record.reason, replenishmentStatus: held ? 'held' : 'authorized' });
+    return get(s, 'receipt', id);
+}
