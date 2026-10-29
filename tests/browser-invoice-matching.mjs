@@ -52,6 +52,12 @@ try {
         const row=detail.getByRole('row').filter({hasText:'Invoice synthetic-purse-awarded'});await row.getByText('Source evidence',{exact:true}).click();
         await row.getByText('$600.00 · first offer $6,000.00 · billed $5,400.00',{exact:true}).waitFor();assert.equal(await detail.getByText('Invoice synthetic-purse-unapproved',{exact:true}).count(),0);
         await snap(ap,'genuine-realized-savings',detail);
+        await f.cmd('attachment',{kind:'invoice',record:unapproved.id,...awardedSource.document},f.buyer);
+        await f.cmd('attachment',{kind:'invoice',record:awarded.id,...awardedSource.document},f.buyer);
+        const held=(await f.h.state()).data;assert.deepEqual(held.invoice.find(i=>i.id===awarded.id).paymentApproval,awarded.paymentApproval);assert.ok(!held.cashRequirements.bills.some(b=>b.invoice===awarded.id));
+        const heldReport=await f.h.send('/api/purse/performance-report',undefined,f.buyer);assert.equal(heldReport.value.savings.totals[0].realizedMinor,0);
+        await ap.goto(f.h.origin+'/app?tab=Orders');await ap.getByRole('row').filter({hasText:awardedOrder.number}).getByRole('button',{name:'Open order',exact:true}).click();
+        const historical=ap.getByRole('region',{name:'Automatic matching synthetic-purse-awarded',exact:true});await historical.getByText('Historical automatic approval held',{exact:true}).waitFor();await snap(ap,'historical-approval-held',historical.locator('..'));
         assert.deepEqual(errors,[]);console.log('Native invoice matching web journey passed at '+width);
     } finally {for(const context of contexts)await context.close();await f.h.close();}
  }

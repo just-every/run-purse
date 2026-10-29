@@ -15,7 +15,10 @@ export function matchingDiscrepancyHeld(invoice: Data, row: Data): boolean {
 export function evaluateInvoiceMatch(s: State, a: Actor, invoiceId: string) {
     let invoice = get(s,'invoice',invoiceId);
     requirePermission(s,a,'payable.approve',invoice);
-    if (invoice.paymentApproval) return invoice;
+    if (invoice.paymentApproval) {
+        requireThat(!invoice.disputed && !invoice.exception && !invoice.sourceValuesErased && !invoice.erasure && !openInvoiceFlags(invoice).length && !discrepancies(s).filter(row=>row.invoiceId===invoice.id).some(row=>matchingDiscrepancyHeld(invoice,row)), 'Historical invoice approval is held; resolve current risk and matching exceptions',409);
+        return invoice;
+    }
     const order = get(s,'order',invoice.order), request = get(s,'request',order.request), reasons:string[] = [];
     const reading = all(s,'invoiceReading').find(r => r.id === invoice.confirmedReading && r.status === 'confirmed' && r.invoice === invoice.id);
     if (order.imported || order.adoption || order.supplierGroup || order.recurring || order.recurringSeries || order.poDetails?.blanket || order.lines.some((l:Data)=>l.service || l.allocations?.length || l.supplier && l.supplier !== order.supplier) || request.purchaseType && request.purchaseType !== 'goods') reasons.push('Only ordinary native goods invoices are supported');
