@@ -126,7 +126,7 @@ archive directly into the current release.
 ## Contract projections
 
 `CONTRACT.md` is the acceptance and status source. Lander-Regenerate:
-`node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002`, then
-`node scripts/contract-docs.mjs check INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002`.
+`node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 SUPPLIER-008`, then
+`node scripts/contract-docs.mjs check INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 SUPPLIER-008`.
 The seed's existing parser updates the named acceptance entry without changing
 other clauses, and generates `docs/CLAIMS.md` and the Status counts. Run the edition source lock command last after source edits.

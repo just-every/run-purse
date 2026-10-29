@@ -1,3 +1,5 @@
+import { mayChooseSupplier, mayReadProposal } from './supplier-proposals';
+import { proposalView } from './supplier-review';
 import { supplierTaxView } from './supplier-tax';
 import { visibleSupplierCredits } from './supplier-credits';
 import { reviewView } from './cross-team-reviews';
@@ -48,7 +50,7 @@ function cashView(s: State, a: Actor, orderIds: Set<string>, invoiceIds: Set<str
 export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) {
     const permissions = resolvedPermissions(s, a); requireThat(permissions.length, 'No active business membership', 403);
     const { data, requestIds, orderIds, invoiceIds } = purchasingProjection(s, a);
-    data.request = data.request.map((r: Data) => ({...r, crossTeamReviews: reviewView(s,a,get(s,'request',r.id))}));
+    data.request = data.request.map((r: Data) => ({...r, supplierReview: s.has('supplierProposal:'+r.supplier) ? ((p:Data)=>({status:p.status,at:p.at,holder:p.status==='pending'?'Native owner review':'Review complete',reason:p.review?s.get('supplierProposalReview:'+p.review)?.value.reason:undefined}))(get(s,'supplierProposal',r.supplier)) : undefined, crossTeamReviews: reviewView(s,a,get(s,'request',r.id))}));
     data.poGenerationPolicy=a.owner?all(s,'poGenerationPolicy'):[];
     data.poGenerationEvent=all(s,'poGenerationEvent').filter(row=>requestIds.has(row.request));
     data.poGenerationQueue=poGenerationQueue(s).filter(row=>requestIds.has(row.request)).map(row=>({...row,mayConvert:allowed(s,a,'po.convert',get(s,'request',row.request))&&allowed(s,a,'po.issue',get(s,'request',row.request))}));
@@ -59,13 +61,13 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
         visibleQuoteReadings(s, requestIds), visibleInvoiceReadings(s, a), visibleInvoiceInbox(s, a), peopleProjection(s, a, data.order));
     Object.assign(data, visibleIntakeForms(s, a));
     data.intakeDraft = allowed(s,a,'request.create') ? all(s,'intakeDraft').filter(draft => draft.requester === a.id && draft.requesterEmail === a.email && draft.status === 'draft') : [];
-    data.supplierProposal = all(s,'supplierProposal').filter(proposal => proposal.requester === a.id || unrestrictedPermission(s,a,'procurement.manage'));
+    data.supplierProposal = all(s,'supplierProposal').filter(proposal=>mayReadProposal(s,a,proposal)).map(proposal=>proposalView(s,a,proposal));
     const globalProcurement = unrestrictedPermission(s, a, 'procurement.manage');
     data.mayManageSupplierRegister = globalProcurement;
     data.periodBudgets = visibleBudgetPositions(s, a, data);
     data.budgetAlerts = visibleBudgetAlerts(s,a);
     data.budgetAssignment = a.owner ? all(s,'budgetAssignment') : [];
-    data.supplier = all(s, 'supplier').map(supplier => {
+    data.supplier = all(s, 'supplier').filter(supplier=>mayChooseSupplier(s,a,supplier)).map(supplier => {
         const eligible = mayReadProtectedSupplier(s, a, supplier), value: Data = supplierPublicValue(supplier, eligible ? protectedViews?.get(supplier.id) : undefined);
         delete value.proposedBy;
         if (!eligible) { delete value.matchingOnly; delete value.sourceRedaction; }

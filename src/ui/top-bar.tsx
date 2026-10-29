@@ -7,7 +7,7 @@ export function workspaceTabs(actor: D) {
         ...(has('request.read','po.read','invoice.read') ? ['Overview'] : []),
         ...(has('po.read','invoice.read') ? ['Orders'] : []), 'Search',
         ...(has('report.read','performance.read') ? ['Reports'] : []), ...(has('request.read') ? ['Value'] : []),
-        ...(has('procurement.manage','invoice.read') ? ['Suppliers'] : []),
+        ...(has('request.create','procurement.manage','invoice.read') ? ['Suppliers'] : []),
         ...(has('procurement.manage') ? ['Catalogue'] : []), ...(has('procurement.manage','performance.read') || actor.mayReadAssignedAgreement ? ['Agreements'] : []),
         ...(has('request.create','procurement.manage','payable.approve') || actor.mayReviewRecurring ? ['Preparation'] : []),
         ...(has('request.approve') ? ['Authority'] : []),
