@@ -4436,7 +4436,7 @@
       "executable": false
     },
     "src/ui/price-benchmark.tsx": {
-      "sha256": "0bb510ebfbf10b2e0248a4fb7fce51edca348089a7505d59f953e2418544604e",
+      "sha256": "a29b7310d679f9a79723fad1c43e688511b9c94a33806ded22e2554d3df42849",
       "executable": false
     },
     "src/ui/protected-archive.tsx": {
@@ -4912,7 +4912,7 @@
       "executable": false
     },
     "tests/browser-price-benchmark.mjs": {
-      "sha256": "66587b51e2568cdbcf6ba8b55742a78a3a477c83476a11082fe88f0517f8ac5c",
+      "sha256": "a0494b657c3488e925d025e8d572dfb476e56f852a7951f5ddada0bb1595e130",
       "executable": false
     },
     "tests/browser-protected-web.mjs": {

@@ -3,7 +3,7 @@ import { call, Details, Field, Form, money, Table, when, type D } from './shared
 
 function Citation({ source }: { source: D }) {
     const label = source.kind === 'order' ? 'PO ' + source.number : source.kind === 'agreement' ? 'Agreement ' + source.id : 'Quotation ' + source.id;
-    return <span className="benchmark-citation"><a href={source.kind === 'order' ? '/app?tab=Orders&receipt=' + source.id : source.kind === 'agreement' ? '/app?tab=Agreements&agreement=' + source.id : '/app?tab=Requests&request=' + source.request}>{label}</a>
+    return <span className="benchmark-citation"><a href={source.kind === 'order' ? '/app?tab=Orders&receipt=' + source.id : source.kind === 'agreement' ? '/app?tab=Agreements&agreement=' + source.id + '&agreementVersion=' + source.agreementVersion : '/app?tab=Requests&request=' + source.request}>{label}</a>
         {' · ' + (source.kind === 'agreement' ? 'version ' + source.agreementVersion : 'revision ' + source.revision) + ' · line ' + source.line}<br/>{source.partNumber} · {source.unit} · {money(source.unitMinor, source.currency)}<br/>
         {source.kind === 'agreement' && <span>Term {source.startDate} to {source.endDate} · notice deadline {source.noticeDeadline}<br/></span>}
         {source.dateBasis}: {when(source.at)}{source.missing?.length > 0 && <p>Missing: {source.missing.join('; ')}</p>}</span>;

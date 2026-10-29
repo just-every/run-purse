@@ -60,6 +60,12 @@ try {
  await renewalRegion.getByText('Target $10.00 per each',{exact:true}).waitFor();
  assert.ok((await renewalRegion.textContent()).includes('Term 2026-01-01 to 2026-12-31'));
  assert.ok((await renewalRegion.textContent()).includes('notice deadline 2027-12-01'));
+ const earlierSchedule=await renewalRegion.locator('a[href*="agreementVersion=4"]').getAttribute('href');
+ const sourcePage=await open(f.buyer,1440);await sourcePage.goto(f.h.origin+earlierSchedule);
+ const sourceVersion=sourcePage.getByRole('region',{name:'Agreement source version',exact:true});
+ await sourceVersion.getByRole('heading',{name:'Confirmed source version 4',exact:true}).waitFor();
+ assert.ok((await sourceVersion.textContent()).includes('2026-01-01 to 2026-12-31'));
+ assert.ok((await sourceVersion.textContent()).includes('awarded $100.00'),'Citation opens the earlier confirmed price, not the current renewal total');
  const renewalDownloaded=renewalPage.waitForEvent('download');await renewalRegion.getByRole('link',{name:'Download benchmark record',exact:true}).click();
  assert.deepEqual(JSON.parse(await readFile(await (await renewalDownloaded).path(),'utf8')),renewalRun);
  for(const kind of ['request','order','quote','decision','commitment','agreement','agreementAward','recurringSeries'])assert.deepEqual((await f.h.state()).data[kind],renewalBefore[kind]);assert.equal(f.h.messages.length,renewalMail);
