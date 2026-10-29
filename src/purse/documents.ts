@@ -178,11 +178,23 @@ export function accounting(s: State, a: Actor) {
     requirePermission(s, a, 'invoice.read');
     const cell = (value: unknown) => '"' + String(value).replace(/"/g, '""').replace(/^[=+@-]/, "' $&") + '"';
     const byAllocation = new Map(discrepancies(s).map(discrepancy => [JSON.stringify([discrepancy.invoiceId, discrepancy.lineId]), discrepancy]));
-    const rows = [['invoice', 'po', 'line', 'currency', 'quantity', 'amount_minor', 'price_mismatch', 'quantity_mismatch', 'receipt_shortfall'],
-        ...all(s, 'invoice').filter(invoice => allowed(s, a, 'invoice.read', invoice)).flatMap(invoice => invoice.allocations.map((line: Data) => {
-            const order = get(s, 'order', invoice.order), discrepancy = byAllocation.get(JSON.stringify([invoice.id, line.line]))!;
-            return [invoice.reference, order.number, line.line, invoice.currency, line.quantity, line.amountMinor, discrepancy.priceMismatch, discrepancy.quantityMismatch, discrepancy.receiptShortfall];
-        }))];
+    const rows = [['invoice', 'po', 'line', 'currency', 'quantity', 'amount_minor', 'price_mismatch', 'quantity_mismatch', 'receipt_shortfall', 'gl_account', 'charge_type'],
+        ...all(s, 'invoice').filter(invoice => allowed(s, a, 'invoice.read', invoice)).flatMap(invoice => {
+            const order = get(s, 'order', invoice.order), charges:Data[]=invoice.paymentApproval?.charges??[];
+            const total=charges.reduce((sum,charge)=>sum+charge.amountMinor,0);
+            const reading=invoice.confirmedReading?s.get('invoiceReading:'+invoice.confirmedReading)?.value:undefined;
+            const bases=invoice.allocations.map((allocation:Data,index:number)=>{
+                const mapping=reading?.lineMappings?.find((map:Data)=>map.orderLine===allocation.line);
+                return mapping?reading!.amounts.lines.find((line:Data)=>line.id===mapping.id).amountMinor:reading?.amounts?.lines[index]?.amountMinor??allocation.amountMinor;
+            });
+            const base=bases.reduce((sum:number,amount:number)=>sum+amount,0);
+            const parts=bases.map((amount:number)=>base?Number(BigInt(total)*BigInt(amount)/BigInt(base)):0);
+            if(parts.length)parts[0]+=total-parts.reduce((sum:number,amount:number)=>sum+amount,0);
+            return [...invoice.allocations.map((line:Data,index:number) => {
+                const source=order.lines.find((item:Data)=>item.id===line.line),discrepancy=byAllocation.get(JSON.stringify([invoice.id,line.line]))!;
+                return [invoice.reference,order.number,line.line,invoice.currency,line.quantity,line.amountMinor-parts[index],discrepancy.priceMismatch,discrepancy.quantityMismatch,discrepancy.receiptShortfall,source.glAccount??order.glAccount??'',''];
+            }),...charges.map(charge=>[invoice.reference,order.number,charge.sourceLine,invoice.currency,'',charge.amountMinor,'','','',charge.glAccount,charge.type])];
+        })];
     return new Response(rows.map(row => row.map(cell).join(',')).join('\r\n'), { headers: {
         'content-type': 'text/csv', 'content-disposition': 'attachment; filename="purse-accounting.csv"' } });
 }

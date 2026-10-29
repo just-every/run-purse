@@ -128,10 +128,12 @@ export function invoiceRisk(s: State, order: Data, candidate: Data, input: Data)
     const currentIssued = orders.filter(o => currentOperationalOrder(s, o));
     const faceMinor = currentIssued.length ? Math.max(...currentIssued.map(o => { if (!o.cancelledByApproval) return o.totalMinor; const base = o.lines.reduce((sum: number,line: Data)=>sum+line.totalMinor,0); const active = o.lines.reduce((sum: number,line: Data)=>sum+Number((BigInt(Math.max(0,line.q-linePosition(s,o.id,line).cancelled))*BigInt(line.unitMinor)+500n)/1000n),0); return base ? Number((BigInt(o.totalMinor)*BigInt(active)+BigInt(base)/2n)/BigInt(base)) : 0; })) : null;
     const deposits = adoptionDeposits(s, order);
-    const billedMinor = deposits.amountMinor + invoices.filter(i => orderIds.has(i.order) && i.currency === candidate.currency).reduce((n, i) => n + i.totalMinor, 0);
+    const billedMinor = deposits.amountMinor + invoices.filter(i => orderIds.has(i.order) && i.currency === candidate.currency).reduce((n, i) => n + i.totalMinor - (i.unplannedCharges??[]).reduce((sum:number,charge:Data)=>sum+charge.amountMinor,0), 0);
     result.balance = { basis: 'current-issued-po-face-across-request-amendments', currency: candidate.currency, faceMinor, billedMinor, candidateMinor: candidate.totalMinor,
         remainingMinor: faceMinor === null ? null : Math.max(0, faceMinor - billedMinor), depositAccounting: deposits.sources.length ? 'imported-prepaid-balance-and-once-only-credit' : 'not-implemented', unappliedDepositMinor: deposits.unappliedMinor };
-    if (faceMinor !== null && billedMinor + candidate.totalMinor > faceMinor) {
+    const candidatePoMinor=candidate.totalMinor-(candidate.unplannedCharges??[]).reduce((sum:number,charge:Data)=>sum+charge.amountMinor,0);
+    if(candidate.unplannedCharges?.length)result.balance.unplannedChargeMinor=candidate.totalMinor-candidatePoMinor;
+    if (faceMinor !== null && billedMinor + candidatePoMinor > faceMinor) {
         flags.push({ code: 'po-balance', reason: 'Invoice plus prior invoice evidence exceeds the current issued PO face total across request amendments' });
     }
     return result;

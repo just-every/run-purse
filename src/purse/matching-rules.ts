@@ -1,3 +1,4 @@
+import { invoiceChargeTypes } from './invoice-charges';
 import { all, audit, get, minor, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
 export function matchingRuleFor(s: State, order: Data, category: string): Data | undefined {
@@ -23,7 +24,11 @@ export function matchingRules(s: State, a: Actor, op: string, b: Data): Data | u
     const priceBps = minor(b.priceBps,'Price basis points'), quantityBps = minor(b.quantityBps,'Quantity basis points');
     requireThat(priceBps <= 10000 && quantityBps <= 10000, 'Percentage must be between zero and 100 percent');
     requireThat(!all(s,'matchingRule').some(r => r.id !== prior?.id && r.currency === currency && r.supplier === supplier && r.category === category), 'Edit the existing rule for this supplier, category and currency', 409);
-    const entry = { version:(prior?.version ?? 0)+1, enabled:b.enabled, supplier, category, currency,
+    const chargeBps=minor(b.chargeBps ?? 0,'Unplanned charge basis points');
+    requireThat(chargeBps<=10000,'Unplanned charge percentage must be between zero and 100 percent');
+    requireThat(!b.chargeCodes || typeof b.chargeCodes==='object' && !Array.isArray(b.chargeCodes) && Object.keys(b.chargeCodes).every(type=>invoiceChargeTypes.includes(type as any)), 'Choose supported unplanned charge types');
+    const chargeCodes=Object.fromEntries(Object.entries(b.chargeCodes ?? {}).filter(([,value])=>value!=='').map(([type,value])=>[type,text(value,'Charge GL account',200)]));
+    const entry = { chargeBps, chargeMinor:minor(b.chargeMinor ?? 0,'Unplanned charge amount'), chargeCodes, version:(prior?.version ?? 0)+1, enabled:b.enabled, supplier, category, currency,
         priceBps, priceMinor:minor(b.priceMinor,'Price amount'), quantityBps, quantityMinor:minor(b.quantityMinor,'Quantity amount'),
         receiptRequired:true, actor:a.id, operatorVersion:a.version, reason:text(b.reason,'Matching consent reason'), at:new Date().toISOString() };
     const id = prior?.id ?? uid();
