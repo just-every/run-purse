@@ -21,6 +21,7 @@ test('Pending supplier review preserves approval, returns unissued requests and 
     const convert=await h.send('/api/purse/command/convert',{id:request.id,revision:1},f.buyer);
     assert.equal(convert.status,409);assert.match(convert.value.error,/Supplier pending vendor approval/);
     assert.equal(state.order.length,0);
+    const combined=await h.send('/api/purse/command/convert',{id:request.id,revision:1,issue:true},f.buyer);assert.equal(combined.status,409);assert.match(combined.value.error,/Supplier pending vendor approval/);
     const captured=await f.review(p.id),before=await f.snapshot();
     for(const cookie of [f.requester,f.buyer,f.approver])await h.command('supplier-proposal-reject',captured,cookie,403);
     assert.equal((await h.send('/api/purse/command/supplier-proposal-reject',captured)).status,401);
@@ -65,6 +66,10 @@ test('Supplier proposal choices preserve duplicate privacy, proposer separation 
     const p=await f.propose(),before=await f.snapshot();
     const other=(await h.state(f.other)).data;
     assert.ok(!other.supplier.some(s=>s.id===p.id));assert.equal(other.supplierProposal.length,0);
+    const supplierAdmin=(await h.state(f.buyer)).data;
+    assert.ok(supplierAdmin.supplier.some(s=>s.id===p.id),'Unrestricted buyers retain the minimal pending register entry');
+    assert.equal(supplierAdmin.supplierProposal.length,0,'Supplier register access does not expose private proposal contacts');
+    assert.ok(!JSON.stringify(supplierAdmin.supplier.find(s=>s.id===p.id)).includes(p.contactEmail));
     const hidden=await h.command('supplier-proposal-choices',f.input(6811),f.other);
     assert.equal(hidden.matches.length,0);assert.equal(hidden.needsAdministrator,true);
     assert.ok(!JSON.stringify(hidden).includes(p.id));assert.ok(!JSON.stringify(hidden).includes(p.contactEmail));
@@ -114,6 +119,14 @@ test('Supplier proposal erasure and archive continuation retain inert review and
     const preview=await h.send('/api/purse/erasure/preview',{kind:'contact',id:p.id,email:p.contactEmail,revision:inventory.revision},h.owner);assert.equal(preview.status,200,JSON.stringify(preview.value));
     const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
     const anonymous=(await h.state()).data.supplierProposal.find(v=>v.id===p.id);assert.ok(anonymous.erasure);assert.ok(!JSON.stringify(anonymous).includes(p.contactEmail));assert.equal(anonymous.mayReject,false);
+    // Departed requester credentials and captured proposal inputs cannot recreate erased personal data.
+    await h.command('member',{email:proposalEmail(6801),name:'synthetic-purse-6801',roles:['requester'],active:false});
+    const memberInventory=(await h.send('/api/purse/erasure',undefined,h.owner)).value;
+    const memberReview=await h.send('/api/purse/erasure/preview',{kind:'member',id:proposalEmail(6801),revision:memberInventory.revision},h.owner);assert.equal(memberReview.status,200,JSON.stringify(memberReview.value));
+    const memberErased=await h.send('/api/purse/erasure/execute',{...memberReview.value.subject,revision:memberReview.value.revision,review:memberReview.value.review,fingerprint:memberReview.value.fingerprint,consent:true},h.owner);assert.equal(memberErased.status,200,JSON.stringify(memberErased.value));
+    const erasedState=await f.snapshot();
+    assert.equal((await h.send('/api/purse/command/supplier-propose',f.input(6811),f.requester)).status,401);
+    assert.deepEqual(await f.snapshot(),erasedState);
     assert.equal(validatePurchasingArchive(await f.snapshot()),true);
     const latest=await archive('synthetic-purse-6842'),destination=await harness({empty:true});t.after(()=>destination.close());
     await assert.rejects(importArchive(await createPortability({db:destination.db,buckets:{ORIGINALS:destination.originals},policy:portability}),saved,[],latest),/erasure|journal/i);

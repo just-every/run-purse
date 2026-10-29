@@ -1,7 +1,7 @@
 import { containsProtectedInput } from './protected-context-fields.mjs';
 import { supplierMatches } from './supplier-matching';
 import { supplier } from './admin';
-import { all, allowed, audit, get, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
+import { all, allowed, accessGrants, audit, get, put, requirePermission, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
 /** Proposal contacts stay private to their requester and the native owner. */
 export function mayReadProposal(s: State, a: Actor, proposal: Data) {
@@ -9,7 +9,7 @@ export function mayReadProposal(s: State, a: Actor, proposal: Data) {
 }
 export function mayChooseSupplier(s: State, a: Actor, value: Data) {
     const proposal = s.get('supplierProposal:' + value.id)?.value;
-    return !proposal || mayReadProposal(s,a,proposal);
+    return !proposal || mayReadProposal(s,a,proposal) || accessGrants(s,a).some(grant=>grant.permissions.includes('procurement.manage') && !Object.keys(grant.scope).length && !Object.keys(grant.roleScope??{}).length);
 }
 const hostname = (value: string) => {
     if (!value) return '';

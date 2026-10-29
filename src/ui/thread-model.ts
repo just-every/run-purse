@@ -29,6 +29,7 @@ export function holdsAuthority(_data: D, actor: D, r: D) {
 export function verbFor(data: D, actor: D, r: D): 'approve' | 'submit' | 'convert' | null {
     if (r.imported) return null;
     if (holdsAuthority(data, actor, r)) return 'approve';
+    if(r.supplierReview?.status==='rejected')return null;
     if (['draft', 'returned'].includes(r.status) && r.mayEdit && (mine(actor,r)||actor.roles.includes('owner'))) return 'submit';
     if (r.status === 'approved' && !orderOf(data, r) && r.mayConvert) return 'convert';
     return null;
@@ -36,6 +37,7 @@ export function verbFor(data: D, actor: D, r: D): 'approve' | 'submit' | 'conver
 /** Who owns the next step, named for the card. */
 export function nextStep(data: D, actor: D, r: D) {
     if(r.purchaseType==='travel'&&r.status==='approved')return r.travel?.closedAt?'Trip expenses reconciled':'Approved for booking · '+r.travel?.approvalReference;
+    if(r.supplierReview?.status==='rejected')return 'Choose another supplier in a revised draft';
     const you = (email: string) => email === actor.email ? 'You' : personName(data, email);
     if (['draft', 'returned'].includes(r.status)) return `${you(r.requesterEmail)} ${r.requesterEmail === actor.email ? 'submit' : 'submits'}`;
     if (r.status === 'pending') {
@@ -70,7 +72,7 @@ export function checks(data: D, actor: D, r: D) {
             else out.push(balance(data, p.id) + need <= p.budgetMinor ? { label: 'in budget ✓', tone: 'ok' } : { label: 'over budget', tone: 'warn' }); }
     }
     const s = data.supplier.find((x: D) => x.id === r.supplier);
-    if (s && !r.imported) out.push(s.status === 'preferred' ? { label: 'preferred supplier ✓', tone: 'ok' } : s.status === 'active' && !s.mergedInto ? { label: 'known supplier ✓', tone: 'ok' } : { label: s.mergedInto ? 'supplier merged' : s.status === 'blocked' ? 'supplier blocked' : 'supplier in review', tone: 'warn' });
+    if (s && !r.imported) out.push(s.status === 'preferred' ? { label: 'preferred supplier ✓', tone: 'ok' } : s.status === 'active' && !s.mergedInto ? { label: 'known supplier ✓', tone: 'ok' } : { label: s.mergedInto ? 'supplier merged' : s.status === 'blocked' ? 'supplier blocked' : s.status === 'rejected' ? 'supplier rejected' : 'supplier in review', tone: 'warn' });
     return out;
 }
 

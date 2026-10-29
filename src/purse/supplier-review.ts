@@ -15,7 +15,7 @@ function reviewBasis(s: State, proposal: Data) {
 }
 export function proposalView(s: State, a: Actor, proposal: Data) {
     requireThat(mayReadProposal(s,a,proposal),'Proposal outside your scope',403);
-    return {...proposal, reviewReason:proposal.review?s.get('supplierProposalReview:'+proposal.review)?.value.reason:undefined, basis:reviewBasis(s,proposal), holder:proposal.status==='pending'?'Native owner review':'Review complete',
+    return {...proposal, reviewReason:proposal.review?s.get('supplierProposalReview:'+proposal.review)?.value.reason:undefined, statusSince:proposal.review?s.get('supplierProposalReview:'+proposal.review)?.value.at:proposal.at, basis:reviewBasis(s,proposal), holder:proposal.status==='pending'?'Native owner review':'Review complete',
         mayReject:a.owner && proposal.requester!==a.id && proposal.requesterEmail!==a.email && !proposal.erasure && proposal.status==='pending',
         activationHold:'Onboarding and verified-bank prerequisites remain unproved. Activation is unavailable.'};
 }

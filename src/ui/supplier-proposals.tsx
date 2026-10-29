@@ -26,7 +26,7 @@ export function SupplierProposals({data,actor,mutate,onChoose}:{data:D;actor:D;m
             </Form>}
         </Details>}
         {(data.supplierProposal??[]).map((proposal:D)=><section key={proposal.id} aria-label={'Supplier review '+proposal.name}>
-            <h4>{proposal.name}</h4><p>Status: {proposal.status} · {proposal.holder} · Since {when(proposal.at)}</p>
+            <h4>{proposal.name}</h4><p>Status: {proposal.status} · {proposal.holder} · Since {when(proposal.statusSince)}</p>
             <p>{proposal.activationHold}</p><p>Needed because: {proposal.reason}</p>
             <p>Proposed contact: {proposal.contactName} · {proposal.contactEmail}</p>
             {proposal.review&&<p>Rejection reason: {proposal.reviewReason}</p>}
@@ -42,7 +42,7 @@ export function RequestSupplierReview({request}:{request:D}) {
     const review=request.supplierReview;
     return review ? <section className="panel" aria-label="Pending supplier review"><h4>Supplier review</h4>
         <p>Status: {review.status} · {review.holder} · Since {when(review.at)}</p>
-        <p>Purchase approval reserves the request amount. Purchasing waits for supplier activation.</p>
+        <p>{review.status==='rejected'?'The outstanding reservation was released. A replacement supplier needs a revised draft and fresh purchase approval.':'Purchase approval reserves the request amount. Purchasing waits for supplier activation.'}</p>
         {review.reason&&<p>Rejection reason: {review.reason}. Select another active supplier in a revised draft and submit for fresh purchase approval.</p>}
     </section> : null;
 }
