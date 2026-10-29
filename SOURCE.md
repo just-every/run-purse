@@ -78,3 +78,14 @@ checksum check.
 All seven vendored modules (`demo`, `operator-auth`, `owner-claim`, `mail`, `dependencies`, `import-kit` and its `d1-transport` dependency) are refreshed together from tag `rer-v0.2.30` (`d434ea67989fe10b6ddff01daba8bb350975e54a`), with the `src/base` runtime copies, `src/client.tsx`, `src/router.tsx`, the installer seed and fonts, and `.github/workflows/run-demo.yml`. Their runtime bytes are recorded in `base-copies.json`; applied migrations retain their historical bytes. Demo labels and effects use Base unchanged. Base mail silently suppresses demo delivery and auth accepts its success result; Purse needs no demo mail wrapper and serves no captured-mail viewer. See `DEMO.md`.
 
 Migration `0022_import_kit_progress.sql` materializes the tag’s additive preparation-step and erasure-progress schema arrays. Earlier applied migrations are unchanged.
+
+## Company-agent door
+
+`src/modules/agent-door`, `src/modules/business-settings`,
+`src/modules/operator-auth` and the Business theme/icon dependencies in
+`src/foundation/runtime` are recorded from released Base
+`114ef7a61f080da053af783c5fbe06f625d692cc` (rer-v0.2.88). Donor tests and
+test signer fixtures are excluded from these runtime copies. The pinned command
+dependency is now `@runeditrun/rer` 0.2.88; older origin paragraphs above describe
+the retained application source and migration history. New migrations 0042–0044
+append Business settings, durable Business identities and agent-door storage.
