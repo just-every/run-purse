@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "ed81792ff12364f804ee20119baf2ae2838c4307ca633fd0b7572b5361811a35",
+      "sha256": "97e9d24e2905b6d08f92bac709a84b3360d686da03aab7427c356dcd6c30778a",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "bd6659d7d59f2adfc339d4f2d3cceb0b26dd754e5dc5076e2b947cd7e9f36c6a",
+      "sha256": "6653239845eb5e566384dbbd0009eb489d671fb6b3e788278e7f98a33518f924",
       "executable": false
     },
     "DEMO.md": {
@@ -704,7 +704,7 @@
       "executable": false
     },
     "scripts/ci/shards.json": {
-      "sha256": "10ad4650a5d5bf02e9b3d1a8cb56f692a3a38b33e0d454da9a2352c18b05d1d4",
+      "sha256": "bd03ee49eb102d58d3ae89db504d6becffcc4d2abd5812bf5cfe5ed0f727e8cd",
       "executable": false
     },
     "scripts/ci/shared-build.mjs": {
@@ -4700,7 +4700,7 @@
       "executable": false
     },
     "tests/browser-journey.mjs": {
-      "sha256": "d1632d36c100008fb616e4f7c468b053cf3d6bccf1e00ccd24e3331b10c18cca",
+      "sha256": "05ce79b020986c38c50665178cacabc578b62a97346575474b75a7dd5fe0802d",
       "executable": false
     },
     "tests/browser-po-supplier-groups.mjs": {
@@ -4804,7 +4804,7 @@
       "executable": false
     },
     "tests/erasure-flow.mjs": {
-      "sha256": "69098a2441d35057499eaab5065079631f6927984e8b6d3f884bf4a8ca790885",
+      "sha256": "20d079813996907d99b3ea65694420fa8ffd905b28243e79060a9750e0041ba4",
       "executable": false
     },
     "tests/erasure-journey.test.mjs": {
@@ -5044,7 +5044,7 @@
       "executable": false
     },
     "tests/run-site.mjs": {
-      "sha256": "788e474abfe2c073ddacb435a14e516e4c0521bfea0455e81420978f07df3bbb",
+      "sha256": "f8e6b78f0a45cb2e7927bb166209789ca70f8e02da9a151bd697c51f204b4213",
       "executable": false
     },
     "tests/saved-report-fixture.mjs": {
@@ -5100,7 +5100,7 @@
       "executable": false
     },
     "tests/supplier-credits-flow.mjs": {
-      "sha256": "15b9569f6fb5303a763635509c726a226f76f88f1f2e2ee369ad669a55cc08be",
+      "sha256": "eb6144fa2588897d00bf603223697cb2d0705ed8fe6b403ddcccedee454d0357",
       "executable": false
     },
     "tests/supplier-documents-flow.mjs": {

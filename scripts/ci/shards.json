@@ -247,6 +247,13 @@
         "--done-web=search-scale",
         "--width=1440"
       ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=import-adoption",
+        "--width=1440"
+      ]
     }
   ]
 }
