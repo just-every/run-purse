@@ -28,15 +28,16 @@ export function policies(s: State, r: Data) { return coveringPolicies(all(s, 'po
 export const reserved = (s: State, policy: string) => all(s, 'commitment').reduce((n, e) => n + eventBudgetPortion(e, policy), 0);
 export function reservationAvailable(s: State, r: Data, amountMinor: number) { const p = policies(s, r).find(p => p.id === r.policy); return Boolean(p && ((!p.budgetPeriod && p.overBudget==='owner' && r.budgetOwnerReview && r.totalMinor===s.get('request:'+r.id)?.value.totalMinor && all(s,'decision').some(decision=>decision.request===r.id&&decision.revision===r.revision&&(!r.approvalRoute||decision.approvalAttempt===r.approvalAttempt)&&decision.decision==='approved'&&decision.email===p.budgetOwner&&decision.policyVersion===s.get('policy:'+p.id)?.revision)) || (budgetRoom(s,r,p,amountMinor) ?? reserved(s,p.id)+all(s,'travelExpense').filter(expense=>expense.policy===p.id&&expense.currency===p.currency).reduce((sum,expense)=>sum+expense.totalMinor,0)+amountMinor<=p.budgetMinor))); }
 export function ledger(s: State, a: Actor, r: Data, amountMinor: number, kind: string, budgetFace: Data = r) { requireThat(amountMinor <= 0 || reservationAvailable(s, r, amountMinor), 'Current policy or budget does not authorize replenishment; renew approval', 409); const balance=all(s,'commitment').filter(e=>e.currency===r.currency).reduce((n,e)=>n+e.amountMinor,0);requireThat(Number.isSafeInteger(balance+amountMinor),'Commitment exceeds supported integer range',409);const id = uid(); put(s, 'commitment', id, { request: r.id, revision: r.revision, policy: r.policy, currency: r.currency, amountMinor, budgetAllocations: conversionBudgetShares(s,r,budgetFace,amountMinor,kind), kind, actor: a.id, at: new Date().toISOString() }); }
-/** A grouped buyer revision can move remainder cents between budgets even
+/** A grouped purchasing revision can move charge shares between budgets even
  * when its aggregate reservation is unchanged. Preserve the exact delta. */
 function conversionBudgetShares(s: State,r: Data,budgetFace: Data,amount: number,kind: string) {
     const groupedOrders=all(s,'order').filter(order=>order.request===r.id&&order.supplierGroup&&order.issuedAt);
-    if(hasSupplierGroups(r)&&kind==='buyer-conversion-reservation' || budgetFace.supplierGroup&&groupedOrders.length) {
+    const groupedReservation=hasSupplierGroups(r)&&['buyer-conversion-reservation','pending-chain-reservation'].includes(kind);
+    if(groupedReservation || budgetFace.supplierGroup&&groupedOrders.length) {
         const events=all(s,'commitment').filter(event=>event.request===r.id&&event.currency===r.currency);
         const balance=events.reduce((sum,event)=>sum+event.amountMinor,0);
         let target:Data[];
-        if(kind==='buyer-conversion-reservation')target=requestBudgetShares(s,r,balance+amount);
+        if(groupedReservation)target=requestBudgetShares(s,r,balance+amount);
         else {
             const sums=new Map<string,number>();
             for(const order of groupedOrders)for(const line of order.lines) {
