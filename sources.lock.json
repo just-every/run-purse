@@ -5264,7 +5264,7 @@
       "executable": false
     },
     "tests/purse.test.mjs": {
-      "sha256": "e0e34e506f83c5d8b449ff6b88febe70bf1eefca5efacd085d4e1adf1c193e96",
+      "sha256": "f37c0af920cc87c819069dfcfcec9be54937f51fa750bce5a35de5e58eb0575f",
       "executable": false
     },
     "tests/quote-agent.test.mjs": {
