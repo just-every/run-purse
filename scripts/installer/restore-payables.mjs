@@ -27,6 +27,7 @@ export function validateMatching(all,get,check) {
   for(const [index,h] of rule.history.entries()) {
    check(h.version===index+1&&typeof h.enabled==='boolean'&&typeof h.supplier==='string'&&typeof h.category==='string'&&(h.supplier!=='*'||h.category!=='*')&&typeof h.currency==='string'&&h.receiptRequired===true&&typeof h.actor==='string'&&Number.isSafeInteger(h.operatorVersion)&&h.operatorVersion>0&&h.reason?.trim()&&Number.isFinite(Date.parse(h.at)),'matching_rule');
    for(const field of ['priceBps','quantityBps','priceMinor','quantityMinor'])check(Number.isSafeInteger(h[field])&&h[field]>=0&&h[field]<=(field.endsWith('Bps')?10000:1e12),'matching_tolerance');
+   if(h.chargeBps!==undefined){check(Number.isSafeInteger(h.chargeBps)&&h.chargeBps>=0&&h.chargeBps<=10000&&Number.isSafeInteger(h.chargeMinor)&&h.chargeMinor>=0&&h.chargeMinor<=1e12&&h.chargeCodes&&typeof h.chargeCodes==='object'&&!Array.isArray(h.chargeCodes)&&Object.entries(h.chargeCodes).every(([type,code])=>['freight','fuel','handling','small-order','other'].includes(type)&&typeof code==='string'&&code.trim()&&code.length<=200),'matching_charge_rule');}
    if(h.supplier!=='*')get('supplier',h.supplier);
    check(all('audit').some(e=>e.action==='matching-rule'&&e.record===rule.id&&e.snapshot?.version===h.version&&e.actor===h.actor),'matching_rule_audit');
   }
@@ -38,10 +39,13 @@ export function validateMatching(all,get,check) {
   check(approval.invoice===invoice.id&&approval.order===order.id&&approval.revision===order.revision&&approval.amountMinor===invoice.totalMinor&&approval.currency===invoice.currency&&approval.documentSha256===invoice.document?.sha256&&reading.status==='confirmed'&&reading.invoice===invoice.id&&invoice.confirmedReading===reading.id&&invoice.sourceConfirmation==='confirmed'&&approval.match==='three-way'&&Date.parse(approval.at)>=Date.parse(reading.confirmedAt)&&approval.lines.length===invoice.allocations.length,'matching_approval');
   for(const line of approval.lines) {
    const rule=get('matchingRule',line.rule),snapshot=rule.history.find(h=>h.version===line.ruleVersion),allocation=invoice.allocations.find(l=>l.line===line.line),sourceLine=order.lines.find(l=>l.id===line.line);
-   check(snapshot?.enabled&&JSON.stringify(snapshot)===JSON.stringify(line.ruleSnapshot)&&snapshot.currency===invoice.currency&&(snapshot.supplier==='*'||snapshot.supplier===order.supplier)&&(snapshot.category==='*'||snapshot.category===sourceLine?.category)&&line.q===allocation?.q&&line.acceptedQ>=line.q&&line.billedMinor===reading.amounts.lines[invoice.allocations.indexOf(allocation)].amountMinor,'matching_approval_rule');
+   check(snapshot?.enabled&&JSON.stringify(snapshot)===JSON.stringify(line.ruleSnapshot)&&snapshot.currency===invoice.currency&&(snapshot.supplier==='*'||snapshot.supplier===order.supplier)&&(snapshot.category==='*'||snapshot.category===sourceLine?.category)&&line.q===allocation?.q&&line.acceptedQ>=line.q&&line.billedMinor===(reading.lineMappings?reading.amounts.lines.find(source=>source.id===reading.lineMappings.find(map=>map.orderLine===line.line)?.id):reading.amounts.lines[invoice.allocations.indexOf(allocation)])?.amountMinor,'matching_approval_rule');
    const delta=Math.abs(line.billedMinor-line.expectedMinor);
    check(line.expectedMinor===Number((BigInt(line.q)*BigInt(sourceLine.unitMinor)+500n)/1000n)&&delta<=snapshot.priceMinor&&BigInt(delta)*10000n<=BigInt(line.expectedMinor)*BigInt(snapshot.priceBps),'matching_approval_tolerance');
   }
+  const charges=approval.charges??[],sourceCharges=invoice.unplannedCharges??[],chargeTotal=charges.reduce((sum,charge)=>sum+charge.amountMinor,0);
+  check(charges.length===sourceCharges.length&&charges.every((charge,index)=>['sourceLine','type','amountMinor'].every(key=>charge[key]===sourceCharges[index][key])),'matching_charge_source');
+  for(const line of approval.lines){const snapshot=line.ruleSnapshot;check(!charges.length||chargeTotal<=(snapshot.chargeMinor??0)&&BigInt(chargeTotal)*10000n<=BigInt(invoice.totalMinor)*BigInt(snapshot.chargeBps??0)&&charges.every(charge=>typeof charge.glAccount==='string'&&charge.glAccount.trim()&&charge.glAccount===snapshot.chargeCodes?.[charge.type]),'matching_charge_approval');}
   check(all('audit').some(e=>e.action==='invoice-matched-approved'&&e.record===invoice.id&&e.documentSha256===approval.documentSha256&&e.at===approval.at),'matching_approval_audit');
  }
 }

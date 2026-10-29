@@ -1,6 +1,7 @@
 import { operationalOrder, orderAdoption } from './adoption-position';
 import { purchasingSearchText } from './search-text';
 import { invoice } from './invoices';
+import { confirmedChargeMapping } from './invoice-charges';
 import { documentMetadata } from './invoice-risk';
 import { allocateInvoiceCharges, readingAmounts } from './invoice-amounts';
 import { invoiceHeaders, invoiceItems, invoiceEmailSender, parseInvoiceFields } from './invoice-reading-fields';
@@ -102,13 +103,12 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
     for(const line of reading.lines) text(line.description?.value,'Invoice item description');
     const amounts=readingAmounts(reading);
     requireThat(Array.isArray(b.lines)&&b.lines.length===amounts.lines.length&&new Set(b.lines.map((line:Data)=>line.id)).size===amounts.lines.length,'Map every invoice item once');
-    const used=new Set<string>();
-    const mapped=amounts.lines.map((line:Data)=>{ const map=b.lines.find((item:Data)=>item.id===line.id);requireThat(map&&order.lines.some((item:Data)=>item.id===map.orderLine)&&!used.has(map.orderLine),'Map each invoice item to a unique line of this PO');used.add(map.orderLine);return{...line,line:map.orderLine}; });
+    const {goods:mapped,charges}=confirmedChargeMapping(order,amounts,b.lines);
     // The current invoice door stores inclusive allocation amounts; retain the exact breakdown here.
-    const allocations=allocateInvoiceCharges(mapped,amounts.freightMinor+amounts.taxMinor).map(line=>({line:line.line,quantity:line.quantity,amountMinor:line.amountMinor}));
+    const allocations=allocateInvoiceCharges(mapped,amounts.freightMinor+amounts.taxMinor+charges.filter((charge:Data)=>charge.sourceLine!=='freightAmount').reduce((sum:number,charge:Data)=>sum+charge.amountMinor,0)).map(line=>({line:line.line,quantity:line.quantity,amountMinor:line.amountMinor}));
     const result:Data=invoice(s,a,{order:order.id,reference:value('reference'),source:'Confirmed invoice reading '+reading.id,invoiceDate,
-        ...(source.apSender?{senderEmail:source.apSender}:reading.senderEmail.value?{senderEmail:reading.senderEmail.value}:{}),...(reading.remitTo.value?{remitTo:reading.remitTo.value}:{}),...(b.remit?{remit:b.remit}:{}),document:{name:attachment.name,mediaType:attachment.mediaType,base64:attachment.base64},allocations, ...(b.depositAppliedAmount !== undefined ? { depositAppliedAmount: b.depositAppliedAmount } : {})}, { reading: reading.id });
-    reading.status='confirmed';reading.version++;reading.invoice=result.id;reading.confirmedBy=a.id;reading.confirmedAt=new Date().toISOString();reading.amounts=amounts;
+        ...(source.apSender?{senderEmail:source.apSender}:reading.senderEmail.value?{senderEmail:reading.senderEmail.value}:{}),...(reading.remitTo.value?{remitTo:reading.remitTo.value}:{}),...(b.remit?{remit:b.remit}:{}),document:{name:attachment.name,mediaType:attachment.mediaType,base64:attachment.base64},allocations, ...(b.depositAppliedAmount !== undefined ? { depositAppliedAmount: b.depositAppliedAmount } : {})}, { reading: reading.id, charges });
+    reading.status='confirmed';reading.version++;reading.invoice=result.id;reading.confirmedBy=a.id;reading.confirmedAt=new Date().toISOString();reading.amounts=amounts;reading.lineMappings=structuredClone(b.lines);
     put(s,'invoice',result.id,{...get(s,'invoice',result.id),sourceConfirmation:'confirmed',confirmedReading:reading.id,confirmedBy:a.id,confirmedAt:reading.confirmedAt});
     put(s,'invoiceReading',reading.id,reading);event(s,a,reading,op,{invoice:result.id,reason,snapshot:structuredClone(reading)});return reading;
 }

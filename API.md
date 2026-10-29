@@ -1132,9 +1132,26 @@ terms enter weekly cash once; planning approval alone never realizes savings.
 Later risk holds suspend current cash and savings eligibility without deleting
 historical approval. Rule history is portable; execution consent is not.
 
+Unplanned charges have separate owner-consented `chargeBps` and `chargeMinor`
+limits. Both caps apply to their combined amount; the percentage uses the full
+invoice total. `chargeCodes` gives an explicit GL account for each supported
+`freight`, `fuel`, `handling`, `small-order` or `other` type. An omitted code or
+zero limit holds the bill. Every applicable category rule must agree on coding.
+No rule clears invoice risk or authorizes an unreceived or excess goods quantity.
+
+In `invoice-reading-confirm`, each reviewed item maps to `{id,orderLine}` or to
+`{id,chargeType}` for a separately identified charge with quantity one. Header
+freight above the proportional quoted PO freight is an unplanned freight charge.
+Quoted freight and tax must otherwise match the PO; a shortfall is held. Original
+amounts and classifications remain source-bound. Approval freezes the charge
+amounts, GL accounts and exact rule snapshots. The accounting CSV splits coded
+charges from goods without changing the original total. Cash retains the full
+approved bill and the unchanged remaining goods liability; realized savings
+uses goods line amounts alone. This creates no ledger posting or payment.
+
 Existing unconfirmed native evidence can be selected with `invoice-source` and
 its invoice ID. Its retained original is reused, or an actual original is staged
 when none was captured. Confirmation must preserve the same line quantities,
 amounts and existing original digest; every prior risk flag and disposition
-remains. Imported, deposit, service and unplanned-charge qualifications retain
+remains. Imported, deposit, service and split-allocation qualifications retain
 the limits recorded in MATCH-001.

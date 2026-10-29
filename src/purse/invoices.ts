@@ -33,14 +33,14 @@ function evidence(i: Data) {
             .sort((a: any[], b: any[]) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0) });
 }
 
-export function invoice(s: State, a: Actor, b: Data, confirmation?: { reading: string }) {
+export function invoice(s: State, a: Actor, b: Data, confirmation?: { reading: string; charges?: Data[] }) {
     return captureInvoice(s, { kind: 'native', actor: a }, b, confirmation);
 }
 
 /** The supplier capability is checked and atomically fenced by its HTTP door.
  * It records evidence without impersonating an authenticated native operator. */
 export type InvoiceCaptureAuthority = { kind: 'native'; actor: Actor } | { kind: 'supplier-link'; event: Data };
-export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: Data, confirmation?: { reading: string }): Data {
+export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: Data, confirmation?: { reading: string; charges?: Data[] }): Data {
     const a = authority.kind === 'native' ? authority.actor : null;
     if (a) requirePermission(s, a, 'invoice.capture');
     const o = get(s, 'order', b.order);
@@ -89,6 +89,7 @@ export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: 
     const nativeConfirmation = confirmation && s.get('invoiceSource:' + get(s,'invoiceReading',confirmation.reading).source)?.value.invoice;
     const priorSource = confirmation ? all(s, 'invoice').find(i => (i.imported || i.supplierSubmission && i.sourceConfirmation === 'pending' || i.id === nativeConfirmation && !i.confirmedReading && !i.paymentApproval) && i.order === o.id && i.reference === reference) : undefined;
     if (priorSource) { candidate.id = priorSource.id; if (priorSource.imported) candidate.imported = true; }
+    if(confirmation?.charges?.length)candidate.unplannedCharges=structuredClone(confirmation.charges);
     Object.assign(candidate, invoiceEvidence(s, o, candidate, b));
     const existing = all(s, 'invoice').filter(i => canonicalSupplier(s, get(s, 'order', i.order).supplier) === canonicalSupplier(s, o.supplier) && i.reference === reference);
     if (existing.length) {

@@ -1,3 +1,4 @@
+import { confirmedChargeMapping, matchInvoiceCharges } from './invoice-charges';
 import { scopedInvoice } from './invoices';
 import { allowed, requirePermission } from './access';
 import { liveMatchingRule, matchingRuleFor } from './matching-rules';
@@ -35,12 +36,15 @@ export function evaluateInvoiceMatch(s: State, a: Actor, invoiceId: string) {
     if(priorTerms?.approvedAt && (priorTerms.invoiceDate!==invoice.invoiceDate || priorTerms.term!==term)) reasons.push('Approved planning terms differ from the confirmed source');
     if (!paymentTerms.includes(term)) reasons.push('Confirm a supported source payment term');
     if (reading && paymentTerms.includes(term) && reading.dueDate?.value && reading.dueDate.value !== termDates(invoice.invoiceDate,term).dueDate) reasons.push('Source due date conflicts with the payment term');
+    const applicableRules:Data[]=[];
     const proofs:Data[] = [], rows = discrepancies(s).filter(r=>r.invoiceId===invoice.id);
     for (const [index, allocation] of invoice.allocations.entries()) {
         const line = order.lines.find((l:Data)=>l.id===allocation.line), rule = matchingRuleFor(s,order,line.category), row=rows.find(r=>r.lineId===line.id)!;
         if (!rule) { reasons.push('No matching rule for ' + line.category); continue; }
         if (!liveMatchingRule(s,rule)) reasons.push('Matching rule is paused or owner consent is no longer current');
-        const sourceLine = reading?.amounts?.lines[index];
+        applicableRules.push(rule);
+        const mapping=reading?.lineMappings?.find((map:Data)=>map.orderLine===allocation.line);
+        const sourceLine = mapping ? reading!.amounts.lines.find((line:Data)=>line.id===mapping.id) : reading?.amounts?.lines[index];
         if (!sourceLine || sourceLine.q !== allocation.q) { reasons.push('Confirmed line mapping is unavailable'); continue; }
         const expected = extended(allocation.q,line.unitMinor), delta = Math.abs(sourceLine.amountMinor - expected);
         if (!within(delta,expected,rule.priceBps,rule.priceMinor)) reasons.push('Price exceeds tolerance for ' + line.description);
@@ -56,12 +60,19 @@ export function evaluateInvoiceMatch(s: State, a: Actor, invoiceId: string) {
         const subtotal = order.lines.reduce((n:number,l:Data)=>n+l.totalMinor,0);
         const expected = invoice.allocations.reduce((n:number,l:Data)=>n+extended(l.q,order.lines.find((x:Data)=>x.id===l.line).unitMinor),0);
         const share=(amount:number)=>subtotal?Number(BigInt(amount)*BigInt(expected)/BigInt(subtotal)):0;
-        if (reading.amounts.freightMinor !== share(order.freightMinor) || reading.amounts.taxMinor !== share(order.taxMinor) || order.otherChargesMinor) reasons.push('Unplanned or differing charges require separate coding and review');
+        if (reading.amounts.freightMinor < share(order.freightMinor) || reading.amounts.taxMinor !== share(order.taxMinor) || order.otherChargesMinor) reasons.push('Unplanned or differing charges require separate coding and review');
     }
+    if(reading) {
+        const mappings=reading.lineMappings??invoice.allocations.map((allocation:Data,index:number)=>({id:reading.amounts.lines[index]?.id,orderLine:allocation.line}));
+        const sourceCharges=confirmedChargeMapping(order,reading.amounts,mappings).charges;
+        if(JSON.stringify(sourceCharges)!==JSON.stringify(invoice.unplannedCharges??[]))reasons.push('Fresh source-bound unplanned charge review required');
+    }
+    const chargeMatch=matchInvoiceCharges(invoice.unplannedCharges??[],applicableRules,invoice.totalMinor);
+    reasons.push(...chargeMatch.reasons);
     const matching = {status:reasons.length?'held':'approved',reasons:[...new Set(reasons)],at:new Date().toISOString()};
     invoice={...invoice,matching};
     if (!reasons.length) {
-        const at=matching.at, approval={kind:'native-matching',invoice:invoice.id,order:order.id,revision:order.revision,reading:reading!.id,documentSha256:invoice.document.sha256,amountMinor:invoice.totalMinor,currency:invoice.currency,actor:a.id,at,match:'three-way',lines:proofs};
+        const at=matching.at, approval={kind:'native-matching',invoice:invoice.id,order:order.id,revision:order.revision,reading:reading!.id,documentSha256:invoice.document.sha256,amountMinor:invoice.totalMinor,currency:invoice.currency,actor:a.id,at,match:'three-way',lines:proofs,...(chargeMatch.evidence.length?{charges:chargeMatch.evidence}:{})};
         invoice.paymentApproval=approval;
         const old=s.get('payable:'+invoice.id)?.value;
         if (!old?.approvedAt) {
