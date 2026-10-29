@@ -993,6 +993,9 @@ authority and an original native goods `receipt`, current `receiptVersion`,
 `attempt` and the receiver's `reason`. Zero is supported as the corrected
 quantity. The append-only delta retains the original and refuses stale,
 replayed, excessive, imported, service and superseded-receipt changes.
+The corrected net position, including separate returns, must stay within the
+PO balance: receiving 8, returning 2 and correcting that delivery to 11 leaves
+9 accepted against a 10-unit PO. Archives preserve the same net position.
 Receivers continue to see only the PO's aggregate invoice matching state.
 Correction recalculates matching context and commitment position, preserves
 invoice originals and all risk holds, and creates no invoice or payment

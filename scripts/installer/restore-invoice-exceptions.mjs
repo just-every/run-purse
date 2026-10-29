@@ -12,6 +12,8 @@ export function validateInvoiceExceptions(all, get, check, same) {
         }
         if (record.version) check(Object.keys(record.history.at(-1)).every(key => same(record[key], record.history.at(-1)[key])), 'invoice_exception_snapshot');
     }
+    // validateOrderLinks checks the net position including returns and deltas.
+    // A corrected gross delivery can exceed the PO after a physical return.
     const attempts = new Set();
     for (const original of all('receipt').filter(r => r.event === 'receive' && !r.correctionOf)) {
         const corrections = all('receipt').filter(r => r.correctionOf === original.id);
@@ -21,7 +23,7 @@ export function validateInvoiceExceptions(all, get, check, same) {
             check(correction.order === original.order && correction.line === original.line && line && !line.service && !original.imported
                 && correction.correctionSequence === corrections.indexOf(correction) + 1, 'receipt_correction_source');
             check(correction.correctionBeforeQ === before && Number.isSafeInteger(correction.correctedQ) && correction.correctedQ >= 0
-                && correction.correctedQ <= line.q && correction.correctionDelta === correction.correctedQ - before && correction.correctionDelta !== 0
+                && correction.correctionDelta === correction.correctedQ - before && correction.correctionDelta !== 0
                 && correction.q === Math.abs(correction.correctionDelta) && correction.event === (correction.correctionDelta > 0 ? 'receive' : 'return'), 'receipt_correction_quantity');
             check(typeof correction.reason === 'string' && correction.reason.trim() && typeof correction.actor === 'string' && Number.isFinite(Date.parse(correction.at)), 'receipt_correction_reason');
             check(typeof correction.correctionAttempt === 'string' && correction.correctionAttempt.length && !attempts.has(correction.correctionAttempt), 'receipt_correction_capture');

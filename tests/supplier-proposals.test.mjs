@@ -86,6 +86,16 @@ test('Supplier proposal choices preserve duplicate privacy, proposer separation 
     await h.command('supplier-propose',{...f.input(6824),name:blocked.name},f.requester,409);
     await h.command('request',f.requestInput(blocked.id),f.requester,409);
     await h.command('supplier-propose',{...f.input(6826),tin:'synthetic-purse-6827'},f.requester,400);
+    const alias=await h.command('supplier',{name:'synthetic-purse-6860 previous vendor',status:'active',reason:'Recorded prior supplier',contacts:[{name:'synthetic-purse-6861',email:proposalEmail(6861)}]});
+    const survivor=await h.command('supplier',{name:'synthetic-purse-6862 surviving vendor',status:'active',reason:'Reviewed surviving supplier'});
+    const merge=await h.command('preview-supplier-merge',{source:alias.id,target:survivor.id},f.buyer);
+    await h.command('merge-suppliers',{source:alias.id,target:survivor.id,fingerprint:merge.fingerprint,reason:'Reviewed supplier identity consolidation'},f.buyer);
+    for(const input of [{name:alias.name,contactEmail:proposalEmail(6863)},{name:'synthetic-purse-6864 new spelling',contactEmail:proposalEmail(6861)}]) {
+        const matched=await h.command('supplier-proposal-choices',input,f.requester);
+        assert.equal(matched.matches.length,1,'Merged supplier aliases still prevent a duplicate proposal');
+        assert.equal(matched.matches[0].id,survivor.id);assert.equal(matched.matches[0].name,survivor.name);assert.equal(matched.matches[0].selectable,true);
+        await h.command('supplier-propose',{...input,reason:'Attempt duplicate through a merged supplier identity',consent:true},f.requester,409);
+    }
     const self=await f.propose(6828,h.owner);
     await h.command('supplier-proposal-reject',await f.review(self.id),h.owner,403);
     const buyerProposal=await f.propose(6830,f.buyer);
