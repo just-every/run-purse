@@ -24,8 +24,11 @@ try {
     const input=f.input(6850);
     for(const [label,value] of [['Proposed supplier name',input.name],['Proposed contact email',input.contactEmail],['Why this supplier',input.reason],['Proposed website',input.website]])await panel.getByLabel(label,{exact:true}).fill(value);
     let response=page.waitForResponse(r=>r.url().endsWith('/command/supplier-proposal-choices'));await panel.getByRole('button',{name:'Check existing suppliers',exact:true}).click();assert.equal((await response).status(),200);
+    await panel.getByLabel('Proposed phone',{exact:true}).fill('synthetic-purse-6853');
+    assert.equal(await panel.getByRole('button',{name:'Send supplier proposal',exact:true}).count(),0,'Editing checked proposal fields requires a fresh duplicate check');
+    response=page.waitForResponse(r=>r.url().endsWith('/command/supplier-proposal-choices'));await panel.getByRole('button',{name:'Check existing suppliers',exact:true}).click();assert.equal((await response).status(),200);
     await panel.getByRole('checkbox').check();
-    response=page.waitForResponse(r=>r.url().endsWith('/command/supplier-propose'));await panel.getByRole('button',{name:'Send supplier proposal',exact:true}).click();const sent=await response;assert.equal(sent.status(),200);const proposal=await sent.json();
+    response=page.waitForResponse(r=>r.url().endsWith('/command/supplier-propose'));await panel.getByRole('button',{name:'Send supplier proposal',exact:true}).click();const sent=await response;assert.equal(sent.status(),200);const proposal=await sent.json();assert.equal(proposal.phone,'synthetic-purse-6853');
     const own=panel.getByRole('region',{name:'Supplier review '+input.name,exact:true});await own.waitFor();assert.match(await own.innerText(),/Status: pending/);assert.equal(await own.getByRole('button',{name:'Reject supplier proposal',exact:true}).count(),0);
     await capture('supplier-proposed',f.requester,'/app?tab=Suppliers','Supplier review '+input.name);
     const request=await f.h.command('request',f.requestInput(proposal.id),f.requester);await f.approve(request);
