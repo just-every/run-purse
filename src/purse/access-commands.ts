@@ -54,6 +54,7 @@ export function authorizeAccessCommand(s: State, a: Actor, op: string, b: Data):
         requirePermission(s, a, 'invoice.read', invoice); requirePermission(s, a, 'invoice.review', invoice); return;
     }
     if(quoteAgentCommands.has(op)){const rfq=get(s,'rfq',b.rfq);requirePermission(s,a,'rfq.manage',get(s,'request',rfq.request));return;}
+    if (op === 'price-benchmark-run') { procurementRecord(s,a,'request',b.request); return; }
     if (globalProcurement.has(op)) { unrestrictedProcurement(s, a); return; }
     if (nativeOwner.has(op)) { requireThat(false, 'Current native owner required', 403); }
     if (orderById.has(op)) { procurementRecord(s, a, 'order', b.id); return; }

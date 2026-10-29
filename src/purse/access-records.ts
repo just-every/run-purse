@@ -1,6 +1,7 @@
 import { invoiceExceptionAgentVisible } from './invoice-exception-agent';
 import { mayReadInvoiceException } from './invoice-exception-access';
 import { codingAgentRunVisible } from './coding-agent';
+import { priceBenchmarkVisible } from './price-benchmark';
 import { accessGrants, allowed, grantAllows, resolvedPermissions } from './access';
 import { all, get, requireThat, type Actor, type Data, type State } from './types';
 import { performanceAgreementSources } from './access-agreement-sources';
@@ -80,6 +81,7 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
     if (kind === 'agentRun') {
         if (record.agent === 'AGENT-004') return invoiceExceptionAgentVisible(s,a,record);
         if (record.agent === 'AGENT-008') return codingAgentRunVisible(s,a,record);
+        if (record.agent === 'AGENT-009') return priceBenchmarkVisible(s,a,record);
         if (a.owner) return true;
         if (record.agent === 'AGENT-011' && !allowed(s,a,'report.read')) return false;
         if (record.workflow === 'value-realization') {

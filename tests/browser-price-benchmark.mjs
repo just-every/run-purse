@@ -1,0 +1,49 @@
+import assert from 'node:assert/strict';
+import { mkdir, readFile } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+import { build } from 'esbuild';
+import { nativeWebContext } from './native-web-fixture.mjs';
+import { priceBenchmarkFixture } from './price-benchmark-fixture.mjs';
+const {chromium}=await import(process.env.PURSE_PLAYWRIGHT_MODULE||'@playwright/test');
+const evidence=resolve(process.env.PURSE_EVIDENCE||'.cache/price-benchmark');await mkdir(evidence,{recursive:true});
+const bundle=await build({stdin:{contents:"import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);",resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'esm',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
+const browser=await chromium.launch({headless:true,args:['--no-sandbox','--use-mock-keychain','--password-store=basic'],...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{})});
+const f=await priceBenchmarkFixture(),contexts=[],errors=[];
+try {
+ const open=async(cookie,width)=>{const context=await nativeWebContext(browser,f.h,width,bundle.outputFiles[0].text,cookie);contexts.push(context);const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));return page;};
+ const controls=page=>page.getByRole('region',{name:'Agent controls',exact:true});
+ const region=page=>page.getByRole('region',{name:'Price benchmark for '+f.current.title,exact:true});
+ const snapshot=async(page,target,name,width)=>{
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Changed screen fits viewport');
+  const icons=await page.locator('button').evaluateAll(buttons=>buttons.filter(button=>!button.textContent.trim()).map(button=>({label:button.getAttribute('aria-label'),tooltip:button.getAttribute('aria-describedby')})));
+  assert.ok(icons.every(icon=>icon.label&&icon.tooltip),'Icon-only controls retain tooltips');
+  const fontSizes=await target.locator('p,label,td,a,input,select,button').evaluateAll(elements=>elements.filter(element=>element.getClientRects().length).map(element=>parseFloat(getComputedStyle(element).fontSize)));
+  assert.ok(fontSizes.every(size=>size>=13),'Benchmark screen text is readable');
+  await target.screenshot({path:join(evidence,'AGENT-009-'+name+'-'+width+'.png')});
+ };
+ const owner=await open(f.h.owner,1440);await owner.goto(f.h.origin+'/app?tab=Settings');const settings=controls(owner);
+ await settings.getByLabel('Native agent',{exact:true}).selectOption('AGENT-009');await settings.getByLabel('Agent purchase type',{exact:true}).fill('Equipment');
+ await settings.getByLabel('Agent state',{exact:true}).selectOption('yes');await settings.getByLabel('Agent control reason',{exact:true}).fill('Owner enables exact-item nonbinding price comparison');
+ const enabled=owner.waitForResponse(response=>response.url().endsWith('/command/agent-policy'));await settings.getByRole('button',{name:'Save agent controls',exact:true}).click();assert.equal((await enabled).status(),200);
+ await settings.getByRole('cell',{name:'Price benchmark',exact:true}).waitFor();await snapshot(owner,settings,'owner-controls',1440);
+ const buyer=await open(f.buyer,1440);await buyer.goto(f.h.origin+'/app?tab=Requests&request='+f.current.id);const benchmark=region(buyer);await benchmark.getByText('Price benchmark',{exact:true}).click();
+ await benchmark.getByRole('button',{name:'Review comparable prices',exact:true}).click();await benchmark.getByLabel('Exact mappings reviewed',{exact:true}).waitFor();
+ const choices=benchmark.getByRole('checkbox');assert.equal(await choices.count(),2);
+ for(const checkbox of await choices.all())await checkbox.check();
+ await benchmark.getByLabel('Exact mappings reviewed',{exact:true}).selectOption('yes');await benchmark.getByLabel('Mapping review reason',{exact:true}).fill('Buyer checked item identifier, each unit and USD on both source lines');
+ const before=(await f.h.state()).data,mail=f.h.messages.length;
+ const response=buyer.waitForResponse(result=>result.url().endsWith('/command/price-benchmark-run'));await benchmark.getByRole('button',{name:'Create nonbinding benchmark',exact:true}).click();const created=await response;assert.equal(created.status(),200);const run=await created.json();
+ assert.equal(run.results[0].unitMinor,1200);assert.equal(run.results[0].targetMinor,1000);assert.deepEqual(run.results[0].citations.map(row=>row.unitMinor).sort((a,b)=>a-b),[1000,1100]);
+ await benchmark.getByText('Target $10.00 per each',{exact:true}).waitFor();await benchmark.getByRole('cell').filter({hasText:'Requested $12.00'}).waitFor();
+ assert.ok((await benchmark.textContent()).includes('Qualified current PunchOut price unavailable'));
+ for(const source of run.results[0].citations){assert.ok((await benchmark.textContent()).includes(source.line));assert.ok((await benchmark.textContent()).includes('revision '+source.revision));}
+ const downloaded=buyer.waitForEvent('download');await benchmark.getByRole('link',{name:'Download benchmark record',exact:true}).click();const download=await downloaded;const bytes=await readFile(await download.path(),'utf8');assert.deepEqual(JSON.parse(bytes),run);
+ for(const kind of ['request','order','quote','commitment','decision','receipt','invoice'])assert.deepEqual((await f.h.state()).data[kind],before[kind]);assert.equal(f.h.messages.length,mail);
+ await snapshot(buyer,benchmark,'nonbinding-brief',1440);
+ // The same changed screens get phone proof; business assertions above run at one width.
+ const phone=await open(f.buyer,390);await phone.goto(f.h.origin+'/app?tab=Requests&request='+f.current.id);await region(phone).getByText('Price benchmark',{exact:true}).click();await region(phone).getByText('Target $10.00 per each',{exact:true}).waitFor();await snapshot(phone,region(phone),'nonbinding-brief',390);
+ const phoneOwner=await open(f.h.owner,390);await phoneOwner.goto(f.h.origin+'/app?tab=Settings');await controls(phoneOwner).getByLabel('Native agent',{exact:true}).selectOption('AGENT-009');await snapshot(phoneOwner,controls(phoneOwner),'owner-controls',390);
+ await settings.getByLabel('Pause reason',{exact:true}).fill('Owner pauses benchmarking for review');const paused=owner.waitForResponse(result=>result.url().endsWith('/command/agent-pause'));await settings.getByRole('button',{name:'Pause this agent for every type',exact:true}).click();assert.equal((await paused).status(),200);
+ await benchmark.getByRole('button',{name:'Review comparable prices',exact:true}).click();await benchmark.getByRole('alert').filter({hasText:'paused or not enabled'}).waitFor();
+ assert.deepEqual(errors,[]);console.log('AGENT-009 exact-item review, cited target, downloaded record, owner pause and unchanged purchasing passed; changed screens captured at 1440 and 390');
+} finally {for(const context of contexts.reverse())await context.close();await f.close();await browser.close();}
