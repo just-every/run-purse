@@ -111,8 +111,8 @@ src/modules/operator-auth; src/server.ts shows HTTP ownership and native named
 exports. Follow the session and same-origin checks in src/purse/store.ts for
 private HTTP handlers. For Start handlers, import server-only code dynamically
 inside the handler and perform the same current-session authorization there.
-Use tests/purse-harness.mjs and tests/purse.test.mjs for direct unauthenticated
-transport proof; tests/email-link.mjs covers ordinary sign-in to the emitted
+Use tests/purse-harness.mjs and tests/purchasing-journey.test.mjs for direct unauthenticated
+transport proof; tests/browser.mjs covers ordinary sign-in to the emitted
 Worker. No private donor checkout is required to run or maintain this source.
 
 ## Backup and upgrade
@@ -126,7 +126,7 @@ archive directly into the current release.
 ## Contract projections
 
 `CONTRACT.md` is the acceptance and status source. Lander-Regenerate:
-`node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 SUPPLIER-008 PO-012`, then
-`node scripts/contract-docs.mjs check INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 SUPPLIER-008 PO-012`.
+`node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 PUR-001 PUR-002 PUR-003 PUR-004 PUR-005 PUR-006 PUR-007 PUR-008 PUR-009 PUR-010 PUR-011 PUR-013 PUR-014 PUR-016 PUR-017 ACCESS-001 ACCESS-002 INTAKE-001 INTAKE-004 INTAKE-006 INTAKE-007 INTAKE-008 SUPPLIER-003 SUPPLIER-004 SUPPLIER-005 SUPPLIER-007 SOURCE-001 SOURCE-002 CATALOG-001 STOCK-001 APPROVAL-001 APPROVAL-004 BUDGET-001 PO-001 PO-002 PO-003 PO-004 PO-005 PO-007 PO-008 PO-009 PO-010 PO-012 RECEIVE-001 RECEIVE-002 INVOICE-001 INVOICE-002 INVOICE-003 MATCH-001 MATCH-002 AP-003 REPORT-001 REPORT-003 CONTRACT-001 API-001 SEARCH-001 IMPORT-001 IMPORT-003 AUDIT-001 SECURITY-001 ERASURE-001 AGENT-001 AGENT-002 AGENT-003 AGENT-004 AGENT-005 AGENT-006 AGENT-008 AGENT-009 AGENT-010 AGENT-011 PUR-015 SYNC-004 CODING-002 SUPPLIER-006 SUPPLIER-008`, then
+`node scripts/contract-docs.mjs check INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 PUR-001 PUR-002 PUR-003 PUR-004 PUR-005 PUR-006 PUR-007 PUR-008 PUR-009 PUR-010 PUR-011 PUR-013 PUR-014 PUR-016 PUR-017 ACCESS-001 ACCESS-002 INTAKE-001 INTAKE-004 INTAKE-006 INTAKE-007 INTAKE-008 SUPPLIER-003 SUPPLIER-004 SUPPLIER-005 SUPPLIER-007 SOURCE-001 SOURCE-002 CATALOG-001 STOCK-001 APPROVAL-001 APPROVAL-004 BUDGET-001 PO-001 PO-002 PO-003 PO-004 PO-005 PO-007 PO-008 PO-009 PO-010 PO-012 RECEIVE-001 RECEIVE-002 INVOICE-001 INVOICE-002 INVOICE-003 MATCH-001 MATCH-002 AP-003 REPORT-001 REPORT-003 CONTRACT-001 API-001 SEARCH-001 IMPORT-001 IMPORT-003 AUDIT-001 SECURITY-001 ERASURE-001 AGENT-001 AGENT-002 AGENT-003 AGENT-004 AGENT-005 AGENT-006 AGENT-008 AGENT-009 AGENT-010 AGENT-011 PUR-015 SYNC-004 CODING-002 SUPPLIER-006 SUPPLIER-008`.
 The seed's existing parser updates the named acceptance entry without changing
 other clauses, and generates `docs/CLAIMS.md` and the Status counts. Run the edition source lock command last after source edits.

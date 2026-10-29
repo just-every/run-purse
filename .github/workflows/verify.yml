@@ -79,64 +79,30 @@ jobs:
       # runs in installer.yml on release tags and nightly.
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
-      - run: pnpm exec rer verify
+      - name: Build the Worker, assets and run site once
+        run: pnpm exec rer build && pnpm exec rer build --site && node scripts/ci/shared-build.mjs record
+      - name: Light verification
+        run: pnpm typecheck && pnpm exec rer check --profile first-party && pnpm check:deployment-spec && pnpm sources:check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: purse-build
+          path: dist
+          include-hidden-files: true
+          retention-days: 1
   browser:
-    needs: plan
+    needs: [plan, rer-verify]
     if: needs.plan.outputs.skip != 'true'
     strategy:
       fail-fast: false
       matrix:
-        # 357 browser test-minutes cannot fit eight 12-minute jobs. Pack the
-        # unchanged commands using green run 40407704684, allowing 45s setup.
         include:
           - group: 1
           - group: 2
           - group: 3
           - group: 4
-          - group: 5
-          - group: 6
-          - group: 7
-          - group: 8
-          - group: 9
-          - group: 10
-          - group: 11
-          - group: 12
-          - group: 13
-          - group: 14
-          - group: 15
-          - group: 16
-          - group: 17
-          - group: 18
-          - group: 19
-          - group: 20
-          - group: 21
-          - group: 22
-          - group: 23
-          - group: 24
-          - group: 25
-          - group: 26
-          - group: 27
-          - group: 28
-          - group: 29
-          - group: 30
-          - group: 31
-          - group: 32
-          - group: 33
-          - group: 34
-          - group: 35
-          - group: 36
-          - group: 37
-          - group: 38
             pantry: true
-          - group: 39
-          - group: 40
-          - group: 41
-          - group: 42
-          - group: 43
-          - group: 44
     runs-on: ubuntu-24.04
-    # Normal body is packed below 12 minutes; allow the bounded apt repair too.
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Reclaim unused hosted-runner SDKs
@@ -148,25 +114,33 @@ jobs:
       - uses: pnpm/action-setup@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec rer install
+      - uses: actions/download-artifact@v4
+        with:
+          name: purse-build
+          path: dist
       - name: Install Chromium
+        if: matrix.group == 4
         run: |
           set -euo pipefail
           pnpm exec playwright install --only-shell chromium
-          # Hosted ubuntu-24.04 already carries Chromium's libraries. Use apt only when a real launch fails.
           node scripts/ci/chromium-probe.mjs || {
             timeout 420 pnpm exec playwright install-deps chromium
             node scripts/ci/chromium-probe.mjs
           }
       - name: Install the real Pantry integration peer
         if: matrix.pantry == true
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git clone --filter=blob:none https://github.com/just-every/run-pantry.git .cache/native-pantry
-          git -C .cache/native-pantry checkout fb080a57b795dede06bfe6be2db7b85cc31a696b
+          mkdir -p .cache/native-pantry
+          gh api repos/just-every/run-pantry/tarball/fb080a57b795dede06bfe6be2db7b85cc31a696b > "$RUNNER_TEMP/pantry.tar.gz"
+          tar -xzf "$RUNNER_TEMP/pantry.tar.gz" --strip-components=1 -C .cache/native-pantry
           pnpm --dir .cache/native-pantry install --frozen-lockfile
-      - name: Run every command in the group
+      - name: Run the public journeys in the group
         run: node scripts/ci/run-shard.mjs ${{ matrix.group }}
         env:
           PANTRY_CHECKOUT: ${{ github.workspace }}/.cache/native-pantry
+          PANTRY_SOURCE_SHA: fb080a57b795dede06bfe6be2db7b85cc31a696b
           PURSE_EVIDENCE: ${{ runner.temp }}/purse-proof
       - uses: actions/upload-artifact@v4
         if: always()

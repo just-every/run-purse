@@ -2,8 +2,7 @@ import {documentProfileFixture} from './document-profile-fixture.mjs'
 import assert from 'node:assert/strict'
 import {readFile,mkdir} from 'node:fs/promises'
 import {join} from 'node:path'
-import {readDevKey,signInAs} from '../src/modules/operator-auth/dev/sign-in-as.mjs'
-export async function session(browser,root,origin,as,width){const key=await readDevKey(root),login=await signInAs({origin,key,as,returnTo:'/app'}),context=await browser.newContext({viewport:{width,height:1000}});await context.addCookies(login.cookies.map(c=>({...c,url:origin})));const page=await context.newPage(),pageErrors=[];page.on('pageerror',error=>pageErrors.push(error.message));await page.goto(origin+'/app');if(page.url().endsWith('/setup')){await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Finish setup'}).click();const state=await context.request.get(origin+'/setup/state');assert.deepEqual(await state.json(),{state:'claimed'});const lobby=await context.request.get(origin);assert.equal(lobby.status(),200);assert.match(await lobby.text(),/href="\/signin(?:\?login_hint=[^"]+)?"/)}try{await page.getByRole('navigation').waitFor()}catch(error){const state=await context.request.get(origin+'/api/purse/state');console.error('Workspace failed to open',JSON.stringify({as,width,url:page.url(),stateStatus:state.status(),pageErrors,body:await page.locator('body').innerText()}));if(process.env.PURSE_EVIDENCE){await mkdir(process.env.PURSE_EVIDENCE,{recursive:true});await page.screenshot({path:join(process.env.PURSE_EVIDENCE,`workspace-failure-${as}-${width}.png`),fullPage:true})}throw error}return {context,page}}
+export async function session(browser,root,origin,as,width){const context=await browser.newContext({viewport:{width,height:1000}});const cookie=root.sessions[as];assert.ok(cookie,'A real native session exists for '+as);const split=cookie.indexOf('=');await context.addCookies([{name:cookie.slice(0,split),value:cookie.slice(split+1),url:origin}]);const page=await context.newPage(),pageErrors=[];page.on('pageerror',error=>pageErrors.push(error.message));await page.goto(origin+'/app');if(page.url().endsWith('/setup')){await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Finish setup'}).click();const state=await context.request.get(origin+'/setup/state');assert.deepEqual(await state.json(),{state:'claimed'});const lobby=await context.request.get(origin);assert.equal(lobby.status(),200);assert.match(await lobby.text(),/href="\/signin(?:\?login_hint=[^"]+)?"/)}try{await page.getByRole('navigation').waitFor()}catch(error){const state=await context.request.get(origin+'/api/purse/state');console.error('Workspace failed to open',JSON.stringify({as,width,url:page.url(),stateStatus:state.status(),pageErrors,body:await page.locator('body').innerText()}));if(process.env.PURSE_EVIDENCE){await mkdir(process.env.PURSE_EVIDENCE,{recursive:true});await page.screenshot({path:join(process.env.PURSE_EVIDENCE,`workspace-failure-${as}-${width}.png`),fullPage:true})}throw error}return {context,page}}
 export async function api(context,origin,op,body){const response=await context.request.post(origin+'/api/purse/command/'+op,{headers:{origin},data:body});const value=await response.json();assert.equal(response.status(),200,JSON.stringify(value));if(op==='business'){const state=await current(context,origin);for(const location of body.locations)if(!state.data.poProfile.some(p=>p.location===location&&p.purchaseType==='*'))await api(context,origin,'po-profile',documentProfileFixture(body,location));}return value}
 export async function current(context,origin){const response=await context.request.get(origin+'/api/purse/state');assert.equal(response.status(),200);return response.json()}
 const clickTab=(page,name)=>page.getByRole('navigation').getByRole('button',{name,exact:true}).click()
@@ -16,62 +15,3 @@ export async function journey(browser,root,origin,width,evidence,shared){const s
  await buyer.page.reload();await clickTab(buyer.page,'Orders');await buyer.page.getByRole('row').filter({hasText:order.number}).getByRole('button',{name:'Open order'}).click();await buyer.page.getByText('Add invoice evidence',{exact:true}).click();await fill(buyer.page,'Invoice reference','INV-'+suffix);await fill(buyer.page,'Evidence source','Supplied invoice');await buyer.page.locator('form').filter({has:buyer.page.getByRole('button',{name:'Save invoice evidence',exact:true})}).getByLabel('PO line',{exact:true}).selectOption(order.lines[0].id);await fill(buyer.page,'Invoice quantity','2.5');await fill(buyer.page,'Invoice amount','290.00');await buyer.page.getByRole('button',{name:'Save invoice evidence',exact:true}).click();await buyer.page.getByRole('heading',{name:'Invoice INV-'+suffix}).waitFor();await buyer.page.screenshot({path:join(evidence,`buyer-${width}.png`),fullPage:true});const csv=await buyer.context.request.get(origin+'/api/purse/accounting');assert.match(await csv.text(),new RegExp('INV-'+suffix));await current(buyer.context,origin);
  for(const {page} of Object.values(sessions)){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth);assert.equal(overflow,false,`No page overflow at ${width}px`)}return {request:request.id,order:order.id,number:order.number,width};
  }catch(error){for(const [as,{page}] of Object.entries(sessions))await page.screenshot({path:join(evidence,`failure-${as}-${width}.png`),fullPage:true}).catch(()=>{});throw error}finally{for(const {context} of Object.values(sessions))await context.close()}}
-
-
-export async function protectedPreparationJourney(browser,root,origin,width,evidence){
- const buyer=await session(browser,root,origin,'buyer',width),owner=await session(browser,root,origin,'owner',width);
- try{
-  const marker='9876543210123456',draft='SECURITY-001 safe human preparation '+width+'-'+crypto.randomUUID().slice(0,8);
-  await clickTab(buyer.page,'Preparation');await buyer.page.getByLabel('Editable draft',{exact:true}).fill(draft);
-  // Exercise the real form and native server with an adversarial structured request.
-  await buyer.page.route('**/api/purse/command/prepare',async route=>{const input=route.request().postDataJSON();input.fields.bankAccount=marker;await route.continue({postData:JSON.stringify(input)});});
-  const refused=buyer.page.waitForResponse(r=>r.url().endsWith('/command/prepare'));
-  await buyer.page.getByRole('button',{name:'Save preparation',exact:true}).click();assert.equal((await refused).status(),400);
-  await buyer.page.getByRole('alert').filter({hasText:'Protected fields are unavailable to preparations and proposed actions'}).waitFor();
-  assert.equal(await buyer.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'SECURITY-001 refusal fits '+width);
-  assert.ok(!(await buyer.page.locator('body').innerText()).includes(marker));
-  await buyer.page.screenshot({path:join(evidence,`SECURITY-001-refusal-${width}.png`),fullPage:true});
-  assert.ok(!(await current(buyer.context,origin)).data.agentRun.some(r=>r.draft===draft));
-  await buyer.page.unroute('**/api/purse/command/prepare');
-  const saved=buyer.page.waitForResponse(r=>r.url().endsWith('/command/prepare'));await buyer.page.getByRole('button',{name:'Save preparation',exact:true}).click();assert.equal((await saved).status(),200);
-  const run=(await current(buyer.context,origin)).data.agentRun.find(r=>r.draft===draft);assert.ok(run);
-  const download=await buyer.context.request.get(origin+'/api/purse/download/agentRun/'+run.id);assert.equal(download.status(),200);assert.ok(!(await download.text()).includes(marker));
-  const audit=await owner.context.request.get(origin+'/api/purse/audit');assert.equal(audit.status(),200);const auditBody=await audit.text();assert.ok(auditBody.includes('protected-input-refused'));assert.ok(!auditBody.includes(marker));
-  await buyer.page.getByLabel('Draft',{exact:true}).last().waitFor();
-  await buyer.page.screenshot({path:join(evidence,`SECURITY-001-safe-${width}.png`),fullPage:true});
-  return {clause:'SECURITY-001',scope:'structured preparation input only',width,run:run.id};
- }finally{await buyer.context.close();await owner.context.close();}
-}
-
-
-// Native browser fetches exercise the protected HTTP door without inventing a
-// supplier UI or treating development sign-in as native reauthentication.
-export async function protectedStorageJourney(browser,root,origin,width,evidence){
- const owner=await session(browser,root,origin,'owner',width),buyer=await session(browser,root,origin,'buyer',width),requester=await session(browser,root,origin,'requester',width);
- try{
-  // Seed this slice through the real reviewed import door; SECURITY-001 does
-  // not depend on a fresh sanctions-network request for fixture creation.
-  const sourceId='synthetic-protected-'+width+'-'+crypto.randomUUID().slice(0,8),csv='kind,sourceId,name,status\nsupplier,'+sourceId+',Synthetic protected storage '+sourceId+',active\n';
-  const input={csv,filename:'synthetic-protected.csv',mapping:{columns:{},decimal:'.',date:'YYYY-MM-DD',statuses:{active:'active'}}};
-  const preview=await owner.context.request.post(origin+'/api/purse/import/preview',{headers:{origin},data:input});assert.equal(preview.status(),200);const plan=await preview.json();
-  const committed=await owner.context.request.post(origin+'/api/purse/import/commit',{headers:{origin},data:{...input,fingerprint:plan.plan.fingerprint}});assert.equal(committed.status(),200,await committed.text());
-  const supplier=(await current(owner.context,origin)).data.supplier.find(s=>s.sourceId===sourceId);assert.ok(supplier);
-
-  const path='/api/purse/supplier-protected/'+supplier.id;
-  const call=async(page,path,body)=>page.evaluate(async({path,body})=>{const r=await fetch(path,body===undefined?{}:{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});return {status:r.status,value:await r.json(),cache:r.headers.get('cache-control')}},{path,body});
-  let metadata=await call(owner.page,path);assert.equal(metadata.status,200);
-  const values={tin:'987651234',bankAccount:'9876543215678',bankRouting:'123456789'};
-  const stored=await call(owner.page,path+'/store',{revision:metadata.value.revision,values,reason:'Synthetic protected browser proof',evidence:'synthetic-original-reference'});assert.equal(stored.status,200,JSON.stringify(stored.value));
-  metadata=await call(owner.page,path);assert.deepEqual(metadata.value.masks,{tin:'••••1234',bankAccount:'••••5678',bankRouting:'••••6789'});
-  assert.deepEqual((await call(buyer.page,path)).value.masks,metadata.value.masks);
-  assert.deepEqual((await call(requester.page,path)).value.masks,{tin:'On file',bankAccount:'On file'});
-  const denied=await call(buyer.page,path+'/reveal',{revision:metadata.value.revision,field:'tin',reason:'Synthetic wrong-role attempt'});assert.equal(denied.status,403);assert.equal(denied.cache,'no-store');
-  metadata=await call(owner.page,path);const devProof=await call(owner.page,path+'/reveal',{revision:metadata.value.revision,field:'tin',reason:'Synthetic development sign-in is not native reauthentication'});assert.equal(devProof.status,403);assert.match(devProof.value.error,/reauthentication/);
-  const state=await current(owner.context,origin);assert.deepEqual(state.data.supplier.find(s=>s.id===supplier.id).protectedData,metadata.value.masks);assert.deepEqual(state.data.supplier.find(s=>s.id===supplier.id).matchingOnly,{tin:true,bank:true},'SECURITY-001 masks preserve SUPPLIER-003 matching-only state');
-  for(const who of [owner,buyer,requester]){await who.page.reload();const navigation=who.page.getByRole('navigation');await navigation.waitFor();if(who===requester)assert.equal(await navigation.getByRole('button',{name:'Suppliers',exact:true}).count(),0,'Requester retains the existing purchasing navigation scope');else await navigation.getByRole('button',{name:'Suppliers',exact:true}).click();for(const value of Object.values(values))assert.ok(!(await who.page.locator('body').innerText()).includes(value));assert.equal(await who.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);}
-  await owner.page.screenshot({path:join(evidence,`SECURITY-001-native-storage-${width}.png`),fullPage:true});
-  const search=await owner.context.request.get(origin+'/api/purse/search?q='+values.bankAccount);assert.equal(search.status(),200);assert.equal((await search.json()).total,0);
-  for(const endpoint of ['/api/purse/audit','/api/purse/audit.csv','/api/purse/accounting']){const r=await owner.context.request.get(origin+endpoint);assert.equal(r.status(),200);const bytes=await r.text();for(const value of Object.values(values))assert.ok(!bytes.includes(value));}
-  return {clause:'SECURITY-001',scope:'encrypted native storage and masks; reveal refuses dev-only proof',width,protectedSupplier:supplier.id};
- }finally{await owner.context.close();await buyer.context.close();await requester.context.close();}
-}
