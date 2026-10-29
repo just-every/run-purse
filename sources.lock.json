@@ -3192,7 +3192,7 @@
       "executable": false
     },
     "src/purse/erasure-plan.ts": {
-      "sha256": "a77d00d078ede48b21c1771b7054c87b7222033bf35fd9ddcb25792d71039077",
+      "sha256": "d569098f6a2068658fc5f712d6d50c6b1588ccfe30ed3583081f9585e475af10",
       "executable": false
     },
     "src/purse/erasure-refusal.ts": {

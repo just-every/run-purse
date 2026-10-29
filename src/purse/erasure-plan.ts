@@ -37,9 +37,11 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   if(row.kind==='supplierTaxReview' && linked.has(row.value.supplier) && !linked.has(row.id)){linked.add(row.id);changed=true;}
   if(!['shipmentReference','invoiceException','supplierTaxReview','supplierRma','supplierCredit','supplierCreditApplication','crossTeamReview','audit','comment','commentNotice','agentRun','orderChaseEvent','orderThreadMessage','supplierInvoiceSubmission','orderSupplierResponse','orderSend','orderAcknowledgment','travelExpense','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
   const v=row.value;
+  const shipmentLinked=(row.kind==='shipmentReference'||row.kind==='audit'&&v.action==='shipment-reference-recorded')
+   && [v.send,v.response].some(ref=>linked.has(ref));
   // RMA-only participants can be identified inside the linked credit original.
   // Withdraw that source and retain its applications as anonymous history.
-  if([v.send,v.response,v.comment,v.request,v.order,v.record,v.source,v.reading,v.emailIntake,v.apInvoiceEmail,v.attachment,v.rfq,v.rma,v.credit].some(ref=>linked.has(ref))&&!linked.has(row.id)){linked.add(row.id);changed=true;}
+  if((shipmentLinked||[v.comment,v.request,v.order,v.record,v.source,v.reading,v.emailIntake,v.apInvoiceEmail,v.attachment,v.rfq,v.rma,v.credit].some(ref=>linked.has(ref)))&&!linked.has(row.id)){linked.add(row.id);changed=true;}
  }}
  const eraseFile=(value:Data):Data=>{
   if(typeof value.base64!=='string'&&!value.key)return value;
