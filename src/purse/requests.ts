@@ -1,3 +1,5 @@
+import { linePosition } from './orders';
+import { hasSupplierGroups, supplierLineRemaining } from './po-supplier-groups';
 import { openReviews, requireReviews } from './cross-team-reviews';
 import { normalizePurchaseCharges } from './purchase-charges';
 import { eventBudgetPortion, requestBudgetShares } from './budget-allocations';
@@ -25,7 +27,30 @@ export function requestTotal(r: Data) { const total = r.lines.reduce((n: number,
 export function policies(s: State, r: Data) { return coveringPolicies(all(s, 'policy'), r); }
 export const reserved = (s: State, policy: string) => all(s, 'commitment').reduce((n, e) => n + eventBudgetPortion(e, policy), 0);
 export function reservationAvailable(s: State, r: Data, amountMinor: number) { const p = policies(s, r).find(p => p.id === r.policy); return Boolean(p && ((!p.budgetPeriod && p.overBudget==='owner' && r.budgetOwnerReview && r.totalMinor===s.get('request:'+r.id)?.value.totalMinor && all(s,'decision').some(decision=>decision.request===r.id&&decision.revision===r.revision&&(!r.approvalRoute||decision.approvalAttempt===r.approvalAttempt)&&decision.decision==='approved'&&decision.email===p.budgetOwner&&decision.policyVersion===s.get('policy:'+p.id)?.revision)) || (budgetRoom(s,r,p,amountMinor) ?? reserved(s,p.id)+all(s,'travelExpense').filter(expense=>expense.policy===p.id&&expense.currency===p.currency).reduce((sum,expense)=>sum+expense.totalMinor,0)+amountMinor<=p.budgetMinor))); }
-export function ledger(s: State, a: Actor, r: Data, amountMinor: number, kind: string) { requireThat(amountMinor <= 0 || reservationAvailable(s, r, amountMinor), 'Current policy or budget does not authorize replenishment; renew approval', 409); const balance=all(s,'commitment').filter(e=>e.currency===r.currency).reduce((n,e)=>n+e.amountMinor,0);requireThat(Number.isSafeInteger(balance+amountMinor),'Commitment exceeds supported integer range',409);const id = uid(); put(s, 'commitment', id, { request: r.id, revision: r.revision, policy: r.policy, currency: r.currency, amountMinor, budgetAllocations: requestBudgetShares(s, r, Math.abs(amountMinor)).map(share => ({...share, amountMinor: amountMinor < 0 ? -share.amountMinor : share.amountMinor})), kind, actor: a.id, at: new Date().toISOString() }); }
+export function ledger(s: State, a: Actor, r: Data, amountMinor: number, kind: string, budgetFace: Data = r) { requireThat(amountMinor <= 0 || reservationAvailable(s, r, amountMinor), 'Current policy or budget does not authorize replenishment; renew approval', 409); const balance=all(s,'commitment').filter(e=>e.currency===r.currency).reduce((n,e)=>n+e.amountMinor,0);requireThat(Number.isSafeInteger(balance+amountMinor),'Commitment exceeds supported integer range',409);const id = uid(); put(s, 'commitment', id, { request: r.id, revision: r.revision, policy: r.policy, currency: r.currency, amountMinor, budgetAllocations: conversionBudgetShares(s,r,budgetFace,amountMinor,kind), kind, actor: a.id, at: new Date().toISOString() }); }
+/** A grouped buyer revision can move remainder cents between budgets even
+ * when its aggregate reservation is unchanged. Preserve the exact delta. */
+function conversionBudgetShares(s: State,r: Data,budgetFace: Data,amount: number,kind: string) {
+    const groupedOrders=all(s,'order').filter(order=>order.request===r.id&&order.supplierGroup&&order.issuedAt);
+    if(hasSupplierGroups(r)&&kind==='buyer-conversion-reservation' || budgetFace.supplierGroup&&groupedOrders.length) {
+        const events=all(s,'commitment').filter(event=>event.request===r.id&&event.currency===r.currency);
+        const balance=events.reduce((sum,event)=>sum+event.amountMinor,0);
+        let target:Data[];
+        if(kind==='buyer-conversion-reservation')target=requestBudgetShares(s,r,balance+amount);
+        else {
+            const sums=new Map<string,number>();
+            for(const order of groupedOrders)for(const line of order.lines) {
+                const value=supplierLineRemaining(order,line,linePosition(s,order.id,line).outstanding);
+                const face={...r,lines:[{...line,totalMinor:value}],charges:[],freightMinor:0,taxMinor:0,otherChargesMinor:0,totalMinor:value,supplierGroup:undefined};
+                for(const share of requestBudgetShares(s,face,value))sums.set(share.policy,(sums.get(share.policy)??0)+share.amountMinor);
+            }
+            target=[...sums].map(([policy,amountMinor])=>({policy,amountMinor}));
+        }
+        const ids=new Set([...target.map(share=>share.policy),...events.flatMap(event=>(event.budgetAllocations??[{policy:event.policy}]).map((share:Data)=>share.policy))]);
+        return [...ids].map(policy=>({policy,amountMinor:(target.find(share=>share.policy===policy)?.amountMinor??0)-events.reduce((sum,event)=>sum+eventBudgetPortion(event,policy),0)}));
+    }
+    return requestBudgetShares(s,budgetFace,Math.abs(amount)).map(share=>({...share,amountMinor:amount<0?-share.amountMinor:share.amountMinor}));
+}
 export function authorizedApproval(s: State, a: Actor, r: Data) {
     requirePermission(s, a, 'request.approve', r);
     requireThat(a.id !== r.requester && a.email !== r.requesterEmail, 'Self approval is prohibited', 403);
@@ -80,6 +105,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             }
         }
         r.totalMinor = requestTotal(r);
+    requireThat(!all(s,'order').some(order=>order.request===id&&order.supplierGroup),'Existing supplier groups require a separate supported disposition; grouped amendments are unavailable',409);
         const issued = all(s, 'order').find(o => o.request === id && (o.status === 'issued' || o.status === 'adopted' || o.status === 'amendment-pending'));
         if (issued) {
             if (old?.adoption) { requireThat(r.currency === issued.currency, 'Use the reviewed replacement-remainder disposition to change an adopted currency', 409); requireThat(r.supplier === issued.supplier, 'Use the reviewed replacement-remainder disposition to change an adopted supplier', 409); }

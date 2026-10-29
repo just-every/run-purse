@@ -21,7 +21,7 @@ export function proposalView(s: State, a: Actor, proposal: Data) {
 }
 export function supplierReview(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if(op==='supplier-proposal-choices')return proposalChoices(s,a,b);
-    if(op==='supplier-propose')return proposalView(s,a,get(s,'supplierProposal',proposedSupplier(s,a,b)));
+    if(op==='supplier-propose')return proposalView(s,a,get(s,'supplierProposal',proposedSupplier(s,a,b,'standalone')));
     if(op!=='supplier-proposal-reject')return;
     can(s,a,'owner');
     const proposal = get(s,'supplierProposal',b.id), value=get(s,'supplier',proposal.supplier);

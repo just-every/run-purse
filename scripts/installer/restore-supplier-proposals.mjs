@@ -2,10 +2,11 @@
 export function validateSupplierProposals(all,get,check) {
     for(const proposal of all('supplierProposal')) {
         const supplier=get('supplier',proposal.supplier);
-        check(proposal.id===supplier.id&&['pending','rejected'].includes(proposal.status)&&['proposed','rejected'].includes(supplier.status),'supplier_proposal_status');
+        const guidedStatus = proposal.source !== 'standalone' && proposal.status === 'pending' && ['active','preferred','pending_review','blocked'].includes(supplier.status);
+        check(proposal.id===supplier.id&&['pending','rejected'].includes(proposal.status)&&(['proposed','rejected'].includes(supplier.status)||guidedStatus),'supplier_proposal_status');
         check(Number.isSafeInteger(proposal.version??1)&&(proposal.version??1)>0&&typeof proposal.requesterEmail==='string'&&Number.isFinite(Date.parse(proposal.at)),'supplier_proposal');
         if(proposal.status==='rejected')check(get('supplierProposalReview',proposal.review).proposal===proposal.id&&supplier.status==='rejected','supplier_proposal_rejection');
-        else check(!proposal.review&&supplier.status==='proposed','supplier_proposal_pending');
+        else check(!proposal.review&&(supplier.status==='proposed'||guidedStatus),'supplier_proposal_pending');
     }
     for(const review of all('supplierProposalReview')) {
         const proposal=get('supplierProposal',review.proposal);

@@ -23,15 +23,17 @@ When someone drafts a request, they can pick an approved item: its description, 
 
 ## Propose a supplier
 
-Requesters and buyers can propose a supplier from Suppliers without creating a
-purchase request. Check existing suppliers first. Available matches show their
+Requesters can choose **Propose a supplier** from Requests; buyers can use
+Suppliers. Both can propose without creating a purchase request. Check existing suppliers first. Available matches show their
 name and status; blocked matches cannot be selected, and private proposals are
 referred to the native owner without exposing their contacts. Guided purchase
 intake offers the same duplicate check and can select an existing active supplier.
 
 A proposal remains pending. Purchase approval can reserve its request amount,
-but conversion and issuance wait for supplier activation. This release does not
-activate proposals: onboarding and verified-bank prerequisites remain required.
+but conversion and issuance wait for supplier activation. Standalone proposals cannot be
+activated: onboarding and verified-bank prerequisites remain required. The existing
+guided-intake administrator activation remains available, with independent
+review and screening; it does not establish full onboarding or bank verification.
 
 A current native owner who did not propose the supplier can reject it with a
 reason. For wholly unissued native requests, rejection returns each affected

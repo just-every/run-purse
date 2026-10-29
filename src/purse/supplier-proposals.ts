@@ -54,14 +54,14 @@ export function proposalChoices(s: State, a: Actor, input: Data) {
     return { matches: visible.map(m=>({id:m.id,name:m.name,status:m.status,reasons:m.reasons,selectable:['active','preferred'].includes(m.status)})),
         needsAdministrator: visible.length !== found.length };
 }
-export function proposedSupplier(s: State, a: Actor, input: Data) {
+export function proposedSupplier(s: State, a: Actor, input: Data, source: 'guided-intake' | 'standalone') {
     requirePermission(s, a, 'request.create');
     const fields = proposalInput(input);
     requireThat(input.consent === true, 'Confirm proposing this supplier for review');
     requireThat(!matches(s,fields).length, 'A possible existing supplier matches; review available choices or ask the native owner', 409);
     const id = uid();
     put(s, 'supplier', id, { name:fields.name, status:'proposed', requestedStatus:'proposed', reason:'Requester proposal awaiting supplier review', address:'', remitTo:'', postalState:'', contacts:[], contractRef:'', screenings:[], documents:[], proposedBy:a.id });
-    put(s, 'supplierProposal', id, { supplier:id, requester:a.id, requesterEmail:a.email, ...fields,
+    put(s, 'supplierProposal', id, { supplier:id, requester:a.id, requesterEmail:a.email, ...fields, source,
         reason:text(input.reason,'Why this supplier'), status:'pending', version:1, consent:true, at:new Date().toISOString() });
     audit(s, a, 'supplier-proposal', id, { consent:true }); return id;
 }

@@ -17,7 +17,7 @@ export function workspaceTabs(actor: D) {
 /** One white top bar: the mark and slab wordmark, the business, search, and Ask Purse; under a hairline,
  * the workspace tabs and who is signed in. Ask Purse and the thread's composer are one control. */
 export function TopBar({ actor, business, tab, onTab, onAsk, search = true }: { actor?: D; business?: string; tab?: string; onTab?: (tab: string) => void; onAsk?: () => void; search?: boolean }) {
-    const tabs = actor ? workspaceTabs(actor) : [];
+    const tabs = actor ? workspaceTabs(actor).filter(t => t !== 'Suppliers' || actor.permissions.some((permission: string) => ['procurement.manage','invoice.read'].includes(permission))) : [];
     const go = (t: string) => { if (t === 'Search') window.location.assign('/app?search=1'); else if (onTab) onTab(t); else window.location.assign('/app?tab=' + encodeURIComponent(t)); };
     return <header className="top-bar">
         <div className="top-row">

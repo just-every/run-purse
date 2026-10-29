@@ -24,7 +24,8 @@
     ["tests/browser-custom-fields.mjs"]
   ],
   "6": [
-    ["tests/browser.mjs", "--width=1440", "--journey=supplier-duplicates"]
+    ["tests/browser.mjs", "--width=1440", "--journey=supplier-duplicates"],
+    ["tests/browser-po-supplier-groups.mjs"]
   ],
   "7": [
     ["tests/browser.mjs", "--width=1440", "--journey=order-adoption"]

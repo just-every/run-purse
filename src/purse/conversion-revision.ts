@@ -1,3 +1,4 @@
+import { hasSupplierGroups } from './po-supplier-groups';
 import { carryApprovalDecisions, routeFor, startChain } from './approval-chain';
 import { currentDecision } from './approval';
 import { budgetOwnerSteps } from './budget-position';
@@ -16,7 +17,8 @@ export function reviseForConversion(s: State, a: Actor, previous: Data, edit: Da
     requireThat(candidate,'No current approval policy covers the edited purchase; choose a policy before conversion',409);
     next.policy = candidate.id;
     const balance = all(s,'commitment').filter(event => event.request === previous.id && event.policy === next.policy && event.currency === next.currency).reduce((sum,event)=>sum+event.amountMinor,0);
-    const inBudget = reservationAvailable(s,next,Math.max(0,approvalAmount(next,s)-balance));
+    const grouped=hasSupplierGroups(next);
+    const inBudget = reservationAvailable(s,next,Math.max(0,approvalAmount(next,s)-balance)) && (!grouped || !budgetOwnerSteps(s,next,approvalAmount(next,s)).length);
     const sameRoute=!previous.approvalRoute||JSON.stringify(routeFor(candidate,next))===JSON.stringify(previous.approvalRoute);
     const carry = edit.variance.withinLimit && candidate.id === previous.policy && sameRoute && inBudget;
     next.buyerConversion = { ...structuredClone(edit.variance), carried: [], renewed: [], routing: carry ? 'carried' : !inBudget ? 'budget-owner' : 'renewal' };
@@ -25,7 +27,7 @@ export function reviseForConversion(s: State, a: Actor, previous: Data, edit: Da
         next.status = 'approved';
         put(s,'request',next.id,next);
         const delta = approvalAmount(next,s)-balance;
-        if(delta) ledger(s,a,next,delta,'buyer-conversion-reservation');
+        if(delta||grouped) ledger(s,a,next,delta,'buyer-conversion-reservation');
     } else {
         requireThat(inBudget || candidate.overBudget==='owner' || budgetOwnerSteps(s,next,approvalAmount(next,s)).length,'Edited purchase exceeds the budget and budget-owner review is not configured',409);
         next.status='pending';

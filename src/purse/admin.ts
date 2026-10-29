@@ -3,7 +3,7 @@ import { budgetDimensionInput, sameBudgetDimensions } from './budget-dimensions'
 import { budgetPeriod } from './budget-position';
 import { policyWorkflow } from './approval-chain';
 import { accessAdministration, requireAdministrativeEdit } from './access-admin';
-import { initializeSupplierMatching } from './supplier-identity';
+import { hasSupplierReviewHold, initializeSupplierMatching } from './supplier-identity';
 import { moneyInput } from './money';
 import { allowed, all, audit, can, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 export function administration(s: State, a: Actor, op: string, b: Data): Data | undefined {
@@ -60,5 +60,5 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
         return { id: b.id };
     }
 }
-export function supplier(s: State, id: string) { const v = get(s, 'supplier', id); requireThat(!v.mergedInto, 'Supplier merged; choose the surviving supplier and renew purchasing authority', 409); requireThat(v.status !== 'blocked', 'Supplier blocked: ' + v.reason, 409); requireThat(!s.has('supplierProposal:'+id) && !['proposed','invited','onboarding','vendor_approval'].includes(v.status), 'Supplier pending vendor approval', 409); requireThat(v.status !== 'pending_review', 'Supplier pending OFAC compliance review', 409); requireThat(['active','preferred'].includes(v.status), 'Supplier is not active for purchasing',409); requireThat(v.screenings?.length, 'Supplier requires OFAC screening before activation', 409); return v; }
+export function supplier(s: State, id: string) { const v = get(s, 'supplier', id); requireThat(!v.mergedInto, 'Supplier merged; choose the surviving supplier and renew purchasing authority', 409); requireThat(v.status !== 'blocked', 'Supplier blocked: ' + v.reason, 409); requireThat(!hasSupplierReviewHold(s,id) && !['proposed','invited','onboarding','vendor_approval'].includes(v.status), 'Supplier pending vendor approval', 409); requireThat(v.status !== 'pending_review', 'Supplier pending OFAC compliance review', 409); requireThat(['active','preferred'].includes(v.status), 'Supplier is not active for purchasing',409); requireThat(v.screenings?.length, 'Supplier requires OFAC screening before activation', 409); return v; }
 export function currency(s: State, c: string) { requireThat(get(s, 'business', 'main').currencies.includes(c), 'Currency is not enabled for this business'); }

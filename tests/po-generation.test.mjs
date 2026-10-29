@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { harness } from './purse-harness.mjs';
+import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 
 async function fixture(t) {
     const h=await harness({protectedKey:createHash('sha256').update('synthetic-purse-801').digest('hex')});t.after(()=>h.close());const cmd=h.command;
@@ -37,6 +38,7 @@ test('PO generation rules create one native PO, wait above the limit and for sup
     await Promise.all([tick(),tick()]);await tick();state=(await h.state()).data;
     assert.equal(state.order.filter(o=>o.request===pending.id).length,1);assert.equal(state.decision.filter(d=>d.request===pending.id&&d.decision==='approved').length,1);assert.equal(h.messages.length,n);
     await cmd('po-generation-review',{id:manual.id,revision:1},requester,403);await cmd('po-generation-review',{id:manual.id,revision:0},buyer,409);await cmd('po-generation-review',{id:manual.id,revision:1},buyer);
+    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results),true,'Activated guided suppliers retain portable purchasing history');
     const invoice={order:order.id,reference:'synthetic-purse-807',source:'Supplier invoice source',invoiceDate:'2026-10-23',allocations:[{line:order.lines[0].id,quantity:'0.5',amountMinor:5000}]};
     const captured=await cmd('invoice',invoice,buyer);assert.equal((await cmd('invoice',invoice,buyer)).id,captured.id);await cmd('invoice',{...invoice,source:'Changed source under the same supplier reference'},buyer,409);
     const over=await cmd('invoice',{...invoice,reference:'synthetic-purse-808',allocations:[{line:order.lines[0].id,quantity:'1',amountMinor:10000}]},buyer);assert.ok(over.flags.some(flag=>flag.code==='po-balance'));
