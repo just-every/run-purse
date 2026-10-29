@@ -1,3 +1,4 @@
+import { absenceAllows, absenceRoute, absenceView } from './approval-absence';
 import { creditInvoiceVersion, invoiceCreditApplied } from './invoices';
 import { mayAmendTravel } from './travel';
 import { requestBudgetReview } from './budget-allocations';
@@ -21,6 +22,7 @@ function mayApprove(s: State, a: Actor, request: Data) {
     if (request.status !== 'pending' || !allowed(s, a, 'request.approve', request)
         || request.requester === a.id || request.requesterEmail?.toLowerCase() === a.email.toLowerCase()) return false;
     if (request.approvalRoute) return chainHolder(s,a,request);
+    const absent=absenceAllows(s,a,request,{id:'primary',email:s.get('policy:'+request.policy)?.value.approver});if(absent!==undefined)return Boolean(absent);
     if (currentScimAssignment(s, request)) return scimAssignmentAllows(s, a, request);
     const policy = s.get('policy:' + request.policy)?.value;
     return Boolean(policy && (policy.approver === a.email || all(s, 'delegation').some(delegation => delegation.policy === policy.id
@@ -43,7 +45,7 @@ export function purchasingProjection(s: State, a: Actor) {
     const invoices = all(s, 'invoice').filter(invoice => allowed(s, a, 'invoice.read', invoice));
     const requestIds = new Set(requests.map(request => request.id)), orderIds = new Set(orders.map(order => order.id)), invoiceIds = new Set(invoices.map(invoice => invoice.id));
     const data: Data = {
-        request: requests.map(request => ({ ...projectApprovalEdit(s,a,request), ...approvalRouteView(s,a,request), budgetReview:requestBudgetReview(request,budgetPolicies), approvalHolder: request.approvalRoute ? chainHolderEmail(s,request) : scimApprovalHolder(s, request), approvalTransferred: Boolean(currentScimAssignment(s, request)), approvalNeedsReassignment: currentScimAssignment(s, request)?.held === true, mayAmendTravel: request.purchaseType === 'travel' && mayAmendTravel(s,a,request), mayConfirmTravelExpense: allowed(s, a, 'request.read', request) && allowed(s, a, 'payable.approve', request), mayEdit: allowed(s, a, 'request.edit', request), mayApprove: mayApprove(s, a, request), approverEditRule: request.approvalRoute ? (s.get('policy:'+request.policy)?.value.editRules?.[request.purchaseType ?? request.lines[0].category.toLowerCase()] ?? s.get('policy:'+request.policy)?.value.editRules?.['*']) : undefined,
+        request: requests.map(request => ({ ...projectApprovalEdit(s,a,request), ...approvalRouteView(s,a,request), approvalAbsence:absenceView(s,request), budgetReview:requestBudgetReview(request,budgetPolicies), approvalHolder: request.approvalRoute ? chainHolderEmail(s,request) : (absenceView(s,request)?.holder??scimApprovalHolder(s, request)), approvalTransferred: Boolean(currentScimAssignment(s, request)), approvalNeedsReassignment: currentScimAssignment(s, request)?.held === true, mayAmendTravel: request.purchaseType === 'travel' && mayAmendTravel(s,a,request), mayConfirmTravelExpense: allowed(s, a, 'request.read', request) && allowed(s, a, 'payable.approve', request), mayEdit: allowed(s, a, 'request.edit', request), mayApprove: mayApprove(s, a, request), approverEditRule: request.approvalRoute ? (s.get('policy:'+request.policy)?.value.editRules?.[request.purchaseType ?? request.lines[0].category.toLowerCase()] ?? s.get('policy:'+request.policy)?.value.editRules?.['*']) : undefined,
             mayPrepareValue: ['request.edit', 'request.approve', 'receive', 'procurement.manage'].some(permission => allowed(s, a, permission, request)),
             mayConvert: request.purchaseType !== 'travel' && allowed(s, a, 'po.convert', request), mayChangeNeedDate: request.purchaseType !== 'travel' && request.status === 'approved' && (request.requester === a.id && allowed(s,a,'request.edit',request) || allowed(s,a,'request.approve',request)), mayManagePurchasing: allowed(s, a, 'procurement.manage', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
             buyerLimit: buyerLimit(s, a, request), buyerLimits: buyerLimits(s, a, request) })),

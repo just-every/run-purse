@@ -1,3 +1,4 @@
+import { absenceAllows } from './approval-absence';
 import { linePosition } from './orders';
 import { hasSupplierGroups, supplierLineRemaining } from './po-supplier-groups';
 import { openReviews, requireReviews } from './cross-team-reviews';
@@ -56,6 +57,8 @@ export function authorizedApproval(s: State, a: Actor, r: Data) {
     requireThat(a.id !== r.requester && a.email !== r.requesterEmail, 'Self approval is prohibited', 403);
     const p = get(s, 'policy', r.policy);
     requireThat(policies(s, r).some(x => x.id === p.id), 'Current policy does not cover these terms', 409);
+    const absence=absenceAllows(s,a,r,{id:'primary',email:p.approver});
+    if(absence!==undefined){requireThat(absence,'You do not hold the current out-of-office step',403);return {p,delegated:undefined,assignment:undefined,absence};}
     const assignment = currentScimAssignment(s, r);
     if (assignment) {
         requireThat(scimAssignmentAllows(s, a, r), 'The current approval transfer does not authorize you', 403);
@@ -167,7 +170,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             const p = policies(s, r)[0];
             requireThat(p, 'No amount/category/project authority policy covers this request', 409);
             requireThat(!all(s, 'scimUser').some(user => user.userName === p.approver && user.active === false), 'The designated approver was deactivated; the owner must select a current approval policy before submission', 409);
-            startChain(s,a,r,p) ?? put(s, 'request', r.id, { ...r, status: 'pending', policy: p.id });
+            startChain(s,a,r,p) ?? put(s, 'request', r.id, { ...r, status: 'pending', policy: p.id, submittedAt:new Date().toISOString() });
             openReviews(s,a,get(s,'request',r.id));
             audit(s, a, op, r.id, { revision: get(s,'request',r.id).revision });
             return get(s, 'request', r.id);
@@ -177,7 +180,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         requireThat(r.status === 'pending' && !r.imported, 'Request is not pending native authority', 409);
         if(b.decision === 'approved') requireReviews(s,r);
         const chained=chainDecision(s,a,r,b); if(chained) return chained;
-        const { p, delegated, assignment } = authorizedApproval(s, a, r);
+        const { p, delegated, assignment, absence } = authorizedApproval(s, a, r);
         const decision = b.decision;
         requireThat(['approved', 'rejected', 'returned'].includes(decision), 'Choose approve, reject or return');
         const reason = text(b.reason, 'Decision reason');
@@ -190,7 +193,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
                 ledger(s, a, r, delta, r.amends ? 'amendment-reservation' : 'reservation');
         }
         const id = uid();
-        put(s, 'decision', id, { request: r.id, revision: r.revision, decision, reason, actor: a.id, email: a.email, owner: a.owner, operatorVersion:a.version, at: new Date().toISOString(), policy: p.id, policyVersion:s.get('policy:'+p.id)!.revision, policySnapshot:structuredClone(p), delegation: delegated?.id ?? null, ...(assignment ? {scimTransfer: assignment.id} : {}) });
+        put(s, 'decision', id, { request: r.id, revision: r.revision, decision, reason, actor: a.id, email: a.email, owner: a.owner, operatorVersion:a.version, at: new Date().toISOString(), policy: p.id, policyVersion:s.get('policy:'+p.id)!.revision, policySnapshot:structuredClone(p), delegation: delegated?.id ?? null, ...absence, ...(assignment ? {scimTransfer: assignment.id} : {}) });
         put(s, 'request', r.id, { ...r, status: decision });
         audit(s, a, op, r.id, { revision: r.revision, decision, reason, decisionId: id });
         return get(s, 'request', r.id);

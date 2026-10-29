@@ -1,3 +1,4 @@
+import { absenceSettings } from './approval-absence';
 import { supplierTaxView } from './supplier-tax';
 import { visibleSupplierCredits } from './supplier-credits';
 import { reviewView } from './cross-team-reviews';
@@ -52,6 +53,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.poGenerationPolicy=a.owner?all(s,'poGenerationPolicy'):[];
     data.poGenerationEvent=all(s,'poGenerationEvent').filter(row=>requestIds.has(row.request));
     data.poGenerationQueue=poGenerationQueue(s).filter(row=>requestIds.has(row.request)).map(row=>({...row,mayConvert:allowed(s,a,'po.convert',get(s,'request',row.request))&&allowed(s,a,'po.issue',get(s,'request',row.request))}));
+    Object.assign(data,absenceSettings(s,a));
     data.approvalEditNotice = approvalEditNotices(s, a);
     Object.assign(data, visibleTravel(s, a, requestIds));
     for (const kind of ['business', 'code']) data[kind] = all(s, kind);

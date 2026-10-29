@@ -131,7 +131,7 @@ function orderedPolicy(policy:Data, request:Data) { return Boolean(international
 export function startChain(s: State, a: Actor, request: Data, policy: Data) {
     if (!orderedPolicy(policy,request)) return;
     const revision = request.approvalRoute && ['returned','rejected'].includes(request.status) ? request.revision + 1 : request.revision;
-    const next:Data = {...request,revision,approvalAttempt:uid(),status:'pending',policy:policy.id,approvalPolicyVersion:s.get('policy:'+policy.id)!.revision};
+    const next:Data = {...request,revision,approvalAttempt:uid(),status:'pending',submittedAt:new Date().toISOString(),policy:policy.id,approvalPolicyVersion:s.get('policy:'+policy.id)!.revision};
     next.budgetOwnerSteps=budgetOwnerSteps(s,next,approvalAmount(next,s));
     next.budgetOwnerReview=next.budgetOwnerSteps.length>0||!reservationAvailable(s,next,approvalAmount(next,s))&&policy.overBudget==='owner';
     next.approvalRoute=routeFor(policy,next);

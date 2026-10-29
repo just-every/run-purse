@@ -18,6 +18,7 @@ export async function eraseNativeCopies(env:Bindings,plan:ErasurePlan,a:Actor) {
    sql('DELETE FROM oa_provider_sessions WHERE session_id IN (SELECT id FROM oa_sessions WHERE operator_id=?)',operator),
    sql('DELETE FROM oa_provider_session_pins WHERE session_id IN (SELECT id FROM oa_sessions WHERE operator_id=?)',operator),
    sql('DELETE FROM oa_external_identities WHERE operator_id=?',operator),
+   sql("DELETE FROM p_approval_absence_authority WHERE json_extract(value,'$.actor')=? OR json_extract(value,'$.fromActor')=? OR json_extract(value,'$.delegateActor')=?",operator,operator,operator),
    sql('DELETE FROM p_scim_links WHERE operator_id=?',operator));
  }
  for(const row of plan.affected.filter(row=>row.kind==='crossTeamReview'))statements.push(sql('DELETE FROM p_cross_review_authority WHERE review=?',row.id));

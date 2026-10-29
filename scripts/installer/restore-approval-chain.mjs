@@ -34,13 +34,30 @@ export function validateApprovalChains(all,get,check,same) {
  }
  for(const decision of all('decision'))if(decision.chainStep) {
   const request=get('revision',decision.request+':'+decision.revision),step=request.approvalRoute?.find(step=>step.id===decision.chainStep);
-  check(step&&(step.email===decision.email||step.emails?.includes(decision.email)&&decision.authorityEmail===decision.email||decision.delegation||decision.scimTransfer)&&decision.actor!==request.requester&&decision.email!==request.requesterEmail&&decision.policyVersion===request.approvalPolicyVersion,'chain_decision');
+  check(step&&(step.email===decision.email||step.emails?.includes(decision.email)&&decision.authorityEmail===decision.email||decision.delegation||decision.scimTransfer||decision.absence)&&decision.actor!==request.requester&&decision.email!==request.requesterEmail&&decision.policyVersion===request.approvalPolicyVersion,'chain_decision');
   if(decision.policySnapshot?.internationalTravelReviewer!==undefined){
    const risk=request.approvalRoute?.find(step=>step.id==='international-travel-risk'),international=request.purchaseType==='travel'&&request.travel?.destinations?.some(destination=>destination.country!=='US');
    check(international?risk?.email===decision.policySnapshot.internationalTravelReviewer:!risk,'international_travel_policy_snapshot');
   }
   if(decision.delegation){const delegation=get('delegation',decision.delegation);check(delegation.policy===decision.policy&&delegation.from===(decision.authorityEmail??step.email)&&delegation.delegate===decision.email&&Date.parse(decision.carriedAt??decision.at)<Date.parse(delegation.expires),'chain_delegation');}
   if(decision.carriedFrom){const original=get('decision',decision.carriedFrom);check(original.request===decision.request&&original.revision<decision.revision&&original.decision==='approved'&&decision.decision==='approved'&&['actor','email','at','chainStep','reason'].every(field=>same(original[field],decision[field]))&&[request.approverEdit,request.needDateEdit,request.buyerConversion].some(edit=>edit?.carried?.includes(decision.id)),'carried_decision');}
+ }
+ for(const config of all('approvalAbsence')) {
+  get('policy',config.policy);
+  check(Number.isSafeInteger(config.version)&&config.version>0&&typeof config.active==='boolean'&&Array.isArray(config.history)&&config.history.length===config.version,'absence_version');
+  for(const [index,event]of config.history.entries()) {
+   check(event.version===index+1&&['scheduled','cancelled'].includes(event.action)&&typeof event.reason==='string'&&event.reason.trim()&&Number.isFinite(Date.parse(event.at)),'absence_history');
+   if(event.action==='scheduled')check(typeof event.timezone==='string'&&event.startsAt<event.endsAt&&[event.startsAt,event.endsAt].every(v=>Number.isFinite(Date.parse(v)))&&event.from!==event.delegate&&typeof event.authority==='string','absence_window');
+  }
+ }
+ for(const transfer of all('approvalAbsenceTransfer')) {
+  get('request',transfer.request);const config=get('approvalAbsence',transfer.config);
+  check(config.history.some(event=>event.version===transfer.configVersion)&&['held','delegated','returned'].includes(transfer.status)&&Array.isArray(transfer.history)&&transfer.history.length>0&&Number.isFinite(Date.parse(transfer.since)),'absence_transfer');
+  check(transfer.history.every((event,index)=>event.sequence===index+1&&Number.isFinite(Date.parse(event.at))&&['held','delegated','returned'].includes(event.status)),'absence_transition_history');
+ }
+ for(const decision of all('decision'))if(decision.absence){
+  const config=get('approvalAbsence',decision.absence),event=config.history.find(e=>e.version===decision.absenceVersion&&e.action==='scheduled');
+  check(event&&event.authority===decision.absenceAuthority&&event.delegate===decision.email&&event.delegateActor===decision.actor&&decision.at>=event.startsAt&&decision.at<event.endsAt,'absence_decision');
  }
  for(const order of all('order'))if(order.approvalProofs) {
   const request=get('revision',order.request+':'+order.revision);
