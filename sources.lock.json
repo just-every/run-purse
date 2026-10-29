@@ -3352,7 +3352,7 @@
       "executable": false
     },
     "src/purse/invoice-reading.ts": {
-      "sha256": "b0147649dc53cc85de115b5ccc3495e467c55017a805b1301a0126f47bff75bc",
+      "sha256": "a28f17a8af22819c7a0c2e360039cf36d0dbf4381d9f5c502d221a4ae8d93bb0",
       "executable": false
     },
     "src/purse/invoice-review.ts": {
@@ -5160,7 +5160,7 @@
       "executable": false
     },
     "tests/invoice-matching.test.mjs": {
-      "sha256": "f051fcd4a071df687b0dc17eb4d013cdadffd355499c85d32daeef879e4be37a",
+      "sha256": "5026e91790002b3da53fc9281b1e21d730467c37e398952da89e9487663de5ef",
       "executable": false
     },
     "tests/invoice-reading-fixtures.mjs": {

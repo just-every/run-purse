@@ -50,6 +50,11 @@ test('Native invoice matching approves exact and bounded goods once, holds excep
     const noRead=await h.member(matchingMail(8610),['buyer']);await cmd('member',{email:matchingMail(8610),name:'Approval decision only',grants:[{role:approvalOnly.id,scope:{}}]});
     assert.deepEqual((await h.state(noRead)).data.invoice,[]);const privateBefore=(await h.state()).data;
     await cmd('match-invoice',{invoice:exact.id,rule:renewed.id,version:renewed.version},noRead,403);assert.deepEqual((await h.state()).data,privateBefore,'Approval permission never lends invoice-read access');
+    const captureOnly=await cmd('access-role',{name:'Capture only',permissions:['invoice.capture']});
+    const capture=await h.member(matchingMail(8611),['buyer']);await cmd('member',{email:matchingMail(8611),name:'Capture only',grants:[{role:captureOnly.id,scope:{}}]});
+    const legacyOrder=await f.order(),legacySource=await f.stage(legacyOrder),legacy=await cmd('invoice',{order:legacyOrder.id,reference:legacySource.reading.reference.value,invoiceDate:legacySource.reading.invoiceDate.value,source:'Private AP original',document:legacySource.document,allocations:[{line:legacyOrder.lines[0].id,quantity:'6',amountMinor:60000}]},buyer);
+    assert.deepEqual((await h.state(capture)).data.invoice,[]);const beforeOriginalRead=(await h.state()).data;
+    await cmd('invoice-source',{order:legacyOrder.id,invoice:legacy.id},capture,403);assert.deepEqual((await h.state()).data,beforeOriginalRead,'Capture permission never lends retained-original read authority');
     const exportAudit=await h.send('/api/purse/audit.csv?subject='+exact.id,undefined,h.owner);assert.equal(exportAudit.status,200);assert.match(exportAudit.value,/invoice-matched-approved/);
     const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);const corrupt=structuredClone(rows),bad=corrupt.find(r=>r.kind==='invoice'&&r.id===exact.id),badValue=JSON.parse(bad.value);badValue.paymentApproval.amountMinor++;bad.value=JSON.stringify(badValue);assert.throws(()=>validatePurchasingArchive(corrupt),/matching_approval/);assert.ok(portability.excludeTables.includes('p_matching_authority'));
     // Restore portable records into a fresh native installation: same history, no grant.
