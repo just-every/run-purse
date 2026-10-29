@@ -28,7 +28,8 @@
     ["tests/browser.mjs", "--width=1440", "--journey=supplier-duplicates"],
     ["tests/browser-po-supplier-groups.mjs"],
     ["tests/browser-notifications.mjs", "--width=1440"],
-    ["tests/browser-budget-disposition.mjs"]
+    ["tests/browser-budget-disposition.mjs"],
+    ["tests/browser-approver-supplier-groups.mjs"]
   ],
   "7": [
     ["tests/browser.mjs", "--width=1440", "--journey=order-adoption"],

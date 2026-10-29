@@ -85,7 +85,7 @@ test('Native mutation and value snapshots keep private policies and revisions sc
  const other=await h.member('synthetic-purse-2804@example.test',['requester']);
  for(const [email,role,departments,projects]of [['synthetic-purse-2801@example.test','requester',['Operations'],['General']],['synthetic-purse-2802@example.test','approver',['Operations'],['General']],['synthetic-purse-2803@example.test','approver',['Operations','Research'],['General']]])await cmd('member',{email,name:email,active:true,grants:[{role,scope:{departments,projects}}]});
  const supplier=await cmd('supplier',{name:'synthetic-purse-2805',status:'preferred',reason:'Reviewed'});
- const policy={name:'synthetic-purse-2806',currency:'USD',category:'*',project:'*',costCentre:'Operations',approver:'synthetic-purse-2802@example.test',limitMinor:1000000,budgetMinor:10000000,approvalSteps:[{email:'synthetic-purse-2803@example.test'}],editRules:{'*':{allowed:['class','costCentre'],material:['costCentre']}}};
+ const policy={name:'synthetic-purse-2806',currency:'USD',category:'*',project:'*',costCentre:'Operations',approver:'synthetic-purse-2802@example.test',limitMinor:1000000,budgetMinor:10000000,approvalSteps:[{email:'synthetic-purse-2803@example.test'}],editRules:{'*':{allowed:['class','costCentre','supplier'],material:['costCentre','supplier']}}};
  const ops=await cmd('policy',policy);await cmd('policy',{...policy,name:'synthetic-purse-2807',costCentre:'Research'});
  const input={title:'synthetic-purse-2808',supplier:supplier.id,currency:'USD',needDate:'2026-11-15',location:'Austin',costCentre:'Operations',terms:'synthetic-purse-2809 private prior terms',valuePromise:{kind:'need-date',needDate:'2026-11-15'},lines:[{description:'synthetic-purse-2810',quantity:'1',unitMinor:400000,category:'goods',project:'General'}]};
  const hidden=await cmd('request',{...input,title:'synthetic-purse-2811 private purchase',lines:input.lines.map(line=>({...line,project:'Private'}))},other);await cmd('submit',{id:hidden.id,revision:1},other);
@@ -97,13 +97,15 @@ test('Native mutation and value snapshots keep private policies and revisions sc
  const report=await cmd('value-report',{request:r.id,revision:2},finance);
  assert.ok(report.inputs.sources.filter(source=>source.kind==='decision').every(source=>source.value.policySnapshot===null),'Embedded nonfinancial report decisions cannot leak private policy snapshots');
  const download=await h.send('/api/purse/download/agentRun/'+report.id,undefined,finance);assert.equal(download.status,200);assert.ok(!JSON.stringify(download.value).includes('synthetic-purse-2811'));
- const movedSource=await create();const moved=await cmd('approver-edit',{id:movedSource.id,revision:1,changes:{costCentre:'Research'},reason:'Research owns the purchase'},finance);
+ const alternate=await cmd('supplier',{name:'synthetic-purse-2813',status:'active',reason:'Independent replacement supplier'});
+ const movedSource=await create();const moved=await cmd('approver-edit',{id:movedSource.id,revision:1,changes:{costCentre:'Research',lines:[{id:movedSource.lines[0].id,supplier:alternate.id}]},reason:'Research owns the purchase'},finance);
  assert.equal(moved.approverEdit.sourcePolicy,null);
  for(const cookie of [requester,manager]){
   const data=(await h.state(cookie)).data;assert.ok(!data.request.some(row=>row.id===movedSource.id));
-  const notice=data.approvalEditNotice.find(row=>row.request===movedSource.id);assert.deepEqual(notice.differences.map(({field,before,after})=>({field,before,after})),[{field:'costCentre',before:'Operations',after:'Research'}]);
+  const notice=data.approvalEditNotice.find(row=>row.request===movedSource.id);assert.deepEqual(notice.differences.map(({field,before,after})=>({field,before,after})),[{field:'costCentre',before:'Operations',after:'Research'},{field:'lines.'+movedSource.lines[0].id+'.supplier',before:null,after:alternate.id},{field:'supplier',before:supplier.id,after:alternate.id}]);
   assert.equal(notice.policy,undefined);assert.equal(notice.lines,undefined);assert.equal(notice.terms,undefined);
  }
+ const supplierAudit=await h.send('/api/purse/audit?subject='+movedSource.id,undefined,h.owner),supplierCsv=await h.send('/api/purse/audit.csv?subject='+movedSource.id,undefined,h.owner);assert.equal(supplierAudit.status,200);assert.ok(supplierAudit.value.events.some(event=>event.action==='approver-edit'&&event.differences.some(change=>change.line===movedSource.lines[0].id&&change.after===alternate.id)));assert.equal(supplierCsv.status,200);assert.ok(supplierCsv.value.includes(alternate.id));
  const next=await cmd('amend',{...input,id:r.id,revision:2,costCentre:'Research',lines:approved.lines,reason:'Research assumes later scope'});
  await cmd('member',{email:'synthetic-purse-2803@example.test',name:'Finance',active:true,grants:[{role:'approver',scope:{departments:['Research'],projects:['General']}}]});
  const later=(await h.state(finance)).data.valueRun.find(row=>row.id===report.id);assert.ok(later);assert.equal(later.inputs.promise,null);assert.equal(later.report.status,'restricted');
