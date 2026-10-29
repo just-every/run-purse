@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { harness } from './purse-harness.mjs';
 import { orderSendFixture } from './order-send-fixture.mjs';
 export const commentPath = (kind, id) => '/api/purse/comments/' + kind + '/' + id;
-export async function commentsFixture(t) {
-    const h = await harness(); t?.after(() => h.close());
+export async function commentsFixture(t, options = {}) {
+    const h = await harness(options); t?.after(() => h.close());
     const f = await orderSendFixture(h);
     const email = n => ['synthetic-purse-' + n, 'example.test'].join('@');
     const scopedEmail = email(5101), scoped = await h.member(scopedEmail, ['approver']);
