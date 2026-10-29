@@ -79,6 +79,7 @@ export function matchInvoice(s: State, a: Actor, op: string, b: Data): Data | un
     requirePermission(s,a,'payable.approve');
     const invoice=get(s,'invoice',b.invoice), order=get(s,'order',invoice.order);
     requirePermission(s,a,'payable.approve',invoice);
+    requirePermission(s,a,'invoice.read',invoice);
     const rule=get(s,'matchingRule',b.rule);
     requireThat(b.version===rule.version && liveMatchingRule(s,rule) && invoice.allocations.every((l:Data)=>matchingRuleFor(s,order,order.lines.find((x:Data)=>x.id===l.line).category)?.id===rule.id), 'Matching rule changed or consent is no longer current',409);
     return scopedInvoice(s,a,evaluateInvoiceMatch(s,a,invoice.id));
