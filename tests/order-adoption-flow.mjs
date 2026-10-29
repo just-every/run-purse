@@ -2,12 +2,13 @@
 import assert from 'node:assert/strict';
 import { harness } from './purse-harness.mjs';
 import { adoptionFixture, importInput } from './order-adoption-fixture.mjs';
+import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function order_adoptionFlow(){
-{
- // IMPORT-003 owner reviews source 10/4/2 balances, adopts without mail, receives three, confirms original-number invoices and preserves approval, budget, deposit, cash and archive lineage
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('IMPORT-003 owner reviews source 10/4/2 balances, adopts without mail, receives three, confirms original-number invoices and preserves approval, budget, deposit, cash and archive lineage', async t => {
     const h = await harness(); t.after(() => h.close()); const cmd = h.command;
     await cmd('business', { name:'synthetic-purse-1', currencies:['USD'], locations:['Denver'], costCentres:['Operations'], projects:['Fitout'] });
     const receiver = await h.member('synthetic-purse-2@example.test', ['receiver']), approver = await h.member('synthetic-purse-3@example.test', ['approver']), requester = await h.member('synthetic-purse-4@example.test', ['requester']);
@@ -55,15 +56,13 @@ export async function order_adoptionFlow(){
     await cmd('invoice',{order:adopted.id,reference:'synthetic-purse-27',source:'synthetic-purse-28',depositAppliedAmount:'0.01',allocations:[{line,quantity:'1',amountMinor:1000}]},h.owner,409);
     const request=(await h.state()).data.request.find(request=>request.id===adopted.request);const amendment=await cmd('amend',{...request,lines:request.lines.map(line=>({...line,quantity:'11',unitMinor:1100})),reason:'synthetic-purse-29'});await cmd('convert',{id:amendment.id,revision:amendment.revision},h.owner,409);await cmd('submit',{id:amendment.id,revision:amendment.revision});await cmd('decision',{id:amendment.id,revision:amendment.revision,decision:'approved',reason:'synthetic-purse-30'},approver);const replacement=await cmd('convert',{id:amendment.id,revision:amendment.revision});assert.notEqual(replacement.number,fixture.number,'Native numbering skips adopted PO number');await cmd('issue',{id:replacement.id,revision:replacement.revision,reason:'synthetic-purse-31'});
     const cancelRequest=await cmd('propose-adopted-cancellation',{id:replacement.id,revision:replacement.revision,reason:'synthetic-purse-33'});await cmd('convert',{id:cancelRequest.id,revision:cancelRequest.revision},h.owner,409);await cmd('submit',{id:cancelRequest.id,revision:cancelRequest.revision});await cmd('decision',{id:cancelRequest.id,revision:cancelRequest.revision,decision:'approved',reason:'synthetic-purse-34'},h.owner,403);await cmd('decision',{id:cancelRequest.id,revision:cancelRequest.revision,decision:'approved',reason:'synthetic-purse-35'},approver);const cancellation=await cmd('convert',{id:cancelRequest.id,revision:cancelRequest.revision});await cmd('issue',{id:cancellation.id,revision:cancellation.revision,reason:'synthetic-purse-36'});data=(await h.state()).data;assert.equal(data.order.find(order=>order.id===cancellation.id).status,'cancelled');assert.equal(data.order.find(order=>order.id===fixture.ids.order).number,fixture.number);assert.equal(data.totals.USD,0);assert.ok(data.receipt.some(receipt=>receipt.order===cancellation.id&&receipt.event==='cancel'&&receipt.approvedDisposition));
-
+    const staged=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(staged),true);const corrupt=structuredClone(staged),row=corrupt.find(row=>row.kind==='orderAdoption'),value=JSON.parse(row.value);value.openingLines[0].accepted=5000;row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt),/adoption_opening_line/);
     const undo=await h.send('/api/purse/import/undo',{id:committed.value.job.id,mappingVersion:committed.value.job.mappingVersion},h.owner);assert.equal(undo.status,200);assert.ok((await h.state()).data.order.some(order=>order.id===adopted.id));
+});
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // IMPORT-003 supplier and currency replacement approves only the unreceived remainder and retains old receipts, invoices, prepaid credits and cash in their source currency
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('IMPORT-003 supplier and currency replacement approves only the unreceived remainder and retains old receipts, invoices, prepaid credits and cash in their source currency', async t => {
     const h=await harness();t.after(()=>h.close());const cmd=h.command;
     await cmd('business',{name:'synthetic-purse-200',currencies:['USD','CAD'],locations:['Denver'],costCentres:['Operations'],projects:['Fitout']});
     const approver=await h.member('synthetic-purse-201@example.test',['approver']);await h.member('synthetic-purse-202@example.test',['receiver']);
@@ -74,7 +73,6 @@ export async function order_adoptionFlow(){
     const proposal=await cmd('replace-adopted-remainder',{id:adopted.id,revision:adopted.revision,reviewedDisposition:true,reason:'synthetic-purse-210',title:'synthetic-purse-211',supplier:supplier.id,currency:'CAD',needDate:'2026-11-30',location:'Denver',costCentre:'Operations',terms:'Net 30',lines:[{sourceLine:adopted.lines[0].id,description:'synthetic-purse-212',unitMinor:1200,category:'Equipment',project:'Fitout'}]});assert.equal(proposal.lines[0].q,3000);await cmd('convert',{id:proposal.id,revision:1},h.owner,409);await cmd('submit',{id:proposal.id,revision:1});await cmd('decision',{id:proposal.id,revision:1,decision:'approved',reason:'synthetic-purse-213'},h.owner,403);await cmd('decision',{id:proposal.id,revision:1,decision:'approved',reason:'synthetic-purse-214'},approver);const replacement=await cmd('convert',{id:proposal.id,revision:1});await cmd('issue',{id:replacement.id,revision:1,reason:'synthetic-purse-215'});
     const data=(await h.state()).data,original=data.order.find(order=>order.id===adopted.id);assert.equal(original.status,'cancelled');assert.equal(original.number,fixture.number);assert.equal(original.issuedAt,null);assert.equal(original.positions[0].accepted,7000);assert.equal(original.positions[0].cancelled,3000);assert.equal(original.depositPosition.unappliedMinor,1000);assert.equal(data.totals.USD,0);assert.equal(data.totals.CAD,3600);assert.equal(data.cashRequirements.commitments.find(row=>row.order===adopted.id).currency,'USD');assert.equal(data.cashRequirements.commitments.find(row=>row.order===adopted.id).amountMinor,6000);assert.equal(data.cashRequirements.commitments.find(row=>row.order===replacement.id).amountMinor,3600);
     await cmd('invoice',{order:replacement.id,reference:'synthetic-purse-216',source:'synthetic-purse-217',depositAppliedAmount:'1.00',allocations:[{line:replacement.lines[0].id,quantity:'1',amountMinor:1200}]},h.owner,409);
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
+});
 }

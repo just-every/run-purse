@@ -1,12 +1,12 @@
 
 import assert from 'node:assert/strict'
 import {harness} from './purse-harness.mjs'
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function spend_reportFlow(){
-{
- // REPORT-001 scoped HTTP dashboards filter source rows, preserve cents/currencies and distinguish reservations, issued commitments and invoice evidence
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('REPORT-001 scoped HTTP dashboards filter source rows, preserve cents/currencies and distinguish reservations, issued commitments and invoice evidence',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Front Range Field Services',currencies:['USD','CAD'],locations:['Denver','Boulder'],costCentres:['Operations','IT'],projects:['Safety','Network']});
  const requester=await h.member('requester@example.test',['requester']),other=await h.member('other@example.test',['requester']),approver=await h.member('approver@example.test',['approver']);
@@ -38,13 +38,10 @@ export async function spend_reportFlow(){
  let amendmentRows=(await report()).rows.filter(row=>row.request===renewal.id);assert.equal(amendmentRows.filter(row=>row.kind==='committed').reduce((n,row)=>n+row.amountMinor,0),10000);assert.equal(amendmentRows.filter(row=>row.kind==='reserved').reduce((n,row)=>n+row.amountMinor,0),10000);
  const replacement=await cmd('convert',{id:renewal.id,revision:2});await cmd('issue',{id:replacement.id,revision:2,reason:'Amendment issued'});amendmentRows=(await report()).rows.filter(row=>row.request===renewal.id);assert.equal(amendmentRows.length,1);assert.equal(amendmentRows[0].amountMinor,20000);assert.equal(amendmentRows[0].order,replacement.id);assert.equal(amendmentRows[0].kind,'committed');
  assert.equal((await h.send('/api/purse/spend-report',undefined,'')).status,401);assert.equal((await h.send('/api/purse/spend-report?groupBy=bankAccount',undefined,h.owner)).status,400);assert.equal((await h.send('/api/purse/spend-report?from=2026-02-30',undefined,h.owner)).status,400);assert.equal((await h.send('/api/purse/spend-report?from=2026-12-01&through=2026-01-01',undefined,h.owner)).status,400);
+});
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // BUDGET-001 dated department exposure reserves pending, commits buyer changes and retains received unbilled value
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('BUDGET-001 dated department exposure reserves pending, commits buyer changes and retains received unbilled value',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'synthetic-purse-2201',currencies:['USD'],locations:['Austin'],costCentres:['Operations','Research'],projects:['General']});
  const requester=await h.member('synthetic-purse-2202@example.test',['requester']),approver=await h.member('synthetic-purse-2203@example.test',['approver']),buyer=await h.member('synthetic-purse-2204@example.test',['buyer']);
@@ -127,12 +124,10 @@ export async function spend_reportFlow(){
  assert.deepEqual((await h.state()).data.request.find(request=>request.id===combinedRequest.id).approvalPreview.map(step=>step.id),['primary'],'Recorded approval routes remain readable after a conflicting budget is added');
  assert.equal((await position(combined.id)).actualMinor,30000);
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // Spend questions recompute exact finance figures and department sources, refuse unknown facts and obey owner pause and current scope
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+});
+
+
+await scenario('Spend questions recompute exact finance figures and department sources, refuse unknown facts and obey owner pause and current scope',async t=>{
  const {spendQuestionFixture}=await import('./spend-question-fixture.mjs');const f=await spendQuestionFixture();t.after(()=>f.close());const {h,cmd}=f;
  const ask=(question,cookie=f.finance)=>cmd('spend-question',{question},cookie);
  for(const [index,question] of f.questions.entries()){const expected=f.expected[index],answer=await ask(question);assert.equal(answer.status,'answered',JSON.stringify(answer));assert.equal(answer.metric,expected.metric);assert.deepEqual(answer.filters,expected.filters);assert.equal(answer.figures.find(figure=>figure.currency==='USD').amountMinor,expected.amountMinor);const report=await h.send('/api/purse/spend-report?'+new URLSearchParams(expected.filters),undefined,f.finance);assert.equal(report.status,200);assert.deepEqual(answer.report,report.value);assert.deepEqual(answer.figures,report.value.totals.map(total=>({currency:total.currency,amountMinor:total[answer.metric+'Minor'],metric:answer.metric})));assert.ok(answer.report.rows.length);assert.equal(answer.model,'none');assert.equal(answer.provider,'none');assert.ok(answer.references.every(ref=>ref.version));}
@@ -144,6 +139,7 @@ export async function spend_reportFlow(){
  const run=(await ask(f.questions[0],f.requester)).id;await cmd('member',{email:'synthetic-purse-3101@example.test',name:'Research scope changed',active:true,grants:[{role:'requester',scope:{departments:['Research']},departmentRead:true}]});assert.equal((await h.send('/api/purse/download/agentRun/'+run,undefined,f.requester)).status,403);
  await cmd('agent-pause',{agent:'AGENT-011',reason:'Pause native spend questions'});await cmd('spend-question',{question:f.questions[0]},f.finance,409);
  const records=(await h.state()).data.agentRun.filter(run=>run.agent==='AGENT-011');assert.ok(records.some(run=>run.status==='declined'));assert.ok(records.every(run=>run.messages.length===0&&run.proposals.length===0));
+});
 
  } finally {for(const close of cleanups.reverse())await close();}
 }

@@ -5,7 +5,9 @@ import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {emittedWorker} from './emitted-worker.mjs';
-import {session,api,journey} from './browser-journey.mjs';
+import {session,api,journey,runDoneWebJourney} from './browser-journey.mjs';
+const doneWeb=process.argv.find(v=>v.startsWith("--done-web="))?.slice(11);
+if(doneWeb){await runDoneWebJourney(doneWeb);}else{
 const width=Number(process.argv.find(x=>x.startsWith('--width='))?.slice(8)??1440);
 const evidence=resolve(process.env.PURSE_EVIDENCE??'.cache/browser-proof');await mkdir(evidence,{recursive:true});
 const worker=await emittedWorker();let browser;
@@ -31,3 +33,5 @@ try{
  assert.equal((await worker.call('/api/purse/state',undefined,worker.sessions.requester)).status,401);
  console.log(`Request, approval, numbered PO, original download, receiving, invoice and accounting export passed at ${width}px`);
 }finally{await browser?.close();await worker.close();}
+
+}

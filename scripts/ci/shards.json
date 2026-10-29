@@ -35,7 +35,8 @@
         "governed-agents-journey.test.mjs",
         "identity-journey.test.mjs",
         "intake-journey.test.mjs",
-        "invoice-review-journey.test.mjs"
+        "invoice-review-journey.test.mjs",
+        "invoice-exceptions.test.mjs"
       ]
     }
   ],
@@ -51,7 +52,8 @@
         "sourcing-journey.test.mjs",
         "order-follow-through-journey.test.mjs",
         "order-documents-journey.test.mjs",
-        "agreements-journey.test.mjs"
+        "agreements-journey.test.mjs",
+        "po-supplier-groups.test.mjs"
       ]
     }
   ],
@@ -112,6 +114,154 @@
     {
       "args": [
         "tests/browser-supplier-tax.mjs"
+      ]
+    }
+  ],
+  "5": [
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=continuity",
+        "--width=1440",
+        "--source-copy"
+      ]
+    }
+  ],
+  "6": [
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=runtime"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=access",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=intake",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=request-again",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=integration-tokens",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser-invoice-exceptions.mjs",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser-po-supplier-groups.mjs",
+        "--width=1440"
+      ]
+    }
+  ],
+  "7": [
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=protected-web",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=evidence-history",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=erasure",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=recurring-scenarios",
+        "--width=1440"
+      ]
+    }
+  ],
+  "8": [
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=coding-agent",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=agent-governance",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=spend-questions",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=order-send",
+        "--width=1440"
+      ]
+    }
+  ],
+  "9": [
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=order-thread",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=supplier-invoice",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=po-kinds",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser.mjs",
+        "--done-web=search-scale",
+        "--width=1440"
       ]
     }
   ]

@@ -1,19 +1,20 @@
+
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {join} from 'node:path';
 import {createPortability} from '@runeditrun/rer/modules/portability';
 import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
 import {harness} from './purse-harness.mjs';
 import {reauthenticateErasure} from './erasure-flow.mjs';
 import {supplierTaxFixture,taxEmail} from './supplier-tax-fixture.mjs';
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function supplierTaxFlow(){
 
-{
- // Human supplier tax review binds private W-9 bytes, keeps decisions and refuses stale or unauthorized changes through native HTTP
- const cleanups=[];const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('Human supplier tax review binds private W-9 bytes, keeps decisions and refuses stale or unauthorized changes through native HTTP',async t=>{
     const f=await supplierTaxFixture();t.after(()=>f.h.close());const {h}=f;
     assert.equal((await f.view()).eligibility,'unknown');assert.equal((await f.view()).backupWithholding,'unknown');
     const snapshot=async()=>(await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results;
@@ -66,24 +67,15 @@ export async function supplierTaxFlow(){
     const safe=JSON.stringify(await f.view(second.id));assert.ok(!safe.includes(f.original));assert.ok(!safe.includes(String(987654321)));assert.ok(!safe.includes('••••4321'));
     await h.command('member',{email:taxEmail(6302),name:'synthetic-purse-6302',roles:['requester'],active:true});
     await h.command('supplier-tax-review',await f.input({},second.id),f.buyer,403);
-    const mergedArchive=join(h.dir,'merged-supplier-tax.rer');
-    await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),mergedArchive,[]);
-    const mergedCopy=await harness({empty:true});t.after(()=>mergedCopy.close());
-    await importArchive(await createPortability({db:mergedCopy.db,buckets:{ORIGINALS:mergedCopy.originals},policy:portability}),mergedArchive,[]);
-    const mergedOwner=await mergedCopy.send('/auth/bootstrap',{token:'synthetic-local-test-bootstrap-token-0123456789',displayName:'Restored supplier owner'});assert.equal(mergedOwner.status,303);
-    const restoredTax=(await mergedCopy.send('/api/purse/state',undefined,mergedOwner.cookie)).value.data.supplierTax.find(row=>row.supplier===second.id);
-    assert.equal(restoredTax.current,null);assert.deepEqual(restoredTax.history.map(row=>row.sha256),(await f.view(second.id)).history.map(row=>row.sha256));
+    assert.equal(validatePurchasingArchive(await snapshot()),true);
     const owner=(await h.state()).actor.id,revoked=await f.input({},second.id),beforeRevoked=await snapshot();
     await h.db.prepare('UPDATE oa_sessions SET revoked_at=? WHERE operator_id=?').bind(Date.now(),owner).run();
     assert.equal((await h.send('/api/purse/command/supplier-tax-review',revoked,h.owner)).status,401);
     assert.deepEqual(await snapshot(),beforeRevoked,'Revoked native credential cannot replay a review');
- }finally{for(const close of cleanups.reverse())await close();}
-}
+});
 
-{
- // Supplier tax archive and erasure preserve anonymous evidence without restoring reviewer or identity authority
- const cleanups=[];const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('Supplier tax archive and erasure preserve anonymous evidence without restoring reviewer or identity authority',async t=>{
     const f=await supplierTaxFixture();t.after(()=>f.h.close());const {h}=f;
     const decision=await h.command('supplier-tax-review',await f.input());
     const archive=async(name)=>{const path=join(h.dir,name+'.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),path,[]);return path;};
@@ -108,13 +100,12 @@ export async function supplierTaxFlow(){
     const prior=(await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results;
     await h.command('supplier-tax-review',replay,h.owner,409);
     assert.deepEqual((await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results,prior);
-
+    assert.equal(validatePurchasingArchive(prior),true);
     const latest=await archive('synthetic-purse-6323'),erasedCopy=await harness({empty:true});t.after(()=>erasedCopy.close());
     await importArchive(await createPortability({db:erasedCopy.db,buckets:{ORIGINALS:erasedCopy.originals},policy:portability}),latest,[]);
     const owner=await erasedCopy.send('/auth/bootstrap',{token:'synthetic-local-test-bootstrap-token-0123456789',displayName:'synthetic-purse-6324'});assert.equal(owner.status,303);
     const anonymous=(await erasedCopy.send('/api/purse/state',undefined,owner.cookie)).value.data.supplierTax[0];assert.equal(anonymous.current,null);assert.ok(anonymous.history[0].erasure);
     const destination=await harness({empty:true});t.after(()=>destination.close());
     await assert.rejects(importArchive(await createPortability({db:destination.db,buckets:{ORIGINALS:destination.originals},policy:portability}),saved,[],latest),/erasure|journal/i);
- }finally{for(const close of cleanups.reverse())await close();}
-}
+});
 }

@@ -2,16 +2,16 @@
 import assert from 'node:assert/strict'
 import {join} from 'node:path'
 import {harness} from './purse-harness.mjs'
-
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
 import portability from '../scripts/installer/portability.mjs'
 import {createPortability} from '@runeditrun/rer/modules/portability'
 import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs'
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function agreementsFlow(){
-{
- // CONTRACT-001 owner-confirmed agreement history, active member assignment, recorded renewal terms, exact invoice attribution, notice claims and complete restore through public doors
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('CONTRACT-001 owner-confirmed agreement history, active member assignment, recorded renewal terms, exact invoice attribution, notice claims and complete restore through public doors',async t=>{
  let fail=false;
  const h=await harness({mail:()=>fail?new Response('mail edge unavailable',{status:503}):Response.json({id:crypto.randomUUID()})});t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Canyon Services',currencies:['USD','CAD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety'],timezone:'America/Los_Angeles'});
@@ -77,8 +77,8 @@ export async function agreementsFlow(){
  await cmd('agreement',{...assignedTerms,id:assigned.id,version:1},h.owner,409);
  assigned=await cmd('agreement',{...base,id:assigned.id,version:assigned.version,reference:assignedTerms.reference,ownerMember:(await h.state()).actor.email,renewalTermMonths:null,renewalIncreaseCapBps:0,reason:'synthetic-purse-914 explicit owner reassignment'});
  assert.equal(assigned.owner,(await h.state()).actor.id);assert.equal(assigned.renewalTermMonths,null);assert.equal(assigned.renewalIncreaseCapBps,0);assert.equal(assigned.history[0].renewalTermMonths,12);assert.equal(assigned.history[1].owner,assignedActor.id);assert.equal((await h.state(assignee)).data.agreement.length,0,'Previous assignment grants no current agreement visibility');
- const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
-
+ const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
+ for(const mutate of [r=>{r.find(x=>x.kind==='agreementInvoice').value=JSON.stringify({...link,amountMinor:1})},r=>{const e=r.find(x=>x.kind==='agreementReminder');const v=JSON.parse(e.value);v.spend.totals[0].amountMinor++;e.value=JSON.stringify(v)},r=>{const a=r.find(x=>x.kind==='agreement');const v=JSON.parse(a.value);v.noticeDays=1;a.value=JSON.stringify(v)}]){const corrupt=structuredClone(rows);mutate(corrupt);assert.throws(()=>validatePurchasingArchive(corrupt),/purse_agreement/)}
  const audit=await h.send('/api/purse/audit.csv',undefined,h.owner);assert.match(audit.value,/agreement-reminder/);assert.match(audit.value,/Corrected original notice term/);assert.match(audit.value,/synthetic-purse-914 explicit owner reassignment/);
  const assignmentAudit=(await h.state()).data.audit.find(row=>row.action==='agreement'&&row.record===assigned.id&&row.version===assigned.version);assert.equal(assignmentAudit.before.owner,assignedActor.id);assert.equal(assignmentAudit.after.owner,assigned.owner);assert.equal(assignmentAudit.after.renewalIncreaseCapBps,0);
  const archive=join(h.dir,'agreements.rer');const service=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});await exportArchive(service,archive,[]);
@@ -87,7 +87,5 @@ export async function agreementsFlow(){
  for(const kind of ['agreement','agreementInvoice','agreementReminder'])assert.deepEqual(after[kind],(await h.state()).data[kind],kind+' survives full archive restore');
  assert.equal((await restored.send('/api/purse/search?kind=agreement&q=AGR-2026-42',undefined,boot.cookie)).value.total,1,'Search rebuilds after restore');
  await restored.mf.dispatchFetch(restored.origin+'/cdn-cgi/local/scheduled?time='+Date.parse('2026-11-30T12:00:00Z'));assert.equal(restoredMails,0,'Restore grants no historical owner mail authority for an unclaimed due reminder and replays no claimed reminder');const original=await restored.send('/api/purse/download/attachment/'+attachment.id,undefined,boot.cookie);assert.equal(original.status,200);assert.equal(original.value,invoiceBytes.toString(),'Restored attributed invoice original stays exact');
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+});
 }

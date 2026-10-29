@@ -5,18 +5,18 @@ import { parse } from 'csv-parse/sync';
 import { createPortability } from '@runeditrun/rer/modules/portability';
 import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
-
+import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 import { harness } from './purse-harness.mjs';
 import { accrualFixture, accrualTimeline, accrualMail } from './accrual-fixture.mjs';
 import { mainRow, assertAccrualDownloads } from './accrual-proof.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
 import { adoptionFixture, importInput } from './order-adoption-fixture.mjs';
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function accrual_reportFlow(){
-{
- // Native period-end accrual reconciles dated goods and services, genuine approvals, scoped exports and restored source history without restoring authority
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('Native period-end accrual reconciles dated goods and services, genuine approvals, scoped exports and restored source history without restoring authority',async t=>{
     const f=await accrualFixture();t.after(()=>f.close());const {h,cmd}=f;
     const amount=await f.issue({title:'synthetic-purse-4720',quantity:'1',unitMinor:100000,service:{mode:'amount'}});
     const percent=await f.issue({title:'synthetic-purse-4721',quantity:'1',unitMinor:100000,service:{mode:'percentage'}});
@@ -114,15 +114,13 @@ export async function accrual_reportFlow(){
     // Adoption requires a current receiver grant and retains imported approvals as evidence only.
     await cmd('member',{email:accrualMail(4703),name:'Controller and receiver',active:true,roles:['finance-viewer','receiver']});const review=await cmd('adopt-order-preview',selection);await cmd('adopt-order',{...selection,fingerprint:review.fingerprint,reviewed:true,reason:'Reviewed source custody'});
     const historical=await f.report('2026-08-31');assert.ok(historical.warnings.some(warning=>warning.includes('historical')));assert.equal(historical.deposits.find(row=>row.order===fixture.ids.order).unappliedMinor,1000);assert.ok(!historical.rows.some(row=>row.order===fixture.ids.order));
-    const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
-
+    const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
+    const altered=structuredClone(rows),receipt=altered.find(row=>row.kind==='receipt'&&row.id===timeline.first.id),value=JSON.parse(receipt.value);value.effectiveDate='2026-06-01';receipt.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(altered),/received_date_range/);
     const archive=join(h.dir,'synthetic-purse-4730.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
     const restored=await harness({worker:'tests/accrual-worker.ts',clock:'2026-08-03T12:00:00.000Z'});t.after(()=>restored.close());await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
     const restoredReport=await restored.send('/api/purse/accrual-report/view?cutoff=2026-06-30',undefined,restored.owner);assert.equal(restoredReport.status,200,JSON.stringify(restoredReport.value));assert.deepEqual(mainRow(restoredReport.value,f.order),mainRow(late,f.order));
     for(const format of ['view','csv','xlsx','xero'])assert.equal((await restored.send('/api/purse/accrual-report/'+format+'?cutoff=2026-06-30',undefined,f.people.finance)).status,401);
     await cmd('member',{email:accrualMail(4703),name:'Report authority revoked',active:true,roles:['receiver']});
     for(const format of ['view','csv','xlsx','xero']){const response=await h.send('/api/purse/accrual-report/'+format+'?cutoff=2026-06-30&currency=USD&liabilityAccount=2100',undefined,f.people.finance);assert.equal(response.status,403);assert.equal(response.headers.get('cache-control'),'no-store');}
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+});
 }

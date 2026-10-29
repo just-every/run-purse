@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { createPortability } from '@runeditrun/rer/modules/portability';
 import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
+import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 import { harness } from './purse-harness.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
 import { creditDocument, creditEmail, supplierCreditsFixture } from './supplier-credits-fixture.mjs';
@@ -97,6 +98,7 @@ export async function supplierCreditsJourney(t) {
     const serviceCredit = await cmd('supplier-credit-capture', { ...f.capture(serviceRma), reference: 'synthetic-purse-6218', amountMinor: 10000, document: await creditDocument('synthetic-purse-6218', '100.00') }, f.ap);
     const openServiceCredit = await cmd('supplier-credit-review', f.review(serviceCredit), f.ap);
     const csv = await h.send('/api/purse/audit.csv', undefined, h.owner); assert.ok(csv.value.includes('supplier-credit-apply')); assert.ok(csv.value.includes(applied.reason));
+    assert.equal(validatePurchasingArchive(await records()), true);
     const saved = join(h.dir, 'synthetic-purse-6215.rer'); await exportArchive(await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability }), saved, []);
     const restored = await harness({ empty: true }); t.after(() => restored.close());
     await importArchive(await createPortability({ db: restored.db, buckets: { ORIGINALS: restored.originals }, policy: portability }), saved, []);
@@ -117,15 +119,69 @@ export async function supplierCreditsJourney(t) {
     assert.equal((await h.send(original, undefined, h.owner)).status, 410);
     data = (await h.state()).data; assert.equal(data.supplierCreditApplication.length, 1); assert.equal(data.cashRequirements.bills.find(row => row.invoice === f.invoice.id).amountMinor, 70000);
     assert.ok(data.supplierCredit.find(row => row.id === credit.id).erasure); await refused('supplier-credit-capture', f.capture(rma), h.owner);
+    assert.equal(validatePurchasingArchive(await records()), true);
     const latest = join(h.dir, 'synthetic-purse-6216.rer'); await exportArchive(await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability }), latest, []);
-    const latestCopy=await harness({empty:true});t.after(()=>latestCopy.close());
-    await importArchive(await createPortability({db:latestCopy.db,buckets:{ORIGINALS:latestCopy.originals},policy:portability}),latest,[]);
-    const latestOwner=await latestCopy.send('/auth/bootstrap',{token:'synthetic-local-test-bootstrap-token-0123456789',displayName:'Restored retained credit owner'});assert.equal(latestOwner.status,303);
-    assert.equal((await latestCopy.send(original,undefined,latestOwner.cookie)).status,410);
-    assert.equal((await latestCopy.send('/api/purse/state',undefined,latestOwner.cookie)).value.data.cashRequirements.bills.find(row=>row.invoice===f.invoice.id).amountMinor,70000);
     const empty = await harness({ empty: true }); t.after(() => empty.close());
     await assert.rejects(importArchive(await createPortability({ db: empty.db, buckets: { ORIGINALS: empty.originals }, policy: portability }), saved, [], latest), /erasure|journal/i);
 
+}
+
+export async function rmaBuyerErasureJourney(t) {
+    const h = await harness(); t.after(() => h.close());
+    const f = await supplierCreditsFixture(h), cmd = h.command, email = creditEmail(6230);
+    const buyer = await h.member(email, ['buyer']);
+    const rma = await cmd('rma-prepare', { receipt: f.returned.id, reason: 'Prepare returned-goods authorization' }, buyer);
+    await cmd('rma-record', { id: rma.id, version: 1, status: 'authorized', reference: 'synthetic-purse-6231', reason: 'Supplier authorized this return' }, buyer);
+    const capture = { ...f.capture(rma), document: await creditDocument('synthetic-purse-6208', '300.00', 'Credit memo prepared for ' + email) };
+    const credit = await cmd('supplier-credit-capture', capture, f.ap);
+    const reviewed = await cmd('supplier-credit-review', f.review(credit), f.ap);
+    const original = '/api/purse/download/attachment/' + credit.attachment;
+    const downloaded = await h.mf.dispatchFetch(h.origin + original, { headers: { cookie: f.ap } });
+    assert.equal(downloaded.status, 200);
+    assert.ok((await pdfContent(new Uint8Array(await downloaded.arrayBuffer()))).text.includes(email));
+    await cmd('member', { email, name: email, active: false, roles: ['buyer'] });
+    await reauthenticateErasure(h);
+    const inventory = await h.send('/api/purse/erasure', undefined, h.owner);
+    const preview = await h.send('/api/purse/erasure/preview', { kind: 'member', id: email, revision: inventory.value.revision }, h.owner);
+    assert.equal(preview.status, 200, JSON.stringify(preview.value));
+    const erased = await h.send('/api/purse/erasure/execute', { ...preview.value.subject, revision: preview.value.revision, review: preview.value.review, fingerprint: preview.value.fingerprint, consent: true }, h.owner);
+    assert.equal(erased.status, 200, JSON.stringify(erased.value));
+    const records = async () => (await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results;
+    const input = await f.application(reviewed), before = await records();
+    const application = await h.send('/api/purse/command/supplier-credit-apply', input, f.ap);
+    const originalAfter = await h.send(original, undefined, f.ap);
+    assert.deepEqual({ original: originalAfter.status, application: application.status }, { original: 410, application: 409 }, 'Erasing an RMA-only buyer withdraws the linked original and prevents further credit application');
+    assert.deepEqual(await records(), before, 'Erased credit refusal changes no purchasing or audit evidence');
+    await cmd('supplier-credit-capture', capture, f.ap, 409);
+    await cmd('rma-record', { id: rma.id, version: 2, status: 'closed', reference: 'synthetic-purse-6231', reason: 'Cannot revive erased authorization' }, h.owner, 409);
+    assert.deepEqual(await records(), before);
+    const data = (await h.state()).data;
+    assert.ok(data.supplierRma.find(row => row.id === rma.id).erasure);
+    assert.ok(data.supplierCredit.find(row => row.id === credit.id).erasure);
+    assert.equal(data.supplierCreditApplication.length, 0);
+    assert.equal(data.cashRequirements.bills.find(row => row.invoice === f.invoice.id).amountMinor, 100000);
+    assert.equal(data.invoice.find(row => row.id === f.invoice.id).totalMinor, 100000);
+    assert.equal(JSON.parse((await records()).find(row => row.kind === 'attachment' && row.id === credit.attachment).value).base64, '');
+    assert.ok(!JSON.stringify(await records()).includes(email));
+    assert.equal(validatePurchasingArchive(await records()), true);
+    const saved = join(h.dir, 'synthetic-purse-6232.rer');
+    await exportArchive(await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability }), saved, []);
+    const restored = await harness({ empty: true }); t.after(() => restored.close());
+    await importArchive(await createPortability({ db: restored.db, buckets: { ORIGINALS: restored.originals }, policy: portability }), saved, []);
+    const owner = await restored.send('/auth/bootstrap', { token: 'synthetic-local-test-bootstrap-token-0123456789', displayName: 'New installation owner' });
+    assert.equal(owner.status, 303);
+    assert.equal((await restored.send(original, undefined, owner.cookie)).status, 410);
+    assert.equal((await restored.send('/api/purse/command/supplier-credit-apply', input, owner.cookie)).status, 409);
+    assert.equal((await restored.send('/api/purse/command/supplier-credit-capture', capture, owner.cookie)).status, 409);
+    const restoredData = (await restored.send('/api/purse/state', undefined, owner.cookie)).value.data;
+    assert.equal(restoredData.supplierCreditApplication.length, 0);
+    assert.equal(restoredData.cashRequirements.bills.find(row => row.invoice === f.invoice.id).amountMinor, 100000);
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+    const cleanup = [];
+    try { await supplierCreditsJourney({ after: fn => cleanup.push(fn) }); console.log('Native supplier credit sanity journey passed'); }
+    finally { for (const close of cleanup.reverse()) await close(); }
 }
 
 export async function rmaBuyerErasureJourney(t) {

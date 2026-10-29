@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import {harness} from './purse-harness.mjs';
 import {textInvoice,scannedInvoice,scannedFields} from './invoice-reading-fixtures.mjs';
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
 
 async function purchasing(h) {
  const cmd=h.command;
@@ -13,12 +14,12 @@ async function purchasing(h) {
  await cmd('submit',{id:r.id,revision:1},requester);await cmd('decision',{id:r.id,revision:1,decision:'approved',reason:'Approved field budget'},approver);const order=await cmd('convert',{id:r.id,revision:1},buyer);await cmd('issue',{id:order.id,revision:1,reason:'Approved document issued'},buyer);
  return {requester,approver,buyer,order};
 }
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function invoice_readingFlow(){
-{
- // INVOICE-002 original text PDFs, MIME invoices and real scans await explicit review, exact reconciliation and source confirmation before invoice evidence
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('INVOICE-002 original text PDFs, MIME invoices and real scans await explicit review, exact reconciliation and source confirmation before invoice evidence',async t=>{
  const h=await harness();t.after(()=>h.close());const {buyer,order}=await purchasing(h),cmd=h.command;
  const original=await textInvoice({po:order.number,instruction:true});
  const staged=await cmd('invoice-source',{order:order.id,document:original},buyer);
@@ -42,14 +43,11 @@ export async function invoice_readingFlow(){
  const ec={...confirm,id:external.id,lines:[{id:external.lines[0].id,orderLine:order.lines[0].id}]};await cmd('invoice-reading-confirm',{...ec,reviewed:false},buyer,400);await cmd('invoice-reading-confirm',ec,buyer);
  // Real MIME body is parsed as inert source; unrelated headers grant no authority.
  const email=await cmd('invoice-source',{order:order.id,document:{name:'supplier.eml',mediaType:'message/rfc822',base64:Buffer.from('From: attacker@elsewhere.example.test\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n'+(await import('./invoice-reading-fixtures.mjs')).invoiceText({reference:'CF-EMAIL',po:order.number})).toString('base64')}},buyer),mail=await cmd('invoice-extract',{source:email.id},buyer);assert.equal(mail.reference.value,'CF-EMAIL');assert.equal(mail.senderEmail.value,'attacker@elsewhere.example.test','MIME sender comes from the original unverified From header, not a spoofable body label');
- const data=(await h.state(buyer)).data;assert.ok(data.invoiceReadingEvent.some(e=>e.reading===partial.id&&e.changes?.some(c=>c.field==='taxAmount'&&c.before.value===null&&c.after.value==='7.00')));
+ const data=(await h.state(buyer)).data;assert.ok(data.invoiceReadingEvent.some(e=>e.reading===partial.id&&e.changes?.some(c=>c.field==='taxAmount'&&c.before.value===null&&c.after.value==='7.00')));assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
+});
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // INVOICE-002 and INVOICE-003 source-bound confirmation preserves original privacy, rejects sensitive prepared fields, flags remit/sender/duplicate changes and refuses cash planning
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('INVOICE-002 and INVOICE-003 source-bound confirmation preserves original privacy, rejects sensitive prepared fields, flags remit/sender/duplicate changes and refuses cash planning',async t=>{
  const h=await harness();t.after(()=>h.close());const {buyer,requester,order}=await purchasing(h),cmd=h.command;
  const supplier=(await h.state(buyer)).data.supplier[0];await cmd('supplier',{...supplier,remitTo:'Canyon Field Supply, 1550 Market Street, Denver CO 80202'},buyer);
  const document=await textInvoice({po:order.number,tax:'0.00',total:'100.00'}),source=await cmd('invoice-source',{order:order.id,document},buyer),reading=await cmd('invoice-extract',{source:source.id},buyer);
@@ -74,7 +72,6 @@ export async function invoice_readingFlow(){
  for(const id of privateIds){await cmd('prepare',{workflow:'exception',draft:'Review private invoice source',fields:{},references:[{kind:'attachment',id}]},requester,403);assert.equal((await h.send('/api/purse/download/attachment/'+id,undefined,requester)).status,403);assert.equal((await h.send('/api/purse/download/attachment/'+id,undefined,'')).status,401);}
  assert.deepEqual((await h.state(buyer)).data,before,'Every refused transport preserves domain state');
  const stored=(await h.db.prepare("SELECT value FROM p_records WHERE kind!='attachment'").all()).results;for(const row of stored)for(const digits of ['021000021','736290184652','836290184653'])assert.ok(!row.value.includes(digits),'No structured raw bank data in records, corrections or audit');
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+ const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);const corrupt=structuredClone(rows),row=corrupt.find(row=>row.kind==='invoiceReading'&&row.id===reading.id),value=JSON.parse(row.value);value.sourceDescriptor.sha256='0'.repeat(64);row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt),/invoice_reading_digest/);
+});
 }

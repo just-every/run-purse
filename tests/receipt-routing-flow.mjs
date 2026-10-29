@@ -1,12 +1,13 @@
 
 import assert from 'node:assert/strict'
 import {harness} from './purse-harness.mjs'
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function receipt_routingFlow(){
-{
- // RECEIVE-001 responsible receivers, due email prompts, automatic invoice holds, partial/full receipts, reassignment and PO-010 closure use current authority
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('RECEIVE-001 responsible receivers, due email prompts, automatic invoice holds, partial/full receipts, reassignment and PO-010 closure use current authority',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Canyon Building Services',currencies:['USD'],locations:['Denver','Austin'],costCentres:['Facilities'],projects:['Office'],timezone:'America/Los_Angeles'});
  const requester=await h.member('requester@example.test',['requester']),approver=await h.member('approver@example.test',['approver']),buyer=await h.member('buyer@example.test',['buyer']),facilities=await h.member('facilities@example.test',['receiver']),it=await h.member('it@example.test',['receiver']),stranger=await h.member('stranger@example.test',['requester']);
@@ -69,7 +70,6 @@ export async function receipt_routingFlow(){
  assert.deepEqual(await restoredPrompts(),retainedPrompts,'Actual archive import preserves every receipt prompt byte');
  const restoredTick=await restored.mf.dispatchFetch(restored.origin+'/cdn-cgi/local/scheduled?time='+Date.parse('2026-11-06T12:00:00Z'));assert.equal(restoredTick.status,200,await restoredTick.text());
  assert.deepEqual(await restoredPrompts(),retainedPrompts,'Scheduled continuation after actual restore preserves prompt records without native receivers');
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+ const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true,'RECEIVE-001 retained assignments, history and outcomes validate for archive restore');
+});
 }

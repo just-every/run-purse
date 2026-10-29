@@ -101,8 +101,13 @@ jobs:
           - group: 3
           - group: 4
             pantry: true
+          - group: 5
+          - group: 6
+          - group: 7
+          - group: 8
+          - group: 9
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - name: Reclaim unused hosted-runner SDKs
@@ -119,7 +124,7 @@ jobs:
           name: purse-build
           path: dist
       - name: Install Chromium
-        if: matrix.group == 4
+        if: matrix.group >= 4
         run: |
           set -euo pipefail
           pnpm exec playwright install --only-shell chromium

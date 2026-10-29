@@ -2,19 +2,18 @@
 import assert from 'node:assert/strict'
 import {PDFDocument,StandardFonts} from 'pdf-lib'
 import {harness} from './purse-harness.mjs'
-
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
 async function pdfBytes(lines){const doc=await PDFDocument.create();const font=await doc.embedFont(StandardFonts.Helvetica);const page=doc.addPage();lines.forEach((text,i)=>page.drawText(text,{x:35,y:780-i*22,size:10,font}));return Buffer.from(await doc.save()).toString('base64')}
 
 // An actual raster quote: the PDF contains an embedded PNG and no text objects.
 async function scannedQuote(){
  const {readFile}=await import('node:fs/promises');const png=await readFile(new URL('./fixtures/quote-scan.png',import.meta.url));const doc=await PDFDocument.create(),image=await doc.embedPng(png),page=doc.addPage([650,750]);page.drawImage(image,{x:0,y:0,width:650,height:750});return{pdf:Buffer.from(await doc.save()),png};
 }
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function quote_readingFlow(){
-{
- // SOURCE-002 real PDF and MIME email fields remain separate until scoped correction and confirmation create a new draft revision
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('SOURCE-002 real PDF and MIME email fields remain separate until scoped correction and confirmation create a new draft revision',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Quote review company',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Fieldwork']});
  const requester=await h.member('requester@example.test',['requester']),buyer=await h.member('buyer@example.test',['buyer']),other=await h.member('other@example.test',['requester']),receiver=await h.member('receiver@example.test',['receiver']);
@@ -57,14 +56,10 @@ export async function quote_readingFlow(){
  for(const [name,mediaType,bytes] of refusals){const file=await cmd('attachment',{kind:'request',record:htmlRequest.id,name,mediaType,base64:bytes.toString('base64')},requester),out=await cmd('quote-extract',{request:htmlRequest.id,revision:1,attachment:file.id},requester);assert.equal(out.status,'unsupported',name);assert.ok(out.reason.length);assert.equal((await h.state(requester)).data.request.find(r=>r.id===htmlRequest.id).revision,1);}
  const foreign=await cmd('request',{...input,title:'Another request'},other);await cmd('quote-extract',{request:foreign.id,revision:1,attachment:attachment.id},other,403);
  await h.db.prepare('UPDATE oa_sessions SET revoked_at=? WHERE id=(SELECT id FROM oa_sessions WHERE operator_id=(SELECT id FROM oa_operators WHERE email=?) LIMIT 1)').bind(Date.now(),'requester@example.test').run();await cmd('quote-extract',{request:blank.id,revision:1,attachment:bf.id},requester,401);
- const archive=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+ const archive=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(archive),true);
+});
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // SOURCE-002 external reader proposal binds a scanned/image original and declared provenance, with review before revision
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+await scenario('SOURCE-002 external reader proposal binds a scanned/image original and declared provenance, with review before revision',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;await cmd('business',{name:'External quote review',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Fieldwork']});const requester=await h.member('requester@example.test',['requester']),other=await h.member('other@example.test',['requester']),buyer=await h.member('buyer@example.test',['buyer']);const supplier=await cmd('supplier',{name:'Scan Supplier',status:'active',reason:'Existing supplier'}),draft={title:'Scanned supplier quote',supplier:supplier.id,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre:'Operations',terms:'Net 30',lines:[{description:'Pending kit',quantity:'1',unitMinor:1000,category:'Field equipment',project:'Fieldwork'}]},request=await cmd('request',draft,requester),scan=await scannedQuote();
  const file=await cmd('attachment',{kind:'request',record:request.id,name:'scanned-quote.pdf',mediaType:'application/pdf',base64:scan.pdf.toString('base64')},requester),image=await cmd('attachment',{kind:'request',record:request.id,name:'quote-image.png',mediaType:'image/png',base64:scan.png.toString('base64')},requester);
  const args={request:request.id,revision:1,attachment:file.id};const localScan=await cmd('quote-extract',args,requester);assert.equal(localScan.status,'unsupported','Real raster PDF has no native text reading');await cmd('quote-reading-instructions',args,'',401);await cmd('quote-reading-instructions',args,other,403);const instructions=await cmd('quote-reading-instructions',args,requester);assert.equal(instructions.source.attachment,file.id);assert.match(instructions.source.sha256,/^[a-f0-9]{64}$/);assert.equal(JSON.stringify(instructions).includes(scan.pdf.toString('base64')),false);assert.equal('base64'in instructions.source,false);assert.equal('authorization'in instructions,false);
@@ -77,8 +72,6 @@ export async function quote_readingFlow(){
  const imageInstructions=await cmd('quote-reading-instructions',{request:request.id,revision:2,attachment:image.id},buyer),imageReading=await cmd('quote-reading-propose',{...proposal,request:request.id,revision:2,source:imageInstructions.source},buyer);assert.equal(imageReading.attachment,image.id);assert.equal(imageReading.status,'review');
  const append={id:imageReading.id,request:request.id,revision:2,version:1,reason:'Add separately quoted kit',lines:[{id:imageReading.lines[0].id}]};await cmd('quote-reading-confirm',append,buyer,400);const added=await cmd('quote-reading-confirm',{...append,lines:[{...append.lines[0],category:'Field equipment',project:'Fieldwork'}]},buyer);assert.equal(added.requestRevision,3);const appended=(await h.state()).data.request.find(r=>r.id===request.id);assert.equal(appended.lines.length,2);assert.equal(appended.lines[0].quantity,'4');assert.equal(appended.lines[1].quantity,'3');assert.equal(appended.lines[1].category,'Field equipment');assert.equal(appended.lines[1].project,'Fieldwork');
  for(const [attachment,bytes] of [[file,scan.pdf],[image,scan.png]]){const response=await h.mf.dispatchFetch(h.origin+'/api/purse/download/attachment/'+attachment.id,{headers:{cookie:requester}});assert.deepEqual(Buffer.from(await response.arrayBuffer()),bytes)}
- const archive=(await h.db.prepare('SELECT * FROM p_records').all()).results;
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+ const archive=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(archive),true);const corrupt=structuredClone(archive),row=corrupt.find(r=>r.kind==='quoteReading'&&r.id===reading.id),value=JSON.parse(row.value);value.sourceDescriptor.sha256='0'.repeat(64);row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt),/quote_reading_digest/);
+});
 }

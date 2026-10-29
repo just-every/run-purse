@@ -1,12 +1,13 @@
 
 import assert from 'node:assert/strict'
 import {harness} from './purse-harness.mjs'
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function performance_reportFlow(){
-{
- // REPORT-003 public performance measures drill to exact events and approved quote/invoice savings, never unsigned discounts
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('REPORT-003 public performance measures drill to exact events and approved quote/invoice savings, never unsigned discounts',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Canyon Field Services',currencies:['USD','CAD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety']});
  const requester=await h.member('requester@example.test',['requester']),approver=await h.member('approver@example.test',['approver']),buyer=await h.member('buyer@example.test',['buyer']);
@@ -50,7 +51,6 @@ export async function performance_reportFlow(){
  for(const key of ['poCoverage','offContract','unapprovedSpend'])for(const g of r[key].totals){assert.equal(g.denominatorMinor,g.rows.reduce((n,x)=>n+x.amountMinor,0));assert.ok(g.rows.every(x=>state.order.some(o=>o.id===x.orderId)||x.orderId===co.id));}
  await cmd('receipt',{order:order.id,line:order.lines[0].id,event:'return',quantity:'1',reason:'One set returned'});assert.equal((await report()).savings.totals[0].realizedMinor,50000,'returned quantities do not remain realized');
  assert.equal((await h.send('/api/purse/performance-report',undefined,'')).status,401);assert.equal((await h.send('/api/purse/performance-report',undefined,requester)).status,403);
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+ const archive=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(archive),true,'REPORT-003 complete portable award graph validates');
+});
 }

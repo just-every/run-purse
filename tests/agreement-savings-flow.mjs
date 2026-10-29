@@ -2,12 +2,13 @@
 import assert from 'node:assert/strict'
 import {PDFDocument,StandardFonts} from 'pdf-lib'
 import {harness} from './purse-harness.mjs'
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function agreement_savingsFlow(){
-{
- // CONTRACT-001 REPORT-003 confirmed agreement prices realize exact approved invoice savings, source history and amendment caps through public doors
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('CONTRACT-001 REPORT-003 confirmed agreement prices realize exact approved invoice savings, source history and amendment caps through public doors',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Canyon Services',currencies:['USD','CAD'],locations:['Denver','Boulder'],costCentres:['Operations','IT'],projects:['Safety']});
  const requester=await h.member('requester@example.test',['requester']),buyer=await h.member('buyer@example.test',['buyer']),approver=await h.member('approver@example.test',['approver']);
@@ -114,7 +115,7 @@ export async function agreement_savingsFlow(){
   await cmd('attachment',{kind:'agreement',record:agreement.id,name:'reader.pdf',mediaType:'application/pdf',base64:bytes.toString('base64')},cookie,403);
  }
  assert.deepEqual((await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results,beforeReads,'Scoped reads and refused agreement writes leave native purchasing records unchanged');
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+ const records=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(records),true);
+ for(const field of ['firstOfferSource','reading','lines']){const corrupt=structuredClone(records),record=corrupt.find(r=>r.kind==='agreementAward'&&r.id===award.id),value=JSON.parse(record.value);if(field==='lines')value.lines[0].firstUnitMinor++;else value[field]=field==='reading'?null:'Forged source';record.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt),/purse_agreement_award/)}
+});
 }

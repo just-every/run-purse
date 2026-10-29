@@ -1,5 +1,4 @@
 import {readFile} from 'node:fs/promises'
-
 import assert from 'node:assert/strict'
 import {PDFName,decodePDFRawStream} from 'pdf-lib'
 import {termsPdf} from './po-documents-fixtures.mjs'
@@ -7,12 +6,12 @@ import {harness} from './purse-harness.mjs'
 import {documentProfileFixture} from './document-profile-fixture.mjs'
 import {pdfContent} from './pdf-content.mjs'
 const logo=async location=>Buffer.from(await readFile(new URL('./fixtures/'+location.toLowerCase()+'-logo.png',import.meta.url))).toString('base64')
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function po_documentsFlow(){
-{
- // PO-009 real HTTP PDF/HTML carry location profiles, frozen identity, line shipping/tax, original attachments and numbered amendment differences
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('PO-009 real HTTP PDF/HTML carry location profiles, frozen identity, line shipping/tax, original attachments and numbered amendment differences',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command,business={name:'Front Range Field Services',currencies:['USD'],locations:['Denver','Boulder'],costCentres:['Operations'],projects:['Safety']};
  assert.equal((await h.send('/api/purse/command/business',business,h.owner)).status,200);
  const requester=await h.member('requester@example.test',['requester']),approver=await h.member('approver@example.test',['approver']),outsider=await h.member('outsider@example.test',['requester']);
@@ -99,13 +98,10 @@ export async function po_documentsFlow(){
  assert.ok(conversionAudit.some(event=>event.action==='buyer-conversion-edit'&&event.sourceRequest===percentRequest.id&&event.before.totalMinor===100000&&event.after.totalMinor===104000&&event.limit.percent===10));
  assert.ok(conversionAudit.some(event=>event.action==='issue'&&event.conversionLimit.percent===10));
  const conversionCsv=await h.send('/api/purse/audit.csv?subject='+percentOrder.id,undefined,h.owner);assert.equal(conversionCsv.status,200);assert.ok(conversionCsv.value.includes('buyer-conversion-edit'));assert.ok(conversionCsv.value.includes('104000'));
+});
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // PO-012 native freight, tax, unit and SKU conversion keeps current limits, exact documents and one commitment
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('PO-012 native freight, tax, unit and SKU conversion keeps current limits, exact documents and one commitment',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'synthetic-purse-2001',currencies:['USD'],locations:['Austin'],costCentres:['Operations','Research'],projects:['General']});
  const requester=await h.member('synthetic-purse-2002@example.test',['requester']),approver=await h.member('synthetic-purse-2003@example.test',['approver']),buyer=await h.member('synthetic-purse-2004@example.test',['buyer']),ownerReview=await h.member('synthetic-purse-2018@example.test',['approver']);
@@ -139,6 +135,7 @@ export async function po_documentsFlow(){
  const rounded=await create({lines:[{description:'synthetic-purse-2028',quantity:'1',unitMinor:100001,category:'split',project:'General',allocations:shares}]});assert.deepEqual(rounded.lines[0].allocations.map(share=>share.amountMinor),[60001,40000],'Remainder cent belongs to first allocation');
  const zero=await create();await cmd('member',{email:'synthetic-purse-2004@example.test',name:'synthetic-purse-2010',active:true,grants:[{role:'buyer',scope:{},limits:{absoluteMinor:0,percent:0,quantityPercent:0}}]});const unchanged=(await h.state()).data;await cmd('convert',{id:zero.id,revision:1,conversionEdits:{lines:[],freightMinor:1,reason:'Charge increase denied'}},buyer,409);assert.deepEqual((await h.state()).data,unchanged);const decreased=await cmd('convert',{id:zero.id,revision:1,conversionEdits:{lines:[{id:zero.lines[0].id,unitMinor:99000,partNumber:'synthetic-purse-2011'}],reason:'Supplier reduction'}},buyer);assert.equal(decreased.totalMinor,99000);
  const audit=await h.send('/api/purse/audit.csv?subject='+o.id,undefined,h.owner);assert.equal(audit.status,200);for(const value of ['buyer-conversion-edit','106500','freightMinor','synthetic-purse-2009'])assert.ok(audit.value.includes(value),value);
+});
 
  } finally {for(const close of cleanups.reverse())await close();}
 }

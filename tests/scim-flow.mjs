@@ -6,6 +6,7 @@ import {createPortability} from '@runeditrun/rer/modules/portability'
 import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs'
 import {records,rows} from './browser-archive.mjs'
 import portability from '../scripts/installer/portability.mjs'
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
 
 const userSchema='urn:ietf:params:scim:schemas:core:2.0:User',enterprise='urn:ietf:params:scim:schemas:extension:enterprise:2.0:User',patchSchema='urn:ietf:params:scim:api:messages:2.0:PatchOp'
 const user=(n,department='Operations',extra={})=>({schemas:[userSchema,enterprise],externalId:'synthetic-purse-'+n,userName:`synthetic-purse-${n}@example.test`,displayName:'Synthetic Purse '+n,active:true,[enterprise]:{department},...extra})
@@ -22,11 +23,12 @@ async function scim(h,token,method,path,body,headers={}){
 }
 async function login(h,email){assert.equal((await h.send('/auth/magic-link',{email})).status,202);const cookie=await confirm(h,email);assert.ok(cookie);return cookie}
 const draft=(supplier,costCentre='Operations')=>({title:'Synthetic department purchase',supplier,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre,terms:'Net 30',lines:[{description:'Synthetic item',quantity:'1',unitMinor:100,category:'Office',project:'Office'}]})
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
-{
- // SCIM owner consent, stable identities, department scope and credential lifecycle through public doors
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+export async function scimFlow(){
+
+
+await scenario('SCIM owner consent, stable identities, department scope and credential lifecycle through public doors',async t=>{
  const h=await harness();t.after(()=>h.close())
  await h.command('business',{name:'Synthetic Purse',currencies:['USD'],locations:['Denver'],costCentres:['Operations','Engineering'],projects:['Office']})
  assert.equal((await h.send('/api/purse/scim')).status,401)
@@ -57,15 +59,10 @@ const draft=(supplier,costCentre='Operations')=>({title:'Synthetic department pu
  assert.ok(!history.value.events.some(event=>event.action==='scim-configure'),'Global provisioning mappings remain outside department audit scope')
  credential=await settings(h,{action:'rotate'});assert.ok(credential.token);assert.equal((await scim(h,token,'GET','/Users')).status,401);token=credential.token
  assert.equal((await scim(h,token,'GET','/Users')).status,200);await settings(h,{action:'revoke'});assert.equal((await scim(h,token,'GET','/Users')).status,401)
+})
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
 
-export async function scimFlow(){
-{
- // SCIM deactivation always ends sessions and transfers approvals through owner custody and audited non-self reassignment
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+await scenario('SCIM deactivation always ends sessions and transfers approvals through owner custody and audited non-self reassignment',async t=>{
  const h=await harness();t.after(()=>h.close())
  await h.command('business',{name:'Synthetic Purse',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Office']});await proof(h)
  const config={action:'configure',issuer:'https://synthetic-purse-2.example.test',enabled:true,mappings:[{department:'Operations',grants:[{role:'approver',scope:{departments:['Operations']}}]}],consent:true}
@@ -128,7 +125,7 @@ export async function scimFlow(){
  assert.equal((await h.state()).data.request.find(r=>r.id===managerRequest.id).approvalHolder,nextManager.userName);
  await h.command('decision',{id:managerRequest.id,revision:1,decision:'approved',reason:'Delegate cannot override eligible manager'},delegateSession,403);
  await h.command('decision',{id:managerRequest.id,revision:1,decision:'approved',reason:'Current manager precedence reviewed'},currentManagerSession);
- const domain=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+ const domain=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(domain),true)
  const archive=join(h.dir,'synthetic-purse-15.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[])
  const exported=await records(archive),archived=rows(exported),credential=(await h.db.prepare("SELECT value FROM p_scim_authority WHERE kind='scimCredential'").first())
  assert.ok(!archived.some(row=>row.table==='p_scim_authority'),'Archives contain no SCIM service authority rows')
@@ -140,7 +137,5 @@ export async function scimFlow(){
  const recovered=(await restored.db.prepare('SELECT * FROM p_records').all()).results
  for(const kind of ['scimUser','scimApprovalTransfer','decision','member'])assert.deepEqual(recovered.filter(row=>row.kind===kind).sort((a,b)=>a.id.localeCompare(b.id)),domain.filter(row=>row.kind===kind).sort((a,b)=>a.id.localeCompare(b.id)),'Restore retains '+kind+' evidence without native identity authority')
  assert.equal((await scim(restored,token,'GET','/Users')).status,401,'Restored provenance cannot authorize SCIM')
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+})
 }
