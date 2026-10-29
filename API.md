@@ -1113,3 +1113,25 @@ service, blanket, recurring or adopted groups remain unavailable. Grouped date
 changes and amendments require a separately supported disposition; this door
 refuses them. Native group issuance sends no supplier message and records no
 payment or connected-ledger posting.
+## Native notification list
+
+The current native session reads `GET /api/purse/notifications` and receives an
+`items` list, including read and dismissed history. Native approval-needed,
+returned, approved, comment-mention and receipt-needed events bind the recipient's
+native identity to an exact source event and purchasing revision or comment version.
+This list grants no purchasing permission and creates no outbound delivery.
+
+`POST /api/purse/command/notification-read` and
+`POST /api/purse/command/notification-dismiss` accept `{ "id": "notification identifier" }`.
+Read and dismissal are monotonic; repeated requests return the same state. Dismissal
+also marks the item read. Every read and action checks current membership and source
+scope. Another recipient's identifier returns 404. An inaccessible source has no
+source identifiers, title, body or link in the list, and its actions return 403.
+Historical purchasing tasks are labelled earlier events when their source revision
+or current approval step is no longer actionable.
+
+Archives retain notification history and state. Native recipient identity is not
+restored, and signing in with a newly invited identity for the same mailbox never
+claims historical notices. Only fresh native events address that identity. Erasure
+anonymizes recipients and withdraws affected source content. Channel preferences,
+digests, quiet hours, urgent bypass and external delivery remain the NOTIFY-001 Gap.
