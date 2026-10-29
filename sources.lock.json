@@ -468,7 +468,7 @@
       "executable": false
     },
     "public/purse.css": {
-      "sha256": "04d1a6ac3a7f368fffffae4af520cb650ff4aca2cff4de3083df9a47e35aca03",
+      "sha256": "ec6c45db8bd889c269b2049ccb444809c3881132fae79f6fc48624138fd2d978",
       "executable": false
     },
     "public/rer-theme.css": {
@@ -5164,7 +5164,7 @@
       "executable": false
     },
     "tests/order-send.test.mjs": {
-      "sha256": "f101db70e421d82eac0af52121211469cce3d124d669ca688a73953b5cd34e1f",
+      "sha256": "5681619f0c99ad4dfe56737479fc1626a7e248620c41a971a38984e55271b62e",
       "executable": false
     },
     "tests/order-thread.test.mjs": {

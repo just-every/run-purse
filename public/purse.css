@@ -410,4 +410,4 @@ select:not([multiple],[size]:not([size="1"])):disabled { --rer-select-ink: color
 }
 
 .icon-tooltip { position: relative; }
-.control-tooltip { position: absolute; bottom: calc(100% + 6px); right: 0; z-index: 20; width: max-content; max-width: min(240px, 80vw); padding: 6px 9px; border-radius: 4px; background: #172333; color: #fff; font: 12px/1.4 Arial, sans-serif; text-align: left; white-space: normal; pointer-events: none; }
+.control-tooltip { position: absolute; bottom: calc(100% + 6px); right: 0; z-index: 20; width: max-content; max-width: min(240px, 80vw); padding: 6px 9px; border-radius: 4px; background: #172333; color: #fff; font: 13px/1.4 Arial, sans-serif; text-align: left; white-space: normal; pointer-events: none; }

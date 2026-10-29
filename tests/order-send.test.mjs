@@ -75,7 +75,7 @@ test('Explicit native buyer change send freezes exact numbered PDF and originals
     await reauthenticateErasure(h);
     const meta=await h.send('/api/purse/erasure',undefined,h.owner),preview=await h.send('/api/purse/erasure/preview',{kind:'contact',id:f.supplier.id,email:'synthetic-purse-2820@example.test',revision:meta.value.revision},h.owner);assert.equal(preview.status,200,JSON.stringify(preview.value));assert.ok(preview.value.fields.some(field=>field.kind==='orderSend'&&field.path.includes('base64')));
     const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
-    for(const suffix of ['', '/pdf','/original/0'])assert.equal((await publicGet(h,link.href+suffix)).status,410);
+    for(const suffix of ['', '/pdf','/original/0'])assert.equal((await publicGet(h,link.href+suffix)).status,410);assert.equal((await respond(h,link,{revision:2,version:3})).status,410,'Erased responses cannot be replayed into a new capture');
     const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(!JSON.stringify(erasedRows).includes('synthetic-purse-2820@example.test'));assert.equal(validatePurchasingArchive(erasedRows),true);
     // The link holder's stated acknowledgment name is a personal field of the same reviewed inventory: gone from the PO, audit read and CSV, while the revision, PDF hash and acknowledgment time stay.
     for (const personal of ['synthetic-purse-2821','synthetic-purse-2870','synthetic-purse-2871','synthetic-purse-2872','synthetic-purse-2873']) assert.ok(!JSON.stringify(erasedRows).includes(personal), 'Acknowledgment and every response name and note are erased with the recipient');assert.ok(preview.value.coverage.find(entry=>/acknowledgment names/.test(entry.store)).fields>0);
@@ -148,6 +148,27 @@ test('Real supplier-link expiry and explicit withdrawal fence read, original and
     const revoke=await h.send('/api/purse/order-send/'+f.order.id+'/revoke',{},f.buyer);assert.equal(revoke.status,200);
     const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
     assert.ok(!JSON.stringify(rows).includes(link.pathname.split('/').at(-1)),'Bearer token never enters portable domain rows');
+    const active=await harness();t.after(()=>active.close());const current=await orderSendFixture(active),currentSent=await current.send();assert.equal(currentSent.status,200);const currentLink=orderLink(active);
+    const response={revision:2,decision:'change',promisedDate:'2026-11-22',lines:[{line:current.order.lines[0].id,quantity:'3',unitAmount:'112.25'}]};
+    assert.equal((await respond(active,currentLink,response)).status,200);
+    const buyerMember=(await active.state()).data.member.find(member=>member.roles.includes('buyer'));
+    const requesterMember=(await active.state()).data.member.find(member=>member.roles.includes('requester')&&member.email===current.request.requesterEmail);
+    const beforeRevocation=(await active.send('/api/purse/order-send/'+current.order.id,undefined,active.owner)).value;
+    await active.command('member',{...requesterMember,active:true,grants:[{role:'requester',scope:{locations:['Denver']}}]});
+    assert.equal((await active.send('/api/purse/order-send/'+current.order.id,undefined,current.requester)).status,403,'Requester reads recheck current scope');
+    await active.command('member',{...requesterMember,active:true,roles:['requester']});
+    await active.command('member',{...buyerMember,active:false});
+    for(const suffix of ['', '/pdf','/original/0'])assert.equal((await publicGet(active,currentLink.href+suffix)).status,410,'Revoked current sender cannot expose the exact frozen bytes');
+    assert.equal((await respond(active,currentLink,{...response,version:1})).status,410);
+    const adoption={revision:2,response:beforeRevocation.event.response.id,reason:'synthetic-purse-2881',consent:true};
+    assert.equal((await active.send('/api/purse/order-send/'+current.order.id+'/adopt-response',adoption,current.buyer)).status,403);
+    await active.command('member',{...buyerMember,active:true});
+    assert.equal((await publicGet(active,currentLink)).status,200,'Reinstated current membership can use the live link before withdrawal');
+    const withdrawn=await active.send('/api/purse/order-send/'+current.order.id+'/revoke',{},current.buyer);assert.equal(withdrawn.status,200);
+    for(const suffix of ['', '/pdf','/original/0'])assert.equal((await publicGet(active,currentLink.href+suffix)).status,410,'Explicit withdrawal refuses a link before its expiry');
+    assert.equal((await respond(active,currentLink,{...response,version:1})).status,410);assert.equal((await active.send('/api/purse/order-send/'+current.order.id+'/adopt-response',adoption,current.buyer)).status,409);
+    assert.deepEqual((await active.send('/api/purse/order-send/'+current.order.id,undefined,active.owner)).value.responses,beforeRevocation.responses,'Revocation and withdrawal never append another response');
+    assert.equal(validatePurchasingArchive((await active.db.prepare('SELECT * FROM p_records').all()).results),true);
 });
 
 async function initialOrderFixture(h) {
