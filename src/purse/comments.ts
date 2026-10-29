@@ -7,7 +7,7 @@ import { all, audit, get, put, requireThat, text, uid, type Actor, type Data, ty
 
 /** Internal correspondence is never an approval, supplier message or agent action. */
 function parent(s: State, kind: string, id: string) {
-    requireThat(['request', 'order', 'invoice', 'supplier', 'agreement'].includes(kind), 'Purchasing comment record required');
+    requireThat(['request', 'order', 'invoice', 'invoiceException', 'supplier', 'agreement'].includes(kind), 'Purchasing comment record required');
     return get(s, kind, id);
 }
 async function members(env: Bindings, s: State): Promise<(Actor & { name: string })[]> {
@@ -73,6 +73,7 @@ export async function comments(s: State, a: Actor, op: string, b: Data, env?: Bi
 function recordUrl(kind: string, record: Data) {
     if (kind === 'request') return '/app?request=' + encodeURIComponent(record.id);
     if (kind === 'order') return '/app?tab=Orders&receipt=' + encodeURIComponent(record.id);
+    if (kind === 'invoiceException') return '/app?tab=Orders&receipt=' + encodeURIComponent(record.order);
     if (kind === 'invoice') return '/app?tab=Orders&receipt=' + encodeURIComponent(record.order) + '#invoice-' + encodeURIComponent(record.id);
     if (kind === 'supplier') return '/app?tab=Suppliers&supplier=' + encodeURIComponent(record.id);
     return '/app?agreement=' + encodeURIComponent(record.id);
@@ -87,13 +88,13 @@ commentsApi.get('/api/purse/comments/notices', async c => {
         const comment = get(state, 'comment', n.comment), record = get(state, comment.kind, comment.record);
         const canRead = canReadCommentParent(state, a, comment.kind, record);
         const safe = { id: n.id, mentionedBy: n.mentionedByName, at: n.at, canRead };
-        return canRead ? { ...safe, kind: comment.kind, record: comment.record, title: record.title ?? record.number ?? record.name ?? record.reference, url: recordUrl(comment.kind, record), body: comment.status === 'deleted' ? 'Comment deleted' : comment.versions.at(-1).body }
+        return canRead ? { ...safe, kind: comment.kind, record: comment.record, title: record.title ?? record.number ?? record.name ?? record.reference ?? 'Invoice exception', url: recordUrl(comment.kind, record), body: comment.status === 'deleted' ? 'Comment deleted' : comment.versions.at(-1).body }
             : { ...safe, message: 'You were mentioned on a record you cannot access.' };
     });
     const recent = all(state, 'comment').filter(comment => comment.status === 'active' && canReadCommentParent(state, a, comment.kind, get(state, comment.kind, comment.record)))
         .sort((x, y) => y.versions.at(-1).at.localeCompare(x.versions.at(-1).at) || x.id.localeCompare(y.id)).slice(0, 20).map(comment => {
             const record = get(state, comment.kind, comment.record);
-            return { id: comment.id, author: comment.authorName, at: comment.versions.at(-1).at, title: record.title ?? record.number ?? record.name ?? record.reference, body: comment.versions.at(-1).body, url: recordUrl(comment.kind, record) };
+            return { id: comment.id, author: comment.authorName, at: comment.versions.at(-1).at, title: record.title ?? record.number ?? record.name ?? record.reference ?? 'Invoice exception', body: comment.versions.at(-1).body, url: recordUrl(comment.kind, record) };
         });
     await readFence(c.env.DB, a, revision); return c.json({ notices, recent });
 });

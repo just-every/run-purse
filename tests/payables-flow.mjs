@@ -1,13 +1,13 @@
-import {supplierCreditsJourney} from './supplier-credits-flow.mjs';
-
+import { supplierCreditsJourney } from './supplier-credits.test.mjs';
 import assert from 'node:assert/strict'
 import {harness} from './purse-harness.mjs'
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function payablesFlow(){
-{
- // AP-003 terms, ordered due bills, expiring discount and weekly cash obligations through native HTTP
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('AP-003 terms, ordered due bills, expiring discount and weekly cash obligations through native HTTP',async t=>{
  const h=await harness();t.after(()=>h.close());const {command:cmd,state}=h;
  await cmd('business',{name:'Front Range Field Services',currencies:['USD','CAD'],locations:['Denver','Boulder'],costCentres:['Operations','IT'],projects:['Equipment']});
  const requester=await h.member('requester@example.test',['requester']),buyer=await h.member('buyer@example.test',['buyer']),approver=await h.member('approver@example.test',['approver']),receiver=await h.member('receiver@example.test',['receiver']);
@@ -84,10 +84,8 @@ export async function payablesFlow(){
  assert.equal((await h.send('/api/purse/download/attachment/'+source.attachment,undefined,receiver)).status,403);
  for(const [op,body]of [['invoice-source',{order:scopedOrder.id,document}],['invoice-extract',{source:source.id}],['invoice-risk-review',{invoice:scopedInvoice.id,flag:remitFlag.id,version:2,reason:'Finance cannot write'}],['payable-terms',{invoice:scopedInvoice.id,version:2,invoiceDate:'2026-10-19',term:'Net 30',reason:'Finance cannot write'}],['approve-payable',{invoice:scopedInvoice.id,version:2,reason:'Finance cannot write'}],['cash-expectation',{order:scopedOrder.id,version:1,expectedDate:'2026-12-01',reason:'Finance cannot write'}]])await cmd(op,body,finance,403);
  for(const [op,body]of [['invoice',{order:outsideOrder.id,reference:'SYNTHETIC-OUTSIDE',source:'Out of scope',allocations:[{line:outsideOrder.lines[0].id,quantity:'1',amountMinor:4321}]}],['invoice-source',{order:outsideOrder.id,document}],['invoice-extract',{source:outsideSource.id}],['invoice-risk-review',{invoice:outsideInvoice.id,flag:'synthetic-flag',version:1,reason:'Out of scope'}],['payable-terms',{invoice:outsideInvoice.id,version:0,invoiceDate:'2026-10-19',term:'Net 30',reason:'Out of scope'}],['approve-payable',{invoice:outsideInvoice.id,version:1,reason:'Out of scope'}],['cash-expectation',{order:outsideOrder.id,version:0,expectedDate:'2026-12-01',reason:'Out of scope'}]])await cmd(op,body,ap,403);
-
+ const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true,'AP-003 planning evidence survives portable graph validation');
  assert.ok((await state()).data.audit.some(a=>a.action==='approve-payable'&&a.record===i.id&&a.approvedMinor===60000));
-
  await supplierCreditsJourney(t);
- } finally {for(const close of cleanups.reverse())await close();}
-}
+});
 }

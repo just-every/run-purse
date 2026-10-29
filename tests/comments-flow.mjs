@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { createPortability } from '@runeditrun/rer/modules/portability';
 import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
-
+import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 import { harness } from './purse-harness.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
 import { pdfContent } from './pdf-content.mjs';
@@ -55,12 +55,12 @@ async function agreementCommentScope(f) {
     assert.equal((await h.state(finance)).data.audit.find(event => event.action === 'comment-add' && event.comment === privateComment.id).snapshot.body, privateComment.versions[0].body, 'Current agreement readers retain their comment audit evidence');
     assert.equal((await h.command('comment-edit', { id: own.id, version: 1, body: 'synthetic-purse-5719 current finance edit', mentions: [] }, finance)).version, 2);
 }
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function commentsFlow(){
-{
- // Internal comments preserve the pending queue and current scope while member mentions redact inaccessible content
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('Internal comments preserve the pending queue and current scope while member mentions redact inaccessible content', async t => {
     const f = await commentsFixture(t), { h } = f;
     const before = await h.state(f.approver), mailCount = h.messages.length;
     const body = { kind: 'request', record: f.pending.id, attempt: 'synthetic-purse-5108', body: 'synthetic-purse-5109 private decision context', mentions: [f.requesterId, f.scopedId], file };
@@ -93,13 +93,10 @@ export async function commentsFlow(){
     await h.command('comment-edit', { id: own.id, version: 1, body: 'No access', mentions: [] }, f.requester, 403);
     await h.command('comment-delete', { id: own.id, version: 1 }, f.requester, 403);
     await agreementCommentScope(f);
+});
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // Author changes keep complete audited versions and portable files, and member erasure cannot revive authors or captures
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('Author changes keep complete audited versions and portable files, and member erasure cannot revive authors or captures', async t => {
     const f = await commentsFixture(t), { h } = f;
     const created = await h.command('comment-add', { kind: 'request', record: f.pending.id, attempt: 'synthetic-purse-5115', body: 'synthetic-purse-5116 original', mentions: [f.requesterId], file }, f.approver);
     await h.command('comment-edit', { id: created.id, version: 1, body: 'synthetic-purse-5117 corrected', mentions: [f.requesterId] }, f.requester, 403);
@@ -179,7 +176,7 @@ export async function commentsFlow(){
     const inventory = await h.send('/api/purse/erasure', undefined, h.owner), preview = await h.send('/api/purse/erasure/preview', { kind: 'member', id: f.email(2803), revision: inventory.value.revision }, h.owner); assert.equal(preview.status, 200, JSON.stringify(preview.value));
     const erased = await h.send('/api/purse/erasure/execute', { ...preview.value.subject, revision: preview.value.revision, review: preview.value.review, fingerprint: preview.value.fingerprint, consent: true }, h.owner); assert.equal(erased.status, 200, JSON.stringify(erased.value));
     const anonymous = (await history(h, 'request', f.pending.id, h.owner))[0]; assert.match(anonymous.author, /^erased-/); assert.equal(anonymous.mayEdit, false);
-    const rows = (await h.db.prepare('SELECT * FROM p_records').all()).results; assert.ok(!JSON.stringify(rows).includes(deleted.author)); assert.ok(!JSON.stringify(rows).includes(f.email(2803)));
+    const rows = (await h.db.prepare('SELECT * FROM p_records').all()).results; assert.ok(!JSON.stringify(rows).includes(deleted.author)); assert.ok(!JSON.stringify(rows).includes(f.email(2803))); assert.equal(validatePurchasingArchive(rows), true);
     assert.equal((await h.send('/api/purse/download/attachment/' + created.versions[0].files[0], undefined, h.owner)).status, 410);
     const erasedCsv = await h.send('/api/purse/audit.csv?subject=' + f.pending.id, undefined, h.owner); assert.ok(!erasedCsv.value.includes(deleted.author)); assert.ok(erasedCsv.value.includes(anonymous.author));
     assert.notEqual((await h.send('/api/purse/command/comment-add', { kind: 'request', record: f.pending.id, attempt: 'synthetic-purse-5115', body: 'synthetic-purse-5116 original', mentions: [] }, f.approver)).status, 200);
@@ -202,19 +199,16 @@ export async function commentsFlow(){
     }
     const projected = (await h.db.prepare('SELECT body FROM p_comment_search').all()).results;
     for (const row of eraseAcross) assert.ok(!JSON.stringify(projected).includes(row.body));
-
+    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results), true);
     assert.notEqual((await h.send('/api/purse/comments/notices', undefined, f.buyer)).status, 200);
     const latest = await archive(h, 'synthetic-purse-5121'), erasedRestore = await restore(t, latest);
     assert.deepEqual((await history(erasedRestore.h, 'request', f.pending.id, erasedRestore.cookie))[0].versions, anonymous.versions);
     const destination = await harness({ empty: true }); t.after(() => destination.close());
     await assert.rejects(importArchive(await createPortability({ db: destination.db, buckets: { ORIGINALS: destination.originals }, policy: portability }), saved, [], latest), /erasure|journal/i);
+});
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // Issued PO comments and attachments stay off supplier links, frozen documents and outbound threads
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('Issued PO comments and attachments stay off supplier links, frozen documents and outbound threads', async t => {
     const f = await commentsFixture(t), { h } = f;
     const sent = await f.send(); assert.equal(sent.status, 200, JSON.stringify(sent.value));
     const wire = h.messages.find(m => m.subject.startsWith('Change order '));
@@ -233,7 +227,5 @@ export async function commentsFlow(){
     const supplierThread = await h.send('/api/purse/order-thread/' + f.order.id, undefined, f.buyer); assert.equal(supplierThread.status, 200); assert.equal(supplierThread.value.messages.length, 0);
     assert.ok(!JSON.stringify(h.messages).includes('synthetic-purse-5123'));
     for (const path of [commentPath('order', f.order.id), '/api/purse/download/attachment/' + comment.versions[0].files[0]]) assert.equal((await h.send(path)).status, 401);
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+});
 }

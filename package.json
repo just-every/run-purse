@@ -29,7 +29,7 @@
     "check": "rer check",
     "deps": "rer install",
     "rer": "rer",
-    "test:purse": "node --test --test-concurrency=1 tests/journeys.mjs",
+    "test:purse": "node --test --test-concurrency=1 tests/journeys.mjs tests/invoice-exceptions.test.mjs tests/po-supplier-groups.test.mjs",
     "test:site": "node tests/run-site.mjs",
     "test:browser": "node tests/browser.mjs --width=1440 && node tests/browser.mjs --width=390 && node tests/browser-custom-fields.mjs && node tests/browser-supplier-tax.mjs",
     "delivery:spec": "node scripts/build-deployment-spec.mjs",

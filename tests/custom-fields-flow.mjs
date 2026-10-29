@@ -1,18 +1,19 @@
+
 import assert from 'node:assert/strict';
 import {join} from 'node:path';
 import {createPortability} from '@runeditrun/rer/modules/portability';
 import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
 import {harness} from './purse-harness.mjs';
 import {reauthenticateErasure} from './erasure-flow.mjs';
 import {customFieldsFixture,fieldMail} from './custom-fields-fixture.mjs';
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function customFieldsFlow(){
 
-{
- // Native typed custom fields validate requests, freeze approved PO and source-confirmed bill values, and reconcile scoped currency reports
- const cleanups=[];const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('Native typed custom fields validate requests, freeze approved PO and source-confirmed bill values, and reconcile scoped currency reports',async t=>{
  const h=await harness();t.after(()=>h.close());const f=await customFieldsFixture(h),{cmd,draft}=f;
  await cmd('intake-form',f.config,f.requester,403);
  const missing=await cmd('request',{...draft,lines:[{...draft.lines[0],customFields:{}}]},f.requester);
@@ -43,14 +44,11 @@ export async function customFieldsFlow(){
  assert.ok(!JSON.stringify(report).includes(hidden.id));assert.ok(!JSON.stringify(report).includes('synthetic-purse-6219'));
  for(const dimension of [grant,event,'glAccount'])assert.ok((await f.report({groupBy:dimension})).groups.every(group=>group.rows.length>0));
  await cmd('member',{email:fieldMail(6204),name:'Revoked report reader',roles:['receiver'],active:true});assert.equal((await h.send('/api/purse/spend-report?groupBy='+grant,undefined,f.finance)).status,403);
- 
- }finally{for(const close of cleanups.reverse())await close();}
-}
+ assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
+});
 
-{
- // Definition changes and amendments retain historical custom values and archive restore cannot revive purchasing authority
- const cleanups=[];const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('Definition changes and amendments retain historical custom values and archive restore cannot revive purchasing authority',async t=>{
  const h=await harness();t.after(()=>h.close());const f=await customFieldsFixture(h),{cmd,draft}=f;
  draft.customFields.event=fieldMail(6201);
  const original=await f.approve(await cmd('request',draft,f.requester)),order=await f.issue(original);await f.receive(order);const proof=await f.bill(order,'synthetic-purse-6220');
@@ -72,15 +70,14 @@ export async function customFieldsFlow(){
  assert.equal((await restored.send('/api/purse/state',undefined,f.buyer)).status,401);
  assert.equal((await restored.send('/api/purse/command/issue',{id:replacement.id,revision:2,reason:'Old authority replay'},f.buyer)).status,401);
  const after=(await h.state()).data;await cmd('member',{email:fieldMail(6201),name:'Revoked requester',roles:['receiver'],active:true});await cmd('amend',{...draft,id:original.id,revision:2,reason:'Revoked request edit'},f.requester,403);assert.deepEqual((await h.state()).data.revision,after.revision);
- 
+ assert.equal(validatePurchasingArchive((await restored.db.prepare('SELECT * FROM p_records').all()).results),true);
  await cmd('member',{email:fieldMail(6201),name:'Former requester',roles:['receiver'],active:false});
  await reauthenticateErasure(h);
  const inventory=await h.send('/api/purse/erasure',undefined,h.owner),preview=await h.send('/api/purse/erasure/preview',{kind:'member',id:fieldMail(6201),revision:inventory.value.revision},h.owner);assert.equal(preview.status,200,JSON.stringify(preview.value));
  const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
  assert.equal((await h.send('/api/purse/state',undefined,f.requester)).status,401);assert.equal((await h.send('/api/purse/command/request',draft,f.requester)).status,401);
- const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(erasedRows.every(row=>!row.value.includes(fieldMail(6201))),'Historical request, PO and bill custom values are scrubbed together');
+ const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(erasedRows.every(row=>!row.value.includes(fieldMail(6201))),'Historical request, PO and bill custom values are scrubbed together');assert.equal(validatePurchasingArchive(erasedRows),true);
  const journal=join(h.dir,'synthetic-purse-6223.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),journal,[]);
  const fenced=await harness({empty:true});t.after(()=>fenced.close());await assert.rejects(importArchive(await createPortability({db:fenced.db,buckets:{ORIGINALS:fenced.originals},policy:portability}),path,[],journal),/erasure_epoch/);assert.equal((await fenced.db.prepare('SELECT count(*) AS n FROM p_records').first()).n,0);
- }finally{for(const close of cleanups.reverse())await close();}
-}
+});
 }

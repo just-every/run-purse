@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {join} from 'node:path';
 import {PDFDocument,StandardFonts} from 'pdf-lib';
 import {harness} from './purse-harness.mjs';
-
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
 import portability from '../scripts/installer/portability.mjs';
 import {createPortability} from '@runeditrun/rer/modules/portability';
 import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
@@ -13,12 +13,12 @@ async function pdf(pages){
  for(const rows of pages){const page=document.addPage([700,800]);rows.forEach((text,i)=>page.drawText(text,{x:40,y:750-i*28,size:12,font}));}
  return Buffer.from(await document.save());
 }
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function agreement_readingFlow(){
-{
- // CONTRACT-001 real PDF proposals retain original/page confidence, corrected Cron dates and complete archive provenance through public doors
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('CONTRACT-001 real PDF proposals retain original/page confidence, corrected Cron dates and complete archive provenance through public doors',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Canyon Services',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety'],timezone:'America/New_York'});
  const buyer=await h.member('buyer@example.test',['buyer']),requester=await h.member('requester@example.test',['requester']);
@@ -68,7 +68,8 @@ export async function agreement_readingFlow(){
   const file=await cmd('attachment',{...upload,name,base64:original.toString('base64')}),out=await cmd('agreement-extract',{agreement:agreement.id,version:agreement.version,attachment:file.id});assert.equal(out.status,'unsupported');assert.ok(out.reason.length);await cmd('agreement-reading-edit',{id:out.id,version:out.version,changes:[{field:'noticeDays',value:60}]},h.owner,409);
  }
  const conflictFile=await cmd('attachment',{...upload,name:'conflicting-notice.pdf',base64:(await pdf([['Currency: USD','Notice period: 60 days','Notice period: 90 days']])).toString('base64')}),conflict=await cmd('agreement-extract',{agreement:agreement.id,version:agreement.version,attachment:conflictFile.id});assert.equal(conflict.noticeDays.value,null);assert.equal(conflict.noticeDays.confidence,0);assert.ok(conflict.warnings.some(w=>w.includes('noticeDays')));
-
+ const archive=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(archive),true);
+ for(const mutate of [v=>{v.sourceDescriptor.sha256='0'.repeat(64)},v=>{v.noticeDays.value=61}]){const corrupt=structuredClone(archive),row=corrupt.find(r=>r.kind==='agreementReading'&&r.id===reading.id),value=JSON.parse(row.value);mutate(value);row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt),/agreement_reading/);}
  const audit=await h.send('/api/purse/audit.csv',undefined,h.owner);assert.match(audit.value,/agreement-reading-confirm/);assert.match(audit.value,/agreement-reading-edit/);
  const archiveFile=join(h.dir,'agreement-readings.rer'),service=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});await exportArchive(service,archiveFile,[]);
  let restoredMails=0;const restored=await harness({empty:true,mail:()=>{restoredMails++;return Response.json({id:crypto.randomUUID()});}});t.after(()=>restored.close());
@@ -79,7 +80,5 @@ export async function agreement_readingFlow(){
  const original=await restored.mf.dispatchFetch(restored.origin+'/api/purse/download/attachment/'+attachment.id,{headers:{cookie:boot.cookie}});assert.equal(original.status,200);assert.deepEqual(Buffer.from(await original.arrayBuffer()),bytes,'Restored PDF original is byte exact');
  const restoredReminder=await restored.mf.dispatchFetch(restored.origin+'/cdn-cgi/local/scheduled?time='+Date.parse('2026-10-25T12:00:00Z'));assert.equal(restoredReminder.status,200);assert.equal(restoredMails,0,'Restored PDF provenance grants no historical native owner mail authority');
  await h.db.prepare('UPDATE oa_sessions SET revoked_at=? WHERE id=(SELECT id FROM oa_sessions WHERE operator_id=(SELECT id FROM oa_operators WHERE email=?) LIMIT 1)').bind(Date.now(),'owner@example.test').run();await cmd('agreement-extract',{...extract,version:agreement.version},h.owner,401);
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+});
 }

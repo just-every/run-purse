@@ -9,6 +9,7 @@ import { createPortability } from '@runeditrun/rer/modules/portability';
 import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
+import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 
 async function original(f, reference = 'synthetic-purse-4501', quantity = '1', unitAmount = '100.00', facts = {}) {
     const values = { supplier: f.supplier.name, reference, invoiceDate: '2026-10-23', dueDate: null, terms: null, poNumber: f.order.number, currency: 'USD', senderEmail: null, remitTo: null, subtotalAmount: (Number(quantity) * Number(unitAmount)).toFixed(2), freightAmount: '0.00', taxAmount: '0.00', totalAmount: (Number(quantity) * Number(unitAmount)).toFixed(2), ...facts };
@@ -19,12 +20,12 @@ async function original(f, reference = 'synthetic-purse-4501', quantity = '1', u
 }
 const post = (h, url, body, origin = h.origin) => fetch(url, { method: 'POST', headers: { origin, accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const read = url => fetch(url, { headers: { accept: 'application/json' } });
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function supplier_invoiceFlow(){
-{
- // Supplier invoice link captures exact private PDF and balance ancestry, holds source confirmation and duplicate/excess evidence, and exposes only its own authentic statuses
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('Supplier invoice link captures exact private PDF and balance ancestry, holds source confirmation and duplicate/excess evidence, and exposes only its own authentic statuses', async t => {
     // Fake only the existing accounting transport to prove the supplier status projection.
     const edge={bill:null,paid:false},origin='https://synthetic-purse-4690.test';
     const h = await harness({protectedKey:createHash('sha256').update('synthetic-purse-4691').digest('hex'),mailRequest:async request=>{
@@ -84,17 +85,15 @@ export async function supplier_invoiceFlow(){
     await h.command('payable-terms', { invoice: second.id, version: 0, invoiceDate: body.invoiceDate, term: 'Net 30', reason: 'synthetic-purse-4517' }, f.buyer, 409);
     const status = await (await read(url)).json(); assert.equal(status.invoices.length, 2); assert.ok(!JSON.stringify(status).includes('duplicate-document')); assert.ok(!JSON.stringify(status).includes('riskReviews')); assert.ok(!JSON.stringify(status).includes(source.document.sha256));
     assert.equal((await h.send('/api/purse/order-send/'+f.order.id+'/invoice-consent',{...grant,enabled:false,reason:'Owner withdraws supplier invoice access'},h.owner)).status,200);assert.equal((await read(url)).status,410);assert.equal((await read(link)).status,200,'Withdrawal of invoice access preserves the document-only link');
-    const rows = (await h.db.prepare('SELECT * FROM p_records').all()).results;
-
+    const rows = (await h.db.prepare('SELECT * FROM p_records').all()).results; assert.equal(validatePurchasingArchive(rows), true);
+    const corrupt = structuredClone(rows), row = corrupt.find(row => row.kind === 'supplierInvoiceSubmission'), altered = JSON.parse(row.value); altered.document.sha256 = '0'.repeat(64); row.value = JSON.stringify(altered); assert.throws(() => validatePurchasingArchive(corrupt), /supplier_invoice_original/);
     await h.send('/api/purse/order-send/' + f.order.id + '/revoke', { reason: 'synthetic-purse-4518' }, f.buyer);
     assert.equal((await read(url)).status, 410); assert.equal((await post(h, url, { ...body, reference: 'synthetic-purse-4519' })).status, 410);
+});
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // Owner-consented supplier flip approves only confirmed three-way evidence, schedules once and holds excess or later risk through public doors
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('Owner-consented supplier flip approves only confirmed three-way evidence, schedules once and holds excess or later risk through public doors', async t => {
     const h = await harness(); t.after(() => h.close()); const f = await orderSendFixture(h);
     await f.send(); const link = orderLink(h), url = link.href + '/invoices';
     await post(h, link, { decision: 'acknowledge', revision: f.order.revision, consent: true, name: 'synthetic-purse-4600' });
@@ -134,7 +133,7 @@ export async function supplier_invoiceFlow(){
     await h.command('supplier-invoice-schedule',schedule,f.buyer);
     assert.equal((await (await read(url)).json()).invoices[0].status,'scheduled');
     await h.command('supplier-invoice-schedule',schedule,f.buyer,409);
-    let rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+    let rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
     const archive=join(h.dir,'synthetic-purse-approval.rer');
     await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
     const restored=await harness();t.after(()=>restored.close());
@@ -142,7 +141,7 @@ export async function supplier_invoiceFlow(){
     assert.equal((await restored.state()).data.invoice.find(value=>value.id===invoice.id).paymentSchedule.date,schedule.date);
     assert.equal((await restored.db.prepare('SELECT COUNT(*) n FROM p_order_send_links').first()).n,0,'Archives restore evidence without bearer authority');
     await restored.command('supplier-invoice-schedule',{...schedule,version:1},restored.owner,409);
-
+    const forged=structuredClone(rows), changed=forged.find(row=>row.kind==='invoice'&&row.id===invoice.id), value=JSON.parse(changed.value);value.paymentApproval.amountMinor=1;changed.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(forged),/supplier_invoice_payment_approval/);
     assert.equal((await post(h,url,{...body,reference:'synthetic-purse-4605'})).status,200);
     const excess=(await h.state()).data.invoice.find(value=>value.reference==='synthetic-purse-4605');
     for(const code of ['po-balance','duplicate-document','near-duplicate'])assert.ok(excess.flags.some(flag=>flag.code===code),code);
@@ -165,14 +164,12 @@ export async function supplier_invoiceFlow(){
     const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
     assert.equal((await read(url)).status,410);assert.equal((await post(h,url,body)).status,410,'Capture replay cannot restore an erased contact');
     await h.command('supplier-invoice-rule',{...rule,version:4},h.owner,409);
-    rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+    rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true,'Anonymous approval and schedule history survives erasure');
+});
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // Standing supplier approval refuses price and receipt discrepancies and holds source risk until reasoned review
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('Standing supplier approval refuses price and receipt discrepancies and holds source risk until reasoned review', async t => {
     for (const [unitAmount,received,remitTo,ownerChanged] of [['90.00','1',null,false],['100.00','0',null,false],['100.00','1','synthetic-purse-4655',false],['100.00','1',null,true]]) {
         const h=await harness();t.after(()=>h.close());const f=await orderSendFixture(h);await f.send();const link=orderLink(h),url=link.href+'/invoices';
         await post(h,link,{decision:'acknowledge',revision:f.order.revision,consent:true,name:'synthetic-purse-4650'});
@@ -204,7 +201,5 @@ export async function supplier_invoiceFlow(){
         assert.equal((await (await read(url)).json()).invoices[0].status,'received');
         await h.command('supplier-invoice-schedule',{invoice:invoice.id,version:0,date:'2026-11-20',reason:'Discrepancy cannot schedule'},f.buyer,409);
     }
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+});
 }

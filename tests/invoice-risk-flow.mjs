@@ -5,12 +5,13 @@ import {legacyHash} from '../src/purse/invoice-evidence-crypto.mjs'
 import portability from '../scripts/installer/portability.mjs'
 import {PDFDocument} from 'pdf-lib'
 import {harness} from './purse-harness.mjs'
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function invoice_riskFlow(){
-{
- // INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicates, repeated PDFs, remit changes and lookalike senders; reasoned review gates planning on every document door
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicates, repeated PDFs, remit changes and lookalike senders; reasoned review gates planning on every document door',async t=>{
  const h=await harness({protectedKey:createHash('sha256').update('synthetic-purse-1').digest('hex')});t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Canyon Field Services',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety']});
  const requester=await h.member('requester@example.test',['requester']),approver=await h.member('approver@example.test',['approver']),buyer=await h.member('buyer@example.test',['buyer']);
@@ -77,7 +78,7 @@ export async function invoice_riskFlow(){
   let semantic=output;for(const identity of publicOpaque)semantic=semantic.replaceAll(identity,'[public source identity]');
   for(const value of Object.values(protectedValues))assert.ok(!semantic.includes(value.slice(-4)),'Protected suffix in public output '+index+' outside proven source identities');
  }
-
+ assert.equal(validatePurchasingArchive(rows),true,'INVOICE-003 source originals and immutable reviews remain portable');
  // Upgrade fixtures reproduce the original v1 wire representation, including lost bank input.
  const root=JSON.parse((await h.db.prepare("SELECT value FROM p_records WHERE kind='supplierMatchingKey'").first()).value).secret;
  const beforeMigration=(await h.db.prepare("SELECT * FROM p_records WHERE kind='invoice'").all()).results;
@@ -113,46 +114,57 @@ export async function invoice_riskFlow(){
  assert.equal((await reenter({revision:-1})).status,409);
  const verified=await reenter({});assert.equal(verified.status,200,JSON.stringify(verified.value));assert.equal(verified.value.state,'verified-by-reentry');
  const afterRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
-
+ assert.equal(validatePurchasingArchive(afterRows),true);
  for(const original of legacy){assert.equal(JSON.parse(afterRows.find(r=>r.kind==='invoice'&&r.id===original.id).value).evidenceHash,original.evidenceHash,'Migration preserves original hash bytes');}
  const exported=afterRows.map(row=>portability.exportRow('p_records',structuredClone(row))),archiveBytes=JSON.stringify(exported);
  assert.ok(!archiveBytes.includes(root));assert.ok(!archiveBytes.includes(bankRouting));assert.ok(!archiveBytes.includes(bankAccount));
  const supplierMatching=JSON.parse(afterRows.find(r=>r.kind==='supplier'&&r.id===supplier.id).value).matching;
- assert.ok(!archiveBytes.includes(supplierMatching.bank));
-
+ assert.ok(!archiveBytes.includes(supplierMatching.bank));assert.equal(validatePurchasingArchive(exported),true);
+ for(const change of [i=>i.evidenceHash='1'.repeat(64),i=>i.evidence.state='unknown',i=>i.bankFingerprint='2'.repeat(64)]){
+  const tampered=structuredClone(exported),row=tampered.find(r=>r.kind==='invoice'&&r.id===target.id),i=JSON.parse(row.value);change(i);row.value=JSON.stringify(i);
+  assert.throws(()=>validatePurchasingArchive(tampered),/invoice_evidence_/);
+ }
+ const changedV2=structuredClone(exported),v2=changedV2.find(r=>r.kind==='invoice'&&JSON.parse(r.value).evidence?.representation==='v2'),vi=JSON.parse(v2.value);vi.evidenceHash='3'.repeat(64);v2.value=JSON.stringify(vi);assert.throws(()=>validatePurchasingArchive(changedV2),/invoice_evidence_unverified/);
  const redactedRoot=exported.find(r=>r.kind==='supplierMatchingKey');await h.db.prepare("UPDATE p_records SET value=? WHERE kind='supplierMatchingKey'").bind(redactedRoot.value).run();
  assert.equal((await reenter({})).status,503,'Default restore cannot verify legacy bank input without the old root');
  const persisted=JSON.stringify((await h.db.prepare("SELECT value FROM p_records WHERE kind IN ('invoice','audit','invoiceEvidenceMigration')").all()).results);
  for(const sensitive of [bankRouting,bankAccount,changedEvidence.remit.bankAccount,supplierMatching.bank])assert.ok(!persisted.includes(sensitive));
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // Legacy archive import migrates retained evidence without rewriting hashes, and tampered evidence refuses atomically through the archive door
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+});
+
+
+await scenario('Legacy archive import migrates retained evidence without rewriting hashes, and tampered evidence refuses atomically through the archive door',async t=>{
  const {legacyHistoryFixture}=await import('./invoice-history-fixture.mjs');
  const {createPortability}=await import('@runeditrun/rer/modules/portability');
  const {exportArchive,importArchive}=await import('@runeditrun/rer/internal/modules/portability/files.mjs');
  const {makePart,ContentVerifier,ArchiveVerifier}=await import('@runeditrun/rer/modules/portability/format');
  const {records,rows}=await import('./browser-archive.mjs');const {writeFile}=await import('node:fs/promises');const {join}=await import('node:path');
  const h=await harness();t.after(()=>h.close());const f=await legacyHistoryFixture(h);
- const bad=f.invoices.find(i=>i.reference==='Hash did not verify');await h.db.prepare("DELETE FROM p_records WHERE kind='invoice' AND id=?").bind(bad.id).run();await h.db.prepare("DELETE FROM p_records WHERE kind='invoiceEvidenceKey'").run();
+ const bad=f.invoices.find(i=>i.reference==='Hash did not verify');await h.db.prepare("DELETE FROM p_records WHERE kind IN ('invoice','invoiceException') AND id=?").bind(bad.id).run();await h.db.prepare("DELETE FROM p_records WHERE kind='invoiceEvidenceKey'").run();
  const before=(await h.db.prepare("SELECT id,value FROM p_records WHERE kind='invoice'").all()).results.map(r=>({id:r.id,hash:JSON.parse(r.value).evidenceHash}));
  const archive=join(h.dir,'legacy.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:{...portability,exportRow:undefined}}),archive,[]);
  const target=await harness({empty:true});t.after(()=>target.close());const service=await createPortability({db:target.db,buckets:{ORIGINALS:target.originals},policy:portability});
  async function tamper(source,path,mutate){const input=await records(source);mutate(rows(input));const content=new ContentVerifier(input[0]),wire=new ArchiveVerifier(input[0]);for(let i=1;i<input.length-1;i++){input[i]=await makePart(input[i].index,input[i].items);wire.add(input[i]);for(const item of input[i].items)content.add(item);}input.at(-1).contentHash=content.digest();input.at(-1).archiveHash=wire.digest();await writeFile(path,input.map(JSON.stringify).join('\n')+'\n',{mode:0o600});}
  const broken=join(h.dir,'legacy-broken.rer');await tamper(archive,broken,items=>{const item=items.find(r=>r.table==='p_records'&&r.row.kind==='invoice'&&JSON.parse(r.row.value).reference==='No bank input'),i=JSON.parse(item.row.value);i.evidenceHash='0'.repeat(64);item.row.value=JSON.stringify(i);});
  await assert.rejects(()=>importArchive(service,broken,[]),/invoice_evidence_unverified/);assert.equal((await target.db.prepare('SELECT COUNT(*) n FROM p_records').first()).n,0);
- await importArchive(service,archive,[]);const migrated=(await target.db.prepare("SELECT * FROM p_records").all()).results;
+ await importArchive(service,archive,[]);const migrated=(await target.db.prepare("SELECT * FROM p_records").all()).results;assert.equal(validatePurchasingArchive(migrated),true);
  for(const original of before){const i=JSON.parse(migrated.find(r=>r.kind==='invoice'&&r.id===original.id).value);assert.equal(i.evidenceHash,original.hash);assert.ok(['attested-at-migration','unavailable-source'].includes(i.evidence.state));}
  const clean=join(h.dir,'default.rer');await exportArchive(service,clean,[]);const defaultRows=rows(await records(clean));assert.ok(!JSON.stringify(defaultRows).includes(JSON.parse((await h.db.prepare("SELECT value FROM p_records WHERE kind='supplierMatchingKey'").first()).value).secret));
  const empty=await harness({empty:true});t.after(()=>empty.close());const emptyService=await createPortability({db:empty.db,buckets:{ORIGINALS:empty.originals},policy:portability});
  for(const [name,change]of [['hash',i=>i.evidenceHash='1'.repeat(64)],['state',i=>i.evidence.state='verified-by-reentry'],['bank',i=>i.bankAccount='9876543215678']]){
   const changed=join(h.dir,name+'.rer');await tamper(clean,changed,items=>{const item=items.find(r=>r.table==='p_records'&&r.row.kind==='invoice'),i=JSON.parse(item.row.value);change(i);item.row.value=JSON.stringify(i);});await assert.rejects(()=>importArchive(emptyService,changed,[]),/invoice_evidence_/);assert.equal((await empty.db.prepare('SELECT COUNT(*) n FROM p_records').first()).n,0,'A refused '+name+' archive publishes no domain row');
  }
- await importArchive(emptyService,clean,[]);
+ await importArchive(emptyService,clean,[]);assert.equal(validatePurchasingArchive((await empty.db.prepare('SELECT * FROM p_records').all()).results),true);
+});
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
+
+await scenario('Supplier group invoice ancestry keeps supplier references independent and refuses unresolved group over-balance planning',async t=>{
+ const {supplierGroupsFixture}=await import('./po-supplier-groups-fixture.mjs'),h=await harness();t.after(()=>h.close());const f=await supplierGroupsFixture(h),{cmd,buyer}=f,request=await f.create(),groups=(await f.convert(request)).supplierOrders;
+ await cmd('supplier',{...f.suppliers[1],status:'blocked',reason:'Supplier hold after preparation'});const before=(await h.state()).data;await cmd('issue',{id:groups[0].id,revision:2,reason:'Both suppliers must remain purchasable'},buyer,409);assert.deepEqual((await h.state()).data,before);
+ await cmd('supplier',{...f.suppliers[1],status:'active',reason:'Supplier hold independently cleared'});await cmd('issue',{id:groups[0].id,revision:2,reason:'Both current supplier groups reviewed'},buyer);
+ const inputs=groups.map(group=>({order:group.id,reference:'synthetic-purse-8170',source:'Supplier-specific original evidence',allocations:[{line:group.lines[0].id,quantity:'1',amountMinor:group.totalMinor}]})),bills=[];
+ for(const input of inputs){const bill=await cmd('invoice',input,buyer);bills.push(bill);assert.equal((await cmd('invoice',input,buyer)).id,bill.id);assert.equal(bill.balance.billedMinor,0);assert.ok(!bill.flags.some(flag=>flag.code==='po-balance'));}assert.notEqual(bills[0].id,bills[1].id);
+ const excess=await cmd('invoice',{...inputs[1],reference:'synthetic-purse-8171',allocations:[{line:groups[1].lines[0].id,quantity:'0.001',amountMinor:1}]},buyer);assert.equal(excess.balance.faceMinor,40000);assert.equal(excess.balance.billedMinor,40000);assert.equal(excess.balance.remainingMinor,0);assert.ok(excess.flags.some(flag=>flag.code==='po-balance'));
+ const terms=await cmd('payable-terms',{invoice:excess.id,version:0,invoiceDate:excess.invoiceDate,term:'Net 30',reason:'Retain held invoice'},buyer),unchanged=(await h.state()).data;await cmd('approve-payable',{invoice:excess.id,version:terms.version,reason:'Group exposure cannot override a risk hold'},buyer,409);assert.deepEqual((await h.state()).data,unchanged);
+});
 }

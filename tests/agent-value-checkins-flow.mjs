@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import {harness} from './purse-harness.mjs'
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
 
 const day=86400000
 async function fixture(t,options={}) {
@@ -30,12 +31,12 @@ async function fixture(t,options={}) {
  await policy(true)
  return {h,read,tick,policy,purchase,requester,approver,supplier}
 }
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function agent_value_checkinsFlow(){
-{
- // AGENT-005 real scheduled 30/90-day requester check-ins claim once concurrently, retain exact sources and consume paused intervals
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('AGENT-005 real scheduled 30/90-day requester check-ins claim once concurrently, retain exact sources and consume paused intervals',async t=>{
  const {h,read,tick,policy,purchase,requester,approver}=await fixture(t)
  const undelivered=await purchase('Awaiting delivery',requester,{kind:'seats',seats:50},false),quiet=h.messages.length
  await tick(undelivered.approvedAt+90*day)
@@ -104,13 +105,12 @@ export async function agent_value_checkinsFlow(){
  assert.equal(h.messages.length,before+1,'Re-enable cannot replay a suppressed or previously accepted interval')
  assert.equal((await read()).valueCheckin.filter(e=>e.request===request.id).length,2)
  const paused=await purchase('Owner-paused final check-in');await policy(false);const pausedBefore=h.messages.length;await tick(paused.deliveredAt+30*day);assert.equal(h.messages.length,pausedBefore);assert.equal((await read()).valueCheckin.find(e=>e.request===paused.id).outcome.status,'suppressed','Global pause still blocks the actual final send');await policy(true,['Software']);await tick(paused.deliveredAt+31*day);assert.equal(h.messages.length,pausedBefore,'Global pause also consumes the interval without replay')
+ const records=(await h.db.prepare('SELECT * FROM p_records').all()).results
+ assert.equal(validatePurchasingArchive(records),true,'Scheduled claims, source snapshots and requester confirmations satisfy restore validation')
+})
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // AGENT-005 scheduled check-ins reject current revoked/inactive requester authority and never retry uncertain mail or stale revisions
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('AGENT-005 scheduled check-ins reject current revoked/inactive requester authority and never retry uncertain mail or stale revisions',async t=>{
  let uncertain=false
  const {h,read,tick,policy,purchase,requester}=await fixture(t,{mail:()=>uncertain?new Response('Unavailable',{status:503}):Response.json({id:crypto.randomUUID()})})
  const revoked=await purchase('Revoked requester purchase')
@@ -145,13 +145,10 @@ export async function agent_value_checkinsFlow(){
  await tick(self.deliveredAt+30*day)
  assert.equal(h.messages.length,sent+1,'Exact current native owners may check in on their own purchases')
  assert.deepEqual(h.messages.at(-1).to,['owner@example.test'])
+})
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // AGENT-006 public Cron proposes in the recorded notice window once per source, honoring purchase types and current finance grants without sending
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('AGENT-006 public Cron proposes in the recorded notice window once per source, honoring purchase types and current finance grants without sending',async t=>{
  const {recurringScenarioFixture}=await import('./recurring-scenario-fixture.mjs')
  const f=await recurringScenarioFixture({mixedTypes:true});t.after(()=>f.close())
  const {h}=f,read=async()=>(await h.state()).data
@@ -217,7 +214,6 @@ export async function agent_value_checkinsFlow(){
  const after=await read()
  assert.deepEqual(await financialRows(),purchasingBefore,'Scheduled research changes no durable purchasing field or revision')
  for(const kind of ['commitment','decision','recurringScenario','recurringScenarioConsent','recurringScenarioDraft'])assert.deepEqual(after[kind],before[kind],'Scheduled research cannot execute '+kind)
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+ assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true,'Scheduled proposal and later-recipient custody restore without authority')
+})
 }

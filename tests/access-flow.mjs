@@ -1,13 +1,12 @@
 import {harness} from './purse-harness.mjs';
-
 import assert from 'node:assert/strict';
 import {accessFixture} from './access-fixture.mjs';
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function accessFlow(){
-{
- // Scoped procurement roles, native custom receiving, report sources, audit grants and readonly refusals through public HTTP
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('Scoped procurement roles, native custom receiving, report sources, audit grants and readonly refusals through public HTTP',async t=>{
  const f=await accessFixture(),{h,cookies:c,orders:o,invoices:i,sources,requests,pending,suppliers}=f;t.after(()=>h.close());const cmd=h.command;
  for(const role of ['requester','approver','buyer','receiver','ap-clerk','finance-viewer','auditor']){
   const {actor,data}=await h.state(c[role]);assert.ok(actor.roles.includes(role));assert.ok(data.request.some(r=>r.id===requests[0].id));assert.ok(!data.request.some(r=>r.id===requests[1].id));assert.ok(data.order.some(r=>r.id===o[0].id));assert.ok(!data.order.some(r=>r.id===o[1].id));
@@ -77,14 +76,11 @@ export async function accessFlow(){
  const zeroEvent=ownerEvents.find(e=>e.operation==='buyer-zero-limit'&&e.record===subject.email&&e.grantIndex===0);assert.equal(zeroEvent.email,'synthetic-purse-401@example.test');assert.deepEqual(zeroEvent.before,subject);assert.deepEqual(zeroEvent.after,retained);
  assert.ok((await h.send('/api/purse/audit.csv?subject='+subject.email,undefined,h.owner)).value.includes('buyer-zero-limit'));
  assert.ok(ownerEvents.some(e=>e.action==='member'&&e.after.email==='receiving-lead@example.test'&&e.after.grants.length===0&&e.before.grants.length===1));
- const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+ const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
+});
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // Native mutation and value snapshots keep private policies and revisions scoped while edited fields reach former approvers
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+await scenario('Native mutation and value snapshots keep private policies and revisions scoped while edited fields reach former approvers',async t=>{
  const h=await harness();t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'synthetic-purse-2800',currencies:['USD'],locations:['Austin'],costCentres:['Operations','Research'],projects:['General','Private']});
  const requester=await h.member('synthetic-purse-2801@example.test',['requester']);
@@ -118,7 +114,5 @@ export async function accessFlow(){
  assert.ok(later.inputs.sources.filter(source=>['request','revision','decision'].includes(source.kind)).every(source=>source.restricted&&!source.value));
  assert.ok(!JSON.stringify(later).includes('synthetic-purse-2809 private prior terms'));
  assert.equal(next.costCentre,'Research');
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+});
 }

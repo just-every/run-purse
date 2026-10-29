@@ -1,12 +1,14 @@
 
 import assert from 'node:assert/strict';
 import { codingAgentFixture as fixture } from './coding-agent-fixture.mjs';
+import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function coding_agentFlow(){
-{
- // AGENT-008 source-backed split review and two human GL corrections govern the third invoice without sends or purchasing changes
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+
+await scenario('AGENT-008 source-backed split review and two human GL corrections govern the third invoice without sends or purchasing changes', async t => {
  const f = await fixture(t), { h, cmd, requester, buyer, approver, receiver, scoped, supplier, makeRequest, submit, purchase, invoice, enable } = f;
  const first = await makeRequest('First near-threshold request', 95000), second = await makeRequest('Second near-threshold request', 95000);
  await submit(first); await submit(second);
@@ -59,20 +61,21 @@ export async function coding_agentFlow(){
  await cmd('coding-agent-review', { id: third.id, proposal: third.proposals[0].id, coding: { glAccount: '6200' }, reason: 'Paused' }, buyer, 409);
  await enable(true); await cmd('coding-agent-review', { id: third.id, proposal: third.proposals[0].id, coding: { glAccount: '6200' }, reason: 'Old policy version' }, buyer, 409);
  const followup=await makeRequest('New request from reviewed supplier history');const requestRun=await cmd('coding-agent-run',{kind:'request',id:followup.id});assert.equal(requestRun.suggestions.find(row=>row.field==='glAccount').value,'6200');const accepted=await cmd('coding-agent-review',{id:requestRun.id,proposal:requestRun.proposals[0].id,coding:requestRun.proposals[0].input.coding,reason:'Accept source-backed request coding examples'});assert.equal(accepted.outcome,'accepted');assert.deepEqual((await h.state()).data.request.find(row=>row.id===followup.id).lines,followup.lines,'Recording a learning example never bypasses ordinary request editing and approval');
-
+ const records = (await h.db.prepare('SELECT * FROM p_records').all()).results; assert.equal(validatePurchasingArchive(records), true);
+ const tampered = structuredClone(records), row = tampered.find(row => row.kind === 'agentRun' && row.id === third.id), value = JSON.parse(row.value); value.suggestions[0].value = 'forged'; row.value = JSON.stringify(value);
+ assert.throws(() => validatePurchasingArchive(tampered), /coding_agent_digest/);
  await cmd('member',{email:'coding-requester@example.test',name:'coding-requester@example.test',roles:['requester'],active:false});
  const {reauthenticateErasure}=await import('./erasure-flow.mjs');await reauthenticateErasure(h);
  const erasureMeta=await h.send('/api/purse/erasure',undefined,h.owner);const review=await h.send('/api/purse/erasure/preview',{kind:'member',id:'coding-requester@example.test',revision:erasureMeta.value.revision},h.owner);assert.equal(review.status,200,JSON.stringify(review.value));
  const erased=await h.send('/api/purse/erasure/execute',{...review.value.subject,revision:review.value.revision,review:review.value.review,fingerprint:review.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
- const anonymized=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+ const anonymized=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(anonymized),true,'Reviewed erasure preserves coding history and valid archive continuation');
  const anonymizedRun=JSON.parse(anonymized.find(row=>row.kind==='agentRun'&&row.id===third.id).value);assert.ok(anonymizedRun.sourceValuesErased);assert.ok(!JSON.stringify(anonymized).includes('coding-requester@example.test'));
+ const altered=structuredClone(anonymized),alteredRow=altered.find(row=>row.kind==='agentRun'&&row.id===third.id),alteredRun=JSON.parse(alteredRow.value);alteredRun.suggestions[0].value='forged-after-erasure';alteredRow.value=JSON.stringify(alteredRun);assert.throws(()=>validatePurchasingArchive(altered),/coding_agent_digest/);
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
-{
- // AGENT-008 flags preferred supplier sources and separates day, requester, currency and current source scope
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+});
+
+
+await scenario('AGENT-008 flags preferred supplier sources and separates day, requester, currency and current source scope', async t => {
  const { h, cmd, requester, buyer, approver, supplier, makeRequest, submit, enable } = await fixture(t);
  await enable(true);
  const preferred = await cmd('supplier', { name: 'Preferred safety provider', status: 'preferred', reason: 'Approved preferred source' }, buyer);
@@ -89,7 +92,5 @@ export async function coding_agentFlow(){
  await cmd('coding-agent-review', { id: reviewRun.id, proposal: reviewRun.proposals[0].id, coding: { project: 'Unknown project' }, reason: 'Unknown coding' }, requester, 400);
  await cmd('member', { email: 'coding-requester@example.test', name: 'Requester', active: false, roles: ['requester'] });
  await cmd('coding-agent-review', { id: reviewRun.id, proposal: reviewRun.proposals[0].id, coding: { glAccount: '6200' }, reason: 'Revoked capability' }, requester, 403);
-
- } finally {for(const close of cleanups.reverse())await close();}
-}
+});
 }

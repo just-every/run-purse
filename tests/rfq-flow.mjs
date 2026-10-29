@@ -6,12 +6,13 @@ import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/port
 import portability from '../scripts/installer/portability.mjs';
 import {PDFDocument} from 'pdf-lib';
 import {join} from 'node:path';
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
+async function scenario(name,run){const cleanups=[];const t={after:fn=>cleanups.push(fn),test:async(title,fn)=>fn(t)};try{await run(t);}catch(error){error.message=name+': '+error.message;throw error;}finally{for(const close of cleanups.reverse())await close();}}
 
 export async function rfqFlow(){
-{
- // SOURCE-001 supplier links, immutable revisions, reminders, cross-supplier award and source-backed savings
- const cleanups=[]; const t={after:fn=>cleanups.push(fn)};
- try {
+
+
+await scenario('SOURCE-001 supplier links, immutable revisions, reminders, cross-supplier award and source-backed savings',async t=>{
  let failMail=false;const h=await harness({mail:async()=>{if(failMail)throw new Error('Synthetic uncertain mail transport');return Response.json({id:crypto.randomUUID()});}});t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Field procurement',currencies:['USD','CAD'],locations:['Denver','Boulder'],costCentres:['Operations','IT'],projects:['Safety']});
  const requester=await h.member('requester@example.test',['requester']),buyer=await h.member('buyer@example.test',['buyer']),approver=await h.member('approver@example.test',['approver']);
@@ -55,7 +56,7 @@ assert.equal(historical.lines[0].unitMinor,95000);assert.equal(winner.lines[0].u
  const invoice=await cmd('invoice',{order:order.id,reference:'RFQ-SIX',source:'Original supplier invoice',allocations:[{line:order.lines[0].id,quantity:'6',amountMinor:540000}]},buyer);assert.equal((await report()).totals[0].realizedMinor,0);
  await cmd('payable-terms',{invoice:invoice.id,version:0,invoiceDate:'2026-10-20',term:'Net 30',reason:'Invoice terms'},buyer);await cmd('approve-payable',{invoice:invoice.id,version:1,reason:'Cash planning approved'},buyer);
  const savings=await report();assert.deepEqual(savings.totals,[{currency:'USD',negotiatedMinor:100000,realizedMinor:60000}]);assert.equal(savings.rows[0].firstQuote,firstQuote.id);assert.equal(savings.rows[0].awardedQuote,wonQuote.id);assert.equal(savings.realizedRows[0].invoice,invoice.id);assert.equal(savings.realizedRows[0].award,award.id);const audit=await h.send('/api/purse/audit?subject='+request.id,undefined,h.owner);assert.equal(audit.status,200);for(const action of ['rfq-create','rfq-invitation','rfq-link-reissue','rfq-mail-outcome','rfq-reminder','rfq-nonresponse','rfq-deadline','rfq-response','rfq-award'])assert.ok(audit.value.events.some(e=>e.action===action),action);const exported=await h.send('/api/purse/audit.csv?subject='+request.id,undefined,h.owner);assert.equal(exported.status,200);assert.match(exported.value,/rfq-mail-outcome/);
-
+ assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
  const singleRequest=await cmd('request',{...draft,title:'Award the first offer itself'},requester),single=await cmd('rfq-create',{...config,request:singleRequest.id},buyer);
  const singleLink=await h.send('/api/purse/rfq/send',{rfq:single.id,supplier:suppliers[0].id},buyer);assert.equal(singleLink.status,200);const singlePayload={...payload('1000'),lines:single.lines.map(l=>({...l,requestLine:l.id,unitAmount:'1000'}))};assert.equal((await respond(singleLink.value.url,singlePayload)).status,200);
  const only=(await h.state(buyer)).data.rfqResponse.find(r=>r.rfq===single.id),singleAward=await cmd('rfq-award',{rfq:single.id,revision:1,firstResponse:only.id,response:only.id,reason:'First complete offer selected without invented savings'},buyer),same=(await h.state(buyer)).data.quoteAward.find(a=>a.id===singleAward.rfqAward);assert.equal(same.firstQuote,same.awardedQuote,'Awarding the baseline does not fabricate a second supplier offer');
@@ -64,7 +65,7 @@ assert.equal(historical.lines[0].unitMinor,95000);assert.equal(winner.lines[0].u
  const currencyLinks=[];for(const supplier of suppliers.slice(0,2)){const sent=await h.send('/api/purse/rfq/send',{rfq:currencyRfq.id,supplier:supplier.id},buyer);assert.equal(sent.status,200);currencyLinks.push(sent.value.url);}
  const offer=(currency,unitAmount)=>({...payload(unitAmount,currency),lines:currencyRfq.lines.map(l=>({...l,requestLine:l.id,unitAmount}))});assert.equal((await respond(currencyLinks[0],offer('CAD','1000'))).status,200);assert.equal((await respond(currencyLinks[1],offer('USD','950'))).status,200);
  const separate=(await h.state(buyer)).data.rfqResponse.filter(r=>r.rfq===currencyRfq.id);assert.deepEqual([...new Set(separate.map(r=>r.currency))].sort(),['CAD','USD']);const usd=separate.find(r=>r.currency==='USD'),cad=separate.find(r=>r.currency==='CAD');await cmd('rfq-award',{rfq:currencyRfq.id,revision:1,firstResponse:cad.id,response:usd.id,reason:'Currencies must not combine'},buyer,400);await cmd('rfq-award',{rfq:currencyRfq.id,revision:1,firstResponse:usd.id,response:usd.id,reason:'USD offer explicitly chosen'},buyer);assert.deepEqual((await report()).totals,[{currency:'USD',negotiatedMinor:100000,realizedMinor:60000}],'Unapproved new-source awards never enter savings');
-
+ assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
  await cmd('rfq-create',{...config,request:singleRequest.id,revision:2,deadline:new Date(Date.now()+1800000).toISOString(),reminderAt:new Date(Date.now()+1000).toISOString()},buyer,400); const jsonRevision={...payload('900'),lines:uncertainRfq.lines.map(l=>({...l,requestLine:l.id,unitAmount:'900'})),files:[{name:'json-drawing.pdf',mediaType:'application/pdf',base64:largeFiles[0].toString('base64')}]};assert.equal((await respond(newLink.value.url,jsonRevision)).status,200);const jsonResponse=(await h.state(buyer)).data.rfqResponse.find(r=>r.rfq===uncertainRfq.id);const jsonDownload=await fetch(h.origin+`/api/purse/rfq-original/${jsonResponse.id}/${jsonResponse.files[0].id}`,{headers:{cookie:buyer}});assert.deepEqual(Buffer.from(await jsonDownload.arrayBuffer()),largeFiles[0],'SOURCE-001 JSON retains a 10 MB original');
  // Finer native grants bind configuration, invitations, response history, awards and private bytes to the RFQ's request.
  const scopedAp=await h.member('synthetic-rfq-ap@example.test',['ap-clerk']);
@@ -102,6 +103,5 @@ assert.equal(historical.lines[0].unitMinor,95000);assert.equal(winner.lines[0].u
  for(const response of (await h.state(buyer)).data.rfqResponse)for(const file of response.files){const r=await restored.send(`/api/purse/rfq-original/${response.id}/${file.id}`,undefined,restoredOwner);assert.equal(r.status,200);const original=await h.originals.get(file.key),copy=await restored.originals.get(file.key);assert.deepEqual(Buffer.from(await copy.arrayBuffer()),Buffer.from(await original.arrayBuffer()),'SOURCE-001 complete archive preserves every R2 original');}
  assert.equal((await restored.db.prepare('SELECT count(*) AS n FROM p_rfq_links').first()).n,0,'SOURCE-001 bearer authority is not restored');
 
- } finally {for(const close of cleanups.reverse())await close();}
-}
+});
 }

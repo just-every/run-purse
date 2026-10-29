@@ -1,3 +1,4 @@
+import { supplierLineExposure, hasSupplierGroups, requireGroupable } from './po-supplier-groups';
 import { allocateLineTax } from './po-line-tax';
 import { splitValues } from './intake-fields';
 import { buyerLimits, type BuyerLimit } from './access';
@@ -24,9 +25,10 @@ function price(before: number, after: number, limit: BuyerLimit) {
 }
 /** A single scoped grant must cover the whole edit; grants never lend each other limits. */
 function covers(limit: BuyerLimit, request: Data, face: Data) {
+    const sourceTotals=supplierLineExposure(request),editedTotals=supplierLineExposure(face);
     return limit.unlimited || price(request.totalMinor, face.totalMinor, limit) && request.lines.every((before: Data, index: number) => {
         const after = face.lines[index];
-        return after?.id === before.id && price(before.unitMinor, after.unitMinor, limit) && price(before.totalMinor, after.totalMinor, limit) && percentage(before.q, after.q, limit.quantityPercent);
+        return after?.id === before.id && price(before.unitMinor, after.unitMinor, limit) && price(sourceTotals[index], editedTotals[index], limit) && percentage(before.q, after.q, limit.quantityPercent);
     });
 }
 export function currentConversionLimit(s: State, a: Actor, request: Data, face: Data) {
@@ -48,14 +50,14 @@ export function conversionEdits(s: State, a: Actor, request: Data, input: unknow
     }
     const before = conversionFace(request), after = conversionFace(request);
     const destinations = new Set(request.lines.map((line: Data) => byId.get(line.id)?.supplier ?? edits.supplier ?? line.supplier ?? request.supplier));
-    requireThat(destinations.size === 1, 'A conversion document must have one supplier; convert supplier groups separately', 409);
-    const destination = [...destinations][0] as string;
-    if (destination !== request.supplier) {
-        const counterparty = supplier(s, destination);
-        requireThat(!lapsedSupplierDocuments(s,destination).length, 'Required supplier document has lapsed; refresh and review it before a new PO',409);
-        after.supplier = destination;
-        after.supplierSnapshot = { id: counterparty.id, name: counterparty.name, address: counterparty.address || '', remitTo: counterparty.remitTo || '', postalState: counterparty.postalState || '', contacts: structuredClone(counterparty.contacts), contractRef: counterparty.contractRef };
-    }
+    const destination = destinations.size === 1 ? [...destinations][0] as string : request.supplier;
+    const snapshot = (id: string) => {
+        const counterparty = supplier(s,id);
+        requireThat(!lapsedSupplierDocuments(s,id).length, 'Required supplier document has lapsed; refresh and review it before a new PO',409);
+        return { id: counterparty.id, name: counterparty.name, address: counterparty.address || '', remitTo: counterparty.remitTo || '', postalState: counterparty.postalState || '', contacts: structuredClone(counterparty.contacts), contractRef: counterparty.contractRef };
+    };
+    for (const id of destinations) snapshot(id as string);
+    if (destination !== request.supplier) { after.supplier = destination; after.supplierSnapshot = snapshot(destination); }
     after.lines = after.lines.map((line: Data) => {
         const edit = byId.get(line.id); if (!edit) return line;
         requireThat(!line.service, 'Service value and milestone edits require amendment and renewed approval', 409);
@@ -64,7 +66,12 @@ export function conversionEdits(s: State, a: Actor, request: Data, input: unknow
         requireThat(q >= (line.carriedAccepted ?? 0) + (line.carriedCancelled ?? 0), 'Conversion cannot remove received or cancelled quantities', 409);
         return { ...line, ...(Object.hasOwn(edit,'unit')?{unit:text(edit.unit,'Conversion unit of measure',200)}:{}), ...(Object.hasOwn(edit,'partNumber')?{partNumber:text(edit.partNumber,'Conversion SKU',200)}:{}), quantity: q === line.q ? line.quantity : edit.quantity, q, unitMinor, totalMinor: extended(q, unitMinor), ...(line.allocations ? {allocations: splitValues(s,line.allocations,extended(q,unitMinor))} : {}) };
     });
-    after.lines=after.lines.map((line:Data)=>line.supplier?{...line,supplier:destination,supplierSnapshot:structuredClone(after.supplierSnapshot)}:line);
+    after.lines=after.lines.map((line:Data)=>{
+        const id=byId.get(line.id)?.supplier ?? edits.supplier ?? line.supplier ?? request.supplier;
+        if(destinations.size>1 || line.supplier || id!==request.supplier) return {...line,supplier:id,supplierSnapshot:id===(request.lines.find((source:Data)=>source.id===line.id)?.supplier ?? request.supplier) ? structuredClone(request.lines.find((source:Data)=>source.id===line.id)?.supplierSnapshot ?? request.supplierSnapshot) : snapshot(id)};
+        return line;
+    });
+    if(hasSupplierGroups(after))requireGroupable(s,request);
     if (['charges','freightMinor','taxMinor'].some(field => Object.hasOwn(edits,field))) Object.assign(after, normalizePurchaseCharges(edits,request));
     if(after.taxMinor!==before.taxMinor){for(const line of after.lines)line.lineTaxMinor=null;allocateLineTax(after.lines,after.taxMinor);}
     after.totalMinor = minor(after.lines.reduce((total: number, line: Data) => total + line.totalMinor, 0) + after.freightMinor + after.taxMinor + after.otherChargesMinor, 'Conversion total');
@@ -84,7 +91,7 @@ export function requireConversionSource(s: State, a: Actor, request: Data, order
         return Object.hasOwn(variance.before,'supplier')?snapshot:{lines:snapshot.lines,freightMinor:snapshot.freightMinor,taxMinor:snapshot.taxMinor,totalMinor:snapshot.totalMinor};
     };
     const withoutDates=(value:Data)=>({...value,lines:value.lines.map(({needDate,...line}:Data)=>line)});
-    requireThat(variance.sourceRequest === request.id && variance.sourceRevision <= request.revision && JSON.stringify(variance.before) === JSON.stringify(face(source)) && JSON.stringify(variance.after) === JSON.stringify(face(order)) && JSON.stringify(withoutDates(variance.after)) === JSON.stringify(withoutDates(face(request))), 'Conversion source changed; amend and renew approval', 409);
+    requireThat(variance.sourceRequest === request.id && variance.sourceRevision <= request.revision && JSON.stringify(variance.before) === JSON.stringify(face(source)) && JSON.stringify(variance.after) === JSON.stringify(face(order.supplierGroup ? request : order)) && JSON.stringify(withoutDates(variance.after)) === JSON.stringify(withoutDates(face(request))), 'Conversion source changed; amend and renew approval', 409);
     if (variance.approvalRenewed) return undefined;
-    return currentConversionLimit(s, a, source, conversionFace(order));
+    return currentConversionLimit(s, a, source, conversionFace(order.supplierGroup ? request : order));
 }
