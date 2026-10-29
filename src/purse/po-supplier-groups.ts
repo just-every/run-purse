@@ -52,7 +52,7 @@ export function supplierGroupFaces(request: Data): Data[] {
     });
 }
 export function requireGroupable(s: State, request: Data) {
-    requireThat(!request.imported && !request.adoption && !request.adoptedDisposition && !request.amends && !request.recurring && !request.recurringSeries && !request.cancellation && (!request.purchaseType || request.purchaseType === 'goods') && !request.poDetails?.blanket && !request.poDetails?.depositTerms && request.lines.every((line: Data) => !line.service && !line.carriedAccepted && !line.carriedCancelled),
+    requireThat(!request.imported && !request.adoption && !request.adoptedDisposition && !request.amends && !request.recurring && !request.recurringSeries && !request.cancellation && (!request.purchaseType || request.purchaseType === 'goods') && !request.poDetails?.blanket && !request.poDetails?.deposit && !request.poDetails?.depositTerms && request.lines.every((line: Data) => !line.service && !line.carriedAccepted && !line.carriedCancelled),
         'Supplier groups support only wholly unissued native ordinary goods; existing liabilities require their original disposition', 409);
     requireThat(!all(s, 'order').some(order => order.request === request.id), 'Supplier group source lines are already allocated to purchase orders', 409);
 }

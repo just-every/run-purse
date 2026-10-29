@@ -1,3 +1,4 @@
+import { nativeDepositPosition } from './deposit-position';
 import { creditInvoiceVersion, invoiceCreditApplied } from './invoices';
 import { mayAmendTravel } from './travel';
 import { requestBudgetReview } from './budget-allocations';
@@ -47,7 +48,7 @@ export function purchasingProjection(s: State, a: Actor) {
             mayPrepareValue: ['request.edit', 'request.approve', 'receive', 'procurement.manage'].some(permission => allowed(s, a, permission, request)),
             mayConvert: request.purchaseType !== 'travel' && allowed(s, a, 'po.convert', request), mayChangeNeedDate: request.purchaseType !== 'travel' && request.status === 'approved' && (request.requester === a.id && allowed(s,a,'request.edit',request) || allowed(s,a,'request.approve',request)), mayManagePurchasing: allowed(s, a, 'procurement.manage', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
             buyerLimit: buyerLimit(s, a, request), buyerLimits: buyerLimits(s, a, request) })),
-        order: orders.map(order => ({ ...order, ...(orderAdoption(s, order) ? { adoptionBasis: 'Owner adopted imported obligation; source approval is historical', ...(allowed(s,a,'invoice.read',order) ? { depositPosition: adoptionDeposits(s, order) } : {}) } : {}), ...(order.poDetails?.blanket ? blanketView(s, a, order) : {}),
+        order: orders.map(order => ({ ...order, ...(order.poDetails?.deposit && allowed(s,a,'invoice.read',order) ? {nativeDepositPosition:nativeDepositPosition(s,order)} : {}), ...(orderAdoption(s, order) ? { adoptionBasis: 'Owner adopted imported obligation; source approval is historical', ...(allowed(s,a,'invoice.read',order) ? { depositPosition: adoptionDeposits(s, order) } : {}) } : {}), ...(order.poDetails?.blanket ? blanketView(s, a, order) : {}),
             receivingDate: receiptDay(s, Date.now()), receiverAssignment: receiptAssignment(s, order), mayReceive: mayReceive(s, a, order), receiptVersion: receiptVersion(s, order),
             ...(mayReceive(s, a, order) ? { receiptMatchingStatus: receiptMatchingStatus(s, order) } : {}),
             mayCaptureInvoice: allowed(s, a, 'invoice.capture', order), maySetCashExpectation: allowed(s, a, 'payable.terms', order),

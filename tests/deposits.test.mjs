@@ -1,0 +1,123 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { join } from 'node:path';
+import { createPortability } from '@runeditrun/rer/modules/portability';
+import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import portability from '../scripts/installer/portability.mjs';
+import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
+import { harness } from './purse-harness.mjs';
+import { depositsFixture, depositDocument, depositEmail } from './deposits-fixture.mjs';
+import { pdfContent } from './pdf-content.mjs';
+import { reauthenticateErasure } from './erasure-flow.mjs';
+
+test('Native deposit sanity journey preserves exact terms, source custody, once-only money and current owner authority across final billing, erasure and restore', async t => {
+    const h = await harness(); t.after(() => h.close()); const f = await depositsFixture(h), cmd = h.command;
+    const records = async () => (await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results;
+    const refused = async (op, body, cookie = f.ap, status = 409) => { const before = await records(); await cmd(op, body, cookie, status); assert.deepEqual(await records(), before, op + ' refusal preserves all evidence'); };
+    for (const term of [{ basis: 'amount', amountMinor: 2000001, trigger: 'issue' }, { basis: 'percentage', percentage: '100.01', trigger: 'issue' }, { basis: 'percentage', percentage: '0.001', trigger: 'issue' }, { basis: 'amount', amountMinor: 1, trigger: 'acknowledgment' }]) await refused('request', f.input(term), f.requester, 400);
+    const { request, order } = await f.purchase();
+    const original = async () => {
+        const response = await h.mf.dispatchFetch(h.origin + '/api/purse/order-pdf/' + order.id, { headers: { cookie: f.buyer } });
+        assert.equal(response.status, 200);
+        return pdfContent(new Uint8Array(await response.arrayBuffer()));
+    };
+    const beforePdf = await original(); assert.match(beforePdf.text, /50.00%/); assert.match(beforePdf.text, /USD 10000.00 due on issue/);
+    const staged = await f.stage(order, 'synthetic-purse-7210'), deposit = await f.confirm(staged);
+    assert.equal(deposit.totalMinor, 1000000); assert.equal(deposit.allocations[0].q, 0); assert.equal(deposit.paymentApproval, undefined);
+    assert.equal((await h.state()).data.order.find(row => row.id === order.id).positions[0].accepted, 0);
+    assert.ok(!(await h.state()).data.discrepancies.some(row => row.invoiceId === deposit.id && row.receiptShortfall));
+    await refused('approve-payable', { invoice: deposit.id, version: 0, reason: 'Bypass standing consent' });
+    const rule = await f.ruleInput(order);
+    await refused('deposit-rule', rule, f.ap, 403); await refused('deposit-rule', { ...rule, consent: false }, h.owner, 400);
+    await refused('deposit-rule', { ...rule, termKey: 'changed' }, h.owner);
+    await cmd('deposit-rule', rule);
+    let data = (await h.state()).data, approved = data.invoice.find(row => row.id === deposit.id);
+    assert.equal(approved.paymentApproval.match, 'deposit-two-way');
+    assert.equal(data.payable.find(row => row.invoice === deposit.id).dueDate, order.issuedAt.slice(0, 10));
+    assert.equal(data.cashRequirements.bills.find(row => row.invoice === deposit.id).amountMinor, 1000000);
+    assert.equal(data.cashRequirements.commitments.find(row => row.order === order.id).amountMinor, 1000000);
+    assert.equal(data.periodBudgets.find(row => row.currency === 'USD').actualMinor, 1000000);
+    assert.equal(data.periodBudgets.find(row => row.currency === 'USD').committedMinor, 1000000);
+    const report = async () => (await h.send('/api/purse/spend-report', undefined, h.owner)).value;
+    assert.equal((await report()).rows.filter(row => row.order === order.id && row.kind === 'actual').reduce((n, row) => n + row.amountMinor, 0), 1000000);
+    const privateUrl = '/api/purse/download/attachment/' + staged.source.attachment;
+    assert.equal((await h.send(privateUrl, undefined, f.ap)).status, 200); assert.equal((await h.send(privateUrl, undefined, f.receiver)).status, 403); assert.equal((await h.send(privateUrl)).status, 401);
+    const scoped = await h.member(depositEmail(7211), ['ap-clerk']);
+    await cmd('member', { email: depositEmail(7211), name: 'Austin AP', active: true, grants: [{ role: 'ap-clerk', scope: { locations: ['Austin'] } }] });
+    await refused('invoice-reading-confirm', staged.confirm, scoped, 403); assert.equal((await h.send(privateUrl, undefined, scoped)).status, 403);
+    const excess = await f.confirm(await f.stage(order, 'synthetic-purse-7212', 1000001));
+    const second = await f.confirm(await f.stage(order, 'synthetic-purse-7213'));
+    for (const bill of [second, excess]) {
+        assert.ok(bill.flags.some(flag => flag.code === 'deposit-balance')); assert.equal(bill.paymentApproval, undefined);
+        await refused('approve-payable', { invoice: bill.id, version: 0, reason: 'Excess deposit must remain held' });
+    }
+    // Excess evidence stays on its own order family. It cannot grant additional approval or erase the original.
+    await refused('amend', { ...request, id: request.id, reason: 'Change deposit after invoice', poDetails: { deposit: { basis: 'amount', amountMinor: 900000, trigger: 'issue' } } }, f.requester);
+    assert.equal((await original()).text, beforePdf.text);
+    await cmd('deposit-rule', await f.ruleInput(order, false));
+    assert.ok(!(await h.state()).data.cashRequirements.bills.some(row => row.invoice === deposit.id));
+    const pausedFinal = await f.stage(order, 'synthetic-purse-7214', 2000000, 'deposit-final');
+    await refused('invoice-reading-confirm', pausedFinal.confirm);
+    assert.ok((await h.state()).data.invoice.find(row => row.id === deposit.id).paymentApproval, 'Pausing preserves historical approval');
+
+    // A clean independent purchase proves the complete final-bill path without waiving the unsafe evidence above.
+    const main = await f.purchase(), mainStage = await f.stage(main.order, 'synthetic-purse-7220');
+    await cmd('deposit-rule', await f.ruleInput(main.order));
+    let mainDeposit = await f.confirm(mainStage);
+    for (const flag of mainDeposit.flags) await cmd('invoice-risk-review', { invoice: mainDeposit.id, flag: flag.id, version: (await h.state()).data.invoice.find(row => row.id === mainDeposit.id).riskVersion, reason: 'Distinct machinery purchase and independently checked original' }, f.ap);
+    mainDeposit = (await h.state()).data.invoice.find(row => row.id === mainDeposit.id); assert.ok(mainDeposit.paymentApproval);
+    const finalStage = await f.stage(main.order, 'synthetic-purse-7221', 2000000, 'deposit-final');
+    const finalBill = await f.confirm(finalStage); assert.equal(finalBill.totalMinor, 1000000); assert.equal(finalBill.grossMinor, 2000000); assert.equal(finalBill.depositAppliedMinor, 1000000); assert.equal(finalBill.paymentApproval, undefined);
+    await refused('approve-payable', { invoice: finalBill.id, version: 0, reason: 'Premature final approval' });
+    const evaluation = {invoice:finalBill.id,termKey:finalBill.depositTermKey,ruleVersion:1,documentSha256:finalBill.document.sha256};
+    await refused('deposit-evaluate',evaluation);
+    await f.receive(main.order);
+    await cmd('deposit-evaluate',evaluation,f.ap);
+    data = (await h.state()).data; const final = data.invoice.find(row => row.id === finalBill.id);
+    assert.equal(final.paymentApproval.match, 'deposit-final-three-way'); assert.equal(data.depositApplication.filter(row => row.order === main.order.id).length, 1);
+    assert.deepEqual(data.cashRequirements.bills.filter(row => row.order === main.order.id).map(row => row.amountMinor).sort(), [1000000, 1000000]);
+    assert.equal(data.cashRequirements.commitments.filter(row => row.order === main.order.id).length, 0);
+    assert.equal((await report()).rows.filter(row => row.order === main.order.id && row.kind === 'actual').reduce((n, row) => n + row.amountMinor, 0), 2000000);
+    assert.equal(data.periodBudgets.find(row => row.currency === 'USD').sources.find(row => row.order === main.order.id).actualMinor, 2000000);
+    assert.ok(!final.sourcePayment && !mainDeposit.sourcePayment && !final.pantry, 'Application never settles either payable or posts a ledger');
+    const accrual = await h.send('/api/purse/accrual-report/view?cutoff=2099-12-31', undefined, h.owner);
+    assert.equal(accrual.status, 200, JSON.stringify(accrual.value));
+    assert.equal(accrual.value.rows.filter(row => row.order === main.order.id).reduce((n, row) => n + row.accrualMinor, 0), 0);
+    const prepaid = accrual.value.deposits.find(row => row.invoice === mainDeposit.id); assert.equal(prepaid.amountMinor, 1000000); assert.equal(prepaid.appliedMinor, 1000000);
+    await refused('invoice-reading-confirm', finalStage.confirm);
+    const duplicateFinal = await f.stage(main.order, 'synthetic-purse-7222', 2000000, 'deposit-final'); await refused('invoice-reading-confirm', duplicateFinal.confirm);
+    await refused('close-order', { id: main.order.id, version: 0, reason: 'Unsupported deposit closure' }, f.buyer);
+    const exported = await h.send('/api/purse/accounting', undefined, h.owner); assert.match(exported.value, /deposit-final/); assert.match(exported.value, /Unmapped; unpostable/);
+    assert.match((await h.send('/api/purse/audit.csv', undefined, h.owner)).value, /deposit-application/);
+    assert.equal(validatePurchasingArchive(await records()), true);
+
+    const archive = join(h.dir, 'synthetic-purse-7223.rer');
+    await exportArchive(await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability }), archive, []);
+    const restored = await harness({ empty: true }); t.after(() => restored.close());
+    await importArchive(await createPortability({ db: restored.db, buckets: { ORIGINALS: restored.originals }, policy: portability }), archive, []);
+    assert.equal(await restored.db.prepare('SELECT count(*) AS n FROM p_deposit_rule_authority').first('n'), 0);
+    const owner = await restored.send('/auth/bootstrap', { token: 'synthetic-local-test-bootstrap-token-0123456789', displayName: 'New owner' });
+    assert.equal(owner.status, 303);
+    const restoredData = (await restored.send('/api/purse/state', undefined, owner.cookie)).value.data;
+    assert.equal(restoredData.depositApplication.length, 1); assert.ok(restoredData.invoice.find(row => row.id === mainDeposit.id).paymentApproval);
+    assert.equal(restoredData.order.find(row => row.id === main.order.id).nativeDepositPosition.enabled, false);
+    assert.equal(restoredData.cashRequirements.bills.filter(row => row.order === main.order.id).length, 0);
+
+    // A later duplicate original suspends eligibility without erasing either genuine approval.
+    await cmd('attachment', { kind: 'invoice', record: mainDeposit.id, name: staged.document.name, mediaType: staged.document.mediaType, base64: staged.document.base64 }, f.ap);
+    data = (await h.state()).data;
+    assert.ok(data.invoice.find(row => row.id === mainDeposit.id).flags.some(flag => flag.code === 'duplicate-document'));
+    assert.ok(data.invoice.find(row => row.id === mainDeposit.id).paymentApproval);
+    assert.equal(data.cashRequirements.bills.filter(row => row.order === main.order.id).length, 0);
+    await cmd('member', { email: depositEmail(7203), name: 'Revoked AP', active: true, roles: ['requester'] });
+    await refused('invoice-source', { order: main.order.id, document: await depositDocument(main.order, 'synthetic-purse-7224', 1000000) }, f.ap, 403);
+    assert.equal((await h.send(privateUrl, undefined, f.ap)).status, 403);
+    await reauthenticateErasure(h);
+    const inventory = await h.send('/api/purse/erasure', undefined, h.owner);
+    const preview = await h.send('/api/purse/erasure/preview', { kind: 'contact', id: f.supplier.id, email: depositEmail(7206), revision: inventory.value.revision }, h.owner);
+    assert.equal(preview.status, 200, JSON.stringify(preview.value));
+    const erased = await h.send('/api/purse/erasure/execute', { ...preview.value.subject, revision: preview.value.revision, review: preview.value.review, fingerprint: preview.value.fingerprint, consent: true }, h.owner);
+    assert.equal(erased.status, 200, JSON.stringify(erased.value)); assert.equal((await h.send(privateUrl, undefined, h.owner)).status, 410);
+    await refused('invoice-reading-confirm', staged.confirm, h.owner);
+    assert.equal((await h.state()).data.depositApplication.length, 1); assert.equal(validatePurchasingArchive(await records()), true);
+});

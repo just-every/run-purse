@@ -1,3 +1,4 @@
+import { depositApprovalEligible } from './deposit-position';
 import { allowed, requirePermission } from './access';
 import { operationalOrder } from './adoption-position';
 import { budgetApportion } from './budget-allocations';
@@ -11,6 +12,7 @@ export const accrualDimensions = ['entity', 'department', 'location', 'supplier'
 const sum = (rows: Data[], key: string) => rows.reduce((n, row) => n + row[key], 0);
 /** A cash forecast, imported label or restored bearer never creates a bill approval. */
 function approvedBill(invoice: Data) {
+    if(invoice.depositKind === 'deposit-final') return invoice.sourceConfirmation === 'confirmed' && !invoice.sourceValuesErased && !invoice.exception && !invoice.disputed && !openInvoiceFlags(invoice).length && invoice.paymentApproval?.match === 'deposit-final-three-way' && invoice.paymentApproval.amountMinor === invoice.totalMinor && invoice.paymentApproval.documentSha256 === invoice.document?.sha256;
     const approval = invoice.paymentApproval;
     return !invoice.imported && invoice.supplierSubmission && invoice.sourceConfirmation === 'confirmed'
         && !invoice.exception && !invoice.disputed
@@ -53,6 +55,10 @@ export function accrualReport(s: State, a: Actor, filters: Data = {}) {
                 unappliedMinor: Math.max(0, deposit.amountMinor - (deposit.appliedMinor ?? 0)), basis: 'Imported prepaid evidence; historical application dates unavailable' });
             if (applied) warnings.add(order.number + ': later deposit applications require full PO-011 qualification; imported balance shown separately.');
         }
+        for(const invoice of bills.filter(invoice=>invoice.depositKind==='deposit' && invoice.paymentApproval && invoice.invoiceDate<=cutoff && day(invoice.paymentApproval.at)<=cutoff)) {
+            const applied = all(s,'depositApplication').filter(row=>row.depositInvoice===invoice.id && day(row.at)<=cutoff).reduce((sum,row)=>sum+row.amountMinor,0);
+            deposits.push({...identity,department:order.costCentre??'',location:order.location??'',entity:order.entity??'',glAccount:revision.glAccount??'',deposit:invoice.id,invoice:invoice.id,reference:invoice.reference,amountMinor:invoice.totalMinor,appliedMinor:applied,unappliedMinor:Math.max(0,invoice.totalMinor-applied),eligible:depositApprovalEligible(s,invoice),basis:'Approved native prepaid obligation; not received goods or settlement',posting:'unmapped'});
+        }
         for (const line of order.lines) {
             const sources: Data[] = [];
             for (const receipt of receipts.filter(receipt => ids.has(receipt.order) && receipt.line === line.id && ['receive', 'return'].includes(receipt.event))) {
@@ -72,9 +78,9 @@ export function accrualReport(s: State, a: Actor, filters: Data = {}) {
             // Closed receiving balances are never returned as open accrual lines at that cutoff.
             if (closed && receivedQ + closed >= line.q) continue;
             const approved: Data[] = [], excluded: Data[] = [];
-            for (const invoice of bills.filter(invoice => invoice.allocations.some((allocation: Data) => allocation.line === line.id))) {
+            for (const invoice of bills.filter(invoice => invoice.depositKind !== 'deposit' && invoice.allocations.some((allocation: Data) => allocation.line === line.id))) {
                 const allocation = invoice.allocations.find((allocation: Data) => allocation.line === line.id);
-                const qualifies = approvedBill(invoice) && !exceptions.has(invoice.id) && invoice.invoiceDate && invoice.invoiceDate <= cutoff;
+                const qualifies = approvedBill(invoice) && depositApprovalEligible(s,invoice) && !exceptions.has(invoice.id) && invoice.invoiceDate && invoice.invoiceDate <= cutoff;
                 if (!invoice.invoiceDate) warnings.add(order.number + ': invoice dates are missing; undated bills do not reduce this report.');
                 const proof = { invoice: invoice.id, order: invoice.order, reference: invoice.reference, invoiceDate: invoice.invoiceDate ?? null,
                     q: allocation.q, amountMinor: allocation.amountMinor, approvalAt: invoice.paymentApproval?.at ?? null };

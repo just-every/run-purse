@@ -52,7 +52,9 @@ export function spendReport(data: Data, filters: Data = {}) {
         let available=b.amount;
         for(const order of orders) {
             if(order.currency!==b.currency||order.policy!==b.policy)continue;
-            const amount=Math.min(available,outstanding(order));available-=amount;
+            const depositActual = order.poDetails?.deposit ? data.invoice.filter((invoice:Data)=>invoice.order===order.id&&invoice.paymentApproval).reduce((sum:number,invoice:Data)=>sum+invoice.totalMinor,0) : 0;
+            const physical = Math.min(available,outstanding(order)); available-=physical;
+            const amount=Math.max(0,physical-depositActual);
             if(!amount)continue;
             const revision=data.revision.find((r:Data)=>r.request===request.id&&r.revision===order.revision)||request;
             const eligible=order.poDetails?.blanket?order.lines:order.lines.filter((line:Data)=>order.positions.find((position:Data)=>position.line===line.id)?.outstanding>0);
@@ -66,12 +68,13 @@ export function spendReport(data: Data, filters: Data = {}) {
         }
     }
     for (const invoice of data.invoice) {
+        if (invoice.depositKind && !invoice.paymentApproval) continue;
         const order = orderById.get(invoice.order), request = order && requestById.get(order.request);
         if (!order || !request || order.imported && !order.adoption) continue;
         const revision = data.revision.find((r: Data) => r.request === request.id && r.revision === order.revision) || request;
         for (const allocation of invoice.allocations) {
             const line = order.lines.find((l: Data) => l.id === allocation.line);
-            if (line) rows.push({ ...source({...revision,...order}, {...line,...(invoice.intakeForm?{customFields:allocation.customFields}:{})}), kind: 'actual', amountMinor: allocation.amountMinor - (invoice.depositAppliedMinor ? distribute(invoice.depositAppliedMinor, invoice.allocations.map((a: Data) => ({ totalMinor: a.amountMinor })))[invoice.allocations.indexOf(allocation)] : 0), date: (invoice.imported ? invoice.invoiceDate || invoice.at?.slice(0, 10) || order.adoptedAt?.slice(0, 10) : invoice.at.slice(0, 10)), sourceBasis: invoice.imported ? 'Imported invoice evidence; source approval is historical' : 'Recorded invoice evidence',
+            if (line) rows.push({ ...source({...revision,...order}, {...line,...(invoice.intakeForm?{customFields:allocation.customFields}:{})}), kind: 'actual', amountMinor: allocation.amountMinor - (invoice.depositAppliedMinor ? distribute(invoice.depositAppliedMinor, invoice.allocations.map((a: Data) => ({ totalMinor: a.amountMinor })))[invoice.allocations.indexOf(allocation)] : 0), date: (invoice.imported ? invoice.invoiceDate || invoice.at?.slice(0, 10) || order.adoptedAt?.slice(0, 10) : invoice.at.slice(0, 10)), sourceBasis: invoice.depositKind ? (invoice.depositKind === 'deposit' ? 'Approved native prepaid obligation; not settlement' : 'Gross final goods bill less once-only deposit application') : invoice.imported ? 'Imported invoice evidence; source approval is historical' : 'Recorded invoice evidence',
                 currency: invoice.currency, policy: order.policy, order: order.id, number: order.number, invoice: invoice.id, reference: invoice.reference,
                 exception: data.discrepancies.some((d: Data) => d.invoiceId === invoice.id && (d.priceMismatch || d.quantityMismatch || d.receiptShortfall || d.closedBalance)) });
         }

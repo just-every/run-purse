@@ -1,3 +1,4 @@
+import { depositTerm, requireDepositAmendment } from './deposit-terms';
 import { linePosition } from './orders';
 import { hasSupplierGroups, supplierLineRemaining } from './po-supplier-groups';
 import { openReviews, requireReviews } from './cross-team-reviews';
@@ -105,6 +106,8 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             }
         }
         r.totalMinor = requestTotal(r);
+        (r as Data).poDetails.deposit = depositTerm((b.poDetails ?? old?.poDetails)?.deposit, r);
+        if (old) requireDepositAmendment(s, old, r);
     requireThat(!all(s,'order').some(order=>order.request===id&&order.supplierGroup),'Existing supplier groups require a separate supported disposition; grouped amendments are unavailable',409);
         const issued = all(s, 'order').find(o => o.request === id && (o.status === 'issued' || o.status === 'adopted' || o.status === 'amendment-pending'));
         if (issued) {
