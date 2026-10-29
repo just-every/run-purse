@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "fb7e5ff7081b43cc78044a4642a1e546181a3ec22e8f4ba8d0fb175aa6b75ade",
+      "sha256": "bf0cabf5c5dad03055b5034dc006ef5cfc398e197def51575808e7e7f221b4c2",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -104,7 +104,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "81acdb05a1424f892e361f6ea7b62fc9af63bcc234819a3c252fd68368c252bc",
+      "sha256": "42ca761f04ee1231fefb8e24e765b454474af4efb5c05b67555e0de6a96f5f6b",
       "executable": false
     },
     "base-copies.json": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "b4f63322135671a8b2dd80c38f33aeb466739cc2cd17a95e3a8d8045b6ddb807",
+      "sha256": "8bd1a7f559d4b7a705f68c3b781904fb97f51b9feb9d829b59f28bc600a69895",
       "executable": false
     },
     "DEMO.md": {
@@ -3072,7 +3072,7 @@
       "executable": false
     },
     "src/purse/budget-disposition.ts": {
-      "sha256": "a0d0fd277e988c4d969acdbe39751ddf46c25cfbcb898b9adecf8c839946f4f3",
+      "sha256": "51fec7b7eb3e9dcf69b3f51e443e40b9a370f2bea5524a115d8c5717c295823f",
       "executable": false
     },
     "src/purse/budget-import.ts": {
@@ -4252,7 +4252,7 @@
       "executable": false
     },
     "src/ui/budget-disposition.tsx": {
-      "sha256": "29b8f29afd8607d8fbbff6672216fc7a766fc703511b391e1822d67743fce4f6",
+      "sha256": "9fe6042c1c42e97e3c961953149e6693edff4a6db2dc83586803ac11ed01b025",
       "executable": false
     },
     "src/ui/budget-import.tsx": {
@@ -4992,7 +4992,7 @@
       "executable": false
     },
     "tests/budget-disposition.test.mjs": {
-      "sha256": "05911226d169a64108c8e39b66b41edf91781aff04dcb4ce2791e9be7805a8d9",
+      "sha256": "1fce077b3d9fb83ec201547de75571832ef2617fdfdf983b3cd4d4b862fe3ad5",
       "executable": false
     },
     "tests/budget-import-fixture.mjs": {
@@ -5216,7 +5216,7 @@
       "executable": false
     },
     "tests/po-supplier-groups.test.mjs": {
-      "sha256": "2864cce9ebf7effccd38998f2ec15b06943ef64dc284c2c15295886817bbfaf1",
+      "sha256": "0915b5178337ed7d92d410c1cedbf5dc7e03465963bcf9d0796f83877753a515",
       "executable": false
     },
     "tests/private-schedule.mjs": {

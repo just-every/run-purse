@@ -1137,7 +1137,8 @@ cannot repeat that movement. Changed policies, revoked authority or insufficient
 current capacity require a fresh review or renewed approval.
 
 Only wholly unreceived, unbilled native goods orders qualify. Receipt history,
-service value, adopted history, deposits, card records and blanket orders refuse.
+service value, adopted history, deposits, card records, blanket orders and supplier
+groups refuse.
 Original documents, source budget amounts, historical decisions and monetary
 events remain evidence. Archives retain these facts and anonymous budget sums
 but exclude disposition consent authority; unissued restored proposals need

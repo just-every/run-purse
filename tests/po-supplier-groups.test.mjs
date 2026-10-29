@@ -33,6 +33,9 @@ test('Native supplier groups reconcile source lines, frozen originals, separate 
  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
  const archive=join(h.dir,'synthetic-purse-8145.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);const restored=await harness();t.after(()=>restored.close());await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);for(const kind of ['request','revision','order','invoice','commitment','audit']){const select=async db=>(await db.prepare('SELECT * FROM p_records WHERE kind=? ORDER BY id').bind(kind).all()).results;assert.deepEqual(await select(restored.db),await select(h.db),kind);}
  assert.equal((await restored.send('/api/purse/command/issue',{id:groups[0].id,revision:2,reason:'Replay cannot restore authority'},buyer)).status,401);
+ const dispositionBefore=(await h.state()).data;
+ for(const group of groups)await cmd('budget-disposition-preview',{id:group.id,revision:2,needDate:'2027-05-15'},h.owner,409);
+ assert.deepEqual((await h.state()).data,dispositionBefore,'Budget disposition refuses grouped liabilities without changing purchasing facts');
  await cmd('amend',{...f.draft,id:source.id,revision:2,reason:'Grouped liabilities cannot migrate'},f.requester,409);await cmd('need-date-edit',{id:source.id,revision:2,needDate:'2026-11-02',reason:'Grouped history cannot be migrated'},f.requester,409);
  await cmd('member',{email:groupMail(8101),name:'Inactive requester awaiting erasure',roles:['requester'],active:false});
  await reauthenticateErasure(h);
