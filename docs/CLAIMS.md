@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 SUPPLIER-008 PO-012 PO-006`. Current candidate counts: 54 done, 33 partial, 26 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write <clause IDs>`. Current candidate counts: 54 done, 33 partial, 27 missing; 114 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -61,6 +61,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `PO-002` | Supplier messaging on the PO | partial |
 | `PO-003` | Overdue acknowledgment and delivery chasing | done |
 | `PO-004` | Change orders and cancellations sent | partial |
+| `PO-013` | Source erasure follows a corrected change-order recipient | missing |
 | `PO-005` | Blanket, recurring and service POs | done |
 | `PO-006` | Shipment tracking | partial |
 | `PO-007` | US sales and use tax on purchases | partial |

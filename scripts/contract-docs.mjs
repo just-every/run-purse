@@ -16,10 +16,15 @@ for(const id of selected){
     const clause=contract.clauses.find(clause=>clause.id===id),row=byId.get(id);
     const entry=`- **${clause.id} — ${clause.title}. Status: ${clause.status}.** ${clause.text} Evidence by acceptance point: ${row[4]||'None recorded.'}${clause.gap?' Remaining Gap: '+clause.gap:''}`;
     const lines=acceptance.split('\n'),index=lines.findIndex(line=>line.startsWith('- **'+id+' — '));
-    if(index<0)throw Error('Acceptance entry not found: '+id);
-    lines[index]=entry;acceptance=lines.join('\n');
+    if(index<0){
+        const preceding=contract.clauses.slice(0,contract.clauses.indexOf(clause)).reverse().find(other=>other.area===clause.area);
+        const anchor=lines.findIndex(line=>line.startsWith('- **'+preceding?.id+' — '));
+        if(anchor<0)throw Error('Acceptance insertion anchor not found: '+id);
+        lines.splice(anchor+1,0,entry);
+    }else lines[index]=entry;
+    acceptance=lines.join('\n');
 }
-const claims='# Purse clause status\n\nGenerated from `CONTRACT.md` by `node scripts/contract-docs.mjs write '+selected.join(' ')+'`. '+heading+'\n\n| Clause | Title | Status |\n| --- | --- | --- |\n'+contract.clauses.map(clause=>'| `'+clause.id+'` | '+clause.title+' | '+clause.status+' |').join('\n')+'\n';
+const claims='# Purse clause status\n\nGenerated from `CONTRACT.md` by `node scripts/contract-docs.mjs write <clause IDs>`. '+heading+'\n\n| Clause | Title | Status |\n| --- | --- | --- |\n'+contract.clauses.map(clause=>'| `'+clause.id+'` | '+clause.title+' | '+clause.status+' |').join('\n')+'\n';
 for(const [path,value] of [['CONTRACT.md',source],['ACCEPTANCE.md',acceptance],['docs/CLAIMS.md',claims]]){
     if(mode==='write'){if(path.startsWith('docs/'))mkdirSync('docs',{recursive:true});writeFileSync(path,value);}
     else if(readFileSync(path,'utf8')!==value)throw Error('Stale generated contract documentation: '+path);
