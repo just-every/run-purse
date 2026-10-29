@@ -21,12 +21,18 @@ const get = async path => { const response = await fetch(origin + path); return 
 try {
   const home = await get('/')
   assert.equal(home.status, 200)
+  assert.match(home.text, /100% free, open source alternative to/, 'The free line sits in the hero')
+  assert.match(home.text, /<a class="btn" href="\/run">Run Purse/, 'The homepage’s main action is Run Purse, to /run')
   assert.match(home.text, /href="\/run"/, 'Visitors can open the run instructions')
   assert.doesNotMatch(home.text, /href="\/(signin|login|setup|app)\b/, 'The run site links no instance-only route')
 
   const run = await get('/run')
   assert.equal(run.status, 200)
   const runText = run.text.replace(/<[^>]*>/g, '');assert.match(runText,/rer.*dev/,'The run instructions explain how to start the app')
+
+  assert.match(runText, /npx -y @runeditrun\/rer dev just-every\/run-purse/)
+
+  assert.match(runText, /cd run-purse &amp;&amp; rer dev/)
 
   const manifest = JSON.parse(await readFile('docs/site.json', 'utf8'))
   const pages = manifest.sections.flatMap(section => section.pages)

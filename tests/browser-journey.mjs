@@ -1041,7 +1041,7 @@ const source=resolve(new URL('..',new URL("./browser-runtime.mjs",import.meta.ur
 
 const excluded=new Set(['.git','node_modules','.wrangler','.rer','.seed','.cache','.tanstack','dist','.output','exports','test-results'])
 
-async function fresh({sourceCopy=true}={}){const root=await mkdtemp(join(tmpdir(),'purse-installation-'));let committed=false;try{await promisify(execFile)('git',['rev-parse','--verify','HEAD'],{cwd:source});committed=true}catch{}if(committed&&!sourceCopy){await promisify(execFile)('git',['clone','--no-hardlinks','--quiet',source,root]);return root;}for(const name of await readdir(source)){if(excluded.has(name)||name.startsWith('.dev.vars')||name.startsWith('.env')||name.endsWith('.tsbuildinfo'))continue;await cp(join(source,name),join(root,name),{recursive:true})}await symlink(resolve('node_modules'),join(root,'node_modules'),'dir');await cp(resolve('dist'),join(root,'dist'),{recursive:true});return root}
+async function fresh({sourceCopy=true}={}){const root=await mkdtemp(join(tmpdir(),'purse-installation-'));let committed=false;try{await promisify(execFile)('git',['rev-parse','--verify','HEAD'],{cwd:source});committed=true}catch{}if(committed&&!sourceCopy){await promisify(execFile)('git',['clone','--no-hardlinks','--quiet',source,root]);return root;}for(const name of await readdir(source)){if(excluded.has(name)||name.startsWith('.dev.vars')||name.startsWith('.env')||name.endsWith('.tsbuildinfo'))continue;await cp(join(source,name),join(root,name),{recursive:true})}await cp(resolve('node_modules'),join(root,'node_modules'),{recursive:true,verbatimSymlinks:true});await cp(resolve('dist'),join(root,'dist'),{recursive:true});return root}
 
 async function freePort(){const s=createServer();await new Promise(r=>s.listen(0,'127.0.0.1',r));const p=s.address().port;await new Promise(r=>s.close(r));return p}
 
@@ -1049,7 +1049,7 @@ const clean=s=>s.replace(/^RER_OPEN .*$/gm,'RER_OPEN [private sign-in URL omitte
 
 async function command(root,args,{expected=0,env={}}={}){const child=spawn(process.execPath,__rerTestEntryArgs([__rerTestEntry,...args,...(args[0]==='setup'&&!args.includes('--non-interactive')?['--non-interactive']:[])]),{cwd:root,env:{...process.env,WRANGLER_SEND_METRICS:'false',RER_SERVER_JOURNEY:'1',PURSE_PREBUILT_ROOT:source,...env},stdio:['ignore','pipe','pipe']});let log='';for(const stream of [child.stdout,child.stderr])stream.on('data',c=>{log+=c});const code=await new Promise((resolve,reject)=>{child.once('error',reject);child.once('close',resolve)});if(code!==expected)throw new Error(`rer ${args[0]} exited ${code}:\n${clean(log).slice(-6000)}`);console.log(`rer ${args.join(' ')}: exit ${code}`);return clean(log)}
 
-async function start(root,port,mode='dev'){const child=spawn(process.execPath,__rerTestEntryArgs([__rerTestEntry,mode,'--port',String(port)]),{cwd:root,env:{...process.env,WRANGLER_SEND_METRICS:'false',RER_SERVER_JOURNEY:'1'},stdio:['ignore','pipe','pipe']});let output='';for(const stream of [child.stdout,child.stderr])stream.on('data',c=>{output+=c});const deadline=Date.now()+20*60*1000;while(!output.includes('RER_READY')&&Date.now()<deadline){if(child.exitCode!==null)throw new Error(`${mode} exited: ${clean(output).slice(-4000)}`);await new Promise(r=>setTimeout(r,250))}if(!output.includes('RER_READY')){child.kill('SIGTERM');throw new Error(mode+' admission/readiness timed out')}return {origin:`http://127.0.0.1:${port}`,async schedule(time){await privateSchedule(root,child.pid,time);},siteOrigin:output.match(/^RER_SITE (http:\/\/[^\s]+)$/m)?.[1],async close(){if(child.exitCode===null){child.kill('SIGTERM');await new Promise(r=>child.once('exit',r))}}}}
+async function start(root,port,mode='preview'){const child=spawn(process.execPath,__rerTestEntryArgs([__rerTestEntry,mode,'--port',String(port)]),{cwd:root,env:{...process.env,WRANGLER_SEND_METRICS:'false',RER_SERVER_JOURNEY:'1'},stdio:['ignore','pipe','pipe']});let output='';for(const stream of [child.stdout,child.stderr])stream.on('data',c=>{output+=c});const deadline=Date.now()+20*60*1000;while(!output.includes('RER_READY')&&Date.now()<deadline){if(child.exitCode!==null)throw new Error(`${mode} exited: ${clean(output).slice(-4000)}`);await new Promise(r=>setTimeout(r,250))}if(!output.includes('RER_READY')){child.kill('SIGTERM');throw new Error(mode+' admission/readiness timed out')}return {origin:`http://127.0.0.1:${port}`,async schedule(time){await privateSchedule(root,child.pid,time);},siteOrigin:output.match(/^RER_SITE (http:\/\/[^\s]+)$/m)?.[1],async close(){if(child.exitCode===null){child.kill('SIGTERM');await new Promise(r=>child.once('exit',r))}}}}
 
 async function report(path,value){await mkdir(path,{recursive:true});await writeFile(join(path,'result.json'),JSON.stringify(value,null,2)+'\n')}
 return {fresh,freePort,command,start,report};
@@ -3481,6 +3481,69 @@ async function seedNativeSearchScale(root) {
  const results=JSON.parse(stdout);assert.equal(results.at(-1).results[0].records,100000,'SEARCH-001 native D1 has 100000 records');
 }
 return {seedNativeSearchScale};
+},
+"tests/browser-import-adoption.mjs":async load=>{
+const {default:assert}=await import("node:assert/strict");
+const {mkdir:mkdir,rm:rm,copyFile:copyFile}=await import("node:fs/promises");
+const {join:join,resolve:resolve}=await import("node:path");
+const {chromium:chromium}=await import("@playwright/test");
+const {fresh:fresh,freePort:freePort,command:command,start:start}=await load("tests/browser-runtime.mjs");
+const {session:session,api:api,current:current}=await load("tests/browser-journey.mjs");
+const {orderAdoptionJourney:orderAdoptionJourney,restoredOrderAdoption:restoredOrderAdoption}=await load("tests/browser-order-adoption.mjs");
+const {records:records,rows:rows}=await load("tests/browser-archive.mjs");
+
+
+const selected=process.argv.find(arg=>arg.startsWith('--width='));
+
+const widths=selected?[Number(selected.slice(8))]:[1440,390];
+
+const evidence=resolve(process.env.PURSE_EVIDENCE??'.cache/import-adoption');
+
+await mkdir(evidence,{recursive:true});
+
+const root=await fresh();
+let restoredRoot,server,browser,owner;
+
+const launch=()=>chromium.launch({headless:true,args:['--no-sandbox','--use-mock-keychain','--password-store=basic'],...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{})});
+
+try {
+ await command(root,['install']);const port=await freePort();
+ await command(root,['setup','--owner-email','owner@example.test','--port',String(port)]);
+ server=await start(root,port);browser=await launch();owner=await session(browser,root,server.origin,'owner',1440);
+ await api(owner.context,server.origin,'business',{name:'Canyon Field Services',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Fitout']});
+ for(const role of ['approver','receiver'])await api(owner.context,server.origin,'member',{email:role+'@dev.localhost',name:'Canyon '+role,roles:[role],active:true});
+ for(const width of widths)await orderAdoptionJourney(browser,root,server.origin,width,evidence);
+ const before=(await current(owner.context,server.origin)).data;
+ await owner.context.close();owner=undefined;await browser.close();browser=undefined;await server.close();server=undefined;
+ await command(root,['export','--output','exports/adopted.rer']);
+ const archive=join(evidence,'adopted.rer');await copyFile(join(root,'exports/adopted.rer'),archive);
+ restoredRoot=await fresh();await command(restoredRoot,['install']);const restoredPort=await freePort();
+ await command(restoredRoot,['setup','--owner-email','restored-owner@example.test','--port',String(restoredPort)]);
+ await mkdir(join(restoredRoot,'exports'),{recursive:true});await copyFile(archive,join(restoredRoot,'exports/adopted.rer'));
+ await command(restoredRoot,['import','--input','exports/adopted.rer','--journal','exports/adopted.rer','--yes']);
+ await command(restoredRoot,['export','--output','exports/restored.rer']);
+ const source=rows(await records(archive)),restored=rows(await records(join(restoredRoot,'exports/restored.rer')));
+ for(const kind of ['orderAdoption','request','revision','order','receipt','invoice','deposit','budget','commitment','payable']) {
+  const values=all=>all.filter(r=>r.table==='p_records'&&r.row.kind===kind).map(r=>r.row).sort((a,b)=>a.id.localeCompare(b.id));
+  assert.deepEqual(values(restored),values(source),kind+' retains exact portable source history');
+ }
+ server=await start(restoredRoot,restoredPort);browser=await launch();owner=await session(browser,restoredRoot,server.origin,'owner',1440);
+ const after=(await current(owner.context,server.origin)).data;
+ await restoredOrderAdoption(owner.context,server.origin,before,after);
+ for(const width of widths) {
+  await owner.page.setViewportSize({width,height:1000});await owner.page.goto(server.origin+'/app?tab=Orders');
+  const order=after.order.find(o=>o.status==='adopted');assert.ok(order);
+  await owner.page.getByRole('row').filter({has:owner.page.getByText(order.number,{exact:true})}).getByRole('button',{name:'Open order',exact:true}).click();
+  await owner.page.getByRole('heading',{name:'Adopted open purchase order',exact:true}).waitFor();
+  assert.equal(await owner.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await owner.page.screenshot({path:join(evidence,`IMPORT-003-restored-${width}.png`),fullPage:true});
+ }
+ console.log('IMPORT-003 built product and CLI restore continuation passed at '+widths.join('/'));
+} finally {
+ await owner?.context.close();await browser?.close();await server?.close();
+ await rm(root,{recursive:true,force:true});if(restoredRoot)await rm(restoredRoot,{recursive:true,force:true});
+}
+return {};
 }
 };
 

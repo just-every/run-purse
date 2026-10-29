@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "acafa344719131c2b2addef623ea1ddfb192fbbfd56bac5ff97e08d9fee0bb89",
+      "sha256": "2c2577a3e9e75db13f03d5fe31af00e750afd3a0dce10b1eab95bc31cee2abb1",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "540cc2545b9ed441649a08905a51a5f73ba0bb92946e25026d1cd83e1480525b",
+      "sha256": "c55396f1d3f0def276b57e1130eed47c4f464549bf8e9056afff618b859a69f8",
       "executable": false
     },
     "DEMO.md": {
@@ -704,7 +704,7 @@
       "executable": false
     },
     "scripts/ci/shards.json": {
-      "sha256": "0b7b8f04fbcdb3aec37e0c1649ba70bd38e980471f698651f06a2e9176d1d276",
+      "sha256": "cb370733826c96c5a4373786f873cfb9de8c805b31fb6fdad94b1fb5e776798d",
       "executable": false
     },
     "scripts/ci/shared-build.mjs": {
@@ -4716,7 +4716,7 @@
       "executable": false
     },
     "tests/browser-journey.mjs": {
-      "sha256": "d1632d36c100008fb616e4f7c468b053cf3d6bccf1e00ccd24e3331b10c18cca",
+      "sha256": "05ce79b020986c38c50665178cacabc578b62a97346575474b75a7dd5fe0802d",
       "executable": false
     },
     "tests/browser-payables.mjs": {
@@ -4832,7 +4832,7 @@
       "executable": false
     },
     "tests/erasure-flow.mjs": {
-      "sha256": "69098a2441d35057499eaab5065079631f6927984e8b6d3f884bf4a8ca790885",
+      "sha256": "20d079813996907d99b3ea65694420fa8ffd905b28243e79060a9750e0041ba4",
       "executable": false
     },
     "tests/erasure-journey.test.mjs": {
@@ -5076,7 +5076,7 @@
       "executable": false
     },
     "tests/run-site.mjs": {
-      "sha256": "788e474abfe2c073ddacb435a14e516e4c0521bfea0455e81420978f07df3bbb",
+      "sha256": "f8e6b78f0a45cb2e7927bb166209789ca70f8e02da9a151bd697c51f204b4213",
       "executable": false
     },
     "tests/saved-report-fixture.mjs": {
@@ -5136,7 +5136,7 @@
       "executable": false
     },
     "tests/supplier-credits-flow.mjs": {
-      "sha256": "15b9569f6fb5303a763635509c726a226f76f88f1f2e2ee369ad669a55cc08be",
+      "sha256": "eb6144fa2588897d00bf603223697cb2d0705ed8fe6b403ddcccedee454d0357",
       "executable": false
     },
     "tests/supplier-credits.test.mjs": {
