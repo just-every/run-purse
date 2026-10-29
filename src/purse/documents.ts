@@ -105,7 +105,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.deposit = all(s, 'deposit').filter(deposit => orderIds.has(deposit.order) && allowed(s, a, 'invoice.read', get(s, 'order', deposit.order)));
     data.budget = a.owner ? all(s, 'budget') : [];
     data.orderAdoption = a.owner ? all(s, 'orderAdoption').filter(adoption => orderIds.has(adoption.order)) : [];
-    data.supplierInvoiceRules = a.owner ? all(s,'orderSend').map(event=>({order:event.order,revision:event.revision,invoiceSubmission:event.invoiceSubmission===true,invoiceApprovalRule:event.invoiceApprovalRule})) : [];
+    data.supplierInvoiceRules = a.owner ? all(s,'orderSend').filter(event=>!all(s,'orderSend').some(other=>other.order===event.order&&(other.attempt??1)>(event.attempt??1))).map(event=>({order:event.order,revision:event.revision,invoiceSubmission:event.invoiceSubmission===true,invoiceApprovalRule:event.invoiceApprovalRule})) : [];
     data.supplierInvoiceSubmission=all(s,'supplierInvoiceSubmission').filter(row=>invoiceIds.has(row.invoice));
     data.payable = all(s, 'payable').filter(payable => invoiceIds.has(payable.invoice) && ['cash.read', 'payable.terms', 'payable.approve']
         .some(permission => allowed(s, a, permission, get(s, 'invoice', payable.invoice))));
@@ -120,7 +120,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.lateOrderNotice = all(s, 'lateOrderNotice').filter(record => orderIds.has(record.order));
     data.orderChaseEvent = all(s, 'orderChaseEvent').filter(record => orderIds.has(record.order));
     data.order = data.order.map((order: Data) => {
-        const acknowledgment = all(s, 'orderSend').find(sent => sent.order === order.id && sent.revision === order.revision)?.acknowledgment;
+        const acknowledgment = all(s, 'orderSend').filter(sent => sent.order === order.id && sent.revision === order.revision && sent.acknowledgment).sort((left, right) => (right.attempt ?? 1) - (left.attempt ?? 1))[0]?.acknowledgment;
         return { ...order, ...(acknowledgment ? { supplierChangeAcknowledgment: { revision: acknowledgment.revision, at: acknowledgment.at } } : {}) };
     });
     data.supplierOrderEvidence = all(s, 'supplierOrderEvidence').filter(evidence => orderIds.has(evidence.order)

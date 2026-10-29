@@ -5,7 +5,7 @@ import { runtimeBindings, type Bindings } from '../auth.server';
 import { requirePermission } from './access';
 import { actor, authority, load, readFence } from './store';
 import { all, get, requireThat, uid, type Data } from './types';
-import { insertOrderSendRecord, orderSendSummary, sendOrderChange } from './order-send';
+import { insertOrderSendRecord, latestOrderSend, orderSendAttempts, orderSendSummary, sendOrderChange } from './order-send';
 import { adoptOrderResponse } from './order-response';
 import { supplierOrderChange } from './order-send-public';
 
@@ -23,16 +23,16 @@ orderSendApi.post('/api/purse/order-send/:order/invoice-consent',async c=>c.json
 orderSendApi.get('/api/purse/order-send/:order', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB), order = get(state, 'order', c.req.param('order'));
     requirePermission(state, a, 'po.read', order);
-    const event = state.get('orderSend:order-send:' + order.id)?.value;
+    const event = latestOrderSend(state, order.id);
     await readFence(c.env.DB, a, revision);
     const summary:Data|null=event?orderSendSummary(event):null;
     if(summary&&event)summary.invoiceAccessAvailable=Boolean(event.invoiceSubmission&&event.invoiceConsent&&await c.env.DB.prepare("SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active' AND role='owner'").bind(event.invoiceConsent.actor,event.invoiceConsent.operatorVersion).first());
-    return c.json({ event: summary, responses: all(state, 'orderSupplierResponse').filter(response => response.order === order.id).sort((left, right) => left.version - right.version) });
+    return c.json({ event: summary, attempts: orderSendAttempts(state, order.id).map(orderSendSummary), responses: all(state, 'orderSupplierResponse').filter(response => response.order === order.id).sort((left, right) => left.version - right.version) });
 });
 orderSendApi.post('/api/purse/order-send/:order/revoke', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB), order = get(state, 'order', c.req.param('order'));
     requirePermission(state, a, 'po.issue', order);
-    const event = get(state, 'orderSend', 'order-send:' + order.id), auth = authority(a), at = new Date().toISOString();
+    const event = latestOrderSend(state, order.id); requireThat(event, 'Supplier send not found', 404); const auth = authority(a), at = new Date().toISOString();
     await c.env.DB.batch([
         c.env.DB.prepare(`INSERT INTO p_guard SELECT CASE WHEN (${auth.sql}) AND (SELECT revision FROM p_meta WHERE id=1)=? THEN 1 ELSE 0 END`).bind(...auth.params, revision),
         c.env.DB.prepare('UPDATE p_order_send_links SET revoked_at=? WHERE send=? AND revoked_at IS NULL').bind(Date.now(), event.id),

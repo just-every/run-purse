@@ -692,21 +692,45 @@ execution and Slack/Teams transports/qualification remain PO-012 gaps.
 ## Explicit supplier change orders
 
 `POST /api/purse/order-send` accepts `{order,revision,recipient,consent:true,reason}`
-from a current scoped buyer for an exact issued native approved amendment or
-cancellation. It freezes the numbered change content, PDF and applicable original
-terms/certificate, claims one send attempt, then invokes the configured native mail
-adapter. It reports provider acceptance, suppression, refusal or uncertainty;
-provider acceptance is never called mailbox delivery. An uncertain attempt cannot
-be silently retried. This does not send initial POs or adopted historical POs.
+from a current scoped buyer for an exact issued native approved order, amendment or
+cancellation. It freezes the numbered content, PDF and applicable original terms
+and certificate, claims one attempt, then invokes the configured native mail
+adapter. Provider acceptance is never called mailbox delivery.
 
-`GET /api/purse/order-send/:order` gives scoped PO readers the safe current outcome
-and exact acknowledged revision. `POST /api/purse/order-send/:order/revoke` lets a
-current scoped buyer withdraw link access. The random, hashed, seven-day supplier
-link reads only that exact approved change and its PDF/originals, and accepts a
-reasoned acknowledgment. Supplier-stated identity remains unverified. Expiry,
-withdrawal, superseding revisions and source erasure refuse the link; archives
-retain private send/acknowledgment evidence without restoring bearer authority.
-No automatic outbound action is added to date editing.
+An explicit resend supplies `resendOf` with the latest attempt id, a reason,
+current recipient and fresh consent. It is available after an uncertain, rejected,
+rate-limited or unavailable outcome, or an unacknowledged link expiry. The atomic
+new claim revokes the previous link and reuses its identical frozen PDF, content
+hash and originals. Every prior outcome and response remains historical evidence.
+Replaying the old consent creates no new attempt. No scheduled retry is added.
+Supplier invoice access and any standing invoice approval need fresh owner consent
+for the replacement link.
+
+`POST /api/purse/command/propose-order-cancellation` takes `{id,revision,reason}`
+from a scoped native buyer for current ordinary goods. It creates a draft for the
+remaining quantities and requires ordinary independent renewed approval before
+conversion and issuance. A buyer then explicitly sends that numbered cancellation.
+Preparing, approving and issuing it never sends automatically. Cancellation links
+retain acknowledgment and the full versioned response set; a supplier-proposed
+date is optional, and no response reinstates purchasing or financial authority.
+
+An already adopted historical PO requires explicit `mode:"adopted"` on its first
+send. Its face retains the original number, historical quantities and missing-field
+labels. Operational adoption never becomes native purchase approval. The current
+scoped buyer consents to the exact historical document and contact; invoice and
+payment authority remain absent. A proposed change can become only a fresh native
+amendment draft needing renewed independent approval.
+
+`GET /api/purse/order-send/:order` gives scoped readers the latest event, every
+attempt summary and versioned responses. `POST /api/purse/order-send/:order/revoke`
+withdraws the current link. Supplier links read only their exact frozen face and
+originals, with an at-most-seven-day lifetime and exact-origin writes. Accept,
+accept with changes and reject retain the stated unverified name. Quantities and
+prices are bounded proposals on exact source lines; only a current buyer can adopt
+the exact latest proposal into an unapproved amendment. Expiry, withdrawal,
+superseding revisions, revoked sender authority and erasure refuse access.
+Archives retain evidence and every attempt without restoring bearer authority.
+Real own-sender receipt, bounce, delivery and unopened qualification remain held.
 
 ## Travel pre-approvals and returned Coaster reports
 

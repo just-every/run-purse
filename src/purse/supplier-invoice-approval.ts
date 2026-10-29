@@ -1,3 +1,4 @@
+import { latestOrderSend } from './order-send';
 import type { Bindings } from '../auth.server';
 import { allowed, requirePermission } from './access';
 import { currentOrderSender } from './order-response';
@@ -32,7 +33,7 @@ export async function supplierInvoiceApproval(s: State, a: Actor, op: string, b:
     requireThat(env, 'Native installation required', 409);
     if (op === 'supplier-invoice-rule') {
         requireThat(a.owner, 'Current native owner must consent to automatic invoice approval', 403);
-        const order = get(s, 'order', b.order), event = get(s, 'orderSend', 'order-send:' + order.id);
+        const order = get(s, 'order', b.order), event = latestOrderSend(s, order.id); requireThat(event, 'Supplier send not found', 404);
         requireThat(b.revision === order.revision && b.version === (event.invoiceApprovalRule?.version ?? 0), 'Order or approval rule changed; reload', 409);
         requireThat(typeof b.enabled === 'boolean' && b.consent === true, 'Explicit standing approval consent required');
         if (b.enabled) {

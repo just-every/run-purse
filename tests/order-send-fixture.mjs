@@ -1,3 +1,4 @@
+import { adoptionFixture, importInput } from './order-adoption-fixture.mjs';
 import assert from 'node:assert/strict';
 import { termsPdf } from './po-documents-fixtures.mjs';
 import { documentProfileFixture } from './document-profile-fixture.mjs';
@@ -33,3 +34,18 @@ export async function orderSendFixture(h, { kind = 'date' } = {}) {
 }
 export function orderMessage(h) { return h.messages.find(message=>message.subject.startsWith('Change order ')); }
 export function orderLink(h) { return new URL(orderMessage(h).text.match(/http:\/\/[^\s]+\/api\/purse\/order-link\/[^\s]+/)[0]); }
+
+/** Qualified synthetic import remains historical even when a buyer explicitly sends it. */
+export async function adoptedSendFixture(h) {
+    const fixture = adoptionFixture({ base: 2903, number: 'synthetic-purse-2903', deposit: false });
+    const input = { ...importInput(fixture), csv: fixture.csv.replaceAll('Fitout', 'General').replaceAll('Equipment', 'goods') };
+    const preview = await h.send('/api/purse/import/preview', input, h.owner); assert.equal(preview.status, 200, JSON.stringify(preview.value));
+    const committed = await h.send('/api/purse/import/commit', { ...input, fingerprint: preview.value.plan.fingerprint }, h.owner); assert.equal(committed.status, 200, JSON.stringify(committed.value));
+    await h.command('screen-supplier', { id: fixture.ids.supplier });
+    const members = (await h.state()).data.member;
+    const policy = await h.command('policy', { name: 'synthetic-purse-2904', currency: 'USD', category: 'goods', project: 'General', approver: members.find(member => member.roles.includes('approver')).email, limitMinor: 1000000, budgetMinor: 10000000 });
+    const selection = { id: fixture.ids.order, policy: policy.id, budget: fixture.ids.budget, location: 'Denver', costCentre: 'Operations', receiver: members.find(member => member.roles.includes('buyer')).email };
+    const review = await h.command('adopt-order-preview', selection);
+    const order = await h.command('adopt-order', { ...selection, fingerprint: review.fingerprint, reviewed: true, reason: 'synthetic-purse-2905' });
+    return { order, fixture };
+}

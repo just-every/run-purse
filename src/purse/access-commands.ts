@@ -16,7 +16,7 @@ const nativeOwner = new Set([
     'review-screening', 'catalogue-grant', 'po-profile', 'agreement', 'agreement-invoice',
     'agreement-extract', 'agreement-reading-edit', 'value-policy', 'protected-context-cleanup',
 ]);
-const orderById = new Set(['close-order', 'reopen-order']);
+const orderById = new Set(['close-order', 'reopen-order', 'propose-order-cancellation']);
 const orderByOrder = new Set(['order-chase-policy', 'supplier-order-evidence']);
 const quoteAgentCommands = new Set(['quote-agent-consent','quote-agent-run','quote-agent-clarify','quote-agent-review']);
 const requestProcurement = new Set(['agreement-award']);

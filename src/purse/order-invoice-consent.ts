@@ -1,3 +1,4 @@
+import { latestOrderSend } from './order-send';
 import type { Bindings } from '../auth.server';
 import { currentDecision } from './approval';
 import { currentOrderSender } from './order-response';
@@ -8,7 +9,7 @@ import { get,put,audit,requireThat,text,type Actor,type Data } from './types';
 export async function orderInvoiceConsent(env:Bindings,a:Actor,id:string,b:Data) {
  requireThat(a.owner,'Current native owner required to authorize supplier invoice access',403);
  requireThat(b.consent===true && typeof b.enabled==='boolean','Explicit invoice capability consent is required');
- const {state,revision}=await load(env.DB),order=get(state,'order',id),event=get(state,'orderSend','order-send:'+id);
+ const {state,revision}=await load(env.DB),order=get(state,'order',id),event=latestOrderSend(state,id); requireThat(event,'Supplier send not found',404);
  requireThat(order.status==='issued' && !order.imported && !order.adoption && order.revision===b.revision && event.revision===order.revision
   && !event.erasure && !event.revokedAt && Date.parse(event.expiresAt)>Date.now() && await currentOrderSender(env,state,event),'Choose this exact current available native supplier link',409);
  const reason=text(b.reason,'Invoice capability reason'),at=new Date().toISOString();
