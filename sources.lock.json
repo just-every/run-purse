@@ -972,7 +972,7 @@
       "executable": false
     },
     "scripts/installer/restore-notifications.mjs": {
-      "sha256": "d65122f8358a95811aee0312e9484314bd79a2c66246b19c741ab500a9ab4777",
+      "sha256": "46c80e97834267a58356c64908d5d306e2aab563ddc5c7b495663b990c8a8078",
       "executable": false
     },
     "scripts/installer/restore-order-adoption.mjs": {
@@ -1096,7 +1096,7 @@
       "executable": false
     },
     "scripts/installer/restore-validation.mjs": {
-      "sha256": "bc47d43f5930c676e90048f9a5d716e93ba5ae0f9368b006597d367bf563cac6",
+      "sha256": "7abde329e2e26e6cfdbeaf0755984dfc93903f62444f17f27767f3e3b10b7650",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -3024,7 +3024,7 @@
       "executable": false
     },
     "src/purse/api.ts": {
-      "sha256": "63962f4887d60a41c9a118d815a607c2fd6ff63a7baa4d07a826eb783122b072",
+      "sha256": "5805a387c3c44c1011398dd0c83f66f3ac103035c54f594440c58494b775f24c",
       "executable": false
     },
     "src/purse/approval-chain-authority.ts": {
@@ -3160,7 +3160,7 @@
       "executable": false
     },
     "src/purse/erasure-coverage.ts": {
-      "sha256": "1622026790bde0b02d16ad08a8023de4f4df4568e200c2a71252eddc6d1a9300",
+      "sha256": "c4d9766379a8b7a16166b28cc7977ba6f765bdc10c29a221c1ebf660f3212198",
       "executable": false
     },
     "src/purse/erasure-diff.ts": {
@@ -3196,7 +3196,7 @@
       "executable": false
     },
     "src/purse/erasure-plan.ts": {
-      "sha256": "37317fe020c8b4cd1bee972603fb1a08ce2bbecf7097adecbb230ad399087ceb",
+      "sha256": "7d93d6d24d997f41a84046c9f690628a780d4d4a54e576e80a892fba04606d12",
       "executable": false
     },
     "src/purse/erasure-refusal.ts": {
@@ -3379,8 +3379,16 @@
       "sha256": "f243d5909b15abd242a163981e07fa6fb9f51e4676373c72ff9a4a7d4a961581",
       "executable": false
     },
+    "src/purse/notification-delivery.ts": {
+      "sha256": "d30c8bb6b14bec409421dc7159187c8dca848fb5299840d77eaecfbaf0ad12e7",
+      "executable": false
+    },
+    "src/purse/notification-preferences.ts": {
+      "sha256": "ea00f840ea1466027b6f28c2162e12a9255652bf700b8d2114530f1113ed4c6e",
+      "executable": false
+    },
     "src/purse/notifications.ts": {
-      "sha256": "23bc1c78e8b6f85f73ba4d988e70d36bd11a6b64a81ef86eb03e124dc725dede",
+      "sha256": "ddb8624f872dcc5d227057165050ccc974f8fc37292a260d5e2761c62c62f4de",
       "executable": false
     },
     "src/purse/order-adoption.ts": {
@@ -3600,7 +3608,7 @@
       "executable": false
     },
     "src/purse/receipt-prompts.ts": {
-      "sha256": "5c0320dd3532254f8fb1b2ae0734bd54261b68ca83131d2fe0ef110b69e12355",
+      "sha256": "7830e7116a2fa8b5403453d7b843d17e4ebdd18aedf1bba239342739fa1dbb7f",
       "executable": false
     },
     "src/purse/receipt-routing.ts": {
@@ -3720,7 +3728,7 @@
       "executable": false
     },
     "src/purse/schedule.ts": {
-      "sha256": "d7e8621b34d55886fa4eca34ab62bb1edb7018fee6591c8cf9b16f8a63b023c8",
+      "sha256": "9fa4885b8bd6b92b1e0ef1e20a5076e5ec248a3bf2db24760e19e69ec16d1bc6",
       "executable": false
     },
     "src/purse/scim-approvals.ts": {
@@ -4368,7 +4376,7 @@
       "executable": false
     },
     "src/ui/notifications.tsx": {
-      "sha256": "d51d5ab3b14553790e768ae650118b9861e592a3e2f5f5f3c283ba6a906566fb",
+      "sha256": "38294d5fbaf3b4f45dad5f2bde9926def4130aa40c2cdf2598904023a24bde12",
       "executable": false
     },
     "src/ui/order-adoption.tsx": {
@@ -4524,7 +4532,7 @@
       "executable": false
     },
     "src/ui/settings.tsx": {
-      "sha256": "6d6aedccdef006a568df0ef6199c824cd0ad83c1a9dfc108ccc6e2f019615f66",
+      "sha256": "1dd5523324677ff2dbb53cae6212a689ce485c8156f5cdc6286ef042794f2e41",
       "executable": false
     },
     "src/ui/shared.tsx": {
@@ -5160,7 +5168,7 @@
       "executable": false
     },
     "tests/notifications.test.mjs": {
-      "sha256": "78375e74b94aa18ef273b453fe570183933541ae83dcfe58c0a2c4b2aaaad00b",
+      "sha256": "11c166db1687d486dd7c4dd5b671b96b5e546fd7a9bcadfe28a1afc4b9dd7aea",
       "executable": false
     },
     "tests/order-adoption-fixture.mjs": {

@@ -36,11 +36,11 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
 
   if(['supplierProposal','supplierProposalReview'].includes(row.kind) && linked.has(row.value.supplier) && !linked.has(row.id)){linked.add(row.id);changed=true;}
   if(row.kind==='supplierTaxReview' && linked.has(row.value.supplier) && !linked.has(row.id)){linked.add(row.id);changed=true;}
-  if(!['supplierProposal','supplierProposalReview','invoiceException','supplierTaxReview','supplierRma','supplierCredit','supplierCreditApplication','crossTeamReview','audit','comment','notification','commentNotice','agentRun','orderChaseEvent','orderThreadMessage','supplierInvoiceSubmission','orderSupplierResponse','orderSend','orderAcknowledgment','travelExpense','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
+  if(!['supplierProposal','supplierProposalReview','invoiceException','supplierTaxReview','supplierRma','supplierCredit','supplierCreditApplication','crossTeamReview','audit','comment','commentNotice','notificationPreference','notificationDelivery','notification','agentRun','orderChaseEvent','orderThreadMessage','supplierInvoiceSubmission','orderSupplierResponse','orderSend','orderAcknowledgment','travelExpense','intakeDraft','attachment','invoiceSource','invoiceReading','invoiceReadingEvent','quoteReading','quoteReadingEvent','agreementReading','agreementReadingEvent','emailIntake','apInvoiceEmail','rfqResponse','invoice','order','revision','quote','valueSeatImport'].includes(row.kind))continue;
   const v=row.value;
   // RMA-only participants can be identified inside the linked credit original.
   // Withdraw that source and retain its applications as anonymous history.
-  if([v.comment,v.request,v.order,v.record,v.source,v.reading,v.emailIntake,v.apInvoiceEmail,v.attachment,v.rfq,v.rma,v.credit].some(ref=>linked.has(ref))&&!linked.has(row.id)){linked.add(row.id);changed=true;}
+  if([v.notification,v.comment,v.request,v.order,v.record,v.source,v.reading,v.emailIntake,v.apInvoiceEmail,v.attachment,v.rfq,v.rma,v.credit].some(ref=>linked.has(ref))&&!linked.has(row.id)){linked.add(row.id);changed=true;}
  }}
  const eraseFile=(value:Data):Data=>{
   if(typeof value.base64!=='string'&&!value.key)return value;
@@ -68,7 +68,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   if(row.kind==='erasureReceipt'&&row.value.actor===subject.operator){const value={...row.value,actor:alias};state.set(oldKey,{...row,value});fields.push({kind:row.kind,id:row.id,path:['actor'],before:erasureDigest(row.value.actor),after:erasureDigest(alias)});continue;}
   if(['supplierMatchingKey','invoiceEvidenceKey','erasureReceipt'].includes(row.kind))continue;
   const affected=linked.has(row.id),value=visit(row.value,'',affected);
-  if(['supplierProposal','supplierProposalReview','supplierTaxReview','supplierRma','supplierCredit','supplierCreditApplication','crossTeamReview','comment','notification','orderThreadMessage','orderSend','recurringNoticeSend'].includes(row.kind)&&affected)value.erasure=id;
+  if(['supplierProposal','supplierProposalReview','supplierTaxReview','supplierRma','supplierCredit','supplierCreditApplication','crossTeamReview','comment','notificationPreference','notificationDelivery','notification','orderThreadMessage','orderSend','recurringNoticeSend'].includes(row.kind)&&affected)value.erasure=id;
   if(row.kind==='travelExpense'&&affected)Object.assign(value,{erasure:id,originalStatus:'withdrawn',originalSourceVerified:false,sourceBasis:'Original withdrawn by personal-data erasure; normalized financial evidence retained. The original source cannot be reverified.'});
   if(row.kind==='attachment'&&affected)Object.assign(value,eraseFile(value));
   if(row.kind==='emailIntakeMailEvent'&&value.status==='pending'&&contains(row.value)){value.status='suppressed';}

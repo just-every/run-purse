@@ -136,3 +136,66 @@ test('Notification archive continuation and erasure preserve history without res
     await importArchive(await createPortability({ db: erasedRestore.db, buckets: { ORIGINALS: erasedRestore.originals }, policy: portability }), erasedPath, []);
     assert.ok(!JSON.stringify(await rows(erasedRestore)).includes(f.requesterId));
 });
+
+test('Native notification preferences hold Pacific quiet hours across daylight saving, batch a digest, and consume delivery claims without widening authority', async t => {
+    const f = await commentsFixture(t,{worker:'tests/accrual-worker.ts',clock:'2026-10-31T12:00:00Z'}), {h}=f;
+    const settings = async cookie => { const r=await h.send('/api/purse/notification-settings',undefined,cookie); assert.equal(r.status,200,JSON.stringify(r.value)); return r.value; };
+    const preference = {channel:'email',cadence:'immediate',timezone:'America/Los_Angeles',quiet:true,quietStart:'20:00',quietEnd:'07:00',weekends:false,digestAt:'07:00'};
+    let p=(await settings(f.requester)).preferences;
+    await h.command('notification-preferences',{...preference,version:p.version,recipient:f.scopedId},f.requester);
+    assert.equal((await settings(f.scoped)).preferences.version,0,'A recipient cannot configure somebody else');
+    const saved=(await settings(f.requester)).preferences;
+    await h.command('notification-preferences',{...preference,version:0},f.requester,409);
+    await h.command('notification-preferences',{...preference,timezone:'synthetic-purse-6200',version:saved.version},f.requester,400);
+    assert.deepEqual((await settings(f.requester)).preferences,saved,'Invalid and stale choices write nothing');
+    assert.equal((await h.send('/api/purse/notification-deliveries',{},f.requester)).status,403);
+    assert.equal((await h.send('/api/purse/notification-settings')).status,401);
+    const dispatch = async () => { const r=await h.send('/api/purse/notification-deliveries',{},h.owner); assert.equal(r.status,200,JSON.stringify(r.value)); return r.value.events; };
+    const mention=async attempt => h.command('comment-add',{kind:'request',record:f.pending.id,attempt,body:attempt,mentions:[f.requesterId]},f.approver);
+    const deliveries=()=>h.messages.filter(m=>m.subject==='Your Purse notification'||m.subject==='Your Purse daily digest');
+    // Saturday 9 pm PDT becomes Sunday 7 am PST: the hold crosses the fall-back transition.
+    await h.setClock('2026-11-01T04:00:00Z'); await mention('synthetic-purse-6201');
+    await dispatch(); assert.equal(deliveries().length,0);
+    await h.setClock('2026-11-01T14:59:00Z'); await dispatch(); assert.equal(deliveries().length,0);
+    await h.setClock('2026-11-01T15:00:00Z');
+    const delivered=await dispatch(); assert.ok(delivered.some(e=>e.status==='accepted'&&e.channel==='email'));
+    assert.equal(deliveries().length,1); assert.ok(deliveries()[0].to.includes(f.email(2802)));
+    assert.ok(!deliveries()[0].text.includes(f.pending.id)); assert.ok(!deliveries()[0].text.includes('synthetic-purse-6201'));
+    await dispatch(); assert.equal(deliveries().length,1,'Claim replay does not resend');
+    // An explicit daily choice combines genuine source events into one private digest.
+    p=(await settings(f.requester)).preferences;
+    await h.command('notification-preferences',{...preference,version:p.version,cadence:'daily'},f.requester);
+    await h.setClock('2026-11-02T05:00:00Z');
+    await mention('synthetic-purse-6202'); await mention('synthetic-purse-6203');
+    await h.command('invoice',{order:f.order.id,reference:'synthetic-purse-6204',source:'synthetic-purse-6205',allocations:[{line:f.order.lines[0].id,quantity:'1',amountMinor:10000}]},f.buyer);
+    const mailBefore=h.messages.length; await dispatch();
+    assert.equal(h.messages.length,mailBefore,'Receipt prompts cannot bypass digest preferences');
+    await h.setClock('2026-11-02T15:00:00Z'); await dispatch();
+    const digest=deliveries().filter(m=>m.subject==='Your Purse daily digest'); assert.equal(digest.length,1);
+    assert.match(digest[0].text,/3 purchasing notifications/);
+    const history=(await settings(f.requester)).deliveries.filter(e=>e.cadence==='daily');
+    assert.equal(history.length,3); assert.equal(new Set(history.map(e=>e.batch)).size,1);
+    await dispatch(); assert.equal(deliveries().length,2);
+    // Only a native owner may opt an event family into urgent bypass, including digest bypass.
+    await h.command('notification-urgency',{type:'comment-mention',version:0,urgent:true},f.requester,403);
+    await h.command('notification-urgency',{type:'comment-mention',version:0,urgent:true});
+    await h.setClock('2026-11-03T05:00:00Z'); await mention('synthetic-purse-6206'); await dispatch();
+    assert.equal(deliveries().length,3,'Owner-marked urgent event arrives during quiet hours without waiting for digest');
+    await h.command('notification-urgency',{type:'comment-mention',version:1,urgent:false});
+    // Revocation between capture and delivery suppresses the effect and its private source context.
+    await mention('synthetic-purse-6207');
+    await h.command('member',{email:f.email(2802),name:'synthetic-purse-6208',active:true,grants:[{role:'requester',scope:{locations:['Denver']}}]});
+    await h.setClock('2026-11-03T15:00:00Z'); await dispatch(); assert.equal(deliveries().length,3);
+    assert.ok((await settings(f.requester)).deliveries.some(e=>e.code==='source-unavailable'&&e.status==='suppressed'));
+    assert.equal(validatePurchasingArchive(await rows(h)),true);
+    // A second spring-forward night is measured in real instants, not a cached Pacific offset.
+    const spring = await commentsFixture(t,{worker:'tests/accrual-worker.ts',clock:'2027-03-14T05:00:00Z'}), sh=spring.h;
+    await sh.command('receipt',{order:spring.order.id,line:spring.order.lines[0].id,quantity:'2',event:'receive',reason:'synthetic-purse-6212'},spring.requester);
+    await sh.command('notification-preferences',{...preference,version:0},spring.requester);
+    await sh.command('comment-add',{kind:'request',record:spring.pending.id,attempt:'synthetic-purse-6210',body:'synthetic-purse-6211',mentions:[spring.requesterId]},spring.approver);
+    const springDispatch=async()=>{const r=await sh.send('/api/purse/notification-deliveries',{},sh.owner);assert.equal(r.status,200,JSON.stringify(r.value));};
+    const springMail=()=>sh.messages.filter(m=>m.subject==='Your Purse notification');
+    await springDispatch(); assert.equal(springMail().length,0);
+    await sh.setClock('2027-03-14T13:59:00Z'); await springDispatch(); assert.equal(springMail().length,0);
+    await sh.setClock('2027-03-14T14:00:00Z'); await springDispatch(); assert.equal(springMail().length,1);
+});

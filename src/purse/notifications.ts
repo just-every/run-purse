@@ -1,3 +1,4 @@
+import { notificationPreference } from './notification-preferences';
 import { createHash } from 'node:crypto';
 import { canReadCommentParent, canReadRecord } from './access-records';
 import { actorStep } from './approval-chain';
@@ -26,7 +27,7 @@ export async function captureNotifications(db: D1Database, before: State, s: Sta
         const id = digest([a.id, type, sourceKind, source.id, detail.step ?? '']);
         if (s.has('notification:' + id)) return;
         put(s, 'notification', id, { recipient: a.id, type, sourceKind, source: source.id, recordKind, record: record.id,
-            sourceRevision: record.revision ?? null, at: source.at, read: false, dismissed: false, ...detail });
+            deliveryConsent: notificationPreference(s,a).version > 0, sourceRevision: record.revision ?? null, at: source.at, read: false, dismissed: false, ...detail });
     };
     const newAudits = changed('audit').filter(event => !before.has('audit:' + event.id));
     for (const request of requests) {
