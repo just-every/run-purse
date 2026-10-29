@@ -53,6 +53,7 @@ export function validateApprovalChains(all,get,check,same) {
  for(const transfer of all('approvalAbsenceTransfer')) {
   get('request',transfer.request);const config=get('approvalAbsence',transfer.config);
   check(config.history.some(event=>event.version===transfer.configVersion)&&['held','delegated','returned'].includes(transfer.status)&&Array.isArray(transfer.history)&&transfer.history.length>0&&Number.isFinite(Date.parse(transfer.since)),'absence_transfer');
+  if(transfer.continuedFrom){const prior=get('approvalAbsenceTransfer',transfer.continuedFrom);check(prior.erasure&&prior.request===transfer.request&&prior.revision===transfer.revision&&prior.step===transfer.step&&transfer.generation===(prior.generation??0)+1&&transfer.since===prior.since,'absence_erasure_continuation');}
   check(transfer.history.every((event,index)=>event.sequence===index+1&&Number.isFinite(Date.parse(event.at))&&['held','delegated','returned'].includes(event.status)),'absence_transition_history');
  }
  for(const decision of all('decision'))if(decision.absence){

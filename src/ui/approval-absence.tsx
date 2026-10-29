@@ -14,7 +14,7 @@ export function ApprovalAbsence({data,actor,mutate}:{data:D;actor:D;mutate:(op:s
             <p>{when(config.startsAt,config.timezone)} to {when(config.endsAt,config.timezone)} · {config.timezone}</p>
             <p>{!config.active?'Cancelled':!config.currentAuthority?'Held: renew native authority':'Scheduled'} · {config.reason}</p>
             {!config.erasure&&<button type="button" onClick={()=>{setEditing(config);setPolicyId(config.policy);}}>Edit absence</button>}
-            {config.active&&!config.erasure&&<Form label="Cancel absence" initial={{id:config.id,version:config.version}} onSubmit={b=>mutate('cancel-approval-absence',b)}><Field label="Cancellation reason" name="reason"/></Form>}
+            {config.active&&(!config.erasure||actor.roles.includes('owner'))&&<Form label="Cancel absence" initial={{id:config.id,version:config.version}} onSubmit={b=>mutate('cancel-approval-absence',b)}><Field label="Cancellation reason" name="reason"/></Form>}
             <details><summary>Window history</summary>{config.history.map((event:D)=><p key={event.version}>Version {event.version} · {event.action} · {when(event.at)} · {event.reason}</p>)}</details>
         </article>)}
         {policy&&<><label className="field">Approval policy<select aria-label="Absence approval policy" value={editing?.policy??policy.id} onChange={e=>{setEditing(undefined);setPolicyId(e.target.value);}}>{settings.policies.map((p:D)=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
