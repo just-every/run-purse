@@ -25,6 +25,8 @@ export async function withAgentBrowser({request,origin,cookie},visit) {
     for(const width of [1440,390]) {
      await page.setViewportSize({width,height:1000})
      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Horizontal overflow on '+name)
+     const small=await page.locator('main[data-tab] button, main[data-tab] input:not([type="checkbox"]):not([type="radio"]), main[data-tab] select, main[data-tab] summary, main[data-tab] a[class*="btn"]').evaluateAll(controls=>controls.filter(control=>control.getClientRects().length&&control.getBoundingClientRect().height<44).map(control=>control.tagName))
+     assert.deepEqual(small,[],'Small native controls on '+name)
      await page.screenshot({path:join(directory,name+'-'+width+'.png'),fullPage:true})
     }
     await page.setViewportSize({width:1440,height:1000})

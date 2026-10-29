@@ -1,3 +1,4 @@
+import './agent-record-controls.css';
 import { RequestReviews } from './request-reviews';
 import { Comments } from './comments';
 import { CodingAgent } from './coding-agent';
