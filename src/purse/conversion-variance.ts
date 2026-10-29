@@ -8,7 +8,7 @@ import { normalizePurchaseCharges } from './purchase-charges';
 import { extended, get, minor, quantity, requireThat, text, type Actor, type Data, type State } from './types';
 
 export function conversionFace(record: Data) {
-    return { supplier: record.supplier, supplierSnapshot: structuredClone(record.supplierSnapshot), lines: record.lines.map(({ sourceLine, ...line }: Data) => structuredClone(line)), charges: structuredClone(record.charges ?? []), freightMinor: record.freightMinor, taxMinor: record.taxMinor, otherChargesMinor: record.otherChargesMinor ?? 0, totalMinor: record.totalMinor };
+    return { supplier: record.supplier, supplierSnapshot: structuredClone(record.supplierSnapshot), lines: record.lines.map(({ sourceLine, ...line }: Data) => structuredClone(line)), charges: structuredClone(record.charges ?? [...(record.freightMinor ? [{id:'freight',kind:'freight',description:'Freight',amountMinor:record.freightMinor}] : []), ...(record.taxMinor ? [{id:'tax',kind:'tax',description:'Supplied tax',amountMinor:record.taxMinor}] : [])]), freightMinor: record.freightMinor, taxMinor: record.taxMinor, otherChargesMinor: record.otherChargesMinor ?? 0, totalMinor: record.totalMinor };
 }
 function percentage(before: number, after: number, limit = 0) {
     if (after <= before) return true;
@@ -28,7 +28,7 @@ function covers(limit: BuyerLimit, request: Data, face: Data) {
     const sourceTotals=supplierLineExposure(request),editedTotals=supplierLineExposure(face);
     return limit.unlimited || price(request.totalMinor, face.totalMinor, limit) && request.lines.every((before: Data, index: number) => {
         const after = face.lines[index];
-        return after?.id === before.id && price(before.unitMinor, after.unitMinor, limit) && price(sourceTotals[index], editedTotals[index], limit) && percentage(before.q, after.q, limit.quantityPercent);
+        return after?.id === before.id && price(before.unitMinor, after.unitMinor, limit) && price(before.totalMinor, after.totalMinor, limit) && price(sourceTotals[index], editedTotals[index], limit) && percentage(before.q, after.q, limit.quantityPercent);
     });
 }
 export function currentConversionLimit(s: State, a: Actor, request: Data, face: Data) {

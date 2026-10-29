@@ -1,7 +1,7 @@
 import { check, same, lineAmounts, purchasing } from './restore-validation.mjs';
 import { accessObject, accessText, validateBuyerLimit } from './restore-access.mjs';
 
-const face = record => ({ supplier:record.supplier,supplierSnapshot:record.supplierSnapshot,lines:record.lines.map(({sourceLine,...line})=>line),charges:record.charges??[],freightMinor:record.freightMinor,taxMinor:record.taxMinor,otherChargesMinor:record.otherChargesMinor??0,totalMinor:record.totalMinor });
+const face = record => ({ supplier:record.supplier,supplierSnapshot:record.supplierSnapshot,lines:record.lines.map(({sourceLine,...line})=>line),charges:record.charges ?? [...(record.freightMinor ? [{id:'freight',kind:'freight',description:'Freight',amountMinor:record.freightMinor}] : []), ...(record.taxMinor ? [{id:'tax',kind:'tax',description:'Supplied tax',amountMinor:record.taxMinor}] : [])],freightMinor:record.freightMinor,taxMinor:record.taxMinor,otherChargesMinor:record.otherChargesMinor??0,totalMinor:record.totalMinor });
 const legacyFace = record => ({lines:record.lines.map(({sourceLine,...line})=>line),freightMinor:record.freightMinor,taxMinor:record.taxMinor,totalMinor:record.totalMinor});
 const immutableLine = ({quantity,q,unitMinor,totalMinor,unit,partNumber,lineTaxMinor,allocations,supplier,supplierSnapshot,...line}) => ({...line,...(allocations?{allocations:allocations.map(({amountMinor,...share})=>share)}:{})});
 function percentage(before,after,limit=0) {
