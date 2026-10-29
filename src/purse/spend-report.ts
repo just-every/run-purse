@@ -1,3 +1,4 @@
+import { supplierLineRemaining } from './po-supplier-groups';
 import { budgetCoding, budgetScopeMatches, selectBudgetPolicy } from './budget-dimensions';
 import { budgetApportion } from './budget-allocations';
 import { date, requireThat, type Data } from './types';
@@ -46,19 +47,22 @@ export function spendReport(data: Data, filters: Data = {}) {
         if (b.amount <= 0) continue;
         const request = requestById.get(b.request);
         if (!request || request.imported) continue;
-        const order = data.order.filter((o: Data) => o.request === b.request && (o.issuedAt || o.adoption) && ['issued', 'adopted', 'amendment-pending', 'closed'].includes(o.status)).sort((a: Data, b: Data) => b.revision - a.revision)[0];
-        // Receipt/cancellation/closure events have already released ledger authority.
-        const committed = order && order.currency === b.currency && order.policy === b.policy ? Math.min(b.amount, outstanding(order)) : 0;
-        for (const [kind, amount, terms] of [['committed', committed, order], ['reserved', b.amount - committed, request]] as const) {
-            if (!amount) continue;
-            const revision = data.revision.find((r: Data) => r.request === request.id && r.revision === terms.revision) || request;
-            const eligible = kind === 'committed' && !order.poDetails?.blanket ? terms.lines.filter((l: Data) => order.positions.find((p: Data) => p.line === l.id)?.outstanding > 0) : terms.lines;
-            const weights = kind === 'committed' && !order.poDetails?.blanket ? eligible.map((l: Data) => ({ ...l, totalMinor: Number((BigInt(Math.max(0, order.positions.find((p: Data) => p.line === l.id)?.outstanding ?? 0)) * BigInt(l.unitMinor) + 500n) / 1000n) })) : eligible;
-            const values = distribute(amount, weights);
-            eligible.forEach((l: Data, i: number) => {
-                if (values[i]) rows.push({ ...source(revision, l), kind, amountMinor: values[i], policy: b.policy, currency: b.currency,
-                    date: terms.needDate, order: kind === 'committed' ? order.id : null, number: kind === 'committed' ? order.number : null });
-            });
+        const candidates = data.order.filter((o: Data) => o.request === b.request && (o.issuedAt || o.adoption) && ['issued', 'adopted', 'amendment-pending', 'closed'].includes(o.status)).sort((a: Data, b: Data) => b.revision - a.revision);
+        const latest=candidates[0],orders:Data[]=latest?.supplierGroup?candidates.filter((o:Data)=>o.supplierGroup?.key===latest.supplierGroup.key):latest?[latest]:[];
+        let available=b.amount;
+        for(const order of orders) {
+            if(order.currency!==b.currency||order.policy!==b.policy)continue;
+            const amount=Math.min(available,outstanding(order));available-=amount;
+            if(!amount)continue;
+            const revision=data.revision.find((r:Data)=>r.request===request.id&&r.revision===order.revision)||request;
+            const eligible=order.poDetails?.blanket?order.lines:order.lines.filter((line:Data)=>order.positions.find((position:Data)=>position.line===line.id)?.outstanding>0);
+            const weights=order.poDetails?.blanket?eligible:eligible.map((line:Data)=>({...line,totalMinor:order.supplierGroup?supplierLineRemaining(order,line,order.positions.find((position:Data)=>position.line===line.id)?.outstanding??0):Number((BigInt(Math.max(0,order.positions.find((position:Data)=>position.line===line.id)?.outstanding??0))*BigInt(line.unitMinor)+500n)/1000n)}));
+            const values=distribute(amount,weights);
+            eligible.forEach((line:Data,index:number)=>{if(values[index])rows.push({...source({...revision,...order},line),kind:'committed',amountMinor:values[index],policy:b.policy,currency:b.currency,date:order.needDate,order:order.id,number:order.number});});
+        }
+        if(available) {
+            const values=distribute(available,request.lines);
+            request.lines.forEach((line:Data,index:number)=>{if(values[index])rows.push({...source({...request,supplier:line.supplier??request.supplier,supplierSnapshot:line.supplierSnapshot??request.supplierSnapshot},line),kind:'reserved',amountMinor:values[index],policy:b.policy,currency:b.currency,date:request.needDate,order:null,number:null});});
         }
     }
     for (const invoice of data.invoice) {
@@ -97,7 +101,7 @@ export function spendReport(data: Data, filters: Data = {}) {
             const dated=(data.periodBudgets ?? []).some((budget: Data)=>budget.id===row.policy);
             const candidates=dated ? data.periodBudgets.filter((budget:Data)=>budgetScopeMatches({...budget,budgetPeriod:{from:budget.from,through:budget.through}},terms,code)
                 && budget.sources.some((source:Data)=>!source.hidden&&source.request===row.request)) : [];
-            const recorded=new Set(data.commitment.filter((event:Data)=>event.request===row.request&&event.revision===row.revision&&event.amountMinor>0).flatMap((event:Data)=>(event.budgetAllocations??[]).map((share:Data)=>share.policy)));
+            const recorded=new Set(data.commitment.filter((event:Data)=>event.request===row.request&&event.revision===row.revision&&(event.amountMinor>0||event.kind==='buyer-conversion-reservation')).flatMap((event:Data)=>(event.budgetAllocations??[]).map((share:Data)=>share.policy)));
             const eligible=recorded.size?candidates.filter((budget:Data)=>recorded.has(budget.id)):candidates;
             const retained=eligible.find((budget:Data)=>budget.id===terms.policy);
             const budget=retained ?? selectBudgetPolicy(eligible);
@@ -125,6 +129,7 @@ export function spendReport(data: Data, filters: Data = {}) {
         choices: Object.fromEntries(dimensions.map(d => [d, [...new Map(rows.filter(r=>r[d]!==undefined&&r[d]!=='').map(r => [r[d], { value: r[d], label: d === 'supplier' ? r.supplierName : r[d] }])).values()].sort((a, b) => String(a.label).localeCompare(String(b.label)))])), rows: selected };
 }
 function outstanding(order: Data) {
+    if(order.supplierGroup)return order.lines.reduce((sum:number,line:Data)=>sum+supplierLineRemaining(order,line,order.positions.find((position:Data)=>position.line===line.id)?.outstanding??0),0);
     // Readers without invoice access get no billed balance; their ledger already nets drawn invoices.
     if(order.blanketPosition) return Math.min(order.totalMinor, order.blanketPosition.remainingMinor ?? order.totalMinor);
     const base = order.lines.reduce((n: number, l: Data) => n + l.totalMinor, 0);

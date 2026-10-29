@@ -1,6 +1,6 @@
 import { canonicalSupplier } from './supplier-identity';
 import { all, audit, can, get, put, quantity, requireThat, text, uid, type Actor, type Data, type State } from './types';
-import { commitment, linePosition, remainingValue } from './orders';
+import { commitment, linePosition, requestRemainingValue } from './orders';
 import { ledger } from './requests';
 import { currentDecision } from './approval';
 import { supplier } from './admin';
@@ -39,8 +39,8 @@ export function orderClosure(s: State, a: Actor, op: string, b: Data): Data | un
         put(s, 'order', o.id, { ...o, approvalActor: approval.actor, approvalVersion: approval.operatorVersion, reopenedAt: new Date().toISOString(), reopenedBy: a.id });
         audit(s, a, op, o.id, { closures: closures.map(c => c.id), reason });
     }
-    const target = remainingValue(s, o), delta = target - commitment(s, r);
-    if (delta) ledger(s, a, r, delta, op === 'close-order' ? 'close-release' : 'reopen-reservation');
+    const target = requestRemainingValue(s, o), delta = target - commitment(s, r);
+    if (delta) ledger(s, a, r, delta, op === 'close-order' ? 'close-release' : 'reopen-reservation',o.supplierGroup?o:r);
     const current = get(s, 'order', o.id);
     put(s, 'order', o.id, { ...current, closureVersion: (o.closureVersion ?? 0) + 1,
         status: o.lines.some((l: Data) => linePosition(s, o.id, l).outstanding > 0) ? 'issued' : 'closed' });

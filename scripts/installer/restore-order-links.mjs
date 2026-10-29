@@ -1,5 +1,5 @@
 import { check, same, integer, money, quantity, amount, purchasing } from './restore-validation.mjs';
-import { validateConversionVariance } from './restore-conversion-variance.mjs';
+import { validateConversionVariance, validateSupplierGroups } from './restore-conversion-variance.mjs';
 
 export function validateOrderLinks({get,all}) {
  const orders = all('order'), receipts = all('receipt'), closures = all('orderClosure');
@@ -18,8 +18,9 @@ export function validateOrderLinks({get,all}) {
   const revision = get('revision',o.request + ':' + o.revision);
   const clean = {...o,lines:o.lines.map(({sourceLine,...l}) => l)};
   check(o.lines.every(l => l.sourceLine === l.id),'order_revision');
+  if(o.supplierGroup)validateSupplierGroups(o,revision,all);
   if (Object.hasOwn(o,'conversionVariance')) validateConversionVariance(o,revision,all);
-  else check(same(purchasing(clean),purchasing(revision)),'order_revision');
+  else if(!o.supplierGroup) check(same(purchasing(clean),purchasing(revision)),'order_revision');
   get('policy',o.policy);
   check(all('decision').some(d => d.request === o.request && d.revision === o.revision && d.decision === 'approved' && d.policy === o.policy && d.actor === o.approvalActor && d.operatorVersion === o.approvalVersion),'order_approval');
   if (o.amendedBy) { const next=get('order',o.amendedBy); check(next.request === o.request && next.revision > o.revision && get('revision',next.request + ':' + next.revision).amends === o.id,'order_amendment'); }

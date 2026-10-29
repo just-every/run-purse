@@ -151,3 +151,13 @@ test('Legacy archive import migrates retained evidence without rewriting hashes,
  }
  await importArchive(emptyService,clean,[]);assert.equal(validatePurchasingArchive((await empty.db.prepare('SELECT * FROM p_records').all()).results),true);
 });
+
+test('Supplier group invoice ancestry keeps supplier references independent and refuses unresolved group over-balance planning',async t=>{
+ const {supplierGroupsFixture}=await import('./po-supplier-groups-fixture.mjs'),h=await harness();t.after(()=>h.close());const f=await supplierGroupsFixture(h),{cmd,buyer}=f,request=await f.create(),groups=(await f.convert(request)).supplierOrders;
+ await cmd('supplier',{...f.suppliers[1],status:'blocked',reason:'Supplier hold after preparation'});const before=(await h.state()).data;await cmd('issue',{id:groups[0].id,revision:2,reason:'Both suppliers must remain purchasable'},buyer,409);assert.deepEqual((await h.state()).data,before);
+ await cmd('supplier',{...f.suppliers[1],status:'active',reason:'Supplier hold independently cleared'});await cmd('issue',{id:groups[0].id,revision:2,reason:'Both current supplier groups reviewed'},buyer);
+ const inputs=groups.map(group=>({order:group.id,reference:'synthetic-purse-8170',source:'Supplier-specific original evidence',allocations:[{line:group.lines[0].id,quantity:'1',amountMinor:group.totalMinor}]})),bills=[];
+ for(const input of inputs){const bill=await cmd('invoice',input,buyer);bills.push(bill);assert.equal((await cmd('invoice',input,buyer)).id,bill.id);assert.equal(bill.balance.billedMinor,0);assert.ok(!bill.flags.some(flag=>flag.code==='po-balance'));}assert.notEqual(bills[0].id,bills[1].id);
+ const excess=await cmd('invoice',{...inputs[1],reference:'synthetic-purse-8171',allocations:[{line:groups[1].lines[0].id,quantity:'0.001',amountMinor:1}]},buyer);assert.equal(excess.balance.faceMinor,40000);assert.equal(excess.balance.billedMinor,40000);assert.equal(excess.balance.remainingMinor,0);assert.ok(excess.flags.some(flag=>flag.code==='po-balance'));
+ const terms=await cmd('payable-terms',{invoice:excess.id,version:0,invoiceDate:excess.invoiceDate,term:'Net 30',reason:'Retain held invoice'},buyer),unchanged=(await h.state()).data;await cmd('approve-payable',{invoice:excess.id,version:terms.version,reason:'Group exposure cannot override a risk hold'},buyer,409);assert.deepEqual((await h.state()).data,unchanged);
+});

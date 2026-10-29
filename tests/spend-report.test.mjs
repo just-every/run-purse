@@ -134,3 +134,18 @@ test('Spend questions recompute exact finance figures and department sources, re
  await cmd('agent-pause',{agent:'AGENT-011',reason:'Pause native spend questions'});await cmd('spend-question',{question:f.questions[0]},f.finance,409);
  const records=(await h.state()).data.agentRun.filter(run=>run.agent==='AGENT-011');assert.ok(records.some(run=>run.status==='declined'));assert.ok(records.every(run=>run.messages.length===0&&run.proposals.length===0));
 });
+
+test('Supplier group report sources retain charge cents and each allocation through partial receiving, closure and reopening',async t=>{
+ const {supplierGroupsFixture}=await import('./po-supplier-groups-fixture.mjs'),h=await harness();t.after(()=>h.close());const f=await supplierGroupsFixture(h),{cmd,buyer}=f;
+ const request=await f.create({lines:[{...f.draft.lines[0],quantity:'2',unitMinor:15000},{...f.draft.lines[1],unitMinor:20000},{...f.draft.lines[0],description:'synthetic-purse-8160',unitMinor:50000}]}),converted=await f.convert(request,{issue:true,conversionEdits:f.edits(request,{lines:[{id:request.lines[2].id,supplier:f.suppliers[1].id}],charges:[{kind:'freight',description:'Supplied freight',amountMinor:7},{kind:'tax',description:'Supplied tax',amountMinor:3},{kind:'other',description:'Supplied handling',amountMinor:1}]})}),groups=converted.supplierOrders;
+ assert.deepEqual(groups.map(group=>group.totalMinor),[50005,50006]);
+ const figures=async()=>{const state=(await h.state()).data,events=state.commitment.filter(event=>event.request===request.id);return f.policies.map(policy=>events.reduce((sum,event)=>sum+(event.budgetAllocations.find(share=>share.policy===policy.id)?.amountMinor??0),0));};
+ assert.deepEqual(await figures(),[80009,20002]);
+ assert.deepEqual((await f.report()).rows.filter(row=>row.request===request.id).map(row=>[row.line,row.amountMinor]).sort(),[[request.lines[0].id,30003],[request.lines[1].id,20002],[request.lines[2].id,50006]].sort());
+ await cmd('receipt',{order:groups[0].id,line:request.lines[0].id,event:'receive',quantity:'1',reason:'One source unit received'});
+ assert.deepEqual(await figures(),[65008,20002]);assert.equal((await f.report()).totals[0].committedMinor,85010);
+ await cmd('close-order',{id:groups[1].id,version:0,reason:'Close only the second supplier remainder'},buyer);assert.deepEqual(await figures(),[15002,20002]);assert.equal((await f.report()).totals[0].committedMinor,35004);
+ const positions=(await h.state()).data.periodBudgets;assert.deepEqual(f.policies.map(policy=>positions.find(position=>position.id===policy.id).committedMinor),[30003,20002]);
+ await cmd('reopen-order',{id:groups[1].id,version:1,reason:'Reopen the exact supported balance'},buyer);assert.deepEqual(await figures(),[65008,20002]);assert.equal((await f.report()).totals[0].committedMinor,85010);
+ await cmd('close-order',{id:groups[0].id,version:0,line:request.lines[1].id,reason:'Close only the Research line in a mixed-code group'},buyer);assert.deepEqual(await figures(),[65008,0]);const closedPositions=(await h.state()).data.periodBudgets;assert.deepEqual(f.policies.map(policy=>closedPositions.find(position=>position.id===policy.id).committedMinor),[80009,0]);assert.equal((await f.report()).totals[0].committedMinor,65008);
+});

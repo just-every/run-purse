@@ -1,3 +1,4 @@
+import { hasSupplierGroups, supplierLineExposure } from './po-supplier-groups';
 import { budgetCoding, budgetScopeMatches, selectBudgetPolicy } from './budget-dimensions';
 import { coveringPolicies } from './policy-match';
 import { all, Fault, requireThat, type Data, type State } from './types';
@@ -38,7 +39,8 @@ function budgetReview(request: Data, policies: Data[]) {
 export function requestBudgetShares(s: State, request: Data, amount: number, historicalIds?: Set<string>): Data[] {
     const policies=all(s,'policy').filter(policy=>historicalIds ? !historicalIds.size || historicalIds.has(policy.id) : policy.active===true),primary = s.get('policy:' + request.policy)?.value;
     if (!primary?.budgetPeriod) return [{ policy: request.policy, amountMinor: amount }];
-    const lineAmounts = budgetApportion(amount, request.lines.map((line: Data) => line.totalMinor));
+    const exposure=hasSupplierGroups(request)||request.supplierGroup?supplierLineExposure(request):undefined;
+    const lineAmounts = exposure && amount===request.totalMinor?exposure:budgetApportion(amount,exposure??request.lines.map((line: Data) => line.totalMinor));
     const result = new Map<string, number>();
     request.lines.forEach((line: Data, index: number) => {
         const codes = line.allocations?.length ? line.allocations : [{ costCentre: line.costCentre ?? request.costCentre, project: line.project, amountMinor: line.totalMinor }];
@@ -52,7 +54,7 @@ export function requestBudgetShares(s: State, request: Data, amount: number, his
     return [...result].map(([policy, amountMinor]) => ({ policy, amountMinor }));
 }
 export function budgetPortion(s: State, request: Data, amount: number, policy: string) {
-    const ids=new Set<string>(all(s,'commitment').filter(event=>event.request===(request.request??request.id)&&event.revision===request.revision&&event.amountMinor>0).flatMap(event=>(event.budgetAllocations??[]).map((share:Data)=>share.policy)));
+    const ids=new Set<string>(all(s,'commitment').filter(event=>event.request===(request.request??request.id)&&event.revision===request.revision&&(event.amountMinor>0||event.kind==='buyer-conversion-reservation')).flatMap(event=>(event.budgetAllocations??[]).map((share:Data)=>share.policy)));
     return requestBudgetShares(s, request, amount, ids).find(share => share.policy === policy)?.amountMinor ?? 0;
 }
 export function eventBudgetPortion(event: Data, policy: string) {
