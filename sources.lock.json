@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "f1c7dc49c6c2c9363ee2bbfa33f8d6e2283a30192521ca13ba4c5456f6c2edfe",
+      "sha256": "494ce98025ebb6e0c57bdfbd3c0e18d0c9329a895579a4ad00736b755d789f6d",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "d69ef766988ee997cbaaff909f5b5ab354a898a424e8e420827638484b8d9c37",
+      "sha256": "0c2da4bc80abc4a35d6e0b0558ceb2e9d132c333c10b1bae54833f9517046595",
       "executable": false
     },
     "DEMO.md": {
@@ -4752,7 +4752,7 @@
       "executable": false
     },
     "tests/browser.mjs": {
-      "sha256": "0b0e0601b101bbfb38ff9668fb478641bd22d108ece66f5b9c440e141e69e9fa",
+      "sha256": "8c8efe86bab8c4db1718535e73098f9e735050bf01174637ca0113e7ec34c642",
       "executable": false
     },
     "tests/budget-import-fixture.mjs": {
@@ -5060,7 +5060,7 @@
       "executable": false
     },
     "tests/recovery.mjs": {
-      "sha256": "27a635ca9c934a19524217423869645e007e958ce27ea2a6159228f301b6d59d",
+      "sha256": "fd90be17970aa3f63d4e14dc3a55fe9792eab56e5f8ebfd1bde4c400907fa910",
       "executable": false
     },
     "tests/recurring-scenario-fixture.mjs": {
