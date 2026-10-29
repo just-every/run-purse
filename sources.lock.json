@@ -4748,7 +4748,7 @@
       "executable": false
     },
     "tests/browser-agent-value.mjs": {
-      "sha256": "7e1fc12764da43e01988d417cb503e2ddd3fe551ee9081b94e7253932d85e80a",
+      "sha256": "8b23ff748c65a127c53801283e21152508bf01d2c81d2b89528699594cb16716",
       "executable": false
     },
     "tests/browser-agreement-value.mjs": {
