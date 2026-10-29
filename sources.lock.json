@@ -4852,7 +4852,7 @@
       "executable": false
     },
     "tests/browser-order-adoption.mjs": {
-      "sha256": "c765ae739f4fb2d01a2a0f120abe2cd8d7eb461caf1a4078c589370c9ca6e02f",
+      "sha256": "7a599c545a5b03ff73ffd422a597e60a47231984190ad6dc5ce76d2123f17a6c",
       "executable": false
     },
     "tests/browser-order-chasing.mjs": {
