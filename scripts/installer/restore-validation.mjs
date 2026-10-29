@@ -1,3 +1,4 @@
+import { validateInvoiceExceptionAgent } from './restore-invoice-exception-agent.mjs';
 import { validateInvoiceExceptions } from './restore-invoice-exceptions.mjs';
 import { validateSupplierTax } from './restore-supplier-tax.mjs';
 import { validateSupplierCredits } from './restore-supplier-credits.mjs';
@@ -187,5 +188,5 @@ export function validatePurchasingArchive(rows) {
  validateInvoiceReadings(all,get,check);
  validateQuoteReadings(all,get,check);
  validateReceiptRouting(all,get,check);
- validateInvoiceRisk(all,get,check); validateQuoteAwards(all,get,check); validatePayables(all,get,check); validatePantry(all,get,check); validateOrderLinks({get,all}); validateSupplierPerformance({get,all}); validateSupplierDocuments(all,get,check); validatePoDocuments(all,get); validateOrderChasing(all,get,check); validateAgentGovernance(all,get,check); validateCodingAgent(all,get,check); validateOrderThreads(all,get,check); validateQuoteAgents(all,get,check); validateSupplierInvoices(all,get,check); validateSupplierInvoiceApprovals(all,get,check); validatePoGeneration(all,get,check); return true;
+ validateInvoiceRisk(all,get,check); validateQuoteAwards(all,get,check); validatePayables(all,get,check); validatePantry(all,get,check); validateOrderLinks({get,all}); validateSupplierPerformance({get,all}); validateSupplierDocuments(all,get,check); validatePoDocuments(all,get); validateOrderChasing(all,get,check); validateAgentGovernance(all,get,check); validateCodingAgent(all,get,check); validateInvoiceExceptionAgent(all,get,check); validateOrderThreads(all,get,check); validateQuoteAgents(all,get,check); validateSupplierInvoices(all,get,check); validateSupplierInvoiceApprovals(all,get,check); validatePoGeneration(all,get,check); return true;
 }

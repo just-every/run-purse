@@ -1,3 +1,4 @@
+import { requireInvoiceExceptionAgentDownload } from './invoice-exception-agent';
 import { mayChooseSupplier, mayReadProposal } from './supplier-proposals';
 import { proposalView } from './supplier-review';
 import { supplierTaxView } from './supplier-tax';
@@ -160,6 +161,7 @@ export function download(s: State, a: Actor, kind: string, id: string) {
     if (kind === 'attachment') return new Response(Uint8Array.from(atob(record.base64), char => char.charCodeAt(0)), { headers: {
         'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="${record.name.replace(/[^a-zA-Z0-9._-]/g, '_')}"` } });
     if (kind === 'agentRun') {
+        if (record.agent === 'AGENT-004') requireInvoiceExceptionAgentDownload(s, a, record);
         const projected = projectProtectedContext('agentRun', record);
         if (record.workflow === 'value-realization') return new Response(JSON.stringify(projectValueRecord(s, a, projected), null, 2), { headers: {
             'content-type': 'application/json', 'content-disposition': 'attachment; filename="value-report.json"' } });
