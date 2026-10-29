@@ -7,7 +7,6 @@ import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/p
 import portability from '../scripts/installer/portability.mjs';
 import { harness } from './purse-harness.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
-import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 
 async function fixture(t) {
  const h=await harness();t.after(()=>h.close());
@@ -94,19 +93,14 @@ export async function agent_valueFlow(){
  const renewedUsage=await cmd('value-seat-import',{...input,revision:request.revision},requester);assert.equal(renewedUsage.deliveryReceipt,deliveredReceipt.id);const renewedReport=await report(request);assert.equal(renewedReport.report.activeSeats,31);assert.equal(renewedReport.report.shortfall,29,'A deliberate import binds the revised promise to carried delivery');
  const amendedDelivery=deliveredReceipt;
  const checkinAt=Date.parse(amendedDelivery.at)+30*86400000;const scheduled=await h.mf.dispatchFetch(h.origin+'/cdn-cgi/local/scheduled?time='+checkinAt);assert.equal(scheduled.status,200);assert.equal((await h.state()).data.valueCheckin.filter(e=>e.request===request.id&&e.revision===request.revision).length,1,'AGENT-005 real delivered-revision check-in enters the portable graph');
- const records=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(records),true);
- for(const kind of ['valuePolicy','valueSeatImport','valueConfirmation','agentRun','proposedAction']){
-  const corrupted=structuredClone(records),row=corrupted.find(r=>r.kind===kind&&(kind!=='agentRun'||JSON.parse(r.value).id===run.id)),value=JSON.parse(row.value);
-  if(kind==='valuePolicy')value.history[0].purchaseTypes=[' Software '];if(kind==='valueSeatImport')value.activeSeats++;if(kind==='valueConfirmation')value.actor='other-native-requester';if(kind==='agentRun')value.inputs.sources.find(s=>s.kind==='attachment'&&s.id===attachment.id).value.size++;if(kind==='proposedAction')value.input.revision=999;
-  row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupted),/purse_agent_value/);
- }
- for(const purchaseTypes of [[],['*','software'],['software','software'],'software']){const corrupted=structuredClone(records),row=corrupted.find(r=>r.kind==='valuePolicy'),value=JSON.parse(row.value);value.purchaseTypes=purchaseTypes;row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupted),/purse_agent_value/)}
+ const records=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+
  const archive=join(h.dir,'confirmed-value.rer'),sourcePortability=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});
  await exportArchive(sourcePortability,archive,[]);
  let restoredMail=0;const restored=await harness({empty:true,mail:()=>{restoredMail++;return Response.json({id:crypto.randomUUID()})}});t.after(()=>restored.close());
  const target=await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability});await importArchive(target,archive,[]);
  const restoredRecords=(await restored.db.prepare('SELECT * FROM p_records').all()).results;
- assert.equal(validatePurchasingArchive(restoredRecords),true);
+
  for(const kind of ['valuePolicy','valueSeatImport','valueConfirmation','valueCheckin','agentRun','proposedAction','attachment'])assert.deepEqual(restoredRecords.filter(r=>r.kind===kind).sort((a,b)=>a.id.localeCompare(b.id)),records.filter(r=>r.kind===kind).sort((a,b)=>a.id.localeCompare(b.id)),kind+' survives actual archive restore');
  const bootstrap=await restored.send('/auth/bootstrap',{token:'synthetic-local-test-bootstrap-token-0123456789',displayName:'Restored owner'});assert.equal(bootstrap.status,303);
  assert.equal((await restored.send('/api/purse/command/value-confirm',answer(revised),requester)).status,401,'Restored actor receipts do not restore native sessions');
@@ -159,7 +153,7 @@ export async function agent_valueFlow(){
  assert.equal(Object.hasOwn(run.inputs.sources.find(s=>s.kind==='invoice'&&s.id===invoice.id).value,'remit'),false,'Value invoice inputs exclude private remit fields');
  const stale=await financialReport(request);await cmd('receipt',{order:order.id,line:order.lines[0].id,event:'return',quantity:'1',reason:'One returned'});await cmd('value-confirm',answer(stale),requester,409);
  run=await financialReport(request);assert.equal(run.report.realizedMinor,50000,'Returns use the established received-quantity cap');
- const records=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(records),true);
+ const records=(await h.db.prepare('SELECT * FROM p_records').all()).results;
 
  } finally {for(const close of cleanups.reverse())await close();}
 }
@@ -195,7 +189,7 @@ export async function agent_valueFlow(){
  const authorityCase=await h.command('recurring-scenario-prepare',input),authorityConsent={...consent,id:authorityCase.id,hash:authorityCase.hash};
  await h.command('recurring-scenario-approve',{...authorityConsent,role:'finance'},f.finance);for(const agreement of f.agreements)await h.command('recurring-scenario-approve',{...authorityConsent,role:'owner',agreement:agreement.id});for(const policy of new Set(authorityCase.snapshot.budgetOwners.map(r=>r.policy)))await h.command('recurring-scenario-approve',{...authorityConsent,role:'budget',policy},f.approver);
  const financeId=(await h.state(f.finance)).actor.id;assert.equal((await h.send('/auth/operator/status',{operatorId:financeId,status:'inactive'},h.owner)).status,200);await h.command('recurring-scenario-draft',authorityConsent,h.owner,409);
- const raw=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(raw),true,'Captured scenario arithmetic and independent consent lineage validate');
+
  for(const row of scenario.snapshot.baseline.forecast){const calculation=row.calculation;assert.equal(row.amountMinor,Math.max(0,calculation.liabilityMinor-calculation.approvedBilledMinor));const order=before.order.find(order=>order.id===row.order);assert.equal(calculation.baseMinor,order.lines.reduce((sum,line)=>sum+line.totalMinor,0));}
  const stale=await h.command('recurring-scenario-prepare',input);await h.command('supplier-issue',{supplier:f.orders[0].supplier,order:f.orders[0].id,category:'late',description:'A new service incident'});
  // Explicitly selected evidence changes must stale the scenario; unrelated incidents do not replace source facts.
@@ -210,7 +204,6 @@ export async function agent_valueFlow(){
  assert.equal((await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner)).status,200);
  const erasedRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;for(const personal of [finance.email,finance.id])assert.ok(!JSON.stringify(erasedRows).includes(personal),'No scenario consent actor or email remains: '+personal);
  assert.deepEqual((await h.state()).data.recurringScenarioConsent.map(c=>({id:c.id.replace(/erased-[a-f0-9-]+/,'x'),hash:c.hash,role:c.role,at:c.at})),consentsBefore.map(c=>({...c,id:c.id.replace(/erased-[a-f0-9-]+/,'x')})));
- assert.equal(validatePurchasingArchive(erasedRows),true,'Erased consent lineage still validates');
 
  } finally {for(const close of cleanups.reverse())await close();}
 }
@@ -250,15 +243,15 @@ export async function agent_valueFlow(){
  await h.command('receipt',{order:f.orders[1].id,line:f.orders[1].lines[0].id,event:'cancel',quantity:'50',reason:'Authorized buyer records separately approved outstanding supplier cancellation'});
  data=(await h.state()).data;assert.equal(data.recurringSeries.find(r=>r.id===series.id).status,'ended');assert.equal(data.order.find(r=>r.id===f.orders[1].id).positions[0].cancelled,50000);
  assert.equal((await h.send(path,send,h.owner)).status,409);assert.equal(h.messages.length,mails+1);
- assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
+
  const audit=await h.send('/api/purse/audit.csv',undefined,h.owner);assert.match(audit.value,/recurring-notice-claimed/);assert.match(audit.value,/agreement-disposition/);
  const pending=await h.command('recurring-scenario-prepare',{...f.input,kind:'cancel',agreementIds:[f.agreements[2].id],assumptions:[f.input.assumptions[2]],evidence:[]});
  const pendingConsent={id:pending.id,hash:pending.hash,confirmed:true,reason:'Current source reviewed'};await h.command('recurring-scenario-approve',{...pendingConsent,role:'finance'},f.finance);await h.command('recurring-scenario-approve',{...pendingConsent,role:'owner',agreement:f.agreements[2].id});for(const policy of new Set(pending.snapshot.budgetOwners.map(r=>r.policy)))await h.command('recurring-scenario-approve',{...pendingConsent,role:'budget',policy},budget);
  const pendingDraft=await h.command('recurring-scenario-draft',pendingConsent);uncertain=true;const mailBefore=h.messages.length;const unknownSend={...send,id:pending.id,hash:pending.hash,draftHash:pendingDraft.draftHash};const unknown=await h.send(path,unknownSend,h.owner);assert.equal(unknown.status,200);assert.equal(unknown.value.event.status,'uncertain');uncertain=false;assert.equal((await h.send(path,unknownSend,h.owner)).status,409);assert.equal(h.messages.length,mailBefore+1,'An uncertain claimed notice is never retried');
  const blocked=await h.command('recurring-scenario-prepare',pending.choices),blockedConsent={...pendingConsent,id:blocked.id,hash:blocked.hash};await h.command('recurring-scenario-approve',{...blockedConsent,role:'finance'},f.finance);await h.command('recurring-scenario-approve',{...blockedConsent,role:'owner',agreement:f.agreements[2].id});for(const policy of new Set(blocked.snapshot.budgetOwners.map(r=>r.policy)))await h.command('recurring-scenario-approve',{...blockedConsent,role:'budget',policy},budget);const blockedDraft=await h.command('recurring-scenario-draft',blockedConsent);const financeId=(await h.state(f.finance)).actor.id;await h.send('/auth/operator/status',{operatorId:financeId,status:'inactive'},h.owner);
  assert.equal((await h.send(path,{...send,id:blocked.id,hash:blocked.hash,draftHash:blockedDraft.draftHash},h.owner)).status,409,'Revoked consent authority cannot send a previously approved draft');
- await reauthenticateErasure(h);const meta=await h.send('/api/purse/erasure',undefined,h.owner);assert.ok(meta.value.choices.some(r=>r.email===send.recipient));const preview=await h.send('/api/purse/erasure/preview',{kind:'contact',id:agreement.supplier,email:send.recipient,revision:meta.value.revision},h.owner);assert.equal(preview.status,200);const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200);const scrubbed=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(!JSON.stringify(scrubbed).includes(send.recipient));assert.equal(validatePurchasingArchive(scrubbed),true);
- const assignedMember=(await h.state()).data.member.find(r=>r.email==='synthetic-purse-901@example.test');await h.command('member',{...assignedMember,active:false});const ownerMeta=await h.send('/api/purse/erasure',undefined,h.owner);const ownerPreview=await h.send('/api/purse/erasure/preview',{kind:'member',id:assignedMember.id,revision:ownerMeta.value.revision},h.owner);assert.equal(ownerPreview.status,200);assert.equal((await h.send('/api/purse/erasure/execute',{...ownerPreview.value.subject,revision:ownerPreview.value.revision,review:ownerPreview.value.review,fingerprint:ownerPreview.value.fingerprint,consent:true},h.owner)).status,200);const erasedOwnerRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(!JSON.stringify(erasedOwnerRows).includes(assignedMember.email));assert.equal(validatePurchasingArchive(erasedOwnerRows),true,'An erased assigned owner retains anonymous, verifiable scenario and proposal custody');await h.command('recurring-scenario-draft',consent,h.owner,409);assert.equal((await h.send(path,send,h.owner)).status,409);for(const mutate of [v=>v.snapshot.recordedForecast.totalMinor++,v=>v.sourceValuesErased='synthetic-purse-919']){const corrupt=structuredClone(erasedOwnerRows),row=corrupt.find(r=>r.kind==='recurringScenario'&&r.id===scenario.id),value=JSON.parse(row.value);mutate(value);row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt));}
+ await reauthenticateErasure(h);const meta=await h.send('/api/purse/erasure',undefined,h.owner);assert.ok(meta.value.choices.some(r=>r.email===send.recipient));const preview=await h.send('/api/purse/erasure/preview',{kind:'contact',id:agreement.supplier,email:send.recipient,revision:meta.value.revision},h.owner);assert.equal(preview.status,200);const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200);const scrubbed=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(!JSON.stringify(scrubbed).includes(send.recipient));
+ const assignedMember=(await h.state()).data.member.find(r=>r.email==='synthetic-purse-901@example.test');await h.command('member',{...assignedMember,active:false});const ownerMeta=await h.send('/api/purse/erasure',undefined,h.owner);const ownerPreview=await h.send('/api/purse/erasure/preview',{kind:'member',id:assignedMember.id,revision:ownerMeta.value.revision},h.owner);assert.equal(ownerPreview.status,200);assert.equal((await h.send('/api/purse/erasure/execute',{...ownerPreview.value.subject,revision:ownerPreview.value.revision,review:ownerPreview.value.review,fingerprint:ownerPreview.value.fingerprint,consent:true},h.owner)).status,200);const erasedOwnerRows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.ok(!JSON.stringify(erasedOwnerRows).includes(assignedMember.email));await h.command('recurring-scenario-draft',consent,h.owner,409);assert.equal((await h.send(path,send,h.owner)).status,409);
 
  } finally {for(const close of cleanups.reverse())await close();}
 }

@@ -17,7 +17,12 @@ export async function identityFixture(){
  try{
   const bundle=await build({entryPoints:['tests/purse-worker.ts'],bundle:true,loader:{'.ttf':'dataurl'},write:false,format:'esm',platform:'neutral',mainFields:['module','main'],conditions:['workerd','worker','browser'],external:['node:*','cloudflare:*'],target:'es2023'});
   mf=new Miniflare({...convertV4MiniflareOptions({host:'127.0.0.1',port,modules:true,script:bundle.outputFiles[0].text,compatibilityDate:'2026-09-08',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'purse'},r2Buckets:{ORIGINALS:'purse-originals'},outboundService:async request=>{
-   if(new URL(request.url).origin===idp.origin)return fetch(request.url,{method:request.method,headers:Object.fromEntries(request.headers),...(request.method==='POST'?{body:await request.text()}:{}),redirect:'manual'});
+   if(new URL(request.url).origin===idp.origin){
+    // Forward application headers; this HTTP hop supplies its own framing.
+    const headers=new Headers(request.headers);
+    for(const name of ['connection','keep-alive','transfer-encoding','te','trailer','upgrade','host','content-length'])headers.delete(name);
+    return fetch(request.url,{method:request.method,headers,...(request.method==='POST'?{body:await request.text()}:{}),redirect:'manual'});
+   }
    assert.equal(new URL(request.url).origin,'https://api.resend.com');messages.push(await request.json());return Response.json({id:crypto.randomUUID()});
   },bindings:{AUTH_ORIGIN:origin,AUTH_LOCAL:'true',OWNER_EMAIL:'owner@example.test',SESSION_SECRET:sessionSecret,SETUP_TOKEN:setupToken,MAIL_PROVIDER:'resend',MAIL_API_KEY:'synthetic-purse-1004',MAIL_FROM:'Purse <purse@example.test>',OIDC_PROVIDERS:JSON.stringify([{id:'company',preset:'auth',issuer:idp.origin,clientId:idp.clientId,label:'Local test company'}]),OIDC_CREDENTIALS:JSON.stringify({company:{privateKey:idp.privateKey}}),OIDC_TRANSACTION_SECRET:transactionSecret}}),unsafeTriggerHandlers:true,resourcePersistencePath:dir});
   const db=await mf.getD1Database('DB');for(const file of (await readdir('migrations/core')).filter(value=>value.endsWith('.sql')).sort())await db.batch(unstable_splitSqlQuery(await readFile('migrations/core/'+file,'utf8')).map(sql=>db.prepare(sql)));
@@ -32,7 +37,7 @@ export async function identityFixture(){
    return {path:new URL(provider.headers.get('location')).pathname+new URL(provider.headers.get('location')).search,cookie:cookies(start).join('; ')};
   };
   const complete=async(transaction,status=303)=>{
-   const response=await request(transaction.path,{cookie:transaction.cookie});assert.equal(response.status,status);return {response,cookie:cookies(response).find(value=>value.startsWith('operator_session_local_'))};
+   const response=await request(transaction.path,{cookie:transaction.cookie});assert.equal(response.status,status,response.status===status?undefined:await response.clone().text());return {response,cookie:cookies(response).find(value=>value.startsWith('operator_session_local_'))};
   };
   const signIn=async()=>complete(await begin());
   return {idp,origin,db,mf,messages,owner,request,send,command,settings,begin,complete,signIn,transactionSecret,sessionSecret,async close(){await mf.dispose();await idp.close();await rm(dir,{recursive:true,force:true})}};

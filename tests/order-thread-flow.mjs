@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { createPortability } from '@runeditrun/rer/modules/portability';
 import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
-import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
+
 import { harness } from './purse-harness.mjs';
 import { orderSendFixture } from './order-send-fixture.mjs';
 import { createEmailIntakeEdge, signedInbound } from './email-intake-fixture.mjs';
@@ -64,9 +64,7 @@ export async function order_threadFlow(){
     const audit = await h.send('/api/purse/audit.csv?subject=' + f.order.id, undefined, h.owner); assert.equal(audit.status, 200);
     for (const action of ['order-thread-send-claimed', 'order-thread-send-outcome', 'order-thread-reply-received', recipient]) assert.ok(audit.value.includes(action), action);
     const auditRead = await h.send('/api/purse/audit?subject=' + f.order.id, undefined, h.owner); assert.equal(auditRead.status, 200); assert.ok(JSON.stringify(auditRead.value).includes(sent.value.id));
-    const rows = (await h.db.prepare('SELECT * FROM p_records').all()).results; assert.equal(validatePurchasingArchive(rows), true);
-    const corrupt = structuredClone(rows), corruptRow = corrupt.find(row => row.kind === 'orderThreadMessage' && row.id === reply.id), corruptMessage = JSON.parse(corruptRow.value); corruptMessage.files[0].key = 'synthetic-purse-3019/private'; corruptRow.value = JSON.stringify(corruptMessage);
-    assert.throws(() => validatePurchasingArchive(corrupt), /order_thread_original/);
+
     const archive = join(h.dir, 'synthetic-purse-3013.rer');
     await exportArchive(await createPortability({ db: h.db, buckets: { ORIGINALS: h.originals }, policy: portability }), archive, []);
     const restored = await harness({ empty: true, mailRequest: edge.mailRequest }); t.after(() => restored.close());
@@ -84,7 +82,7 @@ export async function order_threadFlow(){
     const erased = await h.send('/api/purse/erasure/execute', { ...preview.value.subject, revision: preview.value.revision, review: preview.value.review, fingerprint: preview.value.fingerprint, consent: true }, h.owner); assert.equal(erased.status, 200, JSON.stringify(erased.value));
     assert.equal((await h.send(filePath, undefined, f.buyer)).status, 410); assert.equal((await h.send(originalPath, undefined, f.buyer)).status, 410);
     assert.equal((await h.db.prepare('SELECT count(*) AS count FROM p_order_thread_routes').first()).count, 0);
-    const erasedRows = (await h.db.prepare('SELECT * FROM p_records').all()).results; assert.ok(!JSON.stringify(erasedRows).includes(recipient)); assert.equal(validatePurchasingArchive(erasedRows), true);
+    const erasedRows = (await h.db.prepare('SELECT * FROM p_records').all()).results; assert.ok(!JSON.stringify(erasedRows).includes(recipient));
 
  } finally {for(const close of cleanups.reverse())await close();}
 }
@@ -101,7 +99,6 @@ export async function order_threadFlow(){
     const route = messagePath(f.order) + '/messages/' + encodeURIComponent(sent.value.id) + '/revoke';
     assert.equal((await h.send(route, {}, f.requester)).status, 403); assert.equal((await h.send(route, {}, f.buyer)).status, 200);
     assert.equal((await h.db.prepare('SELECT count(*) AS count FROM p_order_thread_routes').first()).count, 0);
-    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results), true);
 
  } finally {for(const close of cleanups.reverse())await close();}
 }

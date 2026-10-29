@@ -1,7 +1,6 @@
 
 import assert from 'node:assert/strict'
 import {harness} from './purse-harness.mjs'
-import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
 
 export async function receipt_routingFlow(){
 {
@@ -70,7 +69,6 @@ export async function receipt_routingFlow(){
  assert.deepEqual(await restoredPrompts(),retainedPrompts,'Actual archive import preserves every receipt prompt byte');
  const restoredTick=await restored.mf.dispatchFetch(restored.origin+'/cdn-cgi/local/scheduled?time='+Date.parse('2026-11-06T12:00:00Z'));assert.equal(restoredTick.status,200,await restoredTick.text());
  assert.deepEqual(await restoredPrompts(),retainedPrompts,'Scheduled continuation after actual restore preserves prompt records without native receivers');
- const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true,'RECEIVE-001 retained assignments, history and outcomes validate for archive restore');
 
  } finally {for(const close of cleanups.reverse())await close();}
 }

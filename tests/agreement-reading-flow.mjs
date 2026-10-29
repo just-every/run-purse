@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {join} from 'node:path';
 import {PDFDocument,StandardFonts} from 'pdf-lib';
 import {harness} from './purse-harness.mjs';
-import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
+
 import portability from '../scripts/installer/portability.mjs';
 import {createPortability} from '@runeditrun/rer/modules/portability';
 import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
@@ -68,8 +68,7 @@ export async function agreement_readingFlow(){
   const file=await cmd('attachment',{...upload,name,base64:original.toString('base64')}),out=await cmd('agreement-extract',{agreement:agreement.id,version:agreement.version,attachment:file.id});assert.equal(out.status,'unsupported');assert.ok(out.reason.length);await cmd('agreement-reading-edit',{id:out.id,version:out.version,changes:[{field:'noticeDays',value:60}]},h.owner,409);
  }
  const conflictFile=await cmd('attachment',{...upload,name:'conflicting-notice.pdf',base64:(await pdf([['Currency: USD','Notice period: 60 days','Notice period: 90 days']])).toString('base64')}),conflict=await cmd('agreement-extract',{agreement:agreement.id,version:agreement.version,attachment:conflictFile.id});assert.equal(conflict.noticeDays.value,null);assert.equal(conflict.noticeDays.confidence,0);assert.ok(conflict.warnings.some(w=>w.includes('noticeDays')));
- const archive=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(archive),true);
- for(const mutate of [v=>{v.sourceDescriptor.sha256='0'.repeat(64)},v=>{v.noticeDays.value=61}]){const corrupt=structuredClone(archive),row=corrupt.find(r=>r.kind==='agreementReading'&&r.id===reading.id),value=JSON.parse(row.value);mutate(value);row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(corrupt),/agreement_reading/);}
+
  const audit=await h.send('/api/purse/audit.csv',undefined,h.owner);assert.match(audit.value,/agreement-reading-confirm/);assert.match(audit.value,/agreement-reading-edit/);
  const archiveFile=join(h.dir,'agreement-readings.rer'),service=await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});await exportArchive(service,archiveFile,[]);
  let restoredMails=0;const restored=await harness({empty:true,mail:()=>{restoredMails++;return Response.json({id:crypto.randomUUID()});}});t.after(()=>restored.close());

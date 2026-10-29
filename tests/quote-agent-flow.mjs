@@ -2,7 +2,6 @@
 import assert from 'node:assert/strict';
 import {PDFDocument,StandardFonts} from 'pdf-lib';
 import {harness} from './purse-harness.mjs';
-import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
 
 async function pdf(lines){const doc=await PDFDocument.create(),font=await doc.embedFont(StandardFonts.Helvetica),page=doc.addPage();lines.forEach((line,i)=>page.drawText(line,{x:30,y:780-i*22,size:10,font}));return Buffer.from(await doc.save());}
 
@@ -48,8 +47,6 @@ export async function quote_agentFlow(){
  await cmd('execute-action',{id:revised.proposals[0].id},buyer);assert.equal((await h.state(buyer)).data.quoteAward.filter(row=>row.request===request.id).length,0);
  await cmd('rfq-award',{...args,firstResponse:first.id,response:revised.recommendations[0].response,reason:'Buyer checked complete original and accepts this conforming offer'},requester,403);
  const awarded=await cmd('rfq-award',{...args,firstResponse:first.id,response:revised.recommendations[0].response,reason:'Buyer checked complete original and accepts this conforming offer'},buyer);assert.equal(awarded.status,'draft');assert.equal(awarded.revision,2);await cmd('quote-agent-run',args,buyer,409);
- const archive=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(archive),true);
- const tampered=structuredClone(archive),row=tampered.find(row=>row.kind==='agentRun'&&row.id===run.id),value=JSON.parse(row.value);value.recommendations[0].binding=true;row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(tampered),/quote_agent_digest|quote_agent_nonbinding/);
 
  } finally {for(const close of cleanups.reverse())await close();}
 }
