@@ -4828,7 +4828,7 @@
       "executable": false
     },
     "tests/emitted-worker.mjs": {
-      "sha256": "eff1b7a56e271336edc9a331ed866dba301826c7f1d07b7a4e1b76e68503bae8",
+      "sha256": "f22600509ef1bbd59fa14fab0425111d155a5e3e6a8d1bbe9b0cecc9022ffc62",
       "executable": false
     },
     "tests/erasure-flow.mjs": {
