@@ -13,6 +13,7 @@ if (protectedWrite?.proofSince !== undefined) q.push(db.prepare(`INSERT INTO p_g
 if (protectedWrite) q.push(...protectedWrite.statements);
 for (const [k, r] of after) {
     if(['nativeReviewAuthority','nativeTaxAuthority','nativeBudgetAuthority'].includes(r.kind)) continue;
+    if(r.kind === 'invoiceException' && r.value.version > (before.get(k)?.value.version ?? 0)) q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(r.value.assignee,r.value.assigneeVersion));
     if (before.get(k)?.revision === r.revision)
         continue;
     if(r.kind==='request' && r.value.budgetDisposition && r.value.budgetDisposition.id!==before.get(k)?.value.budgetDisposition?.id) {const d=r.value.budgetDisposition;q.push(db.prepare("INSERT INTO p_budget_disposition_authority(disposition,actor,operator_version) SELECT ?,id,version FROM oa_operators WHERE id=? AND version=? AND role='owner' AND status='active'").bind(d.id,a.id,a.version));}

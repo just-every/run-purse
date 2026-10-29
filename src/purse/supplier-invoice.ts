@@ -28,7 +28,9 @@ export function requireSupplierInvoiceOrder(state: State, event: Data) {
 
 /** Supplier statuses project only this capability's submissions and actual approval evidence. */
 export function supplierInvoiceStatuses(state: State, event: Data) {
-    return all(state, 'supplierInvoiceSubmission').filter(source => source.send === event.id && source.order === event.order && source.revision === event.revision).map(source => {
+    return all(state, 'supplierInvoiceSubmission').filter(source => source.send === event.id && source.order === event.order && source.revision === event.revision)
+        .sort((a, b) => (get(state, 'invoice', a.invoice).entrySequence ?? 0) - (get(state, 'invoice', b.invoice).entrySequence ?? 0)
+            || a.at.localeCompare(b.at) || a.id.localeCompare(b.id)).map(source => {
         const invoice = get(state, 'invoice', source.invoice);
         requireThat(invoice.supplierSubmission === source.id && invoice.order === event.order && invoice.currency === source.currency, 'Supplier invoice source scope changed', 409);
         const paid = state.get('pantrySync:' + invoice.id)?.value;
