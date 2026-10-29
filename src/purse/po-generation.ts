@@ -1,3 +1,4 @@
+import { entityId } from './entities';
 import {purchaseTypes} from './agent-governance';
 import { currentDecision } from './approval';
 import { currentPrice } from './catalogue';
@@ -18,6 +19,7 @@ export function generationRule(s: State, request: Data): Data | undefined {
     return candidates.length && (candidates.length === 1 || rank(candidates[0]) > rank(candidates[1])) ? candidates[0] : undefined;
 }
 export function generationReadiness(s: State, request: Data, policy = generationRule(s,request)): Data {
+    requireThat(entityId(request)==='main','Additional entities require manual conversion and issuance',409);
     requireThat(request.status === 'approved' && !request.imported,'Exact native approved request required',409);
     const existing = all(s,'order').find(o => o.request === request.id && o.revision === request.revision);
     if (existing) return {status:'generated',order:existing.id,reason:'Buyer consent required to send this exact PO and supplier contact'};

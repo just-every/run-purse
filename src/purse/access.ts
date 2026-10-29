@@ -68,6 +68,7 @@ function grantMatches(s: State, a: Actor, grant: AccessGrant, record: Data, perm
 }
 export function grantAllows(s:State,a:Actor,grant:AccessGrant,permission:string,record?:Data){return grant.permissions.includes(permission) && (record===undefined || grantMatches(s,a,grant,record,permission));}
 export function allowed(s: State, a: Actor, permission: string, record?: Data) {
+    if (record && (record.entity ?? record.entityId ?? 'main') !== 'main' && !['access.manage','request.create','request.read','request.edit','request.approve','po.read','po.convert','po.issue','report.read','performance.read','audit.read','audit.export'].includes(permission)) return false;
     if (!permissions.includes(permission as typeof permissions[number])) return false;
     return accessGrants(s, a).some(grant => grant.permissions.includes(permission) && (record === undefined || grantMatches(s, a, grant, record, permission)));
 }

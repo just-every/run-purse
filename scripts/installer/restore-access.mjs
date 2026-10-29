@@ -13,14 +13,15 @@ export function validateBuyerLimit(limit, complete = false) {
     check(accessObject(limit) && Object.keys(limit).length > 0 && Object.keys(limit).every(field => fields.includes(field)) && (!complete || fields.every(field => Object.hasOwn(limit, field))), 'access_buyer_limit');
     for (const [field, value] of Object.entries(limit)) check(typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= (field === 'absoluteMinor' ? 1e12 : 10000) && (field !== 'absoluteMinor' || Number.isSafeInteger(value)), 'access_buyer_limit');
 }
-function scope(value, business) {
+function scope(value, business, entities) {
     check(accessObject(value) && Object.keys(value).every(field => Object.hasOwn(dimensions, field)), 'access_scope');
     for (const [field, values] of Object.entries(value)) {
-        const choices = field === 'entities' ? ['main'] : business[dimensions[field]];
+        const choices = field === 'entities' ? entities : business[dimensions[field]];
         check(Array.isArray(values) && values.length > 0 && values.length <= 100 && Array.isArray(choices) && values.every(value => typeof value === 'string' && choices.includes(value)) && new Set(values).size === values.length, 'access_scope');
     }
 }
 export function validateAccess(all, get) {
+    const entities = ['main',...all('entity').map(entity=>entity.id)];
     const business = get('business','main'), roles = new Map(all('accessRole').map(role => [role.id, role]));
     const exists = role => typeof role === 'string' && role !== 'owner' && (builtins.has(role) || roles.has(role));
     const canHaveLimits = role => role === 'buyer' || roles.has(role);
@@ -28,7 +29,7 @@ export function validateAccess(all, get) {
     for (const role of roles.values()) {
         check(accessShape(role, ['id','name','permissions','scope','active'], ['limits']) && accessText(role.id, 100) && !builtins.has(role.id) && accessText(role.name, 100) && typeof role.active === 'boolean', 'access_role');
         check(Array.isArray(role.permissions) && role.permissions.length > 0 && role.permissions.every(permission => permissions.has(permission)) && new Set(role.permissions).size === role.permissions.length, 'access_role_permissions');
-        scope(role.scope, business);
+        scope(role.scope, business, entities);
         if (Object.hasOwn(role, 'limits')) validateBuyerLimit(role.limits);
         check(evidence(role, 'access-role'), 'access_role_audit');
     }
@@ -40,7 +41,7 @@ export function validateAccess(all, get) {
         check(Array.isArray(member.grants) && member.grants.length <= 100, 'access_member_grants');
         for (const grant of member.grants) {
             check(accessShape(grant, ['role','scope'], ['departmentRead','limits']) && exists(grant.role), 'access_grant');
-            scope(grant.scope, business);
+            scope(grant.scope, business, entities);
             check(!Object.hasOwn(grant, 'departmentRead') || typeof grant.departmentRead === 'boolean', 'access_department_read');
             check(!grant.departmentRead || grant.role === 'requester' && grant.scope.departments?.length > 0, 'access_department_read');
             if (Object.hasOwn(grant, 'limits')) { check(canHaveLimits(grant.role), 'access_grant_limit_role'); validateBuyerLimit(grant.limits); }
@@ -52,7 +53,7 @@ export function validateAccess(all, get) {
     for (const row of all('buyerRoleLimit')) {
         // A revoked custom role may retain inert historical defaults. Restoring
         // them never recreates native identity or bypasses today's role checks.
-        check(accessShape(row, ['id','role','entity','limits']) && exists(row.role) && canHaveLimits(row.role) && row.entity === 'main' && row.id === row.role + ':main', 'access_role_limit');
+        check(accessShape(row, ['id','role','entity','limits']) && exists(row.role) && canHaveLimits(row.role) && entities.includes(row.entity) && row.id === row.role + ':' + row.entity, 'access_role_limit');
         validateBuyerLimit(row.limits); check(evidence(row, 'buyer-role-limit'), 'access_role_limit_audit');
     }
 }

@@ -1,3 +1,4 @@
+import { entityId, requireEntityPurchase } from './entities';
 import { hasSupplierGroups, requireGroupable, supplierGroupFaces, requireGroupFace, supplierLineRemaining } from './po-supplier-groups';
 import { checkAdoptedDisposition, settleAdoptedDisposition } from './adoption-amendments';
 import { operationalOrder } from './adoption-position';
@@ -29,6 +30,7 @@ export function orders(s: State, a: Actor, op: string, b: Data, issuingGroup = f
     if (op === 'need-date-edit') return changeNeedDate(s,a,b);
     if (op === 'convert') {
         let r = get(s, 'request', b.id);
+        requireEntityPurchase(s,r);
         requirePermission(s, a, 'po.convert', r);
         requireThat(r.revision === b.revision && r.status === 'approved' && !r.imported, 'Exact current revision must have native approval', 409);
         supplier(s, r.supplier);
@@ -50,10 +52,11 @@ export function orders(s: State, a: Actor, op: string, b: Data, issuingGroup = f
         const approval=currentDecision(s,r);
         const conversionVariance = r.buyerConversion ? {...r.buyerConversion, approvalRenewed:r.buyerConversion.routing!=='carried'} : undefined;
         const id = uid();
-        let sequence = all(s, 'order').reduce((n, o) => Math.max(n, o.sequence || 0), 0) + 1;
+        const prefix = r.entitySnapshot?.prefix ?? 'PO';
+        let sequence = all(s, 'order').filter(order=>entityId(order)===entityId(r)).reduce((n, o) => Math.max(n, o.sequence || 0), 0) + 1;
         const occupied = new Set(all(s, 'order').map(order => order.number));
-        while (occupied.has(`PO-${String(sequence).padStart(6, '0')}`)) sequence++;
-        const o = { id, sequence, documentProfile: poProfileSnapshot(s, face, a), ...(r.poDetails ? { poDetails: structuredClone(r.poDetails) } : {}), ...(r.entity ? { entity: r.entity } : {}), location: r.location, costCentre: r.costCentre, approvalActor:approval.actor,approvalVersion:approval.operatorVersion,...(approval.chainProofs ? {approvalProofs:approval.chainProofs} : {}), number: `PO-${String(sequence).padStart(6, '0')}`, request: r.id, policy:r.policy, revision: r.revision, supplier: face.supplier, supplierSnapshot: structuredClone(face.supplierSnapshot), ...(face.supplierGroup ? {supplierGroup:face.supplierGroup}: {}), currency: r.currency, lines: face.lines.map((l: Data) => ({ ...l, sourceLine: l.id })), freightMinor: face.freightMinor, taxMinor: face.taxMinor, totalMinor: face.totalMinor, terms: r.terms, needDate: r.needDate, status: 'prepared', generatedAt: new Date().toISOString(), issuedAt: null, ...(conversionVariance ? { conversionVariance } : {}), ...(face.charges ? {charges:structuredClone(face.charges),otherChargesMinor:face.otherChargesMinor??0} : {}) };
+        while (occupied.has(`${prefix}-${String(sequence).padStart(6, '0')}`)) sequence++;
+        const o = { id, sequence, documentProfile: poProfileSnapshot(s, face, a), ...(r.poDetails ? { poDetails: structuredClone(r.poDetails) } : {}), ...(r.entity ? { entity: r.entity, entitySnapshot:structuredClone(r.entitySnapshot) } : {}), location: r.location, costCentre: r.costCentre, approvalActor:approval.actor,approvalVersion:approval.operatorVersion,...(approval.chainProofs ? {approvalProofs:approval.chainProofs} : {}), number: `${prefix}-${String(sequence).padStart(6, '0')}`, request: r.id, policy:r.policy, revision: r.revision, supplier: face.supplier, supplierSnapshot: structuredClone(face.supplierSnapshot), ...(face.supplierGroup ? {supplierGroup:face.supplierGroup}: {}), currency: r.currency, lines: face.lines.map((l: Data) => ({ ...l, sourceLine: l.id })), freightMinor: face.freightMinor, taxMinor: face.taxMinor, totalMinor: face.totalMinor, terms: r.terms, needDate: r.needDate, status: 'prepared', generatedAt: new Date().toISOString(), issuedAt: null, ...(conversionVariance ? { conversionVariance } : {}), ...(face.charges ? {charges:structuredClone(face.charges),otherChargesMinor:face.otherChargesMinor??0} : {}) };
         for (const field of ['glAccount','intakeForm','intakeFormVersion','intakeFormSnapshot','answers','customFields']) if (r[field] !== undefined) (o as Data)[field] = structuredClone(r[field]);
         if (r.cancellation) (o as Data).cancellation = structuredClone(r.cancellation);
         if (r.adoptedDisposition) (o as Data).adoptedDisposition = structuredClone(r.adoptedDisposition);
@@ -68,6 +71,8 @@ export function orders(s: State, a: Actor, op: string, b: Data, issuingGroup = f
     }
     if (op === 'issue') {
         const o = get(s, 'order', b.id), r = get(s, 'request', o.request);
+        requireEntityPurchase(s,r); requireEntityPurchase(s,o);
+        requireThat(entityId(o)===entityId(r), 'PO entity differs from its approved request',409);
         if(o.supplierGroup && !issuingGroup) {
             const siblings=requireGroupFace(s,o);
             const issued=siblings.map(sibling=>orders(s,a,'issue',{...b,id:sibling.id},true)!);

@@ -888,7 +888,7 @@
       "executable": false
     },
     "scripts/installer/restore-access.mjs": {
-      "sha256": "7e4a1b5651c3d5a756a48442735ef78741bd0fe71c6bdbccbb141894d9a91b05",
+      "sha256": "83f054879db221c90d230633fbbe9dd63f073ed8ac9b14d1916aac19127619ea",
       "executable": false
     },
     "scripts/installer/restore-adoption-amendments.mjs": {
@@ -1096,7 +1096,7 @@
       "executable": false
     },
     "scripts/installer/restore-validation.mjs": {
-      "sha256": "18ce62f02ffdd4b43957110918a8a6ba604ad13ae0c5dac1dd834e1826894c6b",
+      "sha256": "717a690b4d03892710f272b4333e3a933c48d283f82b8b9162fbb4dd0d0ba111",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -2936,7 +2936,7 @@
       "executable": false
     },
     "src/purse/access-projection.ts": {
-      "sha256": "fc7048c01369b3cf2ab79bd0e412eb8880e28fa66b05b544c8a778adaf6a3625",
+      "sha256": "aab741e2008fe178291c6e69ac19cd23430caa892eb46485fd42228ebed59e7a",
       "executable": false
     },
     "src/purse/access-records.ts": {
@@ -2948,7 +2948,7 @@
       "executable": false
     },
     "src/purse/access.ts": {
-      "sha256": "f209eb14366aeb3fe17bc19f06191c575e52e965c630801d6fcb881b0c57b2ae",
+      "sha256": "553aa04c09656dc0038c174ed2af706ec5395c5e665516e98c631fcf92824b0f",
       "executable": false
     },
     "src/purse/accrual-api.ts": {
@@ -2964,7 +2964,7 @@
       "executable": false
     },
     "src/purse/admin.ts": {
-      "sha256": "3a7b928288193d675abe9e277358b3dacade35b4b9d131568e9abdf3cbd58d9f",
+      "sha256": "6ab71788576d14d4c7e10334a4167d98d3328cc4591534354f2f74601352b9e1",
       "executable": false
     },
     "src/purse/adoption-amendments.ts": {
@@ -3024,7 +3024,7 @@
       "executable": false
     },
     "src/purse/api.ts": {
-      "sha256": "09b8400734f291af0dcbded4c64f8480b0bf31f223ca305e8960dd70194bddc3",
+      "sha256": "6d65343701d4cda1cf47cc311f9cb1fdd9340e03de29b0ffb2ac07677fe542bd",
       "executable": false
     },
     "src/purse/approval-chain-authority.ts": {
@@ -3068,7 +3068,7 @@
       "executable": false
     },
     "src/purse/budget-dimensions.ts": {
-      "sha256": "55a3742e5315264b4d49eb20d0b523e14ebd1d3ed530b94b3435c1efc45a4fc0",
+      "sha256": "00bf2f7db42be208e2e0806bb022b7092f1b3e46901c96cefb6c4d7c6276f85f",
       "executable": false
     },
     "src/purse/budget-import.ts": {
@@ -3136,7 +3136,7 @@
       "executable": false
     },
     "src/purse/documents.ts": {
-      "sha256": "781b1e07137ffcbefcc5f5fe2b78746dd704777acea14a8623c715f45e8f9041",
+      "sha256": "b27dc16b344a311afb4dc75a04ca933ced1ac7f382e6065593cc6e7a6ed7f9b9",
       "executable": false
     },
     "src/purse/email-intake-api.ts": {
@@ -3420,7 +3420,7 @@
       "executable": false
     },
     "src/purse/order-send.ts": {
-      "sha256": "d3064fd0f76f41361ac5a279e1ef15a9e03a5fbe61efcec4453d921d62ea0b3c",
+      "sha256": "80fe0fdf2e5e69166fbc1449f557f9ad6a3cf0022fb4f13a83110452d6acc214",
       "executable": false
     },
     "src/purse/order-thread-api.ts": {
@@ -3440,7 +3440,7 @@
       "executable": false
     },
     "src/purse/orders.ts": {
-      "sha256": "932b0d10def0fa6b7182657b8ed57db819a0920533be6261e9f05a7067e51aed",
+      "sha256": "a25c7463f76c24a36ece51ec6462f037f9d379266c18fa6aafd91da892f6db04",
       "executable": false
     },
     "src/purse/pantry-api.ts": {
@@ -3496,7 +3496,7 @@
       "executable": false
     },
     "src/purse/po-generation.ts": {
-      "sha256": "c51b1e23e7bf4be4d5a2395e222bcf9135018403d25a0ac56fe43581ee1133b5",
+      "sha256": "fa9fb1f8ee376b5947c953b97826d2c763d7d3166cd8eb552c391e20f2cde5e4",
       "executable": false
     },
     "src/purse/po-line-tax.ts": {
@@ -3508,7 +3508,7 @@
       "executable": false
     },
     "src/purse/po-profiles.ts": {
-      "sha256": "494341af73bef9da1ae99aad1c7e777be42955453cb85b4cd86ed8db2d5a64af",
+      "sha256": "61b06a09b5028cce45c7dd31ce277d5b37ab6ab86465b9634ee6f6c0defe4215",
       "executable": false
     },
     "src/purse/po-supplier-groups.ts": {
@@ -3660,7 +3660,7 @@
       "executable": false
     },
     "src/purse/requests.ts": {
-      "sha256": "1c680fd2412c0000ff8caa59ed6ec1bca7b5bdf88c592478b7d8257ef9267448",
+      "sha256": "57f50a4f4b6c4cd59bb3cf52a6bede5055db23700bb7b219f7ed0bed7414e2a2",
       "executable": false
     },
     "src/purse/restored-imports.d.mts": {
@@ -3796,7 +3796,7 @@
       "executable": false
     },
     "src/purse/spend-report.ts": {
-      "sha256": "4017c541239c6b86c11a4f757483bd8d3e79024f8b005fd578cabde96d9edc0d",
+      "sha256": "fc80885c51e6fdcf88120fcbb78391f45368986db5df94f4fd5b0f7d1c00b118",
       "executable": false
     },
     "src/purse/stockroom.ts": {
@@ -4416,7 +4416,7 @@
       "executable": false
     },
     "src/ui/po-profiles.tsx": {
-      "sha256": "072cf054496d0bc29d3bec6c009b30cfa0248165feecacc43843073c8dcdcd34",
+      "sha256": "44dc143ab3dd7edde1ad1881fc34ef66a5778c7e625f042df3e2f63c1e37ec96",
       "executable": false
     },
     "src/ui/preparation.tsx": {
@@ -4464,7 +4464,7 @@
       "executable": false
     },
     "src/ui/request-form.tsx": {
-      "sha256": "fe59dce6bc75613aeeac0cfc9966249ba3657a99904d138dce0226cd23789a17",
+      "sha256": "33bf1306a2b692223ac1f3a8397f1bdca832b44a4343a6465a3e69783d3a0e1f",
       "executable": false
     },
     "src/ui/request-record.tsx": {
@@ -4476,7 +4476,7 @@
       "executable": false
     },
     "src/ui/requests.tsx": {
-      "sha256": "46af77e57cadbb30840315e1d043bf2326648d14aeb43bd1c9f1de8a3a4c9f3b",
+      "sha256": "83db0e8b3a6247cca956e396257fa140ad2dfd91998bbb9c3a40879d72fc873a",
       "executable": false
     },
     "src/ui/rfq-evidence.tsx": {
@@ -4520,7 +4520,7 @@
       "executable": false
     },
     "src/ui/settings.tsx": {
-      "sha256": "6d6aedccdef006a568df0ef6199c824cd0ad83c1a9dfc108ccc6e2f019615f66",
+      "sha256": "11e10a4f0416b6e0610bed52bf5ced256e7dfe42a9d6579c02e8e52126ee70c4",
       "executable": false
     },
     "src/ui/shared.tsx": {
