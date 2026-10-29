@@ -26,10 +26,13 @@ export function correctApprovalFields(s: State, a: Actor, request: Data, changes
             if(field==='costCentre')requireThat(business.costCentres.includes(normalized),'Use a configured department');
             if(field==='location')requireThat(business.locations.includes(normalized),'Use a configured location');
             if(field==='project')requireThat(business.projects.includes(normalized),'Use a configured project');
-            if(JSON.stringify(before[field])===JSON.stringify(normalized))continue;
+            const original=field==='supplier'&&line?(before.supplier??request.supplier):before[field];
+            const current=field==='supplier'&&line?(target.supplier??next.supplier):target[field];
+            if(JSON.stringify(current)===JSON.stringify(normalized))continue;
             target[field]=normalized;
             if(field==='supplier')target.supplierSnapshot=purchasableIdentity(s,normalized);
-            differences.push({field:line?'lines.'+line.id+'.'+field:field, ...(line?{line:line.id,lineDescription:line.description,codingField:field}:{}),before:before[field]??null,after:normalized});
+            if(JSON.stringify(original)===JSON.stringify(normalized))continue;
+            differences.push({field:line?'lines.'+line.id+'.'+field:field, ...(line?{line:line.id,lineDescription:line.description,codingField:field}:{}),before:original??null,after:normalized});
         }
     };
     const {lines,...header}=changes; correct(next,request,header);
