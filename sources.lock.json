@@ -380,7 +380,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "79772f5c90d88fc376297934aa1f82ff173584f7e29ab2d268bae551ba67db39",
+      "sha256": "cf78d4f8ac407398bd86ef840f05fc9641c273f4c686970eedd2d8a24dcb1553",
       "executable": false
     },
     "packaging.json": {
@@ -4871,6 +4871,14 @@
       "sha256": "670e94b32524773c880e90d924e775917ecadc83f8497ebb924e62fc454a4f9d",
       "executable": false
     },
+    "tests/browser-network-edge.mjs": {
+      "sha256": "ca3a620ba1d09f8ecfb6c2fee89787a5831204ad3999d642d5d2e17487edde8f",
+      "executable": false
+    },
+    "tests/browser-network-edge.test.mjs": {
+      "sha256": "b87fe07201104786e2957f3bac32350cc6bea43a901c836cd907abe1ffd5bb64",
+      "executable": false
+    },
     "tests/browser-order-adoption.mjs": {
       "sha256": "c765ae739f4fb2d01a2a0f120abe2cd8d7eb461caf1a4078c589370c9ca6e02f",
       "executable": false
@@ -4948,7 +4956,7 @@
       "executable": false
     },
     "tests/browser-runtime.mjs": {
-      "sha256": "4d6a704f9f69d50da277be5bb352b6b5f94a64cd5289093c4642b8ad280d96fb",
+      "sha256": "00456696ec336de156d443f157a9683687616c7f0ff20876cb8f917c4ee18a19",
       "executable": false
     },
     "tests/browser-saved-reports.mjs": {
@@ -5195,6 +5203,10 @@
       "sha256": "f1c39bae7cf631a5ece2558349fb4ef3c7920aa24e085d96b93125b1a3539861",
       "executable": false
     },
+    "tests/ofac-fixture.mjs": {
+      "sha256": "9afa75c912a7b5ab75817f1df6f9b56ebb9963d97ac7a920c2a9691b248e460d",
+      "executable": false
+    },
     "tests/order-adoption-fixture.mjs": {
       "sha256": "59f39d3b7abda59c1c1ec31bba15afe711b5a6c6d381eb21e73c82b03db6e4f9",
       "executable": false
@@ -5272,7 +5284,7 @@
       "executable": false
     },
     "tests/purse-harness.mjs": {
-      "sha256": "a4d517055151f1d477867615cb45363469d1091f8122feff29c6ac80342e242d",
+      "sha256": "03b8b0be0bf2a6c341220ec0badd44a2e5937a518c2469826ef4f6df15b46ff7",
       "executable": false
     },
     "tests/purse-worker.ts": {
