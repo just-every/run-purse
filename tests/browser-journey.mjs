@@ -16,6 +16,9 @@ export async function journey(browser,root,origin,width,evidence,shared){const s
  for(const {page} of Object.values(sessions)){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth);assert.equal(overflow,false,`No page overflow at ${width}px`)}return {request:request.id,order:order.id,number:order.number,width};
  }catch(error){for(const [as,{page}] of Object.entries(sessions))await page.screenshot({path:join(evidence,`failure-${as}-${width}.png`),fullPage:true}).catch(()=>{});throw error}finally{for(const {context} of Object.values(sessions))await context.close()}}
 
+const doneInstallationRuntimes=new Map();
+async function doneIdentityAdapter(){const original=await import("../src/modules/operator-auth/dev/sign-in-as.mjs");return {...original,signInAs:async input=>doneInstallationRuntimes.has(input.origin)?doneInstallationRuntimes.get(input.origin).signIn(input.as):original.signInAs(input)}}
+
 // DONE journeys retain their original public-door assertions inside scoped modules.
 // The module scopes keep fixture state private while sharing the journey entry point.
 const doneWebModules={
@@ -29,7 +32,7 @@ const {searchJourney:searchJourney}=await load("tests/browser-search.mjs");
 const {integrationTokensJourney:integrationTokensJourney}=await load("tests/browser-integration-tokens.mjs");
 const {emailIntakeJourney:emailIntakeJourney}=await load("tests/browser-email-intake.mjs");
 const {prepareHeldIntakeArchive:prepareHeldIntakeArchive}=await import("./email-intake-fixture.mjs");
-const {restoreSeedInclude:restoreSeedInclude}=await import("./browser-seed-archive.mjs");
+const {restoreSeedInclude:restoreSeedInclude}=await load("tests/browser-seed-archive.mjs");
 const {rfqJourney:rfqJourney}=await load("tests/browser-rfq.mjs");
 const {invoiceReadingJourney:invoiceReadingJourney}=await load("tests/browser-invoice-reading.mjs");
 const {invoiceInboxJourney:invoiceInboxJourney}=await load("tests/browser-invoice-inbox.mjs");
@@ -44,7 +47,7 @@ const {default:assert}=await import("node:assert/strict");
 const {isDeepStrictEqual:isDeepStrictEqual}=await import("node:util");
 const {access:access,mkdir:mkdir,readFile:readFile,writeFile:writeFile,rm:rm,copyFile:copyFile}=await import("node:fs/promises");
 const {join:join,resolve:resolve}=await import("node:path");
-const {fresh:fresh,freePort:freePort,command:command,start:start,report:report}=await load("tests/browser-runtime.mjs");
+const {fresh:fresh,freePort:freePort,command:command,start:start,report:report,startDev:startDev}=await load("tests/browser-runtime.mjs");
 const {session:session,api:api,current:current,journey:journey,protectedPreparationJourney:protectedPreparationJourney,protectedStorageJourney:protectedStorageJourney}=await load("tests/browser-journey.mjs");
 const {restoredPoDocuments:restoredPoDocuments}=await load("tests/restore-po-documents.mjs");
 const {poDocumentsJourney:poDocumentsJourney}=await load("tests/browser-po-documents.mjs");
@@ -84,8 +87,8 @@ try{
  const mapping={columns:{},decimal:'.',date:'YYYY-MM-DD',statuses:{active:'active',approved:'historical-approved',issued:'historical-issued',received:'historical-received'}};const csv=await readFile(join(root,'public/fixtures/procurify-shape.csv'),'utf8');let response=await owner.context.request.post(server.origin+'/api/purse/import/preview',{headers:{origin:server.origin},data:{csv,filename:'fixture.csv',mapping}});const preview=await response.json();assert.equal(response.status(),200,JSON.stringify(preview));response=await owner.context.request.post(server.origin+'/api/purse/import/commit',{headers:{origin:server.origin},data:{csv,filename:'fixture.csv',mapping,fingerprint:preview.plan.fingerprint}});const imported=await response.json();assert.equal(response.status(),200,JSON.stringify(imported));await pendingImport(owner.context,server.origin);await preparedForRestore(browser,root,server.origin,owner);}let before=(await current(owner.context,server.origin)).data;assert.equal(before.request.length,2+3*widths.length);assert.equal(before.order.length,2+2*widths.length);if(!process.argv.includes('--archive-only')){const supplier=before.supplier.find(s=>s.name==='Fixture office supplier');
  if(shard.includes('supplier-performance'))for(const width of widths)results.push(await supplierPerformanceJourney(browser,root,server.origin,width,evidence,supplier));
  if(shard.includes('catalogue'))for(const width of widths)results.push(await catalogueJourney(browser,root,server.origin,width,evidence,supplier));
- if(shard.includes('order-chasing'))for(const width of widths)results.push(await orderChasingJourney(browser,root,server.origin,width,evidence));
- if(shard.includes('supplier-documents'))for(const width of widths)results.push(await supplierDocumentsJourney(browser,root,server.origin,width,evidence));
+ if(shard.includes('order-chasing')){const runtime=doneInstallationRuntimes.get(server.origin);await runtime.mailMode('development');try{for(const width of widths)results.push(await orderChasingJourney(browser,root,server.origin,width,evidence));}finally{await runtime.mailMode('resend');}}
+ if(shard.includes('supplier-documents')){const runtime=doneInstallationRuntimes.get(server.origin);await runtime.mailMode('development');try{for(const width of widths)results.push(await supplierDocumentsJourney(browser,root,server.origin,width,evidence));}finally{await runtime.mailMode('resend');}}
  if(shard.includes('supplier-duplicates'))for(const width of widths)results.push(await supplierDuplicatesJourney(browser,root,server.origin,width,evidence));
  if(shard.includes('payables'))for(const width of widths)results.push(await payablesJourney(browser,root,server.origin,width,evidence));
  if(shard.includes('audit-log'))for(const width of widths)results.push(await auditLogJourney(browser,root,server.origin,width,evidence));
@@ -105,7 +108,7 @@ try{
  if(shard.includes('quote-agent'))for(const width of widths)results.push(await quoteAgentJourney(browser,root,server.origin,width,evidence));
  if(shard.includes('agent-value'))for(const width of widths)results.push(await agentValueJourney(browser,root,server.origin,width,evidence,{siteOrigin:server.siteOrigin}));
  if(shard.includes('order-adoption'))for(const width of widths)results.push(await orderAdoptionJourney(browser,root,server.origin,width,evidence));
- if(shard.includes('protected-storage'))for(const width of widths)results.push(await protectedStorageJourney(browser,root,server.origin,width,evidence));
+ if(shard.includes('protected-storage')){await server.close();server=await startDev(root,port);for(const width of widths)results.push(await protectedStorageJourney(browser,root,server.origin,width,evidence));}
  if(shard.includes('protected-preparation'))for(const width of widths)results.push(await protectedPreparationJourney(browser,root,server.origin,width,evidence));before=(await current(owner.context,server.origin)).data;}await owner.context.close();await browser.close();browser=undefined;await server.close();server=undefined;
  // An idempotent setup rerun must preserve all business data and identity.
  await command(root,['setup','--owner-email','owner@example.test','--port',String(port)]);await command(root,['build']);server=await start(root,port,'preview');assert.equal((await fetch(server.origin+'/health')).status,200,'Emitted preview is healthy');assert.equal((await fetch(server.origin+'/api/purse/state')).status,401,'Preview retains the native session boundary');await server.close();server=undefined;const dryRun=await command(root,['deploy','--dry-run'],{expected:3});assert.match(dryRun,/cannot read the target secret bindings/);assert.doesNotMatch(dryRun,/dry run complete/);const archive=join(evidence,'installation.rer');await rm(archive,{force:true});await rm(join(root,'exports/installation.rer'),{force:true});await command(root,['export','--output','exports/installation.rer']);await copyFile(join(root,'exports/installation.rer'),archive);await command(root,['import','--input','exports/installation.rer','--yes'],{expected:4});
@@ -212,7 +215,7 @@ const {documentProfileFixture:documentProfileFixture}=await import("./document-p
 const {default:assert}=await import("node:assert/strict");
 const {readFile:readFile,mkdir:mkdir}=await import("node:fs/promises");
 const {join:join}=await import("node:path");
-const {readDevKey:readDevKey,signInAs:signInAs}=await import("../src/modules/operator-auth/dev/sign-in-as.mjs");
+const {readDevKey:readDevKey,signInAs:signInAs}=await doneIdentityAdapter();
 
 async function session(browser,root,origin,as,width){const key=await readDevKey(root),login=await signInAs({origin,key,as,returnTo:'/app'}),context=await browser.newContext({viewport:{width,height:1000}});await context.addCookies(login.cookies.map(c=>({...c,url:origin})));const page=await context.newPage(),pageErrors=[];page.on('pageerror',error=>pageErrors.push(error.message));await page.goto(origin+'/app');if(page.url().endsWith('/setup')){await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Finish setup'}).click();const state=await context.request.get(origin+'/setup/state');assert.deepEqual(await state.json(),{state:'claimed'});const lobby=await context.request.get(origin);assert.equal(lobby.status(),200);assert.match(await lobby.text(),/href="\/signin(?:\?login_hint=[^"]+)?"/)}try{await page.getByRole('navigation').waitFor()}catch(error){const state=await context.request.get(origin+'/api/purse/state');console.error('Workspace failed to open',JSON.stringify({as,width,url:page.url(),stateStatus:state.status(),pageErrors,body:await page.locator('body').innerText()}));if(process.env.PURSE_EVIDENCE){await mkdir(process.env.PURSE_EVIDENCE,{recursive:true});await page.screenshot({path:join(process.env.PURSE_EVIDENCE,`workspace-failure-${as}-${width}.png`),fullPage:true})}throw error}return {context,page}}
 
@@ -461,7 +464,7 @@ return {agreementValueJourney};
 const {default:assert}=await import("node:assert/strict");
 const {join:join}=await import("node:path");
 const {performance:performance}=await import("node:perf_hooks");
-const {readDevKey:readDevKey,signInAs:signInAs}=await import("../src/modules/operator-auth/dev/sign-in-as.mjs");
+const {readDevKey:readDevKey,signInAs:signInAs}=await doneIdentityAdapter();
 const {pdfPhrase:pdfPhrase,bankNumber:bankNumber}=await load("tests/search-fixtures.mjs");
 
 
@@ -772,6 +775,65 @@ async function emailIntakeJourney(browser,root,origin,width,evidence){
 }
 return {emailIntakeJourney};
 },
+"tests/browser-seed-archive.mjs":async load=>{
+const {default:assert}=await import("node:assert/strict");
+const {createHash:createHash}=await import("node:crypto");
+const {join:join}=await import("node:path");
+const {localCliProof:localCliProof}=await import("@runeditrun/rer/adapter-auth");
+const {localOrigin:localOrigin,localVariables:localVariables}=await import("@runeditrun/rer/local/environment");
+const {readPrivateFile:readPrivateFile}=await import("@runeditrun/rer/private-files");
+
+
+const seedProtectedKey = createHash('sha256').update('synthetic-purse-1').digest('hex');
+
+const includeInput = { passphrase: 'synthetic-purse-2', reason: 'synthetic-purse-3', evidence: 'synthetic-purse-4', include: 'protected-values-and-matching' };
+
+
+/** Only the harness mail network edge is synthetic; native authentication and
+ * the explicit encrypted export endpoint create the real supplement.
+ */
+async function exportSeedInclude(h) {
+    assert.equal((await h.send('/auth/step-up', { action: 'export' }, h.owner)).status, 202);
+    const message = [...h.messages].reverse().find(message => message.to.includes('owner@example.test'));
+    const link = message?.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)?.[0];
+    assert.ok(link, 'The source fixture must receive its native email challenge');
+    const token = new URL(link).searchParams.get('token');
+    assert.equal((await h.send('/auth/confirm', { token }, h.owner)).status, 303);
+    const metadata = await h.send('/api/purse/protected-keys', undefined, h.owner); assert.equal(metadata.status, 200);
+    const exported = await h.send('/api/purse/protected-archive/export', { ...includeInput, revision: metadata.value.revision }, h.owner);
+    assert.equal(exported.status, 200, 'The source fixture explicitly exports its encrypted owner include');
+    assert.equal(exported.value.fields, 0, 'This seed include preserves matching continuity without protected supplier values');
+    return exported.value.archive;
+}
+
+
+/** Restore before changing the imported business. Local CLI proof is a public,
+ * loopback-only native owner door, also used by Base dependency approval. It
+ * creates fresh version-fenced proof; ordinary dev persona cookies do not.
+ */
+async function restoreSeedInclude(root, origin, archive) {
+    const vars = localVariables(await readPrivateFile(join(root, '.dev.vars')));
+    assert.equal(localOrigin(vars).origin, origin, 'Seed restore uses this checkout’s own loopback installation');
+    assert.ok(typeof vars.SESSION_SECRET === 'string' && vars.SESSION_SECRET.length >= 32, 'The disposable installation must have its private native session setting');
+    const proof = await doneInstallationRuntimes.get(origin).nativeOwnerProof({ method: 'POST', redirect: 'manual', headers: { origin, 'content-type': 'application/json', 'x-rer-local-cli': localCliProof(vars.SESSION_SECRET) }, body: '{}' });
+    assert.equal(proof.status, 303, 'The seed must obtain fresh native owner proof through the fresh native owner proof');
+    const cookie = proof.headers.get('set-cookie')?.split(';')[0]; await proof.body?.cancel();
+    assert.ok(cookie, 'The local owner proof must issue its own native session');
+    try {
+        const headers = { origin, cookie, 'content-type': 'application/json' };
+        const metadata = await fetch(origin + '/api/purse/protected-keys', { headers }); assert.equal(metadata.status, 200);
+        const { revision } = await metadata.json();
+        const restored = await fetch(origin + '/api/purse/protected-archive/restore', { method: 'POST', headers, body: JSON.stringify({ ...includeInput, revision, archive }) });
+        assert.equal(restored.status, 200, 'The browser seed must restore the explicit owner include before purchasing mutations');
+        assert.equal((await restored.json()).restored, 0, 'Only seed matching continuity is restored');
+    } finally {
+        const signedOut = await fetch(origin + '/auth/signout', { method: 'POST', headers: { origin, cookie, 'content-type': 'application/json' }, body: '{}' });
+        assert.equal(signedOut.status, 204, 'The fixture releases its temporary native owner session');
+        await signedOut.body?.cancel();
+    }
+}
+return {seedProtectedKey,exportSeedInclude,restoreSeedInclude};
+},
 "tests/browser-rfq.mjs":async load=>{
 const {default:assert}=await import("node:assert/strict");
 const {join:join}=await import("node:path");
@@ -1024,6 +1086,7 @@ async function performanceReportJourney(browser,root,origin,width,evidence){
 return {performanceReportJourney};
 },
 "tests/browser-runtime.mjs":async load=>{
+const {emittedInstallation:emittedInstallation}=await import("./emitted-worker.mjs");
 const {privateSchedule:privateSchedule}=await load("tests/private-schedule.mjs");
 const {fileURLToPath:__rerTestEntryPath}=await import("node:url");
 
@@ -1049,10 +1112,15 @@ const clean=s=>s.replace(/^RER_OPEN .*$/gm,'RER_OPEN [private sign-in URL omitte
 
 async function command(root,args,{expected=0,env={}}={}){const child=spawn(process.execPath,__rerTestEntryArgs([__rerTestEntry,...args,...(args[0]==='setup'&&!args.includes('--non-interactive')?['--non-interactive']:[])]),{cwd:root,env:{...process.env,WRANGLER_SEND_METRICS:'false',RER_SERVER_JOURNEY:'1',PURSE_PREBUILT_ROOT:source,...env},stdio:['ignore','pipe','pipe']});let log='';for(const stream of [child.stdout,child.stderr])stream.on('data',c=>{log+=c});const code=await new Promise((resolve,reject)=>{child.once('error',reject);child.once('close',resolve)});if(code!==expected)throw new Error(`rer ${args[0]} exited ${code}:\n${clean(log).slice(-6000)}`);console.log(`rer ${args.join(' ')}: exit ${code}`);return clean(log)}
 
-async function start(root,port,mode='dev'){const child=spawn(process.execPath,__rerTestEntryArgs([__rerTestEntry,mode,'--port',String(port)]),{cwd:root,env:{...process.env,WRANGLER_SEND_METRICS:'false',RER_SERVER_JOURNEY:'1'},stdio:['ignore','pipe','pipe']});let output='';for(const stream of [child.stdout,child.stderr])stream.on('data',c=>{output+=c});const deadline=Date.now()+20*60*1000;while(!output.includes('RER_READY')&&Date.now()<deadline){if(child.exitCode!==null)throw new Error(`${mode} exited: ${clean(output).slice(-4000)}`);await new Promise(r=>setTimeout(r,250))}if(!output.includes('RER_READY')){child.kill('SIGTERM');throw new Error(mode+' admission/readiness timed out')}return {origin:`http://127.0.0.1:${port}`,async schedule(time){await privateSchedule(root,child.pid,time);},siteOrigin:output.match(/^RER_SITE (http:\/\/[^\s]+)$/m)?.[1],async close(){if(child.exitCode===null){child.kill('SIGTERM');await new Promise(r=>child.once('exit',r))}}}}
+async function cliStart(root,port,mode='dev'){const child=spawn(process.execPath,__rerTestEntryArgs([__rerTestEntry,mode,'--port',String(port)]),{cwd:root,env:{...process.env,WRANGLER_SEND_METRICS:'false',RER_SERVER_JOURNEY:'1'},stdio:['ignore','pipe','pipe']});let output='';for(const stream of [child.stdout,child.stderr])stream.on('data',c=>{output+=c});const deadline=Date.now()+20*60*1000;while(!output.includes('RER_READY')&&Date.now()<deadline){if(child.exitCode!==null)throw new Error(`${mode} exited: ${clean(output).slice(-4000)}`);await new Promise(r=>setTimeout(r,250))}if(!output.includes('RER_READY')){child.kill('SIGTERM');throw new Error(mode+' admission/readiness timed out')}return {origin:`http://127.0.0.1:${port}`,async schedule(time){await privateSchedule(root,child.pid,time);},siteOrigin:output.match(/^RER_SITE (http:\/\/[^\s]+)$/m)?.[1],async close(){if(child.exitCode===null){child.kill('SIGTERM');await new Promise(r=>child.once('exit',r))}}}}
 
 async function report(path,value){await mkdir(path,{recursive:true});await writeFile(join(path,'result.json'),JSON.stringify(value,null,2)+'\n')}
-return {fresh,freePort,command,start,report};
+
+
+async function startDev(root,port){return cliStart(root,port,'dev');}
+
+async function start(root,port,mode='dev'){if(mode==='preview')return cliStart(root,port,mode);const runtime=await emittedInstallation(root,port);doneInstallationRuntimes.set(runtime.origin,runtime);return {...runtime,async close(){doneInstallationRuntimes.delete(runtime.origin);await runtime.close();}}}
+return {fresh,freePort,command,report,startDev,start};
 },
 "tests/private-schedule.mjs":async load=>{
 const {execFile:execFile}=await import("node:child_process");

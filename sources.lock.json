@@ -4700,7 +4700,7 @@
       "executable": false
     },
     "tests/browser-journey.mjs": {
-      "sha256": "a237d7139b12a9097aa1005ce949657d7ef9aa36a0dd33b5775676c578422261",
+      "sha256": "f7c4b3b6ebdf11c2d49840449df3140b4446f569878786f37743dd11f7192164",
       "executable": false
     },
     "tests/browser-po-supplier-groups.mjs": {
@@ -4800,7 +4800,7 @@
       "executable": false
     },
     "tests/emitted-worker.mjs": {
-      "sha256": "ccfb7d4e95f71744e7c2359efdf3445833e0023af919798dc6eedbb11bff2626",
+      "sha256": "eff1b7a56e271336edc9a331ed866dba301826c7f1d07b7a4e1b76e68503bae8",
       "executable": false
     },
     "tests/erasure-flow.mjs": {
@@ -4964,7 +4964,7 @@
       "executable": false
     },
     "tests/payables-flow.mjs": {
-      "sha256": "cd51c2e96b3ad7a503d29f4bea3ff629f339b2474d8c3c7e09981470df0eaee3",
+      "sha256": "ef5f342496e638a1fafa2f8cc01d89b8590dfca2c599a6507c7596a9fd0e489e",
       "executable": false
     },
     "tests/payables-journey.test.mjs": {
