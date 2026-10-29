@@ -7,7 +7,7 @@ export async function ensureSearchStorage(db: D1Database) {
     // for every result. No comment source bytes or authority are changed.
     const missing = await db.prepare(`SELECT p.business,p.id,p.revision,p.value FROM p_records p
         LEFT JOIN p_comment_search c ON c.business=p.business AND c.comment=p.id
-        WHERE p.kind='comment' AND c.comment IS NULL`).all<{ business: string; id: string; revision: string; value: string }>();
+        WHERE p.business='main' AND p.kind='comment' AND c.comment IS NULL`).all<{ business: string; id: string; revision: string; value: string }>();
     for (let offset = 0; offset < missing.results.length; offset += 50) {
         await db.batch(missing.results.slice(offset, offset + 50).map(row => {
             const comment = JSON.parse(row.value), body = comment.status === 'active' ? comment.versions.at(-1).body : '';

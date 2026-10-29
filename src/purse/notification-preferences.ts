@@ -54,7 +54,7 @@ function local(now: number, timezone: string) {
     const p = Object.fromEntries(formatter.formatToParts(now).map(p => [p.type,p.value]));
     return { date:`${p.year}-${p.month}-${p.day}`, time:`${p.hour}:${p.minute}`, weekend:['Sat','Sun'].includes(p.weekday) };
 }
-function quietAt(p: Data, now: number) {
+export function notificationQuietAt(p: Data, now: number) {
     if (!p.quiet) return false;
     const wall = local(now,p.timezone);
     return p.weekends && wall.weekend || (p.quietStart < p.quietEnd ? wall.time >= p.quietStart && wall.time < p.quietEnd : wall.time >= p.quietStart || wall.time < p.quietEnd);
@@ -64,12 +64,12 @@ export function notificationDue(at: string, p: Data, urgent: boolean): number {
     const start = Date.parse(at);
     if (urgent) return start;
     const born = local(start,p.timezone);
-    if (p.cadence === 'immediate' && !quietAt(p,start)) return start;
+    if (p.cadence === 'immediate' && !notificationQuietAt(p,start)) return start;
     const minute = 60000;
     for (let next = Math.ceil(start/minute)*minute; next <= start+8*86400000; next += minute) {
         const wall = local(next,p.timezone);
         const digest = p.cadence !== 'daily' || (wall.date > born.date || wall.date === born.date && born.time < p.digestAt) && wall.time >= p.digestAt;
-        if (digest && !quietAt(p,next)) return next;
+        if (digest && !notificationQuietAt(p,next)) return next;
     }
     throw new Error('Notification schedule unavailable');
 }

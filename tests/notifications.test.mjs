@@ -207,6 +207,22 @@ test('Native notification preferences hold Pacific quiet hours across daylight s
     await springDispatch(); assert.equal(springMail().length,0);
     await sh.setClock('2027-03-14T13:59:00Z'); await springDispatch(); assert.equal(springMail().length,0);
     await sh.setClock('2027-03-14T14:00:00Z'); await springDispatch(); assert.equal(springMail().length,1);
+    // A new cadence must retain quiet hours for an already-pending digest.
+    const springChoice=async cadence=>{
+        const current=await sh.send('/api/purse/notification-settings',undefined,spring.requester);
+        assert.equal(current.status,200);
+        await sh.command('notification-preferences',{...preference,cadence,version:current.value.preferences.version},spring.requester);
+    };
+    await sh.setClock('2027-03-15T02:00:00Z'); await springChoice('daily');
+    await sh.command('comment-add',{kind:'request',record:spring.pending.id,attempt:'synthetic-purse-6214',body:'synthetic-purse-6215',mentions:[spring.requesterId]},spring.approver);
+    await sh.setClock('2027-03-15T04:01:00Z'); await springDispatch(); assert.equal(springMail().length,1);
+    const attemptsBefore=(await sh.send('/api/purse/notification-settings',undefined,spring.requester)).value.deliveries.length;
+    await springChoice('immediate'); await springDispatch();
+    assert.equal(springMail().length,1,'Changing a pending digest to immediate at 21:01 Pacific retains quiet hours');
+    assert.equal((await sh.send('/api/purse/notification-settings',undefined,spring.requester)).value.deliveries.length,attemptsBefore,'A quiet-hour hold consumes no delivery claim');
+    await sh.setClock('2027-03-15T13:59:00Z'); await springDispatch(); assert.equal(springMail().length,1);
+    await sh.setClock('2027-03-15T14:00:00Z'); await springDispatch(); assert.equal(springMail().length,2);
+    await springDispatch(); assert.equal(springMail().length,2,'The held digest sends once when quiet hours end');
 });
 
 test('Scheduled native reminders retain queue age, channel choices never fall back, and signed mail outcomes bind the current recipient and replay once', async t => {

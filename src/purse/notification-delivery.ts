@@ -2,7 +2,7 @@ import { runNotificationNudges } from './notification-nudges';
 import type { Bindings } from '../auth.server';
 import { operatorMail } from '../mail.server.mjs';
 import { notificationView } from './notifications';
-import { notificationDue, notificationId, notificationPreference } from './notification-preferences';
+import { notificationDue, notificationId, notificationPreference, notificationQuietAt } from './notification-preferences';
 import { load } from './store';
 import { all, roles, uid, type Actor, type Data } from './types';
 
@@ -21,7 +21,8 @@ export async function runNotificationDeliveries(env: Bindings, now = Date.now())
         for (const n of all(state,'notification').filter(n => n.recipient === a.id && n.deliveryConsent && !n.erasure && !state.has('notificationDelivery:' + notificationId(['delivery',n.id])))) {
             const urgent = state.get('notificationUrgency:' + n.type)?.value.urgent === true;
             const due = notificationDue(n.at,p,urgent);
-            if (due > now) continue;
+            // A pending event can become due before the recipient changes cadence or the dispatcher runs.
+            if (due > now || !urgent && notificationQuietAt(p,now)) continue;
             const key = notificationId([a.id,p.version,urgent ? n.id : p.cadence === 'daily' ? due : n.id]);
             const group = groups.get(key) ?? {a,p,items:[]}; group.items.push(n); groups.set(key,group);
         }
