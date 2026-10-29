@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "5e306fd2fc6af577c4fe13515d1822c524cc44c82e238103eb2decda46bb9a80",
+      "sha256": "48aeddcfa5c231b42c349cb298a27218d132419229b44cb4d435536551efaace",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -104,7 +104,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "f216451ac71adffc6a79936ee1741989fcd866ac05636c2fd0e4b122e410b209",
+      "sha256": "21df4c66ec516ed5858d52de61b1eaa0fb044abc8718d14e6338abc4445917f3",
       "executable": false
     },
     "base-copies.json": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "5653cc4b715b2dfcbd247653be82c9fc615de1b928ee72d0fb1e881669901b8f",
+      "sha256": "71ec7555f1bbe068de0a07088d2881e93d2da52298ef68fda7ff708737bb1061",
       "executable": false
     },
     "DEMO.md": {
@@ -920,7 +920,7 @@
       "executable": false
     },
     "scripts/installer/restore-approval-chain.mjs": {
-      "sha256": "974477206a4d636584e6e6d0c20ddb5a84e52f16f543c6686886b82af16f77b2",
+      "sha256": "8c530fca2fae9fec0291506d51a2a58dcf55e6885b741a2d03d0995d12a72ceb",
       "executable": false
     },
     "scripts/installer/restore-coding-agent.mjs": {
@@ -3028,7 +3028,7 @@
       "executable": false
     },
     "src/purse/approval-absence.ts": {
-      "sha256": "8d11175c62fe8d0ff22f0dbb2d3985f364831ad72c1cbccf502d7579011076aa",
+      "sha256": "b383c40bb52c6a6acf2ee733cf20ef942c98cbcd5fdeb11a43e6db8af97c694b",
       "executable": false
     },
     "src/purse/approval-chain-authority.ts": {
@@ -4220,7 +4220,7 @@
       "executable": false
     },
     "src/ui/approval-absence.tsx": {
-      "sha256": "f14c236fba38829ec229fd7b04cf039c80d74abbc9687565b23919014c527619",
+      "sha256": "b60ff83f540dcd7ce2d6f18099b61b1a1fd1fcd24ac5912333060c43fac31f10",
       "executable": false
     },
     "src/ui/approval-edit-notices.tsx": {
@@ -4692,7 +4692,7 @@
       "executable": false
     },
     "tests/approval-absence.test.mjs": {
-      "sha256": "52d5da50c9cfbb538e5041d3d48381da6abf853f6417c3cca5f96ac52d53ebbb",
+      "sha256": "2e9e5d3b9f288a3eecb9fa3fcceca82f0acf262d94bb438fe7a2dbc1c9402c0e",
       "executable": false
     },
     "tests/approval-chain-flow.mjs": {
