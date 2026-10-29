@@ -16,8 +16,7 @@ for(const id of selected){
     const clause=contract.clauses.find(clause=>clause.id===id),row=byId.get(id);
     const entry=`- **${clause.id} — ${clause.title}. Status: ${clause.status}.** ${clause.text} Evidence by acceptance point: ${row[4]||'None recorded.'}${clause.gap?' Remaining Gap: '+clause.gap:''}`;
     const lines=acceptance.split('\n'),index=lines.findIndex(line=>line.startsWith('- **'+id+' — '));
-    if(index<0)throw Error('Acceptance entry not found: '+id);
-    lines[index]=entry;acceptance=lines.join('\n');
+    if(index<0)lines.push(entry);else lines[index]=entry;acceptance=lines.join('\n');
 }
 const claims='# Purse clause status\n\nGenerated from `CONTRACT.md` by `node scripts/contract-docs.mjs write '+selected.join(' ')+'`. '+heading+'\n\n| Clause | Title | Status |\n| --- | --- | --- |\n'+contract.clauses.map(clause=>'| `'+clause.id+'` | '+clause.title+' | '+clause.status+' |').join('\n')+'\n';
 for(const [path,value] of [['CONTRACT.md',source],['ACCEPTANCE.md',acceptance],['docs/CLAIMS.md',claims]]){
