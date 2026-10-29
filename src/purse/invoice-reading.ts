@@ -32,6 +32,7 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
         let nativeInvoice: string | undefined;
         if (b.invoice) {
             const historical = get(s, 'invoice', b.invoice);
+            requirePermission(s,a,'invoice.read',historical);
             if(historical.supplierSubmission){
                 requireThat(historical.order===order.id && historical.sourceConfirmation==='pending','Choose a pending supplier invoice on this PO',409);
                 const source=get(s,'invoiceSource',historical.supplierSource),retained=get(s,'attachment',source.attachment);
