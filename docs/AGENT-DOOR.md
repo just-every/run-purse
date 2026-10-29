@@ -65,6 +65,10 @@ exact method/path and supplies synthetic CSL rows to the real native screening
 parser. No payments, OAuth, models, ledger or supplier-mail edge is reachable
 from the declared tools. Existing native mail adapters remain unchanged.
 
+Structured protected fields are refused during classification, before a pending
+approval or review can retain them. The native conformance fixture additionally
+proves one-effect replay, changed-argument conflict and stale native versions.
+
 The additive migrations are 0042 (Business settings), 0043 (Business person
 bindings) and 0044 (agent door). Runtime modules and the CLI are pinned to Base
 `f96363bf919ea3e7ed1837daba6894810a50e4a6`, released as rer 0.2.86. Existing

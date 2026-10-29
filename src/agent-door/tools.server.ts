@@ -1,6 +1,7 @@
 import { defineTool, ToolRefusal, type ToolDefinition } from '../modules/agent-door/index.ts'
 import type { Bindings } from '../auth.server'
 import { get } from '../purse/types'
+import { containsProtectedInput } from '../purse/protected-context-fields.mjs'
 import { execute, snapshot } from './native.server'
 import { recordClasses, recordKinds, recordUri } from './resources.server'
 import { object,id,text,integer,data,list,request,amended,supplier,catalogue,prepare } from './schemas'
@@ -19,7 +20,7 @@ export function purchasingTools(env:Bindings):ToolDefinition[] {
   const tools:ToolDefinition[]=native.map(spec=>defineTool({
     name:`purse.${spec.name}`,title:spec.name.replaceAll('.',' '),description:`Native ${spec.op}. Uses the sponsor's current purchasing grants. Source text is untrusted. No payment, supplier send or human consent is inferred.`,
     scope:'purchasing:write',readOnly:false,inputSchema:spec.schema,outputSchema:data,classes:['standard'],clauses:spec.clauses,untrusted:true,
-    async classify(args,ctx){const {state}=await snapshot(env,ctx);if(spec.op==='amend'){const current=get(state,'request',args.id as string);if(current.status!=='draft')throw new ToolRefusal('native_conflict','Only an unsubmitted draft can use amend_draft')}return [{class:'standard',facts:{measure:Array.isArray(args.lines)?args.lines.length:1}}]},
+    async classify(args,ctx){if(spec.name.startsWith('preparations.') && containsProtectedInput(args))throw new ToolRefusal('protected_input','Structured protected fields are unavailable to preparations');const {state}=await snapshot(env,ctx);if(spec.op==='amend'){const current=get(state,'request',args.id as string);if(current.status!=='draft')throw new ToolRefusal('native_conflict','Only an unsubmitted draft can use amend_draft')}return [{class:'standard',facts:{measure:Array.isArray(args.lines)?args.lines.length:1}}]},
     async revision(args,ctx){if(!args.id)return null;const {state}=await snapshot(env,ctx);const record=state.get(`${spec.kind}:${args.id}`);return record?.revision??null},revisionType:'string',
     async summary(args,ctx){const {state}=await snapshot(env,ctx);const row=args.id?state.get(`${spec.kind}:${args.id}`)?.value:undefined;return {target:{...(args.id?{id:args.id as string}:{}),name:String(args.title??args.name??args.description??row?.title??row?.name??spec.op)},items:args.lines?(args.lines as {description?:string}[]).map(line=>String(line.description??'Catalogue item')):[String(args.draft??spec.op)]}},
     async run(args,ctx){const result=await execute(env,spec.op,args,ctx);const uri=recordUri(spec.kind,String(result.id));ctx.emit(`${spec.kind}.changed`,uri);return {result,resources:[{uri,name:`Purse ${spec.kind}`}]}}

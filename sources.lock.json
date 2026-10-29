@@ -92,11 +92,11 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "35854e92f5ef3a942024b34425cd948e8d7ff73c972945ec4c2bce181c7a1773",
+      "sha256": "687a7c266e99c07f2532fefda01c105f4ba9d2ecc145765e8a72314aa8fac65d",
       "executable": false
     },
     "agent-surface.json": {
-      "sha256": "b3d187e68f7a5137773bab98faa35918a13795be279990bb94ed805f5c7d08ad",
+      "sha256": "6a167c6e200d941e4c5b2562925e9331e1202d76ffc1cffa1867ba23461487fe",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "8c8f6b2a26f6b834ecb2b870a8ced22a8c4a9cef4fda66fcc36442a04839e61b",
+      "sha256": "068cc411ebeaa11699baa8b0f55ad7edc3fd12e03527e8e4e36b8b971839a5d7",
       "executable": false
     },
     "DEMO.md": {
@@ -140,7 +140,7 @@
       "executable": false
     },
     "docs/AGENT-DOOR.md": {
-      "sha256": "c8e88d950dd52751675e953c0a3ede244700f6a4740952423d747f708e344d60",
+      "sha256": "94f0677b0353898bf390f850a25720051f5cc3a799d0c4114b07ecddeed4f03a",
       "executable": false
     },
     "docs/backup-and-restore.md": {
@@ -1160,7 +1160,7 @@
       "executable": false
     },
     "src/agent-door/tools.server.ts": {
-      "sha256": "41c473ce801a651b83b2085e53c57f4efd69318775d30853ed2c0e7247a65094",
+      "sha256": "1b746afbb26012d87e7686e9e322374c2d356d88a002bf51382745343a2652ca",
       "executable": false
     },
     "src/assets/po-outfit.ttf": {
@@ -4607,8 +4607,12 @@
       "sha256": "71dc7c2ce2158ecdecaabde656841c109076282e5b3829c0acb9be97f77dba9e",
       "executable": false
     },
+    "src/ui/audit-log.css": {
+      "sha256": "fc3480e55cff08b1191cf156429da3a3b93d8f7b2c14366fb1008a7f029008c7",
+      "executable": false
+    },
     "src/ui/audit-log.tsx": {
-      "sha256": "0e5b0db4e4a995376614bc7f3d0cffc86aa71796d2f6da7fccf9f43c25435966",
+      "sha256": "bc31457619bd7b701e5566b8dbc3439b630f453c355a462c517266267464132f",
       "executable": false
     },
     "src/ui/authority.tsx": {
@@ -5025,6 +5029,10 @@
     },
     "tests/accrual-worker.ts": {
       "sha256": "1f287263447671338034657abcc71fdec7f36dc8674b1bcc4ef790dbe9512c97",
+      "executable": false
+    },
+    "tests/agent-door-journey.mjs": {
+      "sha256": "964f88b9cea3331612bd38ab2bd96019fa8bfa9aec3b9bba3cfa88849e30dd14",
       "executable": false
     },
     "tests/agent-door-provider-edge.mjs": {
