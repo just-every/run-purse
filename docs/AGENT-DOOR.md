@@ -37,7 +37,7 @@ provider and connector capabilities are not advertised.
 
 All mutations require `purchasing:write`; purchasing reads require
 `purchasing:read`. The inherited event reader requires `events:read`. Scope
-never supplies a missing native purchasing grant. Classification, native targets, revisions and approval summaries enforce the same current native grants before disclosing record facts. Money and commitment facts and summaries retain exact native minor currency units. A receipt carries its current native receiving-position revision. Mutations call Purse's native
+never supplies a missing native purchasing grant. Classification, native targets, revisions and approval summaries enforce the same current native grants before disclosing record facts. Money and commitment facts and summaries retain exact native minor currency units. A receipt carries its current native receiving-position revision. Approval summaries name exact lines and quantities; invoice summaries total their proposed allocations. Issuing any member of a native supplier group classifies the complete group value and summarizes every affected payee and item, returns every order link and emits every order change. Mutations call Purse's native
 command service and final D1 transaction. The transaction checks the native
 operator version and purchasing revision, the exact policy envelope, local
 Pause and agent/consent revocation. A concurrent change refuses the write.

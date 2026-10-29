@@ -1,8 +1,9 @@
 import { defineTool, ToolRefusal, type ToolContext, type ToolDefinition } from '../modules/agent-door/index.ts'
 import type { Bindings } from '../auth.server'
-import { get, type Data } from '../purse/types'
+import { get, quantity, extended, type Data } from '../purse/types'
 import { requirePermission } from '../purse/access'
-import { authorizedApproval } from '../purse/requests'
+import { authorizedApproval, approvalAmount } from '../purse/requests'
+import { requireGroupFace } from '../purse/po-supplier-groups'
 import { linePosition } from '../purse/orders'
 import { mayReceive, receiptVersion } from '../purse/receipt-routing'
 import { snapshot, execute, nativeRefusal } from './native.server'
@@ -28,7 +29,9 @@ export function purchaseFlowTools(env: Bindings): ToolDefinition[] {
         if(args.event==='cancel')requirePermission(native.state,native.a,'procurement.manage',record)
       } else requirePermission(native.state,native.a,spec.permission,record)
       if(spec.op==='decision')authorizedApproval(native.state,native.a,record)
-      return {...native,record}
+      const affected=spec.op==='issue'&&record.supplierGroup?requireGroupFace(native.state,record):[record]
+      for(const row of affected)if(spec.op==='issue')requirePermission(native.state,native.a,'po.issue',row)
+      return {...native,record,affected}
     } catch(error){return nativeRefusal(error)}
   }
   const tools:ToolDefinition[]=specs.map(spec=>defineTool({
@@ -36,21 +39,44 @@ export function purchaseFlowTools(env: Bindings): ToolDefinition[] {
     description:`Native ${spec.op}, under the sponsor's current record grants and exact purchasing revision. Agent attribution is retained. No supplier send, payment or person's consent is inferred. Amounts are in native minor currency units.`,
     scope:'purchasing:write',readOnly:false,inputSchema:spec.schema,outputSchema:{...object({id}),additionalProperties:true},classes:[...spec.classes],clauses:[...spec.clauses],untrusted:true,
     async classify(args,ctx){
-      const {record}=await resolve(spec,args,ctx)
+      const {state,record,affected}=await resolve(spec,args,ctx)
       if(spec.op==='issue'||spec.op==='decision'&&args.decision==='approved') {
-        const facts={measure:record.totalMinor,currency:record.currency,counterparty:'known' as const}
+        const facts={measure:spec.op==='decision'?approvalAmount(record,state):affected.reduce((total,row)=>total+row.totalMinor,0),currency:record.currency,counterparty:'known' as const}
         return [{class:'money',facts},{class:'commitment',facts}]
       }
       return [{class:'standard',facts:{measure:spec.op==='invoice'?(args.allocations as unknown[]).length:1}}]
     },
     async target(args,ctx){const {record}=await resolve(spec,args,ctx);return {kind:spec.kind,id:record.id}},
     async revision(args,ctx){const {state,record}=await resolve(spec,args,ctx);return spec.op==='receipt'?receiptVersion(state,record):state.get(`${spec.kind}:${record.id}`)!.revision},revisionType:'string',
-    async summary(args,ctx){const {record}=await resolve(spec,args,ctx);return {target:{id:record.id,name:record.title??record.number},amount:{value:record.totalMinor,currency:record.currency},payee:record.supplierSnapshot?.name??record.supplier,items:[String(args.decision??args.event??args.reference??spec.op),...(args.reason?[String(args.reason)]:[])]}},
+    async summary(args,ctx){
+      const {state,record,affected}=await resolve(spec,args,ctx)
+      let value=spec.op==='decision'?approvalAmount(record,state):affected.reduce((sum,row)=>sum+row.totalMinor,0)
+      let items=affected.flatMap(row=>(row.lines??[]).map((line:Data)=>`${row.number??row.title}: ${line.description} × ${line.quantity}`))
+      if(spec.op==='receipt') {
+        const line=record.lines.find((line:Data)=>line.id===args.line)
+        if(!line)throw new ToolRefusal('not_found')
+        value=extended(quantity(args.quantity),line.unitMinor)
+        items=[`${args.event}: ${line.description} × ${args.quantity}`]
+      }
+      if(spec.op==='invoice') {
+        const allocations=args.allocations as {line:string;quantity:string;amountMinor:number}[]
+        value=allocations.reduce((sum,line)=>sum+line.amountMinor,0)
+        items=allocations.map(allocation=>{
+          const line=record.lines.find((line:Data)=>line.id===allocation.line)
+          if(!line)throw new ToolRefusal('not_found')
+          return `${line.description} × ${allocation.quantity}: ${allocation.amountMinor} ${record.currency} minor units`
+        })
+        items.unshift(`Invoice ${args.reference}`)
+      }
+      return {target:{id:record.id,name:record.title??record.number},amount:{value,currency:record.currency},payee:[...new Set(affected.map(row=>row.supplierSnapshot?.name??row.supplier))].join(', '),items:[String(args.decision??spec.op),...items,...(args.reason?[String(args.reason)]:[])]}
+    },
     async run(args,ctx){
       await resolve(spec,args,ctx)
       const result=await execute(env,spec.op,args,ctx),kind=spec.op==='convert'?'order':spec.op==='receipt'?'receipt':spec.op==='invoice'?'invoice':spec.kind
-      const uri=recordUri(kind,String(result.id));ctx.emit(`${kind}.changed`,uri)
-      return {result,resources:[{uri,name:`Purse ${kind}`}]}
+      const changed=kind==='order'&&Array.isArray(result.supplierOrders)?result.supplierOrders:[result]
+      const resources=changed.map((record:Data)=>({uri:recordUri(kind,String(record.id)),name:`Purse ${kind}`}))
+      for(const link of resources)ctx.emit(`${kind}.changed`,link.uri)
+      return {result,resources}
     },
   }))
   tools.push(defineTool({name:'purse.requests.awaiting_decision',title:'Read requests awaiting your native decision',description:'Only current pending requests for which the sponsor is the designated native approver or active delegate. Self approval remains prohibited. Limit bounds the returned record list.',scope:'purchasing:read',readOnly:true,inputSchema:object({limit:{type:'integer',minimum:0,maximum:100}},[]),outputSchema:object({records:list(data)}),classes:['standard','sensitive'],clauses:['PUR-007','PUR-017'],untrusted:true,

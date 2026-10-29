@@ -28,6 +28,13 @@ export default async function({request,origin,claim,displayName,returnTo,email,r
   const submitted=await request(new URL('/api/purse/command/submit',origin).href,{method:'POST',headers:{origin,cookie:requester.cookie,'content-type':'application/json'},body:JSON.stringify({id:draft.id,revision:draft.revision})})
   if(!submitted.ok)throw Error('Native requester submission refused')
  }
+ const second=await command('supplier',{name:'Juniper Tools',status:'preferred',reason:'Independent native supplier source',contacts:[{name:'Morgan Juniper',email:'orders@juniper.example.test'}]})
+ const groupResponse=await request(new URL('/api/purse/command/request',origin).href,{method:'POST',headers:{origin,cookie:requester.cookie,'content-type':'application/json'},body:JSON.stringify({title:'Workshop supplier allocation',supplier:supplier.id,currency:'USD',needDate:'2026-12-15',location:'Denver',costCentre:'Operations',lines:[{description:'Safety gloves',quantity:'1',unitMinor:1500,category:'Safety',project:'Workshop'},{description:'Safety glasses',quantity:'1',unitMinor:1500,category:'Safety',project:'Workshop'}],freightMinor:0,taxMinor:0,terms:'Independent supplier allocation fixture'})})
+ if(!groupResponse.ok)throw Error('Native grouped request preparation refused')
+ const group=await groupResponse.json()
+ await command('submit',{id:group.id,revision:group.revision})
+ await command('decision',{id:group.id,revision:group.revision,decision:'approved',reason:'Independent native fixture review'})
+ await command('convert',{id:group.id,revision:group.revision,conversionEdits:{lines:[{id:group.lines[1].id,supplier:second.id}],reason:'Native buyer supplier allocation'}})
  const complete=await request(new URL('/setup',origin).href,{method:'POST',redirect:'manual',headers:{origin,cookie,'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({displayName,confirm:'yes'}).toString()})
  if(complete.status!==303)throw Error('Native first-run confirmation refused')
  return response
