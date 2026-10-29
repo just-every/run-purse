@@ -93,17 +93,30 @@ export default async function({tool,request,origin,cookie,email}) {
  assert.ok(issuedGroups.every(row=>row.status==='issued'&&row.preparedBy?.agent.id))
  const missing=await tool('purse.records.read',{kind:'order',id:randomUUID()})
  assert.equal(missing.result?._meta?.['com.runeditrun/error']?.code,'not_found')
- const audit=await request(new URL('/agents/api/audit',origin).href,{headers:{cookie}})
- assert.equal(audit.status,200)
- const auditText=await audit.text()
- assert.ok(!auditText.includes(marker))
- const rows=JSON.parse(auditText)
- assert.equal(rows.differs_from_policy,0)
+ const admissionRows=[]
+ let cursor=null,differs=0
+ do {
+  const audit=await request(new URL('/agents/api/audit'+(cursor?'?after='+encodeURIComponent(cursor):''),origin).href,{headers:{cookie}})
+  assert.equal(audit.status,200)
+  const auditText=await audit.text()
+  assert.ok(!auditText.includes(marker))
+  const page=JSON.parse(auditText)
+  admissionRows.push(...page.rows)
+  differs+=page.differs_from_policy
+  if(!page.rows.length||page.cursor===cursor)break
+  cursor=page.cursor
+ } while(cursor)
+ assert.equal(differs,0)
  const state=await request(new URL('/api/purse/state',origin).href,{headers:{cookie}})
  assert.equal(state.status,200)
  const native=(await state.json()).data
  assert.ok(native.audit.some(row=>row.action==='decision'&&row.agent?.id&&row.actorLabel?.includes(' for ')))
  assert.ok(native.receipt.some(row=>row.id===receipt.result.structuredContent.id&&row.preparedBy?.agent.id))
+ const effect=native.receipt.find(row=>row.id===receipt.result.structuredContent.id)
+ const admission=admissionRows.find(row=>row.id===effect.companyDecision.id)
+ assert.equal(admission.sponsor.id,effect.preparedBy.for.id)
+ assert.equal(admission.agent.id,effect.preparedBy.agent.id)
+ assert.ok(Number.isInteger(admission.revision))
  await agentDoorBrowser({request,origin,cookie,order,native})
  console.log('Native agent journey: self-approval refused; receipt replay once; changed arguments and stale position refused; agent and sponsor attribution; zero policy differences')
 }

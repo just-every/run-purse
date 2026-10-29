@@ -16,7 +16,7 @@ export type Actor = {
     session: string; version:number;
     owner: boolean;
     dev: boolean;
-    agent?: { id: string; name: string; label: string; consent?: string; envelope: string | null; localRevision: number; approvers: readonly { id: string; name: string }[] };
+    agent?: { id: string; name: string; label: string; consent?: string; admission?: string; envelope: string | null; localRevision: number; approvers: readonly { id: string; name: string }[] };
 };
 export class Fault extends Error {
     constructor(public status: number, message: string) { super(message); }

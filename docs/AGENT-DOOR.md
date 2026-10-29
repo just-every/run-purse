@@ -40,7 +40,9 @@ All mutations require `purchasing:write`; purchasing reads require
 never supplies a missing native purchasing grant. Classification, native targets, revisions and approval summaries enforce the same current native grants before disclosing record facts. Money and commitment facts and summaries retain exact native minor currency units. A receipt carries its current native receiving-position revision. Approval summaries name exact lines and quantities; invoice summaries total their proposed allocations. Issuing any member of a native supplier group classifies the complete group value and summarizes every affected payee and item, returns every order link and emits every order change. Mutations call Purse's native
 command service and final D1 transaction. The transaction checks the native
 operator version and purchasing revision, the exact policy envelope, local
-Pause and agent/consent revocation. A concurrent change refuses the write.
+Pause and agent/consent revocation. Native writes also bind the immutable door
+operation id to its retained sponsor, agent and admitted policy revision, so
+a later policy cannot authorize a previously admitted write. A concurrent change refuses the write.
 Native audit retains the agent as preparer and the native person as sponsor;
 company approvers are recorded separately from native purchasing decisions.
 
@@ -106,3 +108,9 @@ network-edge and conformance journeys. Existing native work keeps its native
 governance; this adoption does not claim company policy covers those executors.
 Base 0.2.86 still advertises resource subscriptions without a seed capability
 selector; that inherited advertisement cannot establish an undeclared family.
+
+Base 0.2.86's resource adapter omits originating consent and operation identity
+from the resource context and returns the classified snapshot after a fresh
+presence check. Atomic policy/consent and changed-field-projection races at that
+shared resource boundary remain pending Base qualification. The seed does not
+claim those races proved by its sequential resource journey.

@@ -40,10 +40,11 @@ export async function snapshot(env:Bindings,ctx:ResourceContext|ToolContext) {
 export async function execute(env:Bindings,op:string,args:Record<string,unknown>,ctx:ToolContext) {
   try {
     const a=await nativeActor(env,ctx), {state,revision}=await load(env.DB), before=structuredClone(state)
+    if(a.agent)a.agent.admission=ctx.operationId
     const result=await command(state,a,op,args,env)
     // Attribution is appended to the native effect, never substituted for its native sponsor.
     for(const [key,row] of state) if(row.revision!==before.get(key)?.revision) {
-      put(state,row.kind,row.id,{...row.value,preparedBy:{agent:{id:ctx.agent.id,name:ctx.agent.name},for:{id:a.id,name:ctx.person.name},label:ctx.actor.label},...(ctx.approvers.length?{companyApprovers:ctx.approvers}:{})})
+      put(state,row.kind,row.id,{...row.value,preparedBy:{agent:{id:ctx.agent.id,name:ctx.agent.name},for:{id:a.id,name:ctx.person.name},label:ctx.actor.label},companyDecision:{id:ctx.operationId},...(ctx.approvers.length?{companyApprovers:ctx.approvers}:{})})
     }
     await save(env.DB,a,before,state,revision)
     return JSON.parse(JSON.stringify(projectCommandResult(state,a,result))) as Data

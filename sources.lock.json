@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "7beaf2d0a79b9c6860b14b7c29d5e9d8cddb3cb241d08a743a5414325cbe1a58",
+      "sha256": "489db14c4b75a500afec46866d92dabcfae377b3d3e87ae58ca37a391d210450",
       "executable": false
     },
     "agent-surface.json": {
@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "2aea0a8647da8590591bcdc1c8bd67e1ff4d2f170d95f00e2c4660a5540b1fb7",
+      "sha256": "bca346a6c49fbf920d3caa9f645d68512a61d5e17df24ce937a7d516b88f07cd",
       "executable": false
     },
     "DEMO.md": {
@@ -140,7 +140,7 @@
       "executable": false
     },
     "docs/AGENT-DOOR.md": {
-      "sha256": "416e6ca8a65d9c3908b6a6d3067a93962c53208af4d31c467b57baf1657eb831",
+      "sha256": "8930dbf0da39537a2a0e2dce4648919c01732cefc87edb52bc915ae823d06838",
       "executable": false
     },
     "docs/backup-and-restore.md": {
@@ -1148,7 +1148,7 @@
       "executable": false
     },
     "src/agent-door/native.server.ts": {
-      "sha256": "6b95303cb5dc2ec88179f500a4804e05f59a420c6ecca14dc1b733f566a23058",
+      "sha256": "428a9f78f01e689e213dcf6237e264938a99bc0de7299956dd954fd9885944a9",
       "executable": false
     },
     "src/agent-door/people.server.ts": {
@@ -4188,7 +4188,7 @@
       "executable": false
     },
     "src/purse/store.ts": {
-      "sha256": "695e72578b9048463bb5c6272e3e87443d8eaeb9efa3a045125b09c69548d65d",
+      "sha256": "c9021548a973ff58e45bbbc3657d6538f350a2669ea5d06a44190efd7eeb1018",
       "executable": false
     },
     "src/purse/supplier-credits.ts": {
@@ -4316,7 +4316,7 @@
       "executable": false
     },
     "src/purse/types.ts": {
-      "sha256": "8c13946e2e7aab7bce5a50878f9bdd331891eb085f84939852209e604b80815e",
+      "sha256": "deecfde78437a180833e85942e3cc78009d6aef0a591f5660b16650c109745c8",
       "executable": false
     },
     "src/purse/value-promise.ts": {
@@ -5048,7 +5048,7 @@
       "executable": false
     },
     "tests/agent-door-journey.mjs": {
-      "sha256": "5a348065a94d4dd7370b16aaa4b27ea1ad0504fffd40eb86ff6f55a2aabf0afc",
+      "sha256": "1ad600b6b077a3404370684d398e876d0808c78041957518bdb8e66789bbcf25",
       "executable": false
     },
     "tests/agent-door-provider-edge.mjs": {
