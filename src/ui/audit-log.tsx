@@ -1,7 +1,8 @@
+import './audit-log.css';
 import { AuditEvidence } from './audit-evidence';
 import { useEffect, useState } from 'react';
 import { call, Field, Form, Table, when, type D } from './shared';
-const actorName = (event: D) => event.email || (event.actor === 'scim-service' ? 'SCIM provisioner' : '');
+const actorName = (event: D) => event.actorLabel || event.email || (event.actor === 'scim-service' ? 'SCIM provisioner' : '');
 export function AuditLog({actor}:{actor:D}) {
     const [filters, setFilters] = useState<D>({}), [events, setEvents] = useState<D[]>([]), [error, setError] = useState(''), [selected, setSelected] = useState('');
     const query = new URLSearchParams(filters).toString();
