@@ -6,8 +6,7 @@
   ],
   "2": [
     ["tests/browser.mjs", "--width=390", "--journey=agent-value"],
-    ["tests/browser-comments.mjs", "--width=390"],
-    ["tests/browser-deposits.mjs"]
+    ["tests/browser-comments.mjs", "--width=390"]
   ],
   "3": [
     ["tests/browser.mjs", "--width=390", "--journey=quote-agent"],

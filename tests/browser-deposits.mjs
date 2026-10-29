@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -5,6 +6,7 @@ import { build } from 'esbuild';
 import { harness } from './purse-harness.mjs';
 import { nativeWebContext } from './native-web-fixture.mjs';
 import { depositsFixture, depositDocument } from './deposits-fixture.mjs';
+export async function depositsWebJourney() {
 const { chromium } = await import(process.env.PURSE_PLAYWRIGHT_MODULE || '@playwright/test');
 const evidence = resolve(process.env.PURSE_EVIDENCE || '.cache/deposits'); await mkdir(evidence, { recursive: true });
 const bundle = await build({ stdin: { contents: "import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);", resolveDir: process.cwd(), loader: 'tsx' }, bundle: true, write: false, format: 'esm', platform: 'browser', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } });
@@ -128,3 +130,6 @@ try {
     assert.equal((await h.state()).data.depositApplication.length, 1); assert.deepEqual(errors, []);
     console.log('Native deposit web sanity journey passed at 1440; changed screens captured at 1440 and 390');
 } finally { for (const context of contexts) await context.close(); await h.close(); await browser.close(); }
+}
+
+if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) await depositsWebJourney();

@@ -1,4 +1,6 @@
-import test from 'node:test';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { createPortability } from '@runeditrun/rer/modules/portability';
@@ -10,7 +12,7 @@ import { depositsFixture, depositDocument, depositEmail } from './deposits-fixtu
 import { pdfContent } from './pdf-content.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
 
-test('Native deposit sanity journey preserves exact terms, source custody, once-only money and current owner authority across final billing, erasure and restore', async t => {
+export async function depositsJourney(t) {
     const h = await harness(); t.after(() => h.close()); const f = await depositsFixture(h), cmd = h.command;
     const records = async () => (await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results;
     const refused = async (op, body, cookie = f.ap, status = 409) => { const before = await records(); await cmd(op, body, cookie, status); assert.deepEqual(await records(), before, op + ' refusal preserves all evidence'); };
@@ -124,6 +126,15 @@ test('Native deposit sanity journey preserves exact terms, source custody, once-
     await refused('close-order', { id: main.order.id, version: 0, reason: 'Unsupported deposit closure' }, f.buyer);
     const exported = await h.send('/api/purse/accounting', undefined, h.owner); assert.match(exported.value, /deposit-final/); assert.match(exported.value, /Unmapped; unpostable/);
     assert.match((await h.send('/api/purse/audit.csv', undefined, h.owner)).value, /deposit-application/);
+    await h.configureMail({PROTECTED_DATA_KEY:createHash('sha256').update('synthetic-purse-7234').digest('hex')});
+    const connection=await h.send('/api/purse/pantry/connection',{origin:'https://synthetic-purse.invalid',currency:'USD',token:'synthetic-purse-7235',generation:0,confirmed:true},h.owner);
+    assert.equal(connection.status,200,JSON.stringify(connection.value));
+    const beforePosting=await records(),unmapped=await h.send('/api/purse/pantry/preview',{invoice:mainDeposit.id,payableVersion:2,accountId:'synthetic-purse-7236'},h.owner);
+    assert.equal(unmapped.status,409);assert.match(unmapped.value.error,/deposit bills/);const afterPosting=await records(),priorIds=new Set(beforePosting.map(row=>row.id)),refusalRows=afterPosting.filter(row=>!priorIds.has(row.id));
+    assert.equal(refusalRows.length,1);assert.equal(refusalRows[0].kind,'audit');const postingRefusal=JSON.parse(refusalRows[0].value);
+    assert.equal(postingRefusal.action,'pantry-use-refused');assert.equal(postingRefusal.status,409);
+    assert.deepEqual(afterPosting.filter(row=>row.id!==refusalRows[0].id),beforePosting,'Unmapped refusal preserves all existing audit and purchasing evidence and adds only its refusal audit');
+
     assert.equal(validatePurchasingArchive(await records()), true);
 
     const riskPurchase=await f.purchase();await cmd('deposit-rule',await f.ruleInput(riskPurchase.order));
@@ -178,4 +189,10 @@ test('Native deposit sanity journey preserves exact terms, source custody, once-
     assert.equal((await erasedRestore.send('/api/purse/command/invoice-source',{order:order.id,document:staged.document},freshOwner.cookie)).status,409);
     const anonymous=(await erasedRestore.send('/api/purse/state',undefined,freshOwner.cookie)).value.data;
     assert.equal(anonymous.depositApplication.length,1);assert.ok(!JSON.stringify(anonymous).includes(depositEmail(7206)));
-});
+}
+
+if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
+    const cleanup=[];
+    try {await depositsJourney({after:fn=>cleanup.push(fn)});console.log('Native deposit sanity journey passed');}
+    finally {for(const close of cleanup.reverse())await close();}
+}
