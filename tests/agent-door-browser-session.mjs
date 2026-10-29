@@ -8,8 +8,10 @@ import {chromium} from '@playwright/test'
 export async function withAgentBrowser({request,origin,cookie},visit) {
  const directory=process.env.PURSE_EVIDENCE??join(tmpdir(),'purse-agent-door-proof')
  await mkdir(directory,{recursive:true})
- const browser=await chromium.launch({executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH||undefined,headless:true,args:['--no-sandbox','--disable-features=LocalNetworkAccessChecks']})
+ let browser,stage='launch'
  try {
+  browser=await chromium.launch({executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH||undefined,headless:true,args:['--no-sandbox','--disable-features=LocalNetworkAccessChecks']})
+  stage='connect'
   const context=await browser.newContext({viewport:{width:1440,height:1000}})
   try {
    await context.addCookies(cookie.split(';').map(item=>{const i=item.trim().indexOf('=');return {name:item.trim().slice(0,i),value:item.trim().slice(i+1),url:origin,secure:true,httpOnly:true}}))
@@ -22,6 +24,7 @@ export async function withAgentBrowser({request,origin,cookie},visit) {
    })
    const page=await context.newPage()
    const capture=async name=>{
+    stage=name
     for(const width of [1440,390]) {
      await page.setViewportSize({width,height:1000})
      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Horizontal overflow on '+name)
@@ -33,5 +36,8 @@ export async function withAgentBrowser({request,origin,cookie},visit) {
    }
    await visit({page,capture})
   } finally {await context.close()}
- } finally {await browser.close()}
+ } catch(error) {
+  console.error('Native agent browser failed at',stage,'with',error.name,String(error.message).split('\n')[0].replace(/https?:\/\/[^\s]+/g,'[url]'))
+  throw error
+ } finally {await browser?.close()}
 }

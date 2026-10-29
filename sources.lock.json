@@ -5080,7 +5080,7 @@
       "executable": false
     },
     "tests/agent-door-browser-session.mjs": {
-      "sha256": "4ac73042eff434d07238952d49a02d996f2189e4868d79c4c2425b0dc26a7706",
+      "sha256": "2fd47b533aa0b080168ac2eba337ac9f25d1519f84d5952e37f4e88edef1409e",
       "executable": false
     },
     "tests/agent-door-browser.mjs": {
