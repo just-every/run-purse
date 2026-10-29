@@ -1,6 +1,6 @@
 import type { Data } from './types';
 
-const orderKinds = ['orderSend', 'orderAcknowledgment', 'orderSupplierResponse', 'orderThreadMessage'];
+const orderKinds = ['shipmentReference', 'orderSend', 'orderAcknowledgment', 'orderSupplierResponse', 'orderThreadMessage'];
 const stores: { store: string; covers: (field: Data) => boolean }[] = [
  { store: 'Deposit consent and application history', covers: f => ['depositRule','depositApplication'].includes(f.kind) },
  { store: 'Supplier tax review actors, reasons and private W-9 bindings', covers: f => f.kind === 'supplierTaxReview' },

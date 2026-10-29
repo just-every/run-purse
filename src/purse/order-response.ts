@@ -1,3 +1,4 @@
+import { prepareShipmentReference } from './shipment-references';
 import type { Bindings } from '../auth.server';
 import { currentDecision } from './approval';
 import { allowed, date, extended, get, qty, quantity, requirePermission, requireThat, text, uid, put, type Actor, type Data, type State } from './types';
@@ -40,10 +41,12 @@ export function normalizeOrderResponse(body: Data, order: Data, event: Data) {
 }
 
 /** Supplier input is evidence. Only the authenticated adoption door can create a draft. */
-export async function recordOrderResponse(env: Bindings, state: State, revision: number, event: Data, hash: string, body: Data) {
+export async function recordOrderResponse(env: Bindings, state: State, revision: number, event: Data, hash: string, body: Data): Promise<Data> {
     const order = get(state, 'order', event.order), normalized = normalizeOrderResponse(body, order, event), at = new Date().toISOString();
     const version = (event.response?.version ?? 0) + 1;
     const response: Data = { id: event.id + ':' + version, send: event.id, order: event.order, request: event.request, revision: event.revision, pdfSha256: event.pdf.sha256, version, ...normalized, actor: 'supplier-link', identityVerified: false, at };
+    const shipment = prepareShipmentReference(state, order, event, response, body);
+    if (shipment) response.shipmentReference = shipment.id;
     const acknowledgment = event.acknowledgment ?? { id: event.id, send: event.id, order: event.order, request: event.request, revision: event.revision, changeLabel: event.changeLabel, pdfSha256: event.pdf.sha256, name: response.name, actor: 'supplier-link', identityVerified: false, at };
     const decision = currentDecision(state, get(state, 'request', event.request));
     const proofs = decision.chainProofs ?? [{ actor: decision.actor, version: decision.operatorVersion }];
@@ -55,13 +58,14 @@ export async function recordOrderResponse(env: Bindings, state: State, revision:
         env.DB.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(event.actor, event.operatorVersion),
         ...proofs.map((proof: Data) => env.DB.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(proof.actor, proof.version)),
         insertOrderSendRecord(env.DB, 'orderSupplierResponse', response),
+        ...(shipment ? [insertOrderSendRecord(env.DB, 'shipmentReference', shipment), insertOrderSendRecord(env.DB, 'audit', { ...shipment, id: uid(), action: 'shipment-reference-recorded', record: order.id, shipmentReference: shipment.id })] : []),
         ...(!event.acknowledgment ? [insertOrderSendRecord(env.DB, 'orderAcknowledgment', acknowledgment), insertOrderSendRecord(env.DB, 'audit', { id: uid(), action: 'order-acknowledged', record: event.order, send: event.id, actor: 'supplier-link', name: acknowledgment.name, identityVerified: false, revision: event.revision, pdfSha256: event.pdf.sha256, at })] : []),
         ...(response.promisedDate ? [env.DB.prepare("INSERT INTO p_records(business,kind,id,revision,value) VALUES('main','supplierOrderEvidence',?,?,?) ON CONFLICT(business,kind,id) DO UPDATE SET revision=excluded.revision,value=excluded.value").bind(order.id, uid(), JSON.stringify(evidence))] : []),
         env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.response',json(?),'$.acknowledgment',json(?)) WHERE business='main' AND kind='orderSend' AND id=?").bind(uid(), JSON.stringify(response), JSON.stringify(acknowledgment), event.id),
         insertOrderSendRecord(env.DB, 'audit', { id: uid(), action: 'order-supplier-response', record: event.order, send: event.id, response: response.id, decision: response.decision, promisedDate: response.promisedDate, actor: 'supplier-link', name: response.name, identityVerified: false, revision: event.revision, pdfSha256: event.pdf.sha256, at }),
         env.DB.prepare('DELETE FROM p_guard'),
     ]); } catch (error) { requireThat(!/CHECK constraint|UNIQUE constraint/.test(String(error)), 'Order, authority, link or response changed; reload', 409); throw error; }
-    return response;
+    return { ...response, shipment };
 }
 
 export async function adoptOrderResponse(env: Bindings, actor: Actor, orderId: string, body: Data) {
