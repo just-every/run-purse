@@ -25,6 +25,7 @@ export function historicalDefinition(row: Data, col: Columns, meta: Data) {
     const recordKind = col(row, 'recordKind'), scope = col(row, 'fieldScope'), type = col(row, 'fieldType');
     requireThat(purchaseKinds.includes(recordKind) && ['header','line'].includes(scope), 'Historical field needs a record kind and header or line scope');
     requireThat(['text','choice','number','date','boolean'].includes(type), 'Unsupported historical field type');
+    requireThat(!/(?:bank|routing|(?:^|[^a-z])tin(?:$|[^a-z])|tax.?id|social.?security|account.?number)/i.test(col(row, 'name') + ' ' + col(row, 'sourceId')), 'Protected historical definitions are unsupported');
     const options = col(row, 'fieldOptions') ? json(col(row, 'fieldOptions'), 'Field options') : [];
     requireThat(Array.isArray(options) && options.length <= 100 && options.every(v => typeof v === 'string' && v.length > 0 && v.length <= 2000) && new Set(options).size === options.length && (type === 'choice' ? options.length > 0 : options.length === 0), 'Historical field choices invalid');
     requireThat(typeof meta.name === 'string' && meta.name.length > 0 && meta.name.length <= 2000, 'Historical field name required');
@@ -59,6 +60,6 @@ export function historicalReport(values: Data[]) {
         const group = groups.get(key) ?? { kind, supplier, period, currency: value.currency, records: 0, lines: 0, totalMinor: 0 };
         group.records++; group.lines += (value.lines ?? value.allocations).length; group.totalMinor = minor(group.totalMinor + value.totalMinor); groups.set(key, group);
     }
-    return { reconciliation: [...groups.values()], historicalRecords: values.filter(v => v.sourceRows).map(v => ({ id: v.id, sourceId: v.sourceId, headerFields: v.historicalFields ?? [], lines: (v.lines ?? v.allocations ?? []).map((line: Data) => ({ sourceLineId: line.sourceLineId, orderLine: line.line ?? null, fields: line.historicalFields ?? [] })), sourceRows: v.sourceRows })) };
+    return { reconciliation: [...groups.values()], historicalDefinitions: values.filter(v => v.authority === 'inert-history').map(v => ({ sourceId: v.sourceId, name: v.name, recordKind: v.recordKind, scope: v.scope, type: v.type, options: v.options })), historicalRecords: values.filter(v => v.sourceRows).map(v => ({ id: v.id, sourceId: v.sourceId, headerFields: v.historicalFields ?? [], lines: (v.lines ?? v.allocations ?? []).map((line: Data) => ({ sourceLineId: line.sourceLineId, orderLine: line.line ?? null, fields: line.historicalFields ?? [] })), sourceRows: v.sourceRows })) };
 }
 export const historicalRowProof = (row: Data, position: number, col: Columns) => ({ row: position, sourceLineId: col(row, 'lineId'), payloadHash: sha256(canonicalJson(row)) });
