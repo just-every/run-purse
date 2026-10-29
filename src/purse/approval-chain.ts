@@ -1,4 +1,5 @@
 import { openReviews, requireReviews } from './cross-team-reviews';
+import { hasSupplierGroups } from './po-supplier-groups';
 import { currentScimAssignment } from './scim-approvals';
 import { budgetDimensionInput } from './budget-dimensions';
 import { budgetOwnerSteps } from './budget-position';
@@ -125,7 +126,7 @@ function reserve(s: State, a: Actor, request: Data, policy: Data) {
     const owners=(request.approvalRoute??[]).filter((step:Data)=>step.id==='budget-owner'||step.id.startsWith('budget-owner:'));
     if(owners.some((step:Data)=>!stepDecision(s,request,step)))return;
     requireThat(reservationAvailable(s,request,delta), 'Budget exhausted by existing commitments',409);
-    if (delta) ledger(s,a,request,delta,'pending-chain-reservation');
+    if (delta || hasSupplierGroups(request)) ledger(s,a,request,delta,'pending-chain-reservation');
 }
 function orderedPolicy(policy:Data, request:Data) { return Boolean(internationalTravelReview(policy,request)||policy.approvalSteps||policy.overBudget==='owner'||Object.values(policy.editRules??{}).some((rule:any)=>rule.allowed?.length)); }
 export function startChain(s: State, a: Actor, request: Data, policy: Data) {

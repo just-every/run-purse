@@ -3028,7 +3028,7 @@
       "executable": false
     },
     "src/purse/approval-chain.ts": {
-      "sha256": "853dbe9c5975b7b011b1e783a2d28bda73e351da97c229ae08939738dd9ac75a",
+      "sha256": "d9613d7e96bf93ba6b649c530ca94b3e576ecec05c4f325efea3f210a5bba771",
       "executable": false
     },
     "src/purse/approval-edit-view.ts": {
@@ -3212,7 +3212,7 @@
       "executable": false
     },
     "src/purse/erasure-subject.ts": {
-      "sha256": "da29d42335e610ae734e450a85cf22e711bbe22b0246a325933126360aec0d73",
+      "sha256": "f9cb9a58c2771c4705c86744d17850ccf7c51bfc6194dccd8c602e1b183ed760",
       "executable": false
     },
     "src/purse/gsa-rates.ts": {
@@ -3656,7 +3656,7 @@
       "executable": false
     },
     "src/purse/requests.ts": {
-      "sha256": "1c680fd2412c0000ff8caa59ed6ec1bca7b5bdf88c592478b7d8257ef9267448",
+      "sha256": "09f8da5b7a7721a18a69098d320afe09356330a9f4c5958fb89efdb34ea0a61c",
       "executable": false
     },
     "src/purse/restored-imports.d.mts": {
@@ -4692,7 +4692,7 @@
       "executable": false
     },
     "tests/approver-supplier-groups.test.mjs": {
-      "sha256": "b6b70695015bda163c9147688c0a637e6433b25fdbafc2ef6234816a5abbb1ec",
+      "sha256": "21fbd429aa36c873d3deeb79b6da3d34aed5eea3190609e90ce6881e8cf2aa48",
       "executable": false
     },
     "tests/audit-log.test.mjs": {
