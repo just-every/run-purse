@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 SUPPLIER-008 PO-012`. Current candidate counts: 54 done, 32 partial, 27 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 SUPPLIER-008 PO-012 APPROVAL-002`. Current candidate counts: 54 done, 33 partial, 26 missing; 113 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -51,7 +51,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `CODING-001` | Split allocations across codings | missing |
 | `CODING-002` | Custom header and line fields | partial |
 | `APPROVAL-001` | Multi-step conditional approval chains | partial |
-| `APPROVAL-002` | Approval reminders, escalation and out-of-office | missing |
+| `APPROVAL-002` | Approval reminders, escalation and out-of-office | partial |
 | `APPROVAL-003` | Approve from any channel | partial |
 | `APPROVAL-004` | Approver edits on a pending request | partial |
 | `COMMENT-001` | Internal comments and @mentions | partial |

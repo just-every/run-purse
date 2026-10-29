@@ -1,7 +1,9 @@
+import { absenceAllows, absenceRoute, validateAbsenceDecision } from './approval-absence';
 import { currentScimAssignment, scimAssignmentAllows, carryScimAssignments } from './scim-approvals';
 import { all, allowed, get, put, requireThat, uid, type Actor, type Data, type State } from './types';
 
 export function stepAuthority(s:State,a:Actor,request:Data,step:Data): Data | undefined {
+    const absence=absenceAllows(s,a,request,step); if(absence!==undefined)return absence||undefined;
     if (step.emails) {
         for (const email of step.emails) { const proof = stepAuthority(s,a,request,{...step,emails:undefined,email}); if (proof) return {...proof, authorityEmail:email}; }
         return;
@@ -13,6 +15,7 @@ export function stepAuthority(s:State,a:Actor,request:Data,step:Data): Data | un
     if(a.email===step.email||delegation)return {delegation:delegation?.id??null};
 }
 export function stepHolderEmail(s:State,request:Data,step:Data) {
+    const absence=absenceRoute(s,request,step);if(absence)return absence.to??'Held for owner review';
     return currentScimAssignment(s,request,step.id)?.to ?? all(s,'delegation').find(d=>d.policy===request.policy&&d.from===step.email&&d.active&&Date.parse(d.expires)>Date.now())?.delegate ?? step.email;
 }
 export function validateStepDecision(s:State,request:Data,step:Data,decision:Data) {
@@ -20,6 +23,7 @@ export function validateStepDecision(s:State,request:Data,step:Data,decision:Dat
     const authorityStep = step.emails ? {...step,emails:undefined,email:decision.authorityEmail} : step;
     requireThat(!step.emails || step.emails.includes(decision.authorityEmail), 'Pool authority changed; renew approval',409);
     const actor={id:decision.actor,email:decision.email,owner:decision.owner===true,dev:false,session:'',version:decision.operatorVersion};
+    if(decision.absence){validateAbsenceDecision(s,request,authorityStep,decision);return;}
     requireThat(stepAuthority(s,actor,request,authorityStep),'An earlier approver no longer holds authority',409);
     if(decision.scimTransfer)requireThat(currentScimAssignment(s,request,step.id)?.id===decision.scimTransfer,'Approval transfer changed; renew approval',409);
     else if(decision.delegation) {

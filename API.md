@@ -1113,3 +1113,11 @@ service, blanket, recurring or adopted groups remain unavailable. Grouped date
 changes and amendments require a separately supported disposition; this door
 refuses them. Native group issuance sends no supplier message and records no
 payment or connected-ledger posting.
+
+## Scheduled approval absence
+
+Settings exposes versioned `approval-absence` and `cancel-approval-absence` commands. The current named approver or native owner supplies `policy`, `from`, `delegate`, `version` (zero for a new window), `timezone` (an explicit IANA zone), local minute-resolution `start` and `end`, and a reason. Editing additionally supplies `id`. Cancellation requires the exact current id and version and a reason. Nonexistent and ambiguous local times are refused.
+
+Singleton pending native steps transfer with the recorded out-of-office reason and original waiting time. The scheduled Worker reconciles existing steps; submission and decision commands enforce current routing immediately. Expiry returns only undecided work. Current native identity and equal approval scopes are required; the delegate receives no new access. Pool and parallel steps, existing identity handoffs and a delegate who is the requester stay held for owner review. Manual delegation must be revoked before an overlapping absence is configured.
+
+Audit reads and CSV retain every window version and per-step transition. Domain archives retain this history, while installation-local absence consent is excluded. Restored history and erased identities cannot execute delegated decisions. No reminder, nudge, escalation, manager handoff or external channel delivery is claimed by this native slice.

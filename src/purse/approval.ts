@@ -1,3 +1,4 @@
+import { validateAbsenceDecision } from './approval-absence';
 import { requireReviews } from './cross-team-reviews';
 import { chainApproval } from './approval-chain';
 import { currentScimAssignment, scimAssignmentAllows } from './scim-approvals';
@@ -6,7 +7,7 @@ import { policies } from './requests';
 /** Issuance is a fresh check against current business policy and capability. */
 export function currentDecision(s: State, r: Data) { requireReviews(s,r); if(r.approvalRoute) return chainApproval(s,r); const policy = policies(s, r).find(p => p.id === r.policy); requireThat(policy, 'Approval policy changed', 409); const decision = all(s, 'decision').find(d => d.request === r.id && d.revision === r.revision && d.decision === 'approved'); requireThat(decision, 'Approval decision missing', 409); requireThat(decision.policyVersion === s.get('policy:' + policy.id)?.revision, 'Approval policy changed; renew authority', 409); if (!decision.owner) {
     requireThat(allowed(s, { id: decision.actor, email: decision.email, owner: false, dev: false, session: '', version: decision.operatorVersion }, 'request.approve', r), 'Approver capability or scope revoked', 409);
-} if (decision.scimTransfer) {
+} if(decision.absence){validateAbsenceDecision(s,r,{id:'primary',email:policy.approver},decision);return decision;} if (decision.scimTransfer) {
     const assignment = currentScimAssignment(s, r);
     requireThat(assignment?.id === decision.scimTransfer && scimAssignmentAllows(s, {id: decision.actor, email: decision.email, owner: decision.owner === true, dev: false, session: '', version: decision.operatorVersion}, r), 'Approval transfer changed or recipient authority ended; renew approval', 409);
 } else if (decision.delegation) {
