@@ -23,8 +23,8 @@ test('Supplier acknowledgment captures bounded shipment references, appends corr
     assert.equal((await f.send()).status, 200);
     const original = financial(await rows(h)), mailCount = h.messages.length;
     const pdf = Buffer.from(await (await fetch(f.link().href + '/pdf')).arrayBuffer());
-    for (const shipment of [{carrier:'Other',trackingNumber:'synthetic-purse-6605'}, {carrier:'UPS',trackingNumber:'bad value'}, {carrier:'UPS',trackingNumber:'x'.repeat(81)}, {carrier:'UPS',trackingNumber:shipmentAddress(6606)}, {carrier:'UPS',trackingNumber:'synthetic-purse-6605',order:f.initial.id}, {carrier:'UPS',trackingNumber:'synthetic-purse-6605',correctionOf:'unrelated',reason:'Wrong order'}])
-        await unchangedRefusal(h, () => f.respond(f.input({shipment})), shipment.order || shipment.correctionOf ? 409 : 400);
+    for (const shipment of [{carrier:'Other',trackingNumber:'synthetic-purse-6605'}, {carrier:'UPS',trackingNumber:'bad value'}, {carrier:'UPS',trackingNumber:'x'.repeat(81)}, {carrier:'UPS',trackingNumber:shipmentAddress(6606)}, {carrier:'UPS',trackingNumber:'synthetic-purse-6605',order:f.initial.id}, {carrier:'UPS',trackingNumber:'synthetic-purse-6605',revision:2}, {carrier:'UPS',trackingNumber:'synthetic-purse-6605',correctionOf:'unrelated',reason:'Wrong order'}])
+        await unchangedRefusal(h, () => f.respond(f.input({shipment})), shipment.order || shipment.revision || shipment.correctionOf ? 409 : 400);
     await unchangedRefusal(h, () => f.respond(f.input({revision:2})), 409);
     await unchangedRefusal(h, () => f.respond(f.input({order:f.initial.id})), 409);
     await unchangedRefusal(h, () => f.respond(f.input(), {origin:'https://synthetic-purse-6607.test'}), 403);

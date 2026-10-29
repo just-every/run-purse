@@ -19,6 +19,7 @@ export function prepareShipmentReference(state: State, order: Data, event: Data,
     requireThat(input && typeof input === 'object' && !Array.isArray(input), 'Shipment reference object required');
     requireThat(response.decision !== 'reject', 'A rejected order cannot report a shipment', 409);
     requireThat(input.order === undefined || input.order === order.id, 'Shipment belongs to another order', 409);
+    requireThat(input.revision === undefined || input.revision === event.revision, 'Shipment belongs to another approved revision', 409);
     requireThat(shipmentCarriers.includes(input.carrier), 'Choose UPS, FedEx, USPS or DHL');
     requireThat(typeof input.trackingNumber === 'string' && /^[A-Za-z0-9][A-Za-z0-9-]{5,79}$/.test(input.trackingNumber), 'Tracking number must contain 6 to 80 letters, digits or hyphens');
     const history = shipmentHistory(state, order.id), correctionOf = input.correctionOf ? text(input.correctionOf, 'Reference to correct', 250) : null;

@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "400dff981033b6b629d67b8cfcc1da69b36d80c9513efa0c30758d757a124a44",
+      "sha256": "044dcf7ad57858d60916ffc36571cfcaea562704bf52aa0222dd944dd0d73e1b",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -116,7 +116,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "8f68fadebcdaabca0d1491d9d7d9d6b1c8d46905d303d2c70890ca55f7af25be",
+      "sha256": "3bb0d1c6dd03b7566ac8f10630311827a7c6aad8c9c92d0ea62b3f6203f017ac",
       "executable": false
     },
     "DEMO.md": {
@@ -3776,7 +3776,7 @@
       "executable": false
     },
     "src/purse/shipment-references.ts": {
-      "sha256": "1c4b8f3417658dc5a8de39b530d2e4b9a7ecc057c90da66b602f6ca4799c8106",
+      "sha256": "b3a328a0911162c340af583424ddce3d4a60e8fbbc940ed7f774436f636542fa",
       "executable": false
     },
     "src/purse/spend-question-parser.ts": {
@@ -5292,7 +5292,7 @@
       "executable": false
     },
     "tests/shipment-references.test.mjs": {
-      "sha256": "3bd8bf4918ae63fb884c0ae289f6f444fd3defdbfb8dee50848bdde310e66cf2",
+      "sha256": "10625b70f6c6ace3afd00d34389a39f13565b90c110911094ed2229e1a27eb40",
       "executable": false
     },
     "tests/spend-question-fixture.mjs": {
