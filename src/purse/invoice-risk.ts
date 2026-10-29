@@ -123,7 +123,7 @@ export function invoiceRisk(s: State, order: Data, candidate: Data, input: Data)
 
     // Amendments replace the issued face value, while earlier invoice evidence
     // continues to consume the same request's balance. Currencies stay separate.
-    const orders = all(s, 'order').filter(o => o.request === order.request && o.currency === candidate.currency);
+    const orders = all(s, 'order').filter(o => o.request === order.request && o.currency === candidate.currency && (order.supplierGroup ? o.supplierGroup?.key === order.supplierGroup.key && o.supplier === order.supplier : !o.supplierGroup));
     const orderIds = new Set(orders.map(o => o.id));
     const currentIssued = orders.filter(o => currentOperationalOrder(s, o));
     const faceMinor = currentIssued.length ? Math.max(...currentIssued.map(o => { if (!o.cancelledByApproval) return o.totalMinor; const base = o.lines.reduce((sum: number,line: Data)=>sum+line.totalMinor,0); const active = o.lines.reduce((sum: number,line: Data)=>sum+Number((BigInt(Math.max(0,line.q-linePosition(s,o.id,line).cancelled))*BigInt(line.unitMinor)+500n)/1000n),0); return base ? Number((BigInt(o.totalMinor)*BigInt(active)+BigInt(base)/2n)/BigInt(base)) : 0; })) : null;

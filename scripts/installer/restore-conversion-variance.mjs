@@ -41,8 +41,8 @@ export function validateConversionVariance(order,revision,all) {
     if(legacy){evidence(edit,source,{...order,request:order.request});check(edit.sourceRevision===order.revision,'conversion_source');}
     else {
         check(edit.sourceRevision<order.revision&&same(revision.buyerConversion,Object.fromEntries(Object.entries(edit).filter(([key])=>key!=='approvalRenewed'))),'conversion_request_revision');
-        evidence(edit,source,{...order,request:order.request});
-        check(same(purchasing({...order,lines:order.lines.map(({sourceLine,...line})=>line)}),purchasing(revision)),'conversion_purchase_identity');
+        evidence(edit,source,order.supplierGroup?revision:{...order,request:order.request});
+        check(order.supplierGroup || same(purchasing({...order,lines:order.lines.map(({sourceLine,...line})=>line)}),purchasing(revision)),'conversion_purchase_identity');
         check(edit.approvalRenewed===(edit.routing!=='carried'),'conversion_renewal');
     }
     check(order.location===revision.location&&order.costCentre===revision.costCentre&&(order.entity??'main')===(revision.entity??'main'),'conversion_scope_identity');
@@ -79,4 +79,26 @@ export function validateConversionRevisions(all,get) {
             check(all('audit').some(event=>event.action==='need-date-edit'&&event.record===revision.request&&event.revision===revision.revision&&event.actor===date.actor&&same(event.differences,date.differences)),'date_correction_audit');
         }
     }
+}
+
+/** Restored grouped documents remain exact history; they confer no restored authority. */
+export function validateSupplierGroups(order,revision,all) {
+    const group=order.supplierGroup;
+    check(group && group.key===order.request+':'+order.revision && !revision.amends && !revision.imported && !revision.adoption && !revision.recurringSeries && !revision.poDetails?.blanket && !revision.poDetails?.depositTerms && (!revision.purchaseType || revision.purchaseType==='goods') && revision.lines.every(line=>!line.service&&!line.carriedAccepted&&!line.carriedCancelled),'supplier_group_source');
+    const ids=[...new Set(revision.lines.map(line=>line.supplier??revision.supplier))];
+    check(ids.length>1&&group.count===ids.length&&ids[group.index]===order.supplier&&group.requestTotalMinor===revision.totalMinor,'supplier_group_identity');
+    const siblings=all('order').filter(other=>other.request===order.request&&other.supplierGroup?.key===group.key);
+    check(siblings.length===ids.length&&new Set(siblings.map(other=>other.supplier)).size===ids.length&&siblings.reduce((sum,other)=>sum+other.totalMinor,0)===revision.totalMinor,'supplier_group_total');
+    const selected=revision.lines.map((line,index)=>({line,index})).filter(({line})=>(line.supplier??revision.supplier)===order.supplier);
+    check(same(order.lines.map(({sourceLine,...line})=>line),selected.map(({line})=>line))&&same(order.supplierSnapshot,selected[0].line.supplierSnapshot??revision.supplierSnapshot),'supplier_group_lines');
+    for(const field of ['currency','terms','needDate','poDetails'])check(same(order[field],revision[field]),'supplier_group_terms');
+    const apportion=(amount,weights)=>{const total=weights.reduce((sum,weight)=>sum+BigInt(weight),0n),denominator=total||BigInt(weights.length),parts=weights.map((weight,index)=>{const numerator=BigInt(amount)*(total?BigInt(weight):1n);return {index,value:Number(numerator / denominator),remainder:numerator%denominator};});let left=amount-parts.reduce((sum,part)=>sum+part.value,0);for(const part of [...parts].sort((a,b)=>a.remainder===b.remainder?a.index-b.index:a.remainder>b.remainder?-1:1)){if(!left)break;part.value++;left--;}return parts.map(part=>part.value);};
+    const charges=revision.charges??[...(revision.freightMinor?[{id:'freight',kind:'freight',description:'Freight',amountMinor:revision.freightMinor}]:[]),...(revision.taxMinor?[{id:'tax',kind:'tax',description:'Supplied tax',amountMinor:revision.taxMinor}]:[])];
+    const remainingTax=revision.lines.map(line=>line.lineTaxMinor??0);
+    const expected=charges.map(charge=>{const values=apportion(charge.amountMinor,charge.kind==='tax'?remainingTax:revision.lines.map(line=>line.totalMinor));if(charge.kind==='tax')values.forEach((value,index)=>{remainingTax[index]-=value;});return {...charge,amountMinor:selected.reduce((sum,{index})=>sum+values[index],0)};});
+    check(same(order.charges,expected),'supplier_group_charges');
+    const lineAmounts=revision.lines.map(line=>line.totalMinor),taxLeft=revision.lines.map(line=>line.lineTaxMinor??0);
+    for(const charge of charges){const values=apportion(charge.amountMinor,charge.kind==='tax'?taxLeft:revision.lines.map(line=>line.totalMinor));values.forEach((value,index)=>{lineAmounts[index]+=value;if(charge.kind==='tax')taxLeft[index]-=value;});}
+    check(same(group.lineExposure,selected.map(({line,index})=>({line:line.id,baseMinor:line.totalMinor,amountMinor:lineAmounts[index]}))),'supplier_group_budget');
+    check(!all('order').some(other=>other.request===order.request&&other.supplierGroup?.key!==group.key),'supplier_group_once');
 }

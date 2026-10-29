@@ -1151,3 +1151,31 @@ content are not retained in delivery receipts. The signing secret is excluded
 from archives; restored historical recipient IDs confer no current identity,
 channel enrollment or callback authority. Network-edge proof is synthetic;
 live sender, inbox, bounce, Slack, Teams and device qualification remain open.
+## Native supplier groups at buyer conversion
+
+The native `convert` command accepts a destination `supplier` on each existing
+`conversionEdits.lines` entry. Different active suppliers split a wholly unissued
+ordinary goods request into supplier-specific purchase orders. The response
+retains the first order fields and adds `supplierOrders`, containing every exact
+group document. Each line retains its original source ID, coding and allocations.
+Every supplied charge is allocated by source line value with exact integer cents;
+largest remainder wins, with original line order breaking ties. Supplied line tax
+is retained. Each group freezes its supplier identity, approved common commercial
+terms and the applicable document profile, including original terms and only an
+applicable exemption certificate.
+
+Price and quantity caps apply to each line and to the complete edited request.
+An over-limit edit or a budget overage returns an approval revision without any
+PO. The current purchase chain and all required allocation budget owners must
+approve before conversion proceeds. A buyer calling `issue` for any prepared
+group issues all groups in the same native transaction, after fresh authority,
+supplier, complete-source, variance and budget checks. A replay or competing
+conversion cannot allocate the source lines again. One aggregate request ledger
+backs the groups; each report source and invoice balance names the actual PO.
+
+This door supports the existing single business and currency. Automatic group
+generation, combined requests and migrations of existing issued, received, billed,
+service, blanket, recurring or adopted groups remain unavailable. Grouped date
+changes and amendments require a separately supported disposition; this door
+refuses them. Native group issuance sends no supplier message and records no
+payment or connected-ledger posting.

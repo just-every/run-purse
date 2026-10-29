@@ -28,6 +28,7 @@ export function generationReadiness(s: State, request: Data, policy = generation
     // Ordinary native conversion remains the public authority for all supplier,
     // document, budget, approval, coding and exact-revision checks.
     requireThat(!request.amends && !request.adoption && !request.adoptedDisposition && request.purchaseType !== 'travel','Buyer review required for amendments, adopted purchases and travel',409);
+    requireThat(new Set(request.lines.map((line:Data)=>line.supplier??request.supplier)).size===1,'Automatic supplier group generation requires separate buyer review',409);
     currentDecision(s,request);
     if (supplier.paymentTerms) requireThat(supplier.paymentTerms === request.terms,'Supplier payment terms changed; amend and renew approval',409);
     if (supplier.currency) requireThat(supplier.currency === request.currency,'Supplier currency changed; amend and renew approval',409);

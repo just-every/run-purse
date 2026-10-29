@@ -6,7 +6,7 @@ import { canonicalSupplier } from './supplier-identity';
 import { moneyInput } from './money';
 import { createHash } from 'node:crypto';
 import { all, audit, get, put, requireThat, text, minor, quantity, extended, uid, type Actor, type Data, type State } from './types';
-import { linePosition, commitment, remainingValue } from './orders';
+import { linePosition, commitment, requestRemainingValue } from './orders';
 import { ledger } from './requests';
 import { allowed, requirePermission } from './access';
 
@@ -121,7 +121,7 @@ export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: 
     put(s, 'invoice', id, { ...candidate, id, entrySequence: all(s,'invoice').reduce((n,i)=>Math.max(n,i.entrySequence??0),0)+1, ...(closedBalance ? { status: 'exception', exception: 'Invoice exceeds the closed PO balance' } : {}), totalMinor: candidate.totalMinor, actor: actorId, at: new Date().toISOString() });
     storeOriginal(get(s, 'invoice', id));
     if(o.poDetails?.blanket) {
-        const r=get(s,'request',o.request), target=remainingValue(s,o), current=commitment(s,r);
+        const r=get(s,'request',o.request), target=requestRemainingValue(s,o), current=commitment(s,r);
         if(target<current && a) ledger(s,a,r,target-current,'blanket-invoice-drawdown');
     }
     recordAudit('invoice', id, { flags: candidate.flags.map((f: Data) => f.code) });
