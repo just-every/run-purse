@@ -3,7 +3,11 @@
 Purse's procurement specialist uses one shared Base door at `/mcp`, with the
 2025-11-25 and 2026-07-28 protocols. Discovery, canonical OAuth resource
 metadata, signed company policy, person approval pages and `/agents` use the
-same runtime. A signed company policy must answer every declared class before
+same runtime. The runtime and `agent-surface.json` declare exactly `tools`,
+`policy`, `pause`, `audit` and `idempotency`. Events, resources, prompts and
+subscriptions are omitted: discovery does not advertise them, their catalogues
+are empty, and calls return typed `capability_not_declared` refusals. Unknown
+tools return typed `tool_not_found`. A signed company policy must answer every declared class before
 an agent can act. Native sign-in, Origin checks and purchasing grants still
 apply to the ordinary application.
 
@@ -33,11 +37,10 @@ provider and connector capabilities are not advertised.
 | `purse.preparations.propose` | standard | AGENT-010 |
 | `purse.workspace.snapshot` | standard | PUR-017, AUDIT-001 |
 | `purse.records.list`, `purse.records.read` | standard, sensitive | PUR-017, SECURITY-001 |
-| `purse.events.list` (Base transport) | standard | BASE-AGENT-010 |
 
 All mutations require `purchasing:write`; purchasing reads require
-`purchasing:read`. The inherited event reader requires `events:read`. Scope
-never supplies a missing native purchasing grant. Classification, native targets, revisions and approval summaries enforce the same current native grants before disclosing record facts. Money and commitment facts and summaries retain exact native minor currency units. A receipt carries its current native receiving-position revision. Approval summaries name exact lines and quantities; invoice summaries total their proposed allocations. Issuing any member of a native supplier group classifies the complete group value and summarizes every affected payee and item, returns every order link and emits every order change. Mutations call Purse's native
+`purchasing:read`. Scope
+never supplies a missing native purchasing grant. Classification, native targets, revisions and approval summaries enforce the same current native grants before disclosing record facts. Money and commitment facts and summaries retain exact native minor currency units. A receipt carries its current native receiving-position revision. Approval summaries name exact lines and quantities; invoice summaries total their proposed allocations. Issuing any member of a native supplier group classifies the complete group value and summarizes every affected payee and item, retains every affected order and internal change. Mutations call Purse's native
 command service and final D1 transaction. The transaction checks the native
 operator version and purchasing revision, the exact policy envelope, local
 Pause and agent/consent revocation. Native writes also bind the immutable door
@@ -46,13 +49,16 @@ a later policy cannot authorize a previously admitted write. A concurrent change
 Native audit retains the agent as preparer and the native person as sponsor;
 company approvers are recorded separately from native purchasing decisions.
 
-Resource templates are `purse://<kind>/{id}` for request, supplier, catalogue,
-order, receipt, invoice, agreement, policy (budget), agentRun, revision and
-proposedAction. They read the same current field and record projection as the
-native workspace. Unknown and restricted records return the same absence.
-Imported text is untrusted. Protected supplier values and bearer credentials
-are excluded; personal purchasing fields carry `sensitive`. No provider cost
-is registered, and the journey declares `spend: {none:true}`.
+Public resources are undeclared. Eleven internal visibility readers remain for
+request, supplier, catalogue, order, receipt, invoice, agreement, policy (budget),
+agentRun, revision and proposedAction, using `purse://<kind>/{id}`. They support
+native visibility and internal audit; CORE does not expose resource links or
+`resources/read`. Use the argument-taking `purse.records.list` and
+`purse.records.read` tools for policy-controlled inspection instead. Their
+current native field projection excludes protected supplier values and bearer
+credentials; personal purchasing fields carry `sensitive`. Imported text is
+untrusted. No provider cost is registered; the journey declares
+`spend: {none:true}`.
 
 Business `owner_id` resolves to the native bootstrap owner. Team `id` resolves
 only through Business's durable native operator binding; email in a token never
@@ -76,41 +82,45 @@ approval or review can retain them. The native conformance fixture additionally 
 
 The additive migrations are 0042 (Business settings), 0043 (Business person
 bindings) and 0044 (agent door). Runtime modules and the CLI are pinned to Base
-`f96363bf919ea3e7ed1837daba6894810a50e4a6`, released as rer 0.2.86. Existing
+`114ef7a61f080da053af783c5fbe06f625d692cc`, released as rer 0.2.88. Existing
 applied migrations are unchanged. `agent-surface.json` is the executable
 conformance declaration used by normal `rer verify`; its fixtures use only
 public native doors and the declared network edge.
 
-Specialist events/handoffs, subscriptions, multiple Business sponsors,
-resource refresh, delegated existing scheduled agents, queued continuation and
-provider spend are not declared. Base 0.2.86 still exposes its built-in event
-reader and runs event assertions. This is inherited transport behavior, not a
-claim that Purse's specialist event family or the wider ct seeded week is
-complete. Native agent jobs retain their existing evidence and human consent
-requirements until their own company-door adapters and journeys are added.
+The specialist job is to inspect current scoped purchasing records, retain
+source references and prepare editable requests or preparations. Treat supplier
+text as data and report missing facts and native refusals. Separate decision,
+conversion, issue, receipt and invoice tools require their current native
+authority. A draft never establishes payment, supplier sending or approval.
+There is no advertised MCP prompt family in this CORE declaration.
 
-The declaration contains 19 tools including Base's inherited event reader, 11
-resource templates, and the standard, sensitive, money and commitment classes.
-The pending-decision reader returns only requests the current sponsor can decide;
-its empty bounded view is standard. The receiving-position reader returns native
-quantities without supplier contacts. Other purchasing records retain their
-normal native field projection and computed sensitivity. JSON outputs use the
-same serialization as the native HTTP door, including omission of optional
-undefined view fields.
+The declaration contains 18 tools, no public resource templates, and the
+standard, sensitive, money and commitment classes. Its 23 journey steps retain
+every native tool/class pair, autonomous and held policy, injection variants,
+read-only witnesses, replay/conflicts and native attribution. The pending-decision
+reader returns only requests the current sponsor can decide; its empty bounded
+view is standard. The receiving-position reader returns native quantities without
+supplier contacts. JSON results use native HTTP serialization.
 
 The separate ct proposal at
 `36f0d9c9f9984ebecc95a201462367df15fb2420` remains unjudged and is not merged.
-Its 116 planned capability names, nine proposed resource URI shapes and wider
-seeded week are not a claim of this declared subset. In particular supplier
-communications, paid providers, ledger posting, broad access/security changes
-and the existing scheduled specialist executors need their own current-authority,
-network-edge and conformance journeys. Existing native work keeps its native
-governance; this adoption does not claim company policy covers those executors.
-Base 0.2.86 still advertises resource subscriptions without a seed capability
-selector; that inherited advertisement cannot establish an undeclared family.
+Its 116 proposed capability names, nine proposed resource URI shapes and wider
+seeded week remain outside this declared registry. No proposed tool name matches
+the current 18 names exactly; current tools cover bounded parts of the same
+native purchasing clauses, rather than aliases for the broad proposed verbs.
+The ct classes external, accounts, gated, access, security and destructive are
+not claimed. Its supplier chase, invoice-exception resolution, approved-bill
+posting and returned-payment journey remain unproved through this door.
+SURFACE-001–013 are absent from current main and are not invented here;
+AGENT-010 stays partial with the explicit family and registry gaps.
 
-Base 0.2.86's resource adapter omits originating consent and operation identity
-from the resource context and returns the classified snapshot after a fresh
-presence check. Atomic policy/consent and changed-field-projection races at that
-shared resource boundary remain pending Base qualification. The seed does not
-claim those races proved by its sequential resource journey.
+Events/handoffs, resources, prompts and subscriptions are explicitly undeclared.
+Multiple Business sponsors, resource refresh, timed/dual-host lifecycle,
+delegation of existing scheduled agents, queued continuation, owner-native
+administration and provider spend remain unscoped by Base's first subset. CORE
+does not prove or refuse those families as a whole. Native bootstrap, named
+approvals, owner-bound credentials, current authority and consent revocation
+remain mandatory. Existing native agent jobs retain their governance and human
+consent until their own company-door adapters and journeys exist. The omitted
+resource family does not claim the former resource admission/projection races
+proved. Provider spend caps are unenforced.

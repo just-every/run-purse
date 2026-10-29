@@ -2,7 +2,7 @@
 
 Company-agent discovery and MCP use the shared door documented in
 [Company agents in Purse](docs/AGENT-DOOR.md). The current declaration covers
-19 tools; native session, SDK and supplier interfaces below keep their own
+18 CORE tools; events, resources, prompts and subscriptions are undeclared. Native session, SDK and supplier interfaces below keep their own
 credentials and purposes. The MCP declaration does not claim full native parity.
 
 Except INTAKE-007’s dedicated bearer create-request door and INTAKE-008’s read-only PO-data door below, `/api/purse/*` endpoints use the current native operator session and purchasing capabilities. Mutations require an exact same-origin `Origin` header and session cookie. The local dev key is not a purchasing grant. Sign in normally or use `rer dev --as PERSONA`, then configure that persona's membership as owner. Never persist a sign-in URL or session cookie in a task, log or source file.

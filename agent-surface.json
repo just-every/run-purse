@@ -16,17 +16,6 @@
       ]
     },
     {
-      "name": "purse.events.list",
-      "scope": "events:read",
-      "readOnly": true,
-      "classes": [
-        "standard"
-      ],
-      "clauses": [
-        "BASE-AGENT-010"
-      ]
-    },
-    {
       "name": "purse.invoices.capture",
       "scope": "purchasing:write",
       "readOnly": false,
@@ -234,19 +223,7 @@
       ]
     }
   ],
-  "resources": [
-    "purse://request/{id}",
-    "purse://supplier/{id}",
-    "purse://catalogue/{id}",
-    "purse://order/{id}",
-    "purse://receipt/{id}",
-    "purse://invoice/{id}",
-    "purse://agreement/{id}",
-    "purse://policy/{id}",
-    "purse://agentRun/{id}",
-    "purse://revision/{id}",
-    "purse://proposedAction/{id}"
-  ],
+  "resources": [],
   "notTools": [
     {
       "clauses": [
@@ -585,18 +562,6 @@
       ]
     },
     {
-      "id": "events",
-      "tool": "purse.events.list",
-      "args": {
-        "limit": 100
-      },
-      "expect": [
-        {
-          "class": "standard"
-        }
-      ]
-    },
-    {
       "id": "awaiting",
       "tool": "purse.requests.awaiting_decision",
       "args": {},
@@ -878,5 +843,12 @@
         "preparation"
       ]
     }
-  }
+  },
+  "capabilities": [
+    "tools",
+    "policy",
+    "pause",
+    "audit",
+    "idempotency"
+  ]
 }
