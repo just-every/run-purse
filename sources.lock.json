@@ -5524,11 +5524,11 @@
       "executable": false
     },
     "tests/initialize-agent-door-owner.mjs": {
-      "sha256": "7b350ced855654a63e04e6da862fbff3175873d8c365b4acd1154aee0464d6ef",
+      "sha256": "3b0ae3a2c7c2295053e1f1edde832259629e1ad7808eccd2af9d5cc2260acd4e",
       "executable": false
     },
     "tests/initialize-agent-door-requester.mjs": {
-      "sha256": "0ba7dc5b72fcc206598156f4f336bdbcf92e6cd6a0d391c2d1721cd742367cab",
+      "sha256": "b40e139f8884d2e575c418432d138d0a86c1ec1cbf5c9b63d0c9b32c6931b08d",
       "executable": false
     },
     "tests/intake-flow.mjs": {
