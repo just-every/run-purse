@@ -5524,7 +5524,7 @@
       "executable": false
     },
     "tests/initialize-agent-door-owner.mjs": {
-      "sha256": "3b0ae3a2c7c2295053e1f1edde832259629e1ad7808eccd2af9d5cc2260acd4e",
+      "sha256": "7b350ced855654a63e04e6da862fbff3175873d8c365b4acd1154aee0464d6ef",
       "executable": false
     },
     "tests/initialize-agent-door-requester.mjs": {
