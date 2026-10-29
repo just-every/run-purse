@@ -74,7 +74,7 @@ export function Attachments({ data, kind, record, mutate, editable, invoice = fa
     invoice?: boolean;
     editable: boolean;
     mutate: (op: string, b: D) => Promise<any>;
-}) { const files = data.attachment.filter((x: D) => x.kind === kind && x.record === record); return <section className="attachments">{invoice ? <h5>Invoice evidence</h5> : <h3>Evidence files</h3>}{files.length > 0 && <ul className="ruled-list">{files.map((f: D) => <li key={f.id}><a href={`/api/purse/download/attachment/${f.id}`}>{f.name}</a> · {f.size} bytes</li>)}</ul>}{editable && <Form className="record-form-inline" label="Upload evidence" onSubmit={async (b) => { const f = b.file as File; const bytes = new Uint8Array(await f.arrayBuffer()); let raw = ''; for (const x of bytes)
+}) { const files = data.attachment.filter((x: D) => x.kind === kind && x.record === record); return <section className="attachments">{invoice ? <h5>Invoice evidence</h5> : <h3>Evidence files</h3>}{files.length > 0 && <ul className="ruled-list">{files.map((f: D) => <li key={f.id}><a href={`/api/purse/download/attachment/${encodeURIComponent(f.id)}`}>{f.name}</a> · {f.size} bytes</li>)}</ul>}{editable && <Form className="record-form-inline" label="Upload evidence" onSubmit={async (b) => { const f = b.file as File; const bytes = new Uint8Array(await f.arrayBuffer()); let raw = ''; for (const x of bytes)
     raw += String.fromCharCode(x); return mutate('attachment', { kind, record, name: f.name, mediaType: f.type || 'application/octet-stream', base64: btoa(raw) }); }}><label className="field">Evidence file<input type="file" name="file" required/></label></Form>}</section>; }
 export function Details({ label, children }: {
     label: string;

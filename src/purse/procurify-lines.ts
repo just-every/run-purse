@@ -73,14 +73,18 @@ export function mergeHistorical(previous: Data | undefined, value: Data) {
 }
 export function historicalReport(values: Data[]) {
     const groups = new Map<string, Data>();
-    for (const value of values.filter(v => v.lines || v.allocations)) {
-        const kind = value.allocations ? 'invoice' : value.request ? 'order' : 'request';
-        const period = (value.invoiceDate || value.needDate || '').slice(0, 7) || 'not-recorded';
+    for (const value of values.filter(v => v.lines || v.allocations || v.appliedMinor !== undefined)) {
+        const deposit = value.appliedMinor !== undefined;
+        const kind = deposit ? 'deposit' : value.allocations ? 'invoice' : value.request ? 'order' : 'request';
+        const period = (value.depositDate || value.invoiceDate || value.needDate || '').slice(0, 7) || 'not-recorded';
         const supplier = value.supplier, department = value.costCentre || null, key = canonicalJson([kind, supplier, department, period, value.currency]);
         const group = groups.get(key) ?? { kind, supplier, department, period, currency: value.currency, records: 0, lines: 0, totalMinor: 0 };
-        group.records++; group.lines += (value.lines ?? value.allocations).length; group.totalMinor = minor(group.totalMinor + value.totalMinor); groups.set(key, group);
+        group.records++; group.lines += (value.lines ?? value.allocations ?? []).length; group.totalMinor = minor(group.totalMinor + (deposit ? value.amountMinor : value.totalMinor));
+        if (deposit) { group.appliedMinor = minor((group.appliedMinor ?? 0) + value.appliedMinor); group.unappliedMinor = minor((group.unappliedMinor ?? 0) + value.amountMinor - value.appliedMinor); }
+        groups.set(key, group);
     }
-    const reconciliation = [...groups.values()].sort((a, b) => purchaseKinds.indexOf(a.kind) - purchaseKinds.indexOf(b.kind) || canonicalJson([a.supplier,a.department,a.period,a.currency]).localeCompare(canonicalJson([b.supplier,b.department,b.period,b.currency])));
+    const kinds = [...purchaseKinds, 'deposit'];
+    const reconciliation = [...groups.values()].sort((a, b) => kinds.indexOf(a.kind) - kinds.indexOf(b.kind) || canonicalJson([a.supplier,a.department,a.period,a.currency]).localeCompare(canonicalJson([b.supplier,b.department,b.period,b.currency])));
     return { reconciliation, historicalDefinitions: values.filter(v => v.authority === 'inert-history').map(v => ({ sourceId: v.sourceId, name: v.name, recordKind: v.recordKind, scope: v.scope, type: v.type, options: v.options })), historicalRecords: values.filter(v => v.sourceRows).map(v => ({ id: v.id, sourceId: v.sourceId, headerFields: v.historicalFields ?? [], lines: (v.lines ?? v.allocations ?? []).map((line: Data) => ({ sourceLineId: line.sourceLineId, orderLine: line.line ?? null, quantity: line.quantity, amountMinor: line.amountMinor ?? line.totalMinor, sourceDecision: line.sourceDecision ?? null, historicalAllocations: line.historicalAllocations ?? [], fields: line.historicalFields ?? [] })), sourceRows: v.sourceRows })) };
 }
 export const historicalRowProof = (row: Data, position: number, col: Columns) => ({ row: position, sourceLineId: col(row, 'lineId'), payloadHash: sha256(canonicalJson(row)) });

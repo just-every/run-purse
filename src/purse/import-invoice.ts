@@ -21,9 +21,9 @@ export function importedInvoice(row: Data, col: Columns, parse: { quantity: (v: 
         sourcePayment: col(row, 'paidDate') ? { date: parse.date(col(row, 'paidDate')), evidence: text(col(row, 'paymentEvidence'), 'Historical payment evidence') } : null,
         actor: 'historical', at: invoiceDate ? invoiceDate + 'T12:00:00.000Z' : null, original };
 }
-export function importedDeposit(row: Data, col: Columns, money: (v: string) => number, reference: (field: string, kind: string) => string, meta: Data) {
+export function importedDeposit(row: Data, col: Columns, money: (v: string) => number, reference: (field: string, kind: string) => string, meta: Data, sourceDate: (v: string) => string) {
     const amountMinor = money(col(row, 'amount')), appliedMinor = money(col(row, 'appliedAmount') || '0');
     requireThat(amountMinor > 0 && appliedMinor <= amountMinor, 'Deposit applications cannot exceed the source deposit');
     return { ...meta, order: reference('orderId', 'order'), currency: col(row, 'currency'), reference: text(col(row, 'number') || meta.sourceId, 'Deposit reference'),
-        amountMinor, appliedMinor, evidence: text(col(row, 'paymentEvidence'), 'Source prepaid deposit evidence'), sourceApproval: col(row, 'approvalEvidence') || null };
+        amountMinor, appliedMinor, depositDate: col(row, 'date') ? sourceDate(col(row, 'date')) : null, costCentre: col(row, 'costCentre'), evidence: text(col(row, 'paymentEvidence'), 'Source prepaid deposit evidence'), sourceApproval: col(row, 'approvalEvidence') || null };
 }

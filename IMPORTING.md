@@ -272,9 +272,10 @@ redacted.
 
 Preview shows distinct header and line counts and totals separately by record
 kind, supplier, department, currency and source month. Departments use the source
-`costCentre`; invoices without one inherit the source PO department. Missing
+`costCentre`; invoices and deposits without one inherit the source PO department. Missing
 departments stay explicitly unrecorded, never guessed from current configuration. Requests and POs use need-date months;
-invoices use invoice-date months, with missing dates explicitly unrecorded.
+invoices use invoice-date months and deposits use their recorded source dates,
+with missing dates explicitly unrecorded.
 Currencies and record kinds never combine into a misleading grand total. The
 example independently reconciles an Operations USD request face of 125000 minor
 units (60000 plus 40000 plus a declined 20000 item, 2000 freight and 3000 tax),
@@ -298,7 +299,7 @@ a current owner must explicitly claim batch custody before reading its originals
 resuming or undoing it. Custody grants no purchasing or member authority. Personal
 erasure removes matching source values, withdraws affected original custody and
 prevents replay of erased values; a sanitized resumed batch cannot restore them.
-Actual Procurify exports, API access, attachments, deposits, comments, travel,
+Actual Procurify exports, API access, real attachment and deposit qualification, comments, travel,
 approval pools, split allocations, vendor routing, pending vendors, purchaser
 variance and item decisions retain the IMPORT-001 Gap.
 
@@ -331,3 +332,18 @@ adoption, operational split mapping, partial-request adoption with native
 approval, and actual Procurify export and API qualification remain open. Restore
 preserves this source history and validates its links and sums before applying
 records; it restores no importing-owner custody grant or approval authority.
+
+
+The extended fixture retains one private original for the two-line USD invoice,
+not one copy per allocation. Its original download remains subject to current
+invoice access and is preserved by archive restoration. Matching personal erasure
+withdraws affected opaque originals under the existing erasure rules.
+
+The fixture's USD source deposit records 30000 minor units, with 10000 applied
+and 20000 unapplied. A separate EUR deposit records 500 minor units unapplied
+and an unrecorded date. Deposit reconciliation retains supplier, department,
+currency, source period and both balances separately from request, PO and invoice
+faces. A deposit in a different currency from its PO is refused, as is an applied
+balance larger than its source amount. Import records these source facts only;
+it does not create a payment, confirm a bill, or qualify a ledger deposit. The
+separate IMPORT-003 owner review retains its existing source-balance checks.

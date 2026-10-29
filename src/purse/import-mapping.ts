@@ -105,7 +105,7 @@ export function mappedSource(s: State, b: Data) {
         if (kind === 'receipt')
             value = { ...value, order: ref('orderId', 'order'), line: historicalLineId(col(r, 'orderId'), col(r, 'orderLineId')), quantity: decimal(col(r, 'quantity')), q: quantity(decimal(col(r, 'quantity'))), event: 'historical', at: sourceDate(col(r, 'date')), reason: 'Imported historical receipt, no native commitment effect' };
         if (kind === 'invoice') value = importedInvoice(r, col, { quantity: v => quantity(decimal(v)), money, date: sourceDate }, ref, value);
-        if (kind === 'deposit') value = importedDeposit(r, col, money, ref, value);
+        if (kind === 'deposit') value = importedDeposit(r, col, money, ref, value, sourceDate);
         if (['request', 'order', 'invoice'].includes(kind) && col(r, 'lineId')) {
             value.historicalFields = historicalFields(s, definitions, col(r, 'headerFields'), kind, 'header');
             value.sourceRows = [historicalRowProof(r, rowIndex + 2, col)];
@@ -161,7 +161,11 @@ export function mappedSource(s: State, b: Data) {
         }
         if (value.appliedMinor !== undefined && value.order) {
             const order = [...values.values()].find(v => v.id === value.order) ?? s.get('order:' + value.order)?.value;
-            if (order) requireThat(value.currency === order.currency, 'Imported deposit currency must match its source PO');
+            if (order) {
+                requireThat(value.currency === order.currency, 'Imported deposit currency must match its source PO');
+                value.supplier = order.supplier;
+                if (!value.costCentre) value.costCentre = order.costCentre || '';
+            }
         }
     }
     const supplierDuplicates: Data[] = [];
