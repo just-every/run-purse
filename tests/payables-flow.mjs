@@ -1,3 +1,4 @@
+import {supplierCreditsJourney} from './supplier-credits-flow.mjs';
 
 import assert from 'node:assert/strict'
 import {harness} from './purse-harness.mjs'
@@ -87,6 +88,7 @@ export async function payablesFlow(){
  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true,'AP-003 planning evidence survives portable graph validation');
  assert.ok((await state()).data.audit.some(a=>a.action==='approve-payable'&&a.record===i.id&&a.approvedMinor===60000));
 
+ await supplierCreditsJourney(t);
  } finally {for(const close of cleanups.reverse())await close();}
 }
 }

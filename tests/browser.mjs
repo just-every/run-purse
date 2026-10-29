@@ -1,3 +1,4 @@
+import {supplierCreditsWebJourney} from './browser-supplier-credits.mjs';
 // A whole request-to-invoice journey on the shared emitted build. One phone smoke.
 import {chromium} from '@playwright/test';
 import assert from 'node:assert/strict';
@@ -24,6 +25,7 @@ try{
  const supplier=(await (await owner.context.request.get(worker.origin+'/api/purse/state')).json()).data.supplier.find(s=>s.sourceId==='web-supplier');assert.ok(supplier);await api(owner.context,worker.origin,'screen-supplier',{id:supplier.id});
  await api(owner.context,worker.origin,'policy',{name:'Equipment authority',currency:'AUD',category:'Equipment',project:'Fitout',approver:'approver@dev.localhost',limitMinor:1000000,budgetMinor:5000000});
  await owner.context.close();await journey(browser,worker,worker.origin,width,evidence,{supplier});
+ if(width===1440)await supplierCreditsWebJourney();
  // Sign-out invalidates the native session at the public API, not just the UI.
  response=await worker.call('/auth/signout',{},worker.sessions.requester);assert.equal(response.status,204);
  assert.equal((await worker.call('/api/purse/state',undefined,worker.sessions.requester)).status,401);
