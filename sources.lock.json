@@ -3743,8 +3743,12 @@
       "sha256": "b121d5fdfc09b958625cb83556eaa89427e4994c866457a4f178c59bac8d2768",
       "executable": false
     },
+    "src/purse/screening-fetch.ts": {
+      "sha256": "3f3562158f79b08e9090ecf7f80b89ee62df02cb381044a11779feebefbbef39",
+      "executable": false
+    },
     "src/purse/screening.ts": {
-      "sha256": "c571bc7fff19f7e7cff43e13680302c838db0f416cc463a941632562db32e63d",
+      "sha256": "bb745bfc0e6de9591f0420e2a0df575c0a50e8257f5e6d52de13a2ebf49665c1",
       "executable": false
     },
     "src/purse/search-access.ts": {
@@ -5051,6 +5055,10 @@
       "sha256": "aa243ed9f07669bae1ea4409f99b02455abd11da0e8b362ee667b3edffa7eda2",
       "executable": false
     },
+    "tests/fixtures/ofac.csv": {
+      "sha256": "e90c2af204e19547e55c30a33fb5c82510dbdc2fb145132de91195a9fb594f89",
+      "executable": false
+    },
     "tests/fixtures/quote-scan.png": {
       "sha256": "8c13d3e6d25093b5a02ab28bcbf19d77ab7f8d0ff85f8267fb397e90413e3fa0",
       "executable": false
@@ -5196,7 +5204,7 @@
       "executable": false
     },
     "tests/purse-harness.mjs": {
-      "sha256": "8d54923bbb82ddb902544e7c3812ce40da922c789d7921051e26ceb75a0efd74",
+      "sha256": "a4d517055151f1d477867615cb45363469d1091f8122feff29c6ac80342e242d",
       "executable": false
     },
     "tests/purse-worker.ts": {
@@ -5259,6 +5267,10 @@
       "sha256": "7c99c52e5c972b01a1c86c1f5ca4f65b84c15258b1b408a9dcb6d8a5241c1fed",
       "executable": false
     },
+    "tests/screening-fetch.ts": {
+      "sha256": "1c2ea91dac23ef7f2a809559d79d07f22086c09cf480ebf54765c90b2ec2aaab",
+      "executable": false
+    },
     "tests/search-fixtures.mjs": {
       "sha256": "a17b231f98803a88d145e998ced28f76a6d69d596f03881d7320b99bacde8d67",
       "executable": false
@@ -5308,7 +5320,7 @@
       "executable": false
     },
     "tests/supplier-screening.test.mjs": {
-      "sha256": "1ab2c0a37ce1d340520fd42798dcee0a02435a7b75cb2504c1e5ba71ee03b6f2",
+      "sha256": "ddf9b2823e3482d9bc1ed38b52d1ab56b2eddeae39fb1055ff7117e452a81019",
       "executable": false
     },
     "tests/supplier-tax-fixture.mjs": {
@@ -5372,7 +5384,7 @@
       "executable": false
     },
     "vite.config.ts": {
-      "sha256": "bbd1717a7bd3fbfa4e50d7cbd340bdb4bf92f33685a46d472ee939e3e30a6f4a",
+      "sha256": "b7b1ce22da8309b600f510aec49ff87732557461e7bdbf7aaa018e089593e087",
       "executable": false
     },
     "vite.site.config.ts": {

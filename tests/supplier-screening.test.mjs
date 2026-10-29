@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import {harness,ofacCsv} from './purse-harness.mjs'
 
 test('SUPPLIER-007 screens new suppliers and identity edits, holds matches and retains dated review evidence', async t => {
- let unavailable=false,malformed=false;const fetched=[]
- const h=await harness({ofac:()=>{fetched.push('CSL');return new Response(unavailable?'Unavailable':malformed?'broken':ofacCsv,{status:unavailable?503:200,headers:{'last-modified':'Sun, 18 Oct 2026 12:00:00 GMT'}})}})
+ let unavailable=false,malformed=false,unreachable=false;const fetched=[]
+ const h=await harness({ofac:()=>{fetched.push('CSL');if(unreachable)throw new Error('Live OFAC network blocked by test harness');return new Response(unavailable?'Unavailable':malformed?'broken':ofacCsv,{status:unavailable?503:200,headers:{'last-modified':'Sun, 18 Oct 2026 12:00:00 GMT'}})}})
  t.after(()=>h.close());const {command:cmd,state,send}=h
  await cmd('business',{name:'Denver operations',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Office']})
  const buyer=await h.member('buyer@example.test',['buyer']),requester=await h.member('requester@example.test',['requester']),approver=await h.member('approver@example.test',['approver'])
@@ -38,7 +38,8 @@ test('SUPPLIER-007 screens new suppliers and identity edits, holds matches and r
  const before=(await state()).data
  unavailable=true;await cmd('supplier',{...input,name:'Unavailable list supplier'},buyer,503);assert.deepEqual((await state()).data,before)
  unavailable=false;malformed=true;await cmd('supplier',{...input,name:'Malformed list supplier'},buyer,503);assert.deepEqual((await state()).data,before)
- malformed=false
+ malformed=false;unreachable=true;const refused=await send('/api/purse/command/supplier',{...input,name:'Unreachable list supplier'},buyer);assert.equal(refused.status,503);assert.match(JSON.stringify(refused.value),/OFAC source unavailable; supplier was not saved/);assert.deepEqual((await state()).data,before)
+ unreachable=false
  const mapping={columns:{},decimal:'.',date:'YYYY-MM-DD',statuses:{active:'active'}}
  const csv='kind,sourceId,name,status\nsupplier,imported,Restricted Test Trading,active\n'
  const preview=await send('/api/purse/import/preview',{csv,mapping},h.owner);assert.equal(preview.status,200)
