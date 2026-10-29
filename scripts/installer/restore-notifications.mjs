@@ -1,6 +1,7 @@
 export function validateNotifications(all, get, check) {
     const recipient = r => check(typeof r.recipient === 'string' && r.recipient.length > 0, 'notification_recipient');
     const time = v => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+    for(const h of all('notificationRequestHead')) {const source=get('audit',h.source);check(h.id===h.request&&get('request',h.request)&&source.record===h.request&&['submit','buyer-conversion-revision'].includes(source.action)&&source.revision===h.revision,'notification_request_head');}
     for (const p of all('notificationPreference')) {
         recipient(p); check(/^[a-f0-9]{64}$/.test(p.id) && Number.isInteger(p.version) && p.version > 0, 'notification_preference');
         check(['in-app','email','slack','teams','push'].includes(p.channel) && ['immediate','daily'].includes(p.cadence), 'notification_channel');

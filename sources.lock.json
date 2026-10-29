@@ -104,7 +104,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "83cd3855db1f02a1df90f57e96316d46d0bba694a11a3a6991af0e2a2d96b7e0",
+      "sha256": "ceb7b95d0d4dbc8942be77b81928c2da86853df8155f966994f6a0dd55d5ae63",
       "executable": false
     },
     "base-copies.json": {
@@ -956,7 +956,7 @@
       "executable": false
     },
     "scripts/installer/restore-invoice-exceptions.mjs": {
-      "sha256": "44f299014143356eeed4f9b76dfeb53036c582c5925c0e3d5e6200b1651d2777",
+      "sha256": "d0f4d672aa6426829497593e773d8d9b3b1b0ce7b3c64448592fcb7d58a4d8dc",
       "executable": false
     },
     "scripts/installer/restore-invoice-inbox.mjs": {
@@ -972,7 +972,7 @@
       "executable": false
     },
     "scripts/installer/restore-notifications.mjs": {
-      "sha256": "17c01b916c29ce4161bd6c8b19e2b4098064b506512975b468041001ddbfcdd2",
+      "sha256": "46ca0c1126d3b811999d2fc1d052202b8e3f164818e52f459f25450e58a49363",
       "executable": false
     },
     "scripts/installer/restore-order-adoption.mjs": {
@@ -1092,7 +1092,7 @@
       "executable": false
     },
     "scripts/installer/restore-validation.mjs": {
-      "sha256": "9bc686d3bab20bb3cef3b42df6d9397f2f054e246a2b58d877261088b0a94d01",
+      "sha256": "1c913c70fbf3e90c5291cbf6c29e6fdf35bb22f01e24db5ce79810eaac9c31a1",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -3156,7 +3156,7 @@
       "executable": false
     },
     "src/purse/erasure-coverage.ts": {
-      "sha256": "516b300f3d00c95969526c09f0203096a887208fabb7900da6fb9b3798bcadb5",
+      "sha256": "de1bf336fb88ecccf409387d38aa29cde0e910cde3b871e8ba05ca04c91d739a",
       "executable": false
     },
     "src/purse/erasure-diff.ts": {
@@ -3192,7 +3192,7 @@
       "executable": false
     },
     "src/purse/erasure-plan.ts": {
-      "sha256": "aa1f9590c383084ca9794042ad2aa58915462fa0de7a8e876c13037f3ca919ab",
+      "sha256": "34a15684c73c9183ec32703cde1073dd409142ac9e3853dc2ebe38acf814bb5f",
       "executable": false
     },
     "src/purse/erasure-refusal.ts": {
@@ -3384,7 +3384,7 @@
       "executable": false
     },
     "src/purse/notification-nudges.ts": {
-      "sha256": "7d00aa0183f89aa84f0b51517cebb052b43d0d603964c3c399c9248d7b2c60ad",
+      "sha256": "1e0c79ec6568be8d92dd125839be21a415258a6276c388228293320dde26c246",
       "executable": false
     },
     "src/purse/notification-preferences.ts": {
@@ -3392,7 +3392,7 @@
       "executable": false
     },
     "src/purse/notifications.ts": {
-      "sha256": "e21646ea8a33a7cbb886fcaaa8c8abd73e9d66acc3513c1080b52636c8180dfe",
+      "sha256": "a57bf6e8a572970519f67f33617f9eebb76bd82fd05ca04e8ecab6f85c737606",
       "executable": false
     },
     "src/purse/order-adoption.ts": {
@@ -3620,7 +3620,7 @@
       "executable": false
     },
     "src/purse/receiving.ts": {
-      "sha256": "43d57ec367a5799d3532f3d04b5746c98314c0cfbde13b63aed9c72fc3b4bafa",
+      "sha256": "1dfb193b03e15cf37540eb41f9a500bd38b734e4d5599f7491588a1dd020317a",
       "executable": false
     },
     "src/purse/recurring-discovery-schedule.ts": {
@@ -4808,7 +4808,7 @@
       "executable": false
     },
     "tests/browser-identity.mjs": {
-      "sha256": "ed6dd15f7ddde249a662a61bc10e6e0821ffe1becabe9264fb7cfb3809d199dc",
+      "sha256": "4a7bcc540622a9239a1391268f079620604d8ecc5d42aa9069fd6bc410603bcf",
       "executable": false
     },
     "tests/browser-import-adoption.mjs": {
@@ -5104,7 +5104,7 @@
       "executable": false
     },
     "tests/invoice-exceptions.test.mjs": {
-      "sha256": "078d38836c57f2279bd449ebb8b13cee8086da8083c3d86aea0d14c30ba43d54",
+      "sha256": "a7c04814daa1a7f7864def41a96522bb0fafdd830ff4a944004f2c7f99d59cf4",
       "executable": false
     },
     "tests/invoice-history-fixture.mjs": {

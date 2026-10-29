@@ -53,7 +53,9 @@ export function correctReceipt(s: State, a: Actor, b: Data) {
     requireThat(b.expectedQ === beforeQ, 'Original receipt correction changed; reload', 409);
     const correctedQ = b.quantity === '0' ? 0 : quantity(b.quantity), delta = correctedQ - beforeQ;
     const position = linePosition(s, o.id, line);
-    requireThat(correctedQ <= line.q && delta !== 0 && position.accepted + delta >= 0 && position.outstanding - delta >= 0,
+    // Returns remain separate evidence: bound the corrected net position, not
+    // the gross quantity on the original delivery.
+    requireThat(delta !== 0 && position.accepted + delta >= 0 && position.outstanding - delta >= 0,
         'Correction exceeds current received or outstanding quantity, or changes nothing', 409);
     const attempt = text(b.attempt, 'Correction capture identifier', 100);
     requireThat(![...s.values()].some(r => r.kind === 'receipt' && r.value.correctionAttempt === attempt),

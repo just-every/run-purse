@@ -14,6 +14,12 @@ export function approvalRecipient(s: State, a: Actor, request: Data): boolean {
 }
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const member = (s: State, a: Actor) => requireThat(roles(s, a).length, 'No active business membership', 403);
+function primarySource(s:State,request:Data) {
+    const head=s.get('notificationRequestHead:'+request.id)?.value;
+    if(head && head.revision===request.revision) return head.source;
+    const submits=all(s,'audit').filter(e=>e.record===request.id&&e.action==='submit'&&e.revision===request.revision);
+    return submits.length===1?submits[0].id:undefined;
+}
 
 /** Only native event transitions create recipients. Historical archive rows never acquire new recipients. */
 export async function captureNotifications(db: D1Database, before: State, s: State) {
@@ -33,7 +39,11 @@ export async function captureNotifications(db: D1Database, before: State, s: Sta
     const newAudits = changed('audit').filter(event => !before.has('audit:' + event.id));
     for (const request of requests) {
         const previous = before.get('request:' + request.id)?.value;
-        const event = newAudits.filter(event => event.record === request.id).at(-1);
+        const events=newAudits.filter(event=>event.record===request.id);
+        const submitted=events.find(event=>event.action==='submit');
+        if(submitted) put(s,'notificationRequestHead',request.id,{request:request.id,revision:request.revision,source:submitted.id});
+        const event=submitted ?? events.find(event=>['approver-edit','buyer-conversion-revision','decision'].includes(event.action)) ?? events.at(-1);
+        if(event?.action==='buyer-conversion-revision' && request.status==='pending' && !request.approvalRoute) put(s,'notificationRequestHead',request.id,{request:request.id,revision:request.revision,source:event.id});
         if (!event || request.imported) continue;
         for (const a of directory) {
             if (approvalRecipient(s, a, request)) {
@@ -115,7 +125,7 @@ export function notificationView(s: State, a: Actor, n: Data): Data {
     if (n.type==='exception-assigned') actionable=record!.version===n.assignmentVersion && record!.assignee===a.id && record!.assigneeVersion===a.version;
     if (['approval-needed','approver-nudge'].includes(n.type)) actionable = record!.revision === n.sourceRevision && (record!.approvalAttempt ?? null) === n.approvalAttempt
         && approvalRecipient(s, a, record!) && (actorStep(s, a, record!)?.id ?? 'primary') === n.step
-        && (Boolean(record!.approvalRoute) || all(s, 'audit').filter(event => event.record === n.record && event.action === 'submit').at(-1)?.id === (n.type==='approver-nudge'?n.approvalSource:n.source));
+        && (Boolean(record!.approvalRoute) || primarySource(s,record!) === (n.type==='approver-nudge'?n.approvalSource:n.source));
     if (n.type === 'receipt-needed') actionable = record!.revision === n.sourceRevision && mayReceive(s, a, record!)
         && receiptPrompts(s).some(prompt => prompt.order === record!.id && prompt.receiver.toLowerCase() === a.email.toLowerCase() && prompt.reason === source!.reason);
     if (['returned', 'approved'].includes(n.type)) actionable = record!.revision === n.sourceRevision && record!.status === n.type;
