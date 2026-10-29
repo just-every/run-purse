@@ -60,6 +60,27 @@ try {
             await capture(requester,'approved-receipt-needed');
             await receipt.getByRole('link',{name:f.order.number,exact:true}).click();
             await requester.page.locator('[data-tab="Orders"]').waitFor();
+            await requester.page.getByRole('button',{name:'Settings',exact:true}).click();
+            const preferences=requester.page.getByRole('region',{name:'Notification preferences',exact:true});
+            await preferences.getByLabel('Notification channel',{exact:true}).selectOption('in-app');
+            await preferences.getByLabel('Notification frequency',{exact:true}).selectOption('daily');
+            await preferences.getByLabel('Your time zone',{exact:true}).fill('America/Los_Angeles');
+            await preferences.getByLabel('Quiet weekends',{exact:true}).selectOption('true');
+            await preferences.getByRole('button',{name:'Save notification preferences',exact:true}).click();
+            await requester.page.waitForFunction(async()=>{const r=await fetch('/api/purse/notification-settings');return (await r.json()).preferences.version===1;});
+            await requester.page.goto(h.origin+'/app?tab=Settings');
+            await preferences.getByLabel('Your time zone',{exact:true}).waitFor();
+            if(width===1440){assert.equal(await preferences.getByLabel('Notification frequency',{exact:true}).inputValue(),'daily');assert.equal(await preferences.getByLabel('Quiet weekends',{exact:true}).inputValue(),'true');}
+            await capture({...requester,region:preferences},'recipient-notification-settings');
+            const owner=await open(h.owner);await owner.page.getByRole('button',{name:'Settings',exact:true}).click();
+            const ownerSettings=owner.page.getByRole('region',{name:'Notification preferences',exact:true});await ownerSettings.getByText('Urgent notification events',{exact:true}).click();
+            await ownerSettings.getByLabel('Notification event',{exact:true}).selectOption('comment-mention');await ownerSettings.getByLabel('Urgency',{exact:true}).selectOption('true');
+            await ownerSettings.getByRole('button',{name:'Save notification urgency',exact:true}).click();
+            await ownerSettings.getByText('Immediate event families: Comment mention',{exact:true}).waitFor();
+            await ownerSettings.getByText('Approval reminder schedule',{exact:true}).click();await ownerSettings.getByLabel('Approval reminders',{exact:true}).selectOption('true');await ownerSettings.getByLabel('Hours between reminders',{exact:true}).fill('24');await ownerSettings.getByRole('button',{name:'Save approval reminder schedule',exact:true}).click();await owner.page.waitForFunction(async()=>{const r=await fetch('/api/purse/notification-settings');return (await r.json()).nudgePolicy.version===1;});
+            await capture({...owner,region:ownerSettings},'owner-notification-urgency');
+            await h.command('comment-add',{kind:'request',record:f.pending.id,attempt:'synthetic-purse-6110',body:'synthetic-purse-6111 urgent mention',mentions:[f.requesterId]},f.approver);
+            await requester.page.goto(h.origin+'/app?tab=Settings');await preferences.getByText('Notification delivery history',{exact:true}).click();await preferences.getByText(/in-app · Daily digest · available/).waitFor();await capture({...requester,region:preferences},'recipient-delivery-outcome');
             const outsider = await open(f.scoped);
             await outsider.region.getByText('This notification’s source is no longer available to you.',{exact:true}).waitFor();
             if (width === 1440) {

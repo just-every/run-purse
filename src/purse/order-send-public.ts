@@ -1,3 +1,4 @@
+import { notificationInserts } from './notifications';
 import type { Bindings } from '../auth.server';
 import { currentOrderSender, recordOrderResponse } from './order-response';
 import { supplierResponseForm } from './order-response-public';
@@ -57,10 +58,12 @@ export async function supplierOrderChange(request: Request, env: Bindings, token
     requireThat(body.consent === true && body.revision === event.revision, 'Explicit acknowledgment of this exact approved revision is required', 409);
     requireThat(!event.acknowledgment, 'This exact revision has already been acknowledged', 409);
     const acknowledgment = { id: event.id, send: event.id, order: event.order, request: event.request, revision: event.revision, changeLabel: event.changeLabel, pdfSha256: event.pdf.sha256, name: text(body.name, 'Your name', 200), actor: 'supplier-link', identityVerified: false, at: new Date().toISOString() };
+    const notificationRows=await notificationInserts(env.DB,state,[{kind:'orderAcknowledgment',value:acknowledgment}]);
     try { await env.DB.batch([
         env.DB.prepare(`INSERT INTO p_guard SELECT CASE WHEN EXISTS(${liveOrderLink}) AND (SELECT revision FROM p_meta WHERE id=1)=? THEN 1 ELSE 0 END`).bind(hash, Date.now(), revision),
         env.DB.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(event.actor, event.operatorVersion),
         insertOrderSendRecord(env.DB, 'orderAcknowledgment', acknowledgment),
+        ...notificationRows,
         env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.acknowledgment',json(?)) WHERE business='main' AND kind='orderSend' AND id=?").bind(uid(), JSON.stringify(acknowledgment), event.id),
         insertOrderSendRecord(env.DB, 'audit', { id: uid(), action: 'order-change-acknowledged', record: event.order, send: event.id, actor: 'supplier-link', name: acknowledgment.name, identityVerified: false, revision: event.revision, pdfSha256: event.pdf.sha256, at: acknowledgment.at }),
         env.DB.prepare('DELETE FROM p_guard'),

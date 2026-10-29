@@ -76,6 +76,9 @@ test('Native notifications bind recipient and source events, replay read and dis
     await h.command('decision', { id: chain.id, revision: 1, decision: 'approved', reason: 'synthetic-purse-6033 final' }, laterApprover);
     assert.ok((await list(h, f.requester)).some(n => n.record === chain.id && n.type === 'approved'));
     assert.equal((await list(h, laterApprover)).find(n => n.id === nextStep.id).actionable, false);
+    await h.command('comment-add',{kind:'request',record:f.pending.id,attempt:'synthetic-purse-6040',body:'synthetic-purse-6041 reply',mentions:[]},f.requester);
+    assert.ok((await list(h,f.approver)).some(n=>n.type==='comment-reply'&&n.body==='synthetic-purse-6041 reply'));
+    assert.ok((await list(h,f.requester)).some(n=>n.type==='delivered'&&n.record===f.order.id&&n.canRead));
     const rawNotifications = (await rows(h)).filter(r => r.kind === 'notification');
     assert.ok(rawNotifications.length > 5);
     for (const n of rawNotifications) for (const field of ['body','title','email','receiver','protectedData','tin','bankAccount','bankRouting','supplierSnapshot']) assert.equal(Object.hasOwn(JSON.parse(n.value), field), false, field);
@@ -92,6 +95,7 @@ test('Notification archive continuation and erasure preserve history without res
     const f = await commentsFixture(t), { h } = f;
     const capture = { kind: 'request', record: f.pending.id, attempt: 'synthetic-purse-6020', body: 'synthetic-purse-6021', mentions: [f.requesterId] };
     await h.command('comment-add', capture, f.approver);
+    await h.command('notification-preferences',{version:0,channel:'email',cadence:'daily',timezone:'America/Los_Angeles',quiet:true,quietStart:'20:00',quietEnd:'07:00',weekends:true,digestAt:'07:00'},f.requester);
     const original = await list(h, f.requester), notice = original.find(n => n.type === 'comment-mention');
     await h.command('notification-dismiss', { id: notice.id }, f.requester);
     const path = join(h.dir, 'synthetic-purse-6022.rer');
@@ -111,6 +115,8 @@ test('Notification archive continuation and erasure preserve history without res
     const newIdentity = await restored.send('/api/purse/state', undefined, confirmed.cookie);
     assert.notEqual(newIdentity.value.actor.id, f.requesterId);
     assert.deepEqual(await list(restored, confirmed.cookie), [], 'The same mailbox with a new native identity receives no restored notices');
+    const settings=await restored.send('/api/purse/notification-settings',undefined,confirmed.cookie);assert.equal(settings.value.preferences.version,0,'Restored preferences do not enroll a new native identity');
+    assert.equal((await restored.send('/api/purse/notification-deliveries',{},bootstrap.cookie)).value.events.length,0,'Historical recipient consent cannot send from a restored installation');
     assert.equal((await restored.send('/api/purse/command/notification-dismiss', { id: notice.id }, confirmed.cookie)).status, 404);
     const remention = await restored.send('/api/purse/command/comment-add', { ...capture, attempt: 'synthetic-purse-6024', mentions: [] }, bootstrap.cookie); assert.equal(remention.status, 200, JSON.stringify(remention.value));
     const directory = await restored.send('/api/purse/comments/request/' + f.pending.id, undefined, bootstrap.cookie);
@@ -152,14 +158,17 @@ test('Native notification preferences hold Pacific quiet hours across daylight s
     assert.equal((await h.send('/api/purse/notification-settings')).status,401);
     const dispatch = async () => { const r=await h.send('/api/purse/notification-deliveries',{},h.owner); assert.equal(r.status,200,JSON.stringify(r.value)); return r.value.events; };
     const mention=async attempt => h.command('comment-add',{kind:'request',record:f.pending.id,attempt,body:attempt,mentions:[f.requesterId]},f.approver);
-    const deliveries=()=>h.messages.filter(m=>m.subject==='Your Purse notification'||m.subject==='Your Purse daily digest');
+    const deliveries=()=>h.messages.filter(m=>(m.subject==='Your Purse notification'||m.subject==='Your Purse daily digest')&&m.to.includes(f.email(2802)));
     // Saturday 9 pm PDT becomes Sunday 7 am PST: the hold crosses the fall-back transition.
+    await h.command('notification-preferences',{...preference,version:0},f.approver);
     await h.setClock('2026-11-01T04:00:00Z'); await mention('synthetic-purse-6201');
+    const approval=await h.command('request',{...f.second,id:undefined,title:'synthetic-purse-6213 approval'},f.requester);await h.command('submit',{id:approval.id,revision:1},f.requester);
+    const approvalMail=()=>h.messages.filter(m=>m.subject==='Your Purse notification'&&m.to.includes(f.email(2803)));assert.equal(approvalMail().length,0);
     await dispatch(); assert.equal(deliveries().length,0);
     await h.setClock('2026-11-01T14:59:00Z'); await dispatch(); assert.equal(deliveries().length,0);
     await h.setClock('2026-11-01T15:00:00Z');
     const delivered=await dispatch(); assert.ok(delivered.some(e=>e.status==='accepted'&&e.channel==='email'));
-    assert.equal(deliveries().length,1); assert.ok(deliveries()[0].to.includes(f.email(2802)));
+    assert.equal(deliveries().length,1); assert.equal(approvalMail().length,1,'A genuine 9 pm Pacific approval request releases at 7 am after the clock change');assert.ok(deliveries()[0].to.includes(f.email(2802)));
     assert.ok(!deliveries()[0].text.includes(f.pending.id)); assert.ok(!deliveries()[0].text.includes('synthetic-purse-6201'));
     await dispatch(); assert.equal(deliveries().length,1,'Claim replay does not resend');
     // An explicit daily choice combines genuine source events into one private digest.
@@ -198,4 +207,74 @@ test('Native notification preferences hold Pacific quiet hours across daylight s
     await springDispatch(); assert.equal(springMail().length,0);
     await sh.setClock('2027-03-14T13:59:00Z'); await springDispatch(); assert.equal(springMail().length,0);
     await sh.setClock('2027-03-14T14:00:00Z'); await springDispatch(); assert.equal(springMail().length,1);
+});
+
+test('Scheduled native reminders retain queue age, channel choices never fall back, and signed mail outcomes bind the current recipient and replay once', async t => {
+    let providerFailure=false;
+    const f=await commentsFixture(t,{worker:'tests/accrual-worker.ts',clock:'2026-10-30T19:00:00Z',mail:message=>providerFailure&&message.subject.startsWith('Your Purse')?new Response('',{status:typeof providerFailure==='number'?providerFailure:503}):Response.json({id:crypto.randomUUID()})}), {h}=f;
+    const settings=async cookie=>(await h.send('/api/purse/notification-settings',undefined,cookie)).value;
+    const p={channel:'email',cadence:'immediate',timezone:'America/Los_Angeles',quiet:false,quietStart:'20:00',quietEnd:'07:00',weekends:false,digestAt:'07:00'};
+    const choose=async(channel,extra={})=>h.command('notification-preferences',{...p,...extra,channel,version:(await settings(f.requester)).preferences.version},f.requester);
+    const dispatch=async()=>{const r=await h.send('/api/purse/notification-deliveries',{},h.owner);assert.equal(r.status,200,JSON.stringify(r.value));return r.value.events;};
+    const mention=async n=>h.command('comment-add',{kind:'request',record:f.pending.id,attempt:'synthetic-purse-'+n,body:'synthetic-purse-'+n,mentions:[f.requesterId]},f.approver);
+    await h.command('notification-preferences',{...p,version:0},f.approver);
+    await h.command('notification-nudge-policy',{version:0,enabled:true,hours:1},f.approver,403);
+    await h.command('notification-nudge-policy',{version:0,enabled:true,hours:1});
+    const before=purchasing(await h.state(f.approver));
+    await h.setClock('2026-10-30T20:00:00Z');await dispatch();
+    const reminders=(await list(h,f.approver)).filter(n=>n.type==='approver-nudge');assert.equal(reminders.length,2);assert.ok(reminders.every(n=>n.actionable));
+    assert.deepEqual(purchasing(await h.state(f.approver)),before,'Native nudges preserve all queue and purchasing fields');
+    const mail=h.messages.length;await dispatch();assert.equal(h.messages.length,mail,'A reminder slot is consumed once');
+    await h.command('decision',{id:f.pending.id,revision:1,decision:'returned',reason:'synthetic-purse-6314'},f.approver);await h.command('submit',{id:f.pending.id,revision:1},f.requester);
+    assert.ok((await list(h,f.approver)).filter(n=>n.type==='approver-nudge'&&n.record===f.pending.id).every(n=>!n.actionable),'A replayed nudge cannot authorize a later primary submission');
+    await h.command('notification-nudge-policy',{version:1,enabled:false,hours:1});
+    await h.setClock('2026-10-30T21:00:00Z');await dispatch();assert.equal((await list(h,f.approver)).filter(n=>n.type==='approver-nudge').length,2);
+    // Unsupported transports record the chosen outcome without a surprise email fallback.
+    for(const [index,channel]of ['slack','teams','push','in-app'].entries()){
+        await choose(channel);const count=h.messages.length;await mention(6300+index);
+        assert.equal(h.messages.length,count);
+        assert.ok((await settings(f.requester)).deliveries.some(d=>d.channel===channel&&d.status===(channel==='in-app'?'available':'unavailable')));
+    }
+    // Weekend quiet time and a daily digest cross the same Pacific offset change.
+    await choose('email',{cadence:'daily',quiet:true,weekends:true});await mention(6304);
+    const count=h.messages.length;await h.setClock('2026-10-31T14:00:00Z');await dispatch();assert.equal(h.messages.length,count);
+    await h.setClock('2026-11-02T15:00:00Z');await dispatch();assert.equal(h.messages.length,count+1);
+    const weekend=(await settings(f.requester)).deliveries.filter(d=>d.channel==='email'&&d.cadence==='daily');assert.equal(weekend.length,1);assert.equal(weekend[0].status,'accepted');
+    // Store only normalized provider facts. Never persist signed payload addresses or message content.
+    const key=Buffer.from('synthetic-purse-6305 independent notification key');
+    await h.configureMail({NOTIFICATION_WEBHOOK_SECRET:'whsec_'+key.toString('base64')});
+    const deliveries=(await rows(h)).filter(r=>r.kind==='notificationDelivery').map(r=>JSON.parse(r.value));
+    const delivered=deliveries.find(d=>d.batch===weekend[0].batch);
+    const {createHmac}=await import('node:crypto');
+    const occurred='2026-11-02T15:00:00Z', seconds=String(Date.parse(occurred)/1000);
+    const signed=async(eventId,event,valid=true)=>{
+        const raw=JSON.stringify(event),signature=createHmac('sha256',key).update(eventId+'.'+seconds+'.'+raw).digest('base64');
+        const r=await h.mf.dispatchFetch(h.origin+'/api/purse/notification-mail-events',{method:'POST',headers:{'content-type':'application/json','svix-id':eventId,'svix-timestamp':seconds,'svix-signature':'v1,'+(valid?signature:Buffer.alloc(32).toString('base64'))},body:raw});
+        return {status:r.status,value:await r.json()};
+    };
+    const event={type:'email.bounced',created_at:occurred,data:{email_id:delivered.providerMessageId,to:[f.email(2802)]}};
+    const untouched=await rows(h);
+    assert.equal((await signed('synthetic-purse-6306',event,false)).status,401);
+    assert.equal((await signed('synthetic-purse-6306',{...event,data:{...event.data,to:[f.email(2803)]}})).status,403);
+    assert.equal((await signed('synthetic-purse-6306',{...event,data:{...event.data,email_id:'synthetic-purse-6307'}})).status,403);
+    assert.deepEqual(await rows(h),untouched);
+    assert.equal((await signed('synthetic-purse-6306',event)).status,202);
+    const bounced=await rows(h);assert.equal((await signed('synthetic-purse-6306',event)).value.duplicate,true);assert.deepEqual(await rows(h),bounced);
+    assert.equal((await signed('synthetic-purse-6306',{...event,type:'email.delivered'})).status,409);
+    assert.equal((await signed('synthetic-purse-6308',{...event,type:'email.sent',created_at:'2026-11-02T14:59:00Z'})).status,202);
+    assert.equal((await settings(f.requester)).deliveries.find(d=>d.batch===delivered.batch).status,'bounced','An older acceptance cannot erase a bounce');
+    assert.equal(validatePurchasingArchive(await rows(h)),true);
+    // A provider timeout consumes an uncertain attempt and cannot create an automatic retry.
+    await choose('email');providerFailure=true;await mention(6309);
+    assert.ok((await settings(f.requester)).deliveries.some(d=>d.status==='uncertain'));
+    const timedOut=h.messages.length;await dispatch();assert.equal(h.messages.length,timedOut);
+    providerFailure=401;await mention(6313);assert.ok((await settings(f.requester)).deliveries.some(d=>d.status==='rejected'));
+    await h.command('member',{email:f.email(2802),name:'synthetic-purse-6310',active:false,roles:['requester']});
+    const revoked=await rows(h);assert.equal((await signed('synthetic-purse-6311',event)).status,403);assert.deepEqual(await rows(h),revoked);
+    await reauthenticateErasure(h);
+    const inventory=await h.send('/api/purse/erasure',undefined,h.owner);
+    const preview=await h.send('/api/purse/erasure/preview',{kind:'member',id:f.email(2802),revision:inventory.value.revision},h.owner);assert.equal(preview.status,200);
+    const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);assert.equal(erased.status,200,JSON.stringify(erased.value));
+    const retained=await rows(h);assert.ok(!JSON.stringify(retained).includes(f.requesterId));assert.ok(!JSON.stringify(retained).includes(f.email(2802)));assert.equal(validatePurchasingArchive(retained),true);
+    assert.equal((await signed('synthetic-purse-6312',event)).status,403);
 });
