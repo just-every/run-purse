@@ -1113,3 +1113,28 @@ service, blanket, recurring or adopted groups remain unavailable. Grouped date
 changes and amendments require a separately supported disposition; this door
 refuses them. Native group issuance sends no supplier message and records no
 payment or connected-ledger posting.
+
+## Native invoice matching
+
+The native owner records `matching-rule` with an exact `version`, supplier and
+category selectors (`*` means all), currency, `priceBps`, `priceMinor`,
+`quantityBps`, `quantityMinor`, `enabled`, explicit `consent:true` and a reason.
+Both caps apply. Supplier plus category precedes supplier, then category.
+A paused specific rule shadows broader rules. Quantity tolerance never expands
+the approved remaining balance or substitutes for receipt.
+
+Authorized source confirmation evaluates ordinary native goods invoices under
+current owner consent. `match-invoice` explicitly reevaluates confirmed evidence
+with `{invoice,rule,version}` under current scoped AP approval authority.
+Every unresolved invoice-risk flag refuses approval. Approval retains the exact
+rule versions, original digest, reading, line values and receipt evidence. Source
+terms enter weekly cash once; planning approval alone never realizes savings.
+Later risk holds suspend current cash and savings eligibility without deleting
+historical approval. Rule history is portable; execution consent is not.
+
+Existing unconfirmed native evidence can be selected with `invoice-source` and
+its invoice ID. Its retained original is reused, or an actual original is staged
+when none was captured. Confirmation must preserve the same line quantities,
+amounts and existing original digest; every prior risk flag and disposition
+remains. Imported, deposit, service and unplanned-charge qualifications retain
+the limits recorded in MATCH-001.

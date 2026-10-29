@@ -1,3 +1,4 @@
+import { harnessInvoiceApproval } from './genuine-invoice-fixture.mjs';
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {PDFDocument,StandardFonts} from 'pdf-lib'
@@ -48,6 +49,8 @@ test('CONTRACT-001 REPORT-003 confirmed agreement prices realize exact approved 
  await cmd('approve-payable',{invoice:invoice.id,version:1,reason:'Still held'},buyer,409);
  for(const flag of invoice.flags)await cmd('invoice-risk-review',{invoice:invoice.id,version:1,flag:flag.id,reason:'Buyer checked original remit evidence'},buyer);
  await cmd('approve-payable',{invoice:invoice.id,version:1,reason:'Cash planning checked'},buyer);
+ assert.equal((await report()).totals[0].realizedMinor,0,'Cash-planning approval alone never realizes savings');
+ await harnessInvoiceApproval(h,invoice);
  savings=await report();assert.equal(savings.totals[0].realizedMinor,60000,'Sixty percent of USD 1,000 is USD 600');assert.equal(savings.realizedRows[0].invoice,invoice.id);assert.equal(savings.realizedRows[0].agreementVersion,2);assert.deepEqual(savings.realizedRows[0].reading,row.reading);
  await cmd('receipt',{order:order.id,line:order.lines[0].id,event:'return',quantity:'1',reason:'One returned'});assert.equal((await report()).totals[0].realizedMinor,50000);
  // An approved quote award replaces the contract figure; invoice history retains its original source.
@@ -60,6 +63,7 @@ test('CONTRACT-001 REPORT-003 confirmed agreement prices realize exact approved 
  const amendedOrder=await issue(amended);await cmd('receipt',{order:amendedOrder.id,line:amended.lines[0].id,event:'receive',quantity:'5',reason:'Five more accepted'});
  const second=await cmd('invoice',{order:amendedOrder.id,reference:'AMENDMENT-FOUR',source:'Amendment invoice',allocations:[{line:amended.lines[0].id,quantity:'4',amountMinor:380000}]},buyer);
  await cmd('payable-terms',{invoice:second.id,version:0,invoiceDate:'2026-10-20',term:'Net 30',reason:'Invoice terms'},buyer);await cmd('approve-payable',{invoice:second.id,version:1,reason:'Cash planning checked'},buyer);
+ await harnessInvoiceApproval(h,second);
  assert.equal((await report()).totals[0].realizedMinor,120000);
  await cmd('receipt',{order:amendedOrder.id,line:amended.lines[0].id,event:'return',quantity:'1',reason:'Return across amendment family'});savings=await report();assert.equal(savings.totals[0].realizedMinor,105000);assert.equal(savings.realizedRows.reduce((n,r)=>n+r.quantity,0),9,'Invoices share the current accepted cap across issued revisions');
  // Signed savings and currency separation remain explicit.
