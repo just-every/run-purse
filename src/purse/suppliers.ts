@@ -1,4 +1,4 @@
-import { initializeSupplierMatching, matchingInputs, supplierPublicValue } from './supplier-identity';
+import { hasSupplierReviewHold, initializeSupplierMatching, matchingInputs, supplierPublicValue } from './supplier-identity';
 import { duplicateReview, supplierPublicProfile } from './supplier-matching';
 import { screenSupplier } from './screening';
 import { all, audit, can, date, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
@@ -6,6 +6,7 @@ import { all, audit, can, date, get, put, requireThat, text, uid, type Actor, ty
 export async function suppliers(s: State, a: Actor, op: string, b: Data): Promise<Data | undefined> {
     if (!['supplier', 'screen-supplier', 'review-screening', 'supplier-duplicates', 'supplier-matching-setup'].includes(op)) return;
     can(s, a, 'buyer');
+    if (b.id) requireThat(!hasSupplierReviewHold(s,b.id),'Supplier proposal requires native owner review; activation needs onboarding and verified-bank prerequisites',409);
     initializeSupplierMatching(s);
     if (op === 'supplier-matching-setup') return { initialized: true };
     const previousForMatch = b.id ? get(s, 'supplier', b.id) : undefined;

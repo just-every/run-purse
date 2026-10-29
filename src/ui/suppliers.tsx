@@ -1,3 +1,4 @@
+import { SupplierProposals } from './supplier-proposals';
 import { SupplierTax } from './supplier-tax';
 import { SupplierCreditBalances } from './supplier-credits';
 import { Comments } from './comments';
@@ -15,12 +16,12 @@ export function Suppliers({ data, actor, mutate, reload }: { data: D; actor: D; 
     const [selectedId, setSelectedId] = useState<string | undefined>(new URLSearchParams(window.location.search).get('supplier') ?? undefined), [duplicate, setDuplicate] = useState<D>(), [openError, setOpenError] = useState('');
     const selected = data.supplier.find((s: D) => s.id === selectedId);
     const open = (id?: string) => { setSelectedId(id); setDuplicate(undefined); };
-    return <Separated><><h2 className="page-title">Known suppliers</h2>
+    return <Separated><><h2 className="page-title">Known suppliers</h2><SupplierProposals data={data} actor={actor} mutate={mutate} onChoose={id=>open(id)}/>
         <Table heads={['Supplier', 'Status', 'Reason', 'Renewal', '']}>{data.supplier.map((s: D) => <tr key={s.id}>
             <td className="record-name">{s.name}</td><td><Chip>{s.status}</Chip></td><td>{s.reason}</td><td className="figure-cell">{calendarDay(s.renewal)}</td>
             <td className="row-action"><button onClick={() => open(s.id)}>Open</button></td>
         </tr>)}</Table>
-        {selected?.mergedInto ? <section className="panel"><h3>Merged supplier history · {selected.name}</h3><p>This supplier is no longer purchasable. Its original records remain intact.</p><button onClick={() => open(selected.mergedInto)}>Open surviving supplier</button></section> : data.mayManageSupplierRegister && <>
+        {selected?.mergedInto ? <section className="panel"><h3>Merged supplier history · {selected.name}</h3><p>This supplier is no longer purchasable. Its original records remain intact.</p><button onClick={() => open(selected.mergedInto)}>Open surviving supplier</button></section> : data.mayManageSupplierRegister && !data.supplierProposal?.some((p:D)=>p.id===selectedId) && <>
             <h3>{selected ? 'Edit ' + selected.name : 'Add supplier'}</h3>
             <Form key={selected?.id ?? 'new'} initial={{ id: selected?.id }} label="Save supplier" onSubmit={async b => {
                 const input = { ...b, contacts: b.email ? [{ name: b.contactName, email: b.email }] : [], matching: { tin: b.matchTin, bankRouting: b.matchRouting, bankAccount: b.matchAccount } };

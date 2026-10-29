@@ -30,6 +30,25 @@ test('Native supplier groups reconcile source lines, frozen originals, separate 
  const second=await cmd('invoice',{order:groups[1].id,reference:'synthetic-purse-8143',source:'Second supplier group invoice',allocations:[{line:groups[1].lines[0].id,quantity:'1',amountMinor:40000}]},buyer);assert.equal(second.balance.faceMinor,40000);assert.equal(second.balance.billedMinor,0);assert.ok(!second.flags.some(flag=>flag.code==='po-balance'));
  const excess=await cmd('invoice',{order:groups[0].id,reference:'synthetic-purse-8144',source:'Excess group invoice',allocations:[{line:groups[0].lines[0].id,quantity:'0.001',amountMinor:1}]},buyer);assert.equal(excess.balance.remainingMinor,0);assert.ok(excess.flags.some(flag=>flag.code==='po-balance'));const payable=await cmd('payable-terms',{invoice:excess.id,version:0,invoiceDate:excess.invoiceDate,term:'Net 30',reason:'Retain unresolved source'},buyer);await cmd('approve-payable',{invoice:excess.id,version:payable.version,reason:'Risk cannot be bypassed'},buyer,409);
  const audit=await h.send('/api/purse/audit.csv?subject='+groups[1].id,undefined,h.owner);assert.equal(audit.status,200);for(const value of ['buyer-conversion-edit','sourceRevision','supplier','100000'])assert.ok(audit.value.includes(value),value);
+ // Header-only tax and explicit line tax both remain exact through preparation and issuance.
+ for(const explicit of [false,true]){
+  const taxed=await f.create({taxMinor:6000,...(explicit?{charges:[{kind:'tax',description:'Supplied line tax',amountMinor:6000}],lines:f.draft.lines.map((line,index)=>({...line,lineTaxMinor:index?0:6000}))}:{})});
+  const prepared=await f.convert(taxed),expected=explicit?[66000,40000]:[63600,42400];
+  assert.deepEqual(prepared.supplierOrders.map(group=>group.totalMinor),expected);
+  assert.equal(prepared.supplierOrders.reduce((sum,group)=>sum+group.taxMinor,0),6000);
+  const reserved=(await f.report()).rows.filter(row=>row.request===taxed.id&&row.kind==='reserved');
+  assert.deepEqual(reserved.map(row=>[row.supplier,row.amountMinor]).sort(),prepared.supplierOrders.map(group=>[group.supplier,group.totalMinor]).sort());
+  const budgets=(await h.state()).data.periodBudgets;
+  assert.deepEqual(f.policies.map(policy=>budgets.find(row=>row.id===policy.id).sources.filter(row=>row.request===taxed.id).reduce((sum,row)=>sum+row.reservedMinor,0)),expected);
+  const issued=await cmd('issue',{id:prepared.id,revision:2,reason:'Issue all supplied header and line tax once'},buyer);
+  assert.ok(issued.supplierOrders.every(group=>group.status==='issued'));
+  assert.deepEqual(issued.supplierOrders.map(group=>group.totalMinor),expected);
+  const report=(await f.report()).rows.filter(row=>row.request===taxed.id);
+  assert.ok(report.every(row=>row.kind==='committed'));
+  assert.deepEqual(report.map(row=>[row.supplier,row.amountMinor]).sort(),issued.supplierOrders.map(group=>[group.supplier,group.totalMinor]).sort());
+  const committed=(await h.state()).data.periodBudgets;
+  assert.deepEqual(f.policies.map(policy=>committed.find(row=>row.id===policy.id).sources.filter(row=>row.request===taxed.id).reduce((sum,row)=>sum+row.committedMinor,0)),expected);
+ }
  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true);
  const archive=join(h.dir,'synthetic-purse-8145.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);const restored=await harness();t.after(()=>restored.close());await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);for(const kind of ['request','revision','order','invoice','commitment','audit']){const select=async db=>(await db.prepare('SELECT * FROM p_records WHERE kind=? ORDER BY id').bind(kind).all()).results;assert.deepEqual(await select(restored.db),await select(h.db),kind);}
  assert.equal((await restored.send('/api/purse/command/issue',{id:groups[0].id,revision:2,reason:'Replay cannot restore authority'},buyer)).status,401);
@@ -57,6 +76,21 @@ test('Supplier group conversion fences complete-request variance, required budge
  // Another budget is used for independent charge and concurrency cases.
  for(const policy of f.policies)await cmd('policy',{...policy,budgetMinor:10000000});
  const cents=await f.create(),charges=f.edits(cents,{charges:[{kind:'freight',description:'Supplied freight',amountMinor:1},{kind:'tax',description:'Supplied tax',amountMinor:1},{kind:'other',description:'Supplied handling',amountMinor:1}]});const split=await f.convert(cents,{conversionEdits:charges,issue:true});assert.deepEqual(split.supplierOrders.map(group=>group.totalMinor),[60003,40000]);assert.equal(split.supplierOrders.flatMap(group=>group.charges).reduce((sum,charge)=>sum+charge.amountMinor,0),3);const chargeState=(await h.state()).data;assert.deepEqual(f.policies.map(policy=>chargeState.commitment.filter(event=>event.request===cents.id).reduce((sum,event)=>sum+(event.budgetAllocations.find(share=>share.policy===policy.id)?.amountMinor??0),0)),[60003,40000]);assert.deepEqual((await f.report()).rows.filter(row=>row.request===cents.id&&row.kind==='committed').map(row=>[row.supplier,row.amountMinor]).sort(),split.supplierOrders.map(group=>[group.supplier,group.totalMinor]).sort());
+ // Supplied tax cannot dilute the price limit on an approved line's item value.
+ await cmd('member',{email:groupMail(8103),name:'Group buyer',active:true,grants:[{role:'buyer',scope:{},limits:{percent:10,quantityPercent:15}}]});
+ for(const [quantity,allowed]of [['1.10',true],['1.11',false]]){
+  const taxed=await f.create({taxMinor:6000,charges:[{kind:'tax',description:'Supplied line tax',amountMinor:6000}],lines:f.draft.lines.map((line,index)=>({...line,lineTaxMinor:index?0:6000}))});
+  const changed=await f.convert(taxed,{conversionEdits:f.edits(taxed,{lines:[{id:taxed.lines[0].id,quantity},{id:taxed.lines[1].id,supplier:f.suppliers[1].id}]}),issue:true});
+  if(allowed){assert.equal(changed.status,'issued');assert.deepEqual(changed.supplierOrders.map(group=>group.totalMinor),[72000,40000]);}
+  else{
+   assert.equal(changed.status,'pending');assert.equal(changed.buyerConversion.withinLimit,false);
+   const before=(await h.state()).data;assert.equal(before.order.filter(order=>order.request===taxed.id).length,0);const pendingRows=(await f.report()).rows.filter(row=>row.request===taxed.id);assert.ok(pendingRows.every(row=>row.kind==='reserved'));assert.equal(pendingRows.reduce((sum,row)=>sum+row.amountMinor,0),112600);
+   await cmd('convert',{id:taxed.id,revision:2,issue:true},buyer,409);assert.deepEqual((await h.state()).data,before);
+   await cmd('decision',{id:taxed.id,revision:2,decision:'approved',reason:'Fresh approval for the over-limit line'},f.approver);
+   const renewed=await cmd('convert',{id:taxed.id,revision:2,issue:true},buyer);assert.equal(renewed.status,'issued');assert.deepEqual(renewed.supplierOrders.map(group=>group.totalMinor),[72600,40000]);
+  }
+ }
+ await cmd('member',{email:groupMail(8103),name:'Group buyer',active:true,grants:[{role:'buyer',scope:{},limits:{absoluteMinor:5000,percent:10,quantityPercent:0}}]});
  const concurrent=await f.create(),attempts=await Promise.all([1,2].map(()=>h.send('/api/purse/command/convert',{id:concurrent.id,revision:1,conversionEdits:f.edits(concurrent)},buyer)));assert.equal(attempts.filter(response=>response.status===200).length,1);assert.equal((await h.state()).data.order.filter(order=>order.request===concurrent.id).length,2);
  const refused=await f.create(),blocked=await cmd('supplier',{name:'synthetic-purse-8150',status:'blocked',reason:'Purchasing hold'}),form=await cmd('intake-form',{name:'synthetic-purse-8151',purchaseType:'goods',active:true,consent:true,defaults:{category:'goods',currency:'USD',location:'Denver',costCentre:'Operations',project:'General'},questions:[],headerFields:[],lineFields:[],requiredFiles:[]}),proposal=await cmd('intake-draft',{fields:{intakeForm:form.id,lines:[]},proposal:{name:'synthetic-purse-8152',contactEmail:groupMail(8153).replace('example.test','synthetic-purse-8153.test'),reason:'Pending vendor review',consent:true}},f.requester);
  for(const supplier of [blocked.id,proposal.fields.supplier]){const before=(await h.state()).data;await cmd('convert',{id:refused.id,revision:1,conversionEdits:f.edits(refused,{lines:[{id:refused.lines[1].id,supplier}]})},buyer,409);assert.deepEqual((await h.state()).data,before);}

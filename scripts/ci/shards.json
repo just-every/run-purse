@@ -15,7 +15,8 @@
   "4": [
     ["tests/browser.mjs", "--width=1440", "--journey=catalogue"],
     ["tests/browser-catalogue-import.mjs"],
-    ["tests/browser-supplier-tax.mjs"]
+    ["tests/browser-supplier-tax.mjs"],
+    ["tests/browser-supplier-proposals.mjs"]
   ],
   "5": [
     ["tests/browser.mjs", "--width=390", "--journey=audit-log"],
@@ -182,6 +183,7 @@
   ],
   "44": [
     ["tests/browser.mjs", "--width=390", "--journey=search"],
-    ["tests/browser-po-kinds.mjs"]
+    ["tests/browser-po-kinds.mjs"],
+    ["tests/browser-shipment-references.mjs"]
   ]
 }

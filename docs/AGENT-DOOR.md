@@ -85,7 +85,7 @@ approval or review can retain them. The native conformance fixture additionally 
 
 The additive migrations are 0042 (Business settings), 0043 (Business person
 bindings) and 0044 (agent door). Runtime modules and the CLI are pinned to Base
-`114ef7a61f080da053af783c5fbe06f625d692cc`, released as rer 0.2.88. Existing
+`2135c394939f4a737adabdc8003b0e667b31ac5a`, released as rer 0.2.91. Existing
 applied migrations are unchanged. `agent-surface.json` is the executable
 conformance declaration used by normal `rer verify`; its fixtures use only
 public native doors and the declared network edge. The production Worker keeps
@@ -101,7 +101,7 @@ There is no advertised MCP prompt family in this CORE declaration.
 
 The declaration contains 18 tools, no public resource templates, and the
 standard, sensitive, money and commitment classes. Its 23 journey steps retain
-every native tool/class pair, autonomous and held policy, injection variants,
+every declared tool/class pair, autonomous and held policy, injection variants,
 read-only witnesses, replay/conflicts and native attribution. The pending-decision
 reader returns only requests the current sponsor can decide; its empty bounded
 view is standard. The receiving-position reader returns native quantities without
@@ -117,7 +117,7 @@ The ct classes external, accounts, gated, access, security and destructive are
 not claimed. Its supplier chase, invoice-exception resolution, approved-bill
 posting and returned-payment journey remain unproved through this door.
 SURFACE-001–013 are absent from current main and are not invented here;
-AGENT-010 stays partial with the explicit family and registry gaps. The ct head
+The Base-delivered clauses remain partial with the explicit family and registry gaps; main's existing native AGENT-010 judgment is preserved. The ct head
 defines AGENT-001–011, with no AGENT-012 or AGENT-013 to cite. Its split
 ACCESS-004/005, INTAKE-009/010, SUPPLIER-009, PO-013–018, CONTRACT-002/003
 and SECURITY-002–004 are absent as standalone current-main clauses. Its broader

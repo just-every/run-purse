@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 PO-012 AGENT-010`. Current candidate counts: 53 done, 32 partial, 28 missing; 113 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 SUPPLIER-008 PO-012 PO-006 AGENT-010 BASE-AGENT-001 BASE-AGENT-002 BASE-AGENT-003 BASE-AGENT-004 BASE-AGENT-005 BASE-AGENT-006 BASE-AGENT-007 BASE-AGENT-008 BASE-AGENT-009 BASE-AGENT-010 BASE-AGENT-011 BASE-AGENT-012 BASE-AGENT-013`. Current candidate counts: 54 done, 46 partial, 26 missing; 126 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -41,7 +41,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `SUPPLIER-005` | Supplier performance and issues | done |
 | `SUPPLIER-006` | 1099 readiness | partial |
 | `SUPPLIER-007` | Restricted-party screening | done |
-| `SUPPLIER-008` | New-supplier requests and vendor approval | missing |
+| `SUPPLIER-008` | New-supplier requests and vendor approval | partial |
 | `SOURCE-001` | RFQ invitations and supplier responses | done |
 | `SOURCE-002` | Quote document processing | done |
 | `CATALOG-001` | Catalog items, bundles and access | done |
@@ -62,7 +62,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `PO-003` | Overdue acknowledgment and delivery chasing | done |
 | `PO-004` | Change orders and cancellations sent | partial |
 | `PO-005` | Blanket, recurring and service POs | done |
-| `PO-006` | Shipment tracking | missing |
+| `PO-006` | Shipment tracking | partial |
 | `PO-007` | US sales and use tax on purchases | partial |
 | `PO-008` | Automatic PO creation and sending after approval | partial |
 | `PO-009` | PO document content, labels and terms | done |
@@ -115,5 +115,18 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write INVOICE-00
 | `AGENT-007` | Supplier onboarding and compliance agent | missing |
 | `AGENT-008` | Coding and policy agent | done |
 | `AGENT-009` | Price benchmark and negotiation brief | partial |
-| `AGENT-010` | Agent governance | partial |
+| `AGENT-010` | Agent governance | done |
 | `AGENT-011` | Spend questions in plain language | done |
+| `BASE-AGENT-001` | One MCP door per seed | partial |
+| `BASE-AGENT-002` | The seed's jobs are tools, through the UI's own actions | partial |
+| `BASE-AGENT-003` | Records are resources | partial |
+| `BASE-AGENT-004` | Business identity and short-lived, audience-bound tokens | partial |
+| `BASE-AGENT-005` | An agent acts as a person in a role, never more | partial |
+| `BASE-AGENT-006` | Every action declares its risk class | partial |
+| `BASE-AGENT-007` | The company's policy decides, at one chokepoint | partial |
+| `BASE-AGENT-008` | Truthful attribution | partial |
+| `BASE-AGENT-009` | Every agent action is audited with its class and decision | partial |
+| `BASE-AGENT-010` | Agents can follow changes | partial |
+| `BASE-AGENT-011` | Limits are policy, and Pause stops everything | partial |
+| `BASE-AGENT-012` | Writes are idempotent and conflict-safe | partial |
+| `BASE-AGENT-013` | Manifest, docs and the conformance journey | partial |

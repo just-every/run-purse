@@ -1,4 +1,0 @@
-/* Keep native agent evidence and decisions operable by touch. */
-.app:has(main:is([data-tab='Audit'], [data-tab='Requests'])) :is(button, input:not([type='checkbox']):not([type='radio']), select, summary, a[class*='btn']) {
-    min-height: 44px;
-}

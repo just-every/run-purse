@@ -32,7 +32,7 @@ export async function guidedIntake(s: State, a: Actor, op: string, b: Data, env?
             requireThat(intake.requester === a.id && intake.status === 'draft', 'Only assigned requester may complete email intake', 403);
             requireThat(b.emailIntakeVersion === intake.version, 'Email source changed; reload and review before saving', 409);
         }
-        if (b.proposal) fields.supplier = proposedSupplier(s, a, b.proposal);
+        if (b.proposal) fields.supplier = proposedSupplier(s, a, b.proposal, 'guided-intake');
         const draft = { id: old?.id ?? uid(), requester: a.id, requesterEmail: a.email, fields, version: (old?.version ?? 0) + 1, status: 'draft',
             ...(old?.emailIntake || b.emailIntake ? { emailIntake: old?.emailIntake ?? b.emailIntake, emailIntakeVersion: b.emailIntakeVersion } : {}), updatedAt: new Date().toISOString() };
         put(s, 'intakeDraft', draft.id, draft); audit(s, a, op, draft.id, { version: draft.version }); return draft;
