@@ -489,13 +489,17 @@
   },
   "verification": {
     "owner": {
-      "initializer": "tests/initialize-agent-door-owner.mjs"
+      "initializer": "tests/initialize-agent-door-owner.mjs",
+      "bindings": {
+        "MAIL_FROM": "email"
+      }
     },
     "network": {
       "module": "tests/agent-door-provider-edge.mjs",
       "origins": [
         "https://data.trade.gov"
       ]
-    }
+    },
+    "journey": "tests/agent-door-journey.mjs"
   }
 }
