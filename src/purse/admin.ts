@@ -1,3 +1,4 @@
+import { activeEntity, entityId } from './entities';
 import { pauseTravelReleaseRule } from './travel-release-rule';
 import { budgetDimensionInput, sameBudgetDimensions } from './budget-dimensions';
 import { budgetPeriod } from './budget-position';
@@ -24,8 +25,12 @@ export function administration(s: State, a: Actor, op: string, b: Data): Data | 
     }
     if (op === 'policy') {
         currency(s, b.currency);
-        const id = b.id ?? uid();
-        const next: Data = { name: text(b.name, 'Policy name'), currency: b.currency, category: b.category || '*', project: b.project || '*', limitMinor: moneyInput(b, 'limitAmount', 'limitMinor', 'Authority limit'), budgetMinor: moneyInput(b, 'budgetAmount', 'budgetMinor', 'Budget'), approver: text(b.approver, 'Approver email').toLowerCase(), active: b.active !== false, ...policyWorkflow(b,s.get('policy:'+id)?.value), ...budgetDimensionInput(b,s.get('policy:'+id)?.value,all(s,'intakeForm')), ...(budgetPeriod(b,s.get('policy:'+id)?.value) ? {budgetPeriod:budgetPeriod(b,s.get('policy:'+id)?.value)} : {}), ...(b.costCentre ? { costCentre: text(b.costCentre,'Policy department') } : {}) };
+        const id = b.id ?? uid(), oldPolicy = s.get('policy:'+id)?.value;
+        const entity = b.entity ?? oldPolicy?.entity ?? 'main';
+        activeEntity(s, entity);
+        requireThat(!oldPolicy || entity === entityId(oldPolicy), 'Policy entity is immutable; create a separate policy',409);
+        requireThat(entity === 'main' || b.currency === 'USD', 'Additional-entity policies require USD');
+        const next: Data = { ...(entity !== 'main' ? {entity} : {}), name: text(b.name, 'Policy name'), currency: b.currency, category: b.category || '*', project: b.project || '*', limitMinor: moneyInput(b, 'limitAmount', 'limitMinor', 'Authority limit'), budgetMinor: moneyInput(b, 'budgetAmount', 'budgetMinor', 'Budget'), approver: text(b.approver, 'Approver email').toLowerCase(), active: b.active !== false, ...policyWorkflow(b,s.get('policy:'+id)?.value), ...budgetDimensionInput(b,s.get('policy:'+id)?.value,all(s,'intakeForm')), ...(budgetPeriod(b,s.get('policy:'+id)?.value) ? {budgetPeriod:budgetPeriod(b,s.get('policy:'+id)?.value)} : {}), ...(b.costCentre ? { costCentre: text(b.costCentre,'Policy department') } : {}) };
         requireThat(!next.location || next.location==='*' || get(s,'business','main').locations.includes(next.location), 'Choose a configured budget location');
         const previous=s.get('policy:'+id)?.value, used=['request','revision','order','decision','commitment'].some(kind=>all(s,kind).some(record=>record.policy===id||(record.budgetAllocations??[]).some((share:Data)=>share.policy===id)));
         requireThat(a.owner || previous?.internationalTravelReviewer === next.internationalTravelReviewer, 'Only the current native owner may configure international travel review',403);

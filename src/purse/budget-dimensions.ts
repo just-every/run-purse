@@ -1,3 +1,4 @@
+import { entityId } from './entities';
 import { requireThat, text, type Data } from './types';
 
 const optionalCode = (value: unknown) => value == null || value === '' || value === '*' ? undefined : text(value, 'Budget coding', 200);
@@ -42,7 +43,7 @@ export function budgetCoding(request: Data, line: Data, allocation: Data = {}) {
         category: line.category, customFields: line.customFields ?? {}, headerFields: request.customFields ?? {}, intakeForm: request.intakeForm };
 }
 export function budgetScopeMatches(policy: Data, request: Data, code: Data) {
-    if (policy.currency !== request.currency || policy.budgetPeriod && (request.needDate < policy.budgetPeriod.from || request.needDate > policy.budgetPeriod.through)) return false;
+    if (entityId(policy) !== entityId(request) || policy.currency !== request.currency || policy.budgetPeriod && (request.needDate < policy.budgetPeriod.from || request.needDate > policy.budgetPeriod.through)) return false;
     for (const field of ['costCentre', 'project', 'category', 'location', 'glAccount']) {
         const selected = field === 'costCentre' ? policy.costCentre ?? policy.department : policy[field];
         if (selected && selected !== '*' && selected !== code[field]) return false;
@@ -79,6 +80,6 @@ export function selectBudgetPolicy(candidates: Data[], primaryId?: string) {
     return selected[0];
 }
 export function budgetPositionDimensions(policy: Data) {
-    return { department: policy.costCentre ?? '*', project: policy.project, category: policy.category,
+    return { entity: entityId(policy), department: policy.costCentre ?? '*', project: policy.project, category: policy.category,
         location: policy.location ?? '*', glAccount: policy.glAccount ?? '*', ...(policy.budgetFields ? { budgetFields: policy.budgetFields } : {}) };
 }
