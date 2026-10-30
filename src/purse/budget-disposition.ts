@@ -46,8 +46,8 @@ function plan(s: State, a: Actor, input: Data) {
  const sourceFingerprint=sourceFacts(s,order), needDate=date(input.needDate,'Destination need date');
  const destination:Data={...order,id:source.id,needDate,policy:null};
  const policy=policies(s,destination)[0];requireThat(policy?.budgetPeriod,'Choose a dated destination budget',409);destination.policy=policy.id;
- const sourceShares=balances(s,source.id), destinationShares=requestBudgetShares(s,destination,order.totalMinor).sort((a,b)=>a.policy.localeCompare(b.policy));
- requireThat(sourceShares.reduce((sum,row)=>sum+row.amountMinor,0)===order.totalMinor && sourceShares.every(row=>row.amountMinor>0),'Original commitment must equal the whole unreceived order',409);
+ const sourceShares=balances(s,source.id), destinationShares=requestBudgetShares(s,destination,order.totalMinor).filter(share=>share.amountMinor>0).sort((a,b)=>a.policy.localeCompare(b.policy));
+ requireThat(sourceShares.length>0 && sourceShares.reduce((sum,row)=>sum+row.amountMinor,0)===order.totalMinor && sourceShares.every(row=>row.amountMinor>0),'Original commitment must equal the whole unreceived order',409);
  requireThat(sourceShares.every(row=>get(s,'policy',row.policy).budgetPeriod) && sourceShares.every(row=>!destinationShares.some(to=>to.policy===row.policy)), 'Choose a different period for every allocation',409);
  const ownerSteps=owners(s,destinationShares);
  for(const share of destinationShares)requireThat(periodBudgetPosition(s,get(s,'policy',share.policy)).availableMinor>=share.amountMinor,'Destination allocation budget is exhausted; no capacity is transferred',409);
@@ -77,8 +77,8 @@ export function checkBudgetDisposition(s: State, request: Data) {
  if(settled?.length===2 && settled.some(event=>event.kind==='budget-period-commit') && settled.some(event=>event.kind==='budget-period-release'))return;
  const prior=get(s,'order',request.amends), proposed={...request,policy:request.policy??policies(s,request)[0]?.id};
  if(!request.budgetDisposition && !s.get('policy:'+prior.policy)?.value.budgetPeriod && !s.get('policy:'+proposed.policy)?.value.budgetPeriod)return;
- const current=requestBudgetShares(s,proposed,request.totalMinor).sort((a,b)=>a.policy.localeCompare(b.policy));
- const original=requestBudgetShares(s,prior,prior.totalMinor,new Set(all(s,'commitment').filter(row=>row.request===request.id&&row.revision===prior.revision&&row.amountMinor>0).flatMap(row=>(row.budgetAllocations??[{policy:row.policy}]).map((share:Data)=>share.policy)))).sort((a,b)=>a.policy.localeCompare(b.policy));
+ const current=requestBudgetShares(s,proposed,request.totalMinor).filter(share=>share.amountMinor>0).sort((a,b)=>a.policy.localeCompare(b.policy));
+ const original=requestBudgetShares(s,prior,prior.totalMinor,new Set(all(s,'commitment').filter(row=>row.request===request.id&&row.revision===prior.revision&&row.amountMinor>0).flatMap(row=>(row.budgetAllocations??[{policy:row.policy}]).map((share:Data)=>share.policy)))).filter(share=>share.amountMinor>0).sort((a,b)=>a.policy.localeCompare(b.policy));
  if(same(current.map(row=>row.policy),original.map(row=>row.policy)) && !request.budgetDisposition)return;
  requireThat(disposition && disposition.order===prior.id, 'Cross-period budget amendments require an explicit remaining-balance disposition',409);
  const authority=s.get('nativeBudgetAuthority:'+disposition.id)?.value;
