@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { nativeWebContext } from './native-web-fixture.mjs';
 import { intakeAgentFixture, intakeEmail } from './intake-agent-fixture.mjs';
@@ -38,7 +38,22 @@ try {
  assert.equal(await guided.getByLabel('Unit price',{exact:true}).inputValue(),'250.00');await capture(page,guided,'editable-draft');
  const completion=page.waitForResponse(response=>response.url().endsWith('/command/intake-complete'));await guided.getByRole('button',{name:'Create purchase request draft',exact:true}).click();const completedResponse=await completion;assert.equal(completedResponse.status(),200);const request=await completedResponse.json();assert.equal(request.status,'draft');assert.equal(request.totalMinor,50000);assert.equal((await f.h.state()).data.commitment.length,before.commitment.length);
  const submitted=page.waitForResponse(response=>response.url().endsWith('/command/submit'));await page.getByRole('region',{name:'Guided purchase intake',exact:true}).getByRole('button',{name:'Submit for approval',exact:true}).click();assert.equal((await submitted).status(),200);await page.getByRole('status').filter({hasText:'Submitted for approval'}).waitFor();assert.equal((await f.h.state()).data.commitment.filter(row=>row.request===request.id).reduce((sum,row)=>sum+row.amountMinor,0),50000);
+ await agent.getByRole('button',{name:'Start another intake',exact:true}).click();await agent.getByLabel('Describe your need',{exact:true}).fill('Laptop dock');
+ const alternatives=page.waitForResponse(response=>response.url().endsWith('/command/intake-agent-run'));await agent.getByRole('button',{name:'Prepare intake suggestions',exact:true}).click();assert.equal((await alternatives).status(),200);
+ await agent.getByLabel('Suggested catalogue item',{exact:true}).selectOption(f.dock.id);
+ const selected=page.waitForResponse(response=>response.url().endsWith('/command/intake-agent-answer'));await agent.getByRole('button',{name:'Answer intake follow-up',exact:true}).click();const selectedResponse=await selected;assert.equal(selectedResponse.status(),200);const chosen=await selectedResponse.json();
+ assert.equal(chosen.output.fields.lines[0].glAccount,'6500');
+ const dock=suggestions.locator('article').filter({has:page.getByRole('heading',{name:'Equipment dock',exact:true})});
+ await dock.getByText('Coding sources',{exact:true}).click();await dock.getByText('Suggested coding: costCentre: Operations · project: Site · glAccount: 6500',{exact:true}).waitFor();
+ await dock.getByText('Purchase '+f.history.id+' · revision 1 · line '+f.history.lines[1].id,{exact:false}).waitFor();
+ await capture(page,agent,'distinct-line-citations');
  await controls.getByLabel('Pause reason',{exact:true}).fill('Pause deterministic intake during review');const paused=owner.waitForResponse(response=>response.url().endsWith('/command/agent-pause'));await controls.getByRole('button',{name:'Pause this agent for every type',exact:true}).click();assert.equal((await paused).status(),200);
  await agent.getByRole('button',{name:'Answer intake follow-up',exact:true}).click();await agent.getByRole('alert').filter({hasText:'paused or not enabled'}).waitFor();assert.equal(f.h.messages.length,mailCount);assert.deepEqual(errors,[]);
  console.log('Native intake follow-up, exact citations, reviewed draft, requester edit and ordinary submission passed at 1440; changed screens captured at 1440 and 390');
+}catch(error){
+ console.error('Browser errors:',JSON.stringify(errors));
+ for(const [index,context] of contexts.entries())for(const page of context.pages()){
+  await writeFile(join(evidence,'failure-'+index+'.html'),await page.content());await page.screenshot({path:join(evidence,'failure-'+index+'.png')});
+ }
+ throw error;
 }finally{for(const context of contexts)await context.close();await f.close();await browser.close();}
