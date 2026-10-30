@@ -35,7 +35,7 @@ export function ThreadItem({ r, at, data, actor, mutate, decided, together, open
         </header>
         <p className="bubble" id={'ask-' + r.id}>{r.title}</p>
         {decided ? <div className="decided-line">
-            <span className="request-status" data-status={r.status}>{decision ? `${r.status} by ${decision.email === actor.email ? 'you' : personName(data, decision.email)} · ${askedLabel(decision.at, timeZone)}${r.status === 'approved' ? ' ✓' : ''}` : `${r.status} · v${r.revision}`}</span>
+            <span className="request-status" data-status={r.status}>{decision ? `${r.status} by ${decision.preparedBy?.label || (decision.email === actor.email ? 'you' : personName(data, decision.email))} · ${askedLabel(decision.at, timeZone)}${r.status === 'approved' ? ' ✓' : ''}` : `${r.status} · v${r.revision}`}</span>
             {order && <span className="decided-po"> · {order.number}</span>}
             {!opened && <button type="button" className="btn-quiet" onClick={e => onOpen(e.currentTarget)}>Open request</button>}
         </div> : <div className="request-card">

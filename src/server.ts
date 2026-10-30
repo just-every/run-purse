@@ -8,6 +8,7 @@ import { setupStateResponse } from './base/setup-state'
 import { authResponse, runtimeBindings, type Bindings } from './auth.server'
 import { identity } from './identity'
 import { seedDemo } from './demo'
+import { purseAgentDoor, purseBusinessSettings } from './agent-door/index.server'
 import { runPurchasingSchedule } from './purse/schedule'
 
 function noTransform(response: Response): Response {
@@ -19,6 +20,11 @@ function noTransform(response: Response): Response {
 const worker = {
   async scheduled(event, env, ctx) { ctx.waitUntil(runPurchasingSchedule(env, event.scheduledTime)); },
   async fetch(request, env, execution) {
+    const bindings = runtimeBindings(env)
+    const business = await purseBusinessSettings(bindings).handle(request)
+    if (business) return business
+    const agent = await purseAgentDoor(bindings).handle(request)
+    if (agent) return agent
     const asset = await staticAssetResponse(request, env)
     if (asset) return asset
     const state = await setupStateResponse(request, runtimeBindings(env))
