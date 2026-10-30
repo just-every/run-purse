@@ -103,6 +103,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     Object.assign(data, visibleRecurringScenarios(s,a));
     data.poProfile = a.owner ? all(s, 'poProfile') : [];
     data.deposit = all(s, 'deposit').filter(deposit => orderIds.has(deposit.order) && allowed(s, a, 'invoice.read', get(s, 'order', deposit.order)));
+    data.importField = a.owner ? all(s, 'importField') : [];
     data.budget = a.owner ? all(s, 'budget') : [];
     data.orderAdoption = a.owner ? all(s, 'orderAdoption').filter(adoption => orderIds.has(adoption.order)) : [];
     data.supplierInvoiceRules = a.owner ? all(s,'orderSend').map(event=>({order:event.order,revision:event.revision,invoiceSubmission:event.invoiceSubmission===true,invoiceApprovalRule:event.invoiceApprovalRule})) : [];
