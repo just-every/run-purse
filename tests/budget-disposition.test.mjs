@@ -56,6 +56,13 @@ test('Reviewed quarter disposition moves unchanged 60 and 40 shares exactly once
   assert.deepEqual((await restored.state()).data.periodBudgets.map(row=>[row.id,row.committedMinor]).sort(),(await f.positions()).map(row=>[row.id,row.committedMinor]).sort());
   await restored.command('receipt',{order:prepared.id,line:prepared.lines[0].id,event:'receive',quantity:'0.1',reason:'Current owner receives restored issued goods',ownerOverride:true});
   const continued=(await restored.state()).data.periodBudgets;assert.equal(continued.find(row=>row.id===f.budgets[2].id).committedMinor,120000,'Restored issued supply continues without replaying old consent or duplicating exposure');
+  const continuity=await harness();try {
+   const c=await dispositionFixture(continuity),increased=await c.cmd('amend',{...c.r,reason:'Review an increased allocation split',lines:c.r.lines.map(line=>({...line,unitMinor:110000,allocations:line.allocations.map(code=>({...code,basisPoints:5000}))}))});
+   await c.cmd('submit',{id:c.r.id,revision:2});await c.decide(increased);
+   assert.deepEqual((await c.figures()).slice(0,2),[[200000,5000,60000,0,135000],[200000,5000,40000,0,155000]],'The unissued increase reserves its own allocation shares');
+   await c.cmd('amend',{...c.r,revision:2,reason:'Discard the unissued increase and restore the original split'});
+   assert.deepEqual((await c.figures()).slice(0,2),[[200000,0,60000,0,140000],[200000,0,40000,0,160000]],'Discarding an unissued amendment releases its exact reservation while preserving the original commitment');
+  }finally{await continuity.close();}
  }finally{await restored?.close();await h.close();}
 });
 
