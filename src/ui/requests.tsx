@@ -27,12 +27,12 @@ export function Requests({ data, actor, mutate }: {
 }) {
     const rawMutate = mutate;
     mutate = (op, input) => { const trip=data.request.find((request:D)=>request.id===input.id)?.purchaseType==='travel';return rawMutate(trip&&['submit','decision'].includes(op)?'travel-'+op:op,input); };
-    const { id, heading, open, close } = useRecord(new URLSearchParams(window.location.search).get('request') || ''), [team, setTeam] = useState(''), [channel, setChannel] = useState(''), [draft, setDraft] = useState<string>();
+    const { id, heading, open, close } = useRecord(new URLSearchParams(window.location.search).get('request') || ''), [team, setTeam] = useState(''), [channel, setChannel] = useState(''), [draft, setDraft] = useState<string>(), [entity,setEntity] = useState('');
     useEffect(() => { if (new URLSearchParams(window.location.search).has('ask')) focusComposer(); }, []);
     const business = data.business[0], asked = askedTimes(data), at = (r: D) => asked.get(r.id) ?? '';
     const all = [...data.request].sort((a: D, b: D) => at(a).localeCompare(at(b)) || a.id.localeCompare(b.id));
     const channels = [...new Set(all.map(channelOf))].sort();
-    const shown = all.filter((r: D) => (!team || r.costCentre === team) && (!channel || channelOf(r) === channel));
+    const shown = all.filter((r: D) => (!team || r.costCentre === team) && (!channel || channelOf(r) === channel) && (!entity || (r.entity ?? 'main') === entity));
     const decidedAt = (r: D) => data.decision.filter((d: D) => d.request === r.id).reduce((m: string, d: D) => d.at > m ? d.at : m, '');
     const decided = shown.filter((r: D) => isDecided(data, r)), lastDecided = decided.filter((r: D) => !r.imported).sort((a: D, b: D) => decidedAt(b).localeCompare(decidedAt(a)))[0];
     const folded = decided.filter((r: D) => r !== lastDecided), live = shown.filter((r: D) => !folded.includes(r));
@@ -46,7 +46,7 @@ export function Requests({ data, actor, mutate }: {
         <div className="thread-head">
             <h1 className="thread-title">Requests,<span>as they come in.</span></h1>
             <div className="thread-filters" role="group" aria-label="Filter requests">
-                {chip('All teams', '')}{business.costCentres.map((c: string) => chip(c, c))}
+                <label className="filter-select"><select aria-label="Filter legal entity" value={entity} onChange={event=>setEntity(event.target.value)}><option value="">All legal entities</option><option value="main">{business.name}</option>{(data.entity??[]).map((item:D)=><option key={item.id} value={item.id}>{item.legalName}</option>)}</select></label>{chip('All teams', '')}{business.costCentres.map((c: string) => chip(c, c))}
                 <label className="filter-select"><select aria-label="Channel" value={channel} onChange={e => setChannel(e.target.value)}><option value="">{channels.join(' · ') || 'All channels'}</option>{channels.map(c => <option key={c} value={c}>{c}</option>)}</select></label>
             </div>
         </div>

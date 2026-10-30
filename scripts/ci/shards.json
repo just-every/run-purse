@@ -167,7 +167,8 @@
   ],
   "40": [
     ["tests/browser.mjs", "--width=1440", "--journey=agent-value"],
-    ["tests/browser.mjs", "--width=1440", "--journey=audit-log"]
+    ["tests/browser.mjs", "--width=1440", "--journey=audit-log"],
+    ["tests/browser-entities.mjs"]
   ],
   "41": [
     ["tests/browser.mjs", "--width=390", "--journey=supplier-duplicates"],
