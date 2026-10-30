@@ -65,7 +65,7 @@ export async function comments(s: State, a: Actor, op: string, b: Data, env?: Bi
     audit(s, a, op, recordId, { comment: id, parentKind: kind, version, snapshot });
     for (const recipient of mentions) if (!(existing?.versions.at(-1).mentions ?? []).includes(recipient)) {
         const noticeId = uid();
-        put(s, 'commentNotice', noticeId, { comment: id, recipient, mentionedBy: a.id, mentionedByName: comment.authorName, at });
+        put(s, 'commentNotice', noticeId, { comment: id, commentVersion: version, recipient, mentionedBy: a.id, mentionedByName: comment.authorName, at });
     }
     return { ...comment, warnings: warnings(s, record, kind, mentions, directory) };
 }

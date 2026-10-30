@@ -1,7 +1,9 @@
+import { notificationPreference } from './notification-preferences';
 import { runtimeBindings, type Bindings } from '../auth.server';
 import { operatorMail } from '../mail.server.mjs';
 import { activeReceiver, receiptAssignment, receiptDay, receiptPrompts, receiptRecipient } from './receipt-routing';
 import { load } from './store';
+import { captureNotifications } from './notifications';
 import { allowed, key, uid, type Data } from './types';
 
 const activeRecipient = "EXISTS(SELECT 1 FROM oa_operators WHERE lower(email)=? AND status='active' AND (?=1 OR role='owner'))";
@@ -26,6 +28,8 @@ async function send(env: Bindings, event: Data, now: number): Promise<Data> {
     if (!receiptRecipient(state, event.receiver, scopedOrder)) return { ...outcome, code: 'obsolete' };
     const recipient = { id: '', email: event.receiver, owner: false, dev: false, session: '', version: 0 };
     const member = activeReceiver(state,event.receiver,scopedOrder) || !assignment.explicit && allowed(state,recipient,'request.edit',scopedOrder);
+    const native = await env.DB.prepare("SELECT id,role,version FROM oa_operators WHERE lower(email)=? AND status='active'").bind(event.receiver).first<Data>();
+    if (native && notificationPreference(state,{...recipient,id:native.id,owner:native.role==='owner',version:native.version}).version) return {...outcome,code:'notification-preferences'};
     const sender = operatorMail(env);
     if (!sender || !env.MAIL_FROM) return { ...outcome, status: 'unavailable' };
     const url = new URL('/app', env.AUTH_ORIGIN);
@@ -61,9 +65,14 @@ async function attempt(env: Bindings, candidate: Data, now: number): Promise<Dat
     const event: Data = { id, order: prompt.order, receiver, reason: prompt.reason, at: new Date(now).toISOString(),
         outcome: { recipient: receiver, status: 'uncertain' } };
     // A claimed attempt is consumed even if the worker stops before persisting the mail result.
-    const inserted = await env.DB.prepare(`INSERT OR IGNORE INTO p_records(business,kind,id,revision,value)
+    const next = structuredClone(state);
+    next.set('receiptPromptEvent:' + id, { business: 'main', kind: 'receiptPromptEvent', id, revision: uid(), value: event });
+    await captureNotifications(env.DB, state, next);
+    const statements = [env.DB.prepare(`INSERT OR IGNORE INTO p_records(business,kind,id,revision,value)
         SELECT 'main','receiptPromptEvent',?,?,? WHERE (SELECT revision FROM p_meta WHERE id=1)=? AND ${activeRecipient}`)
-        .bind(id, uid(), JSON.stringify(event), revision, receiver, member ? 1 : 0).run();
+        .bind(id, uid(), JSON.stringify(event), revision, receiver, member ? 1 : 0)];
+    for (const row of next.values()) if (row.kind === 'notification' && !state.has('notification:' + row.id)) statements.push(env.DB.prepare(`INSERT OR IGNORE INTO p_records(business,kind,id,revision,value) SELECT 'main','notification',?,?,? WHERE EXISTS(SELECT 1 FROM p_records WHERE kind='receiptPromptEvent' AND id=?) AND (SELECT revision FROM p_meta WHERE id=1)=? AND ${activeRecipient}`).bind(row.id,row.revision,JSON.stringify(row.value),id,revision + 1,receiver,member ? 1 : 0));
+    const [inserted] = await env.DB.batch(statements);
     if (!inserted.meta.changes) return;
     event.outcome = await send(env, event, now);
     await env.DB.prepare("UPDATE p_records SET revision=?,value=? WHERE business='main' AND kind='receiptPromptEvent' AND id=?")

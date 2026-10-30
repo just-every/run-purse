@@ -241,6 +241,16 @@
         "equals": "cloudflare"
       },
       "group": "mail"
+    },
+    {
+      "name": "NOTIFICATION_WEBHOOK_SECRET",
+      "label": "Notification delivery webhook secret",
+      "help": "Optional dedicated Resend delivery-event signing secret. Supply privately after configuring the notification delivery callback; never reuse a session or inbound mail secret.",
+      "kind": "secret",
+      "required": false,
+      "group": "mail",
+      "ownerVisible": true,
+      "input": "entered"
     }
   ],
   "steps": [

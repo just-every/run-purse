@@ -1,3 +1,5 @@
+import { notificationPreference } from './notification-preferences';
+import { notificationInserts } from './notifications';
 import { operatorMail } from '../mail.server.mjs';
 import type { Bindings } from '../auth.server';
 import { load, authority } from './store';
@@ -21,12 +23,16 @@ export async function runSupplierReminders(env: Bindings, now = Date.now(), manu
         const reminder = { id, document: document.id, supplier: document.supplier, documentVersion: document.version, reason, expires: document.expires, createdAt: new Date(now).toISOString(), ...(manual ? { requestedBy: manual.actor.id } : {}), outcomes: [] as Data[] };
         const auth = manual ? authority(manual.actor) : undefined;
         const authSql = auth ? ` AND (${auth.sql}) AND (SELECT revision FROM p_meta WHERE id=1)=?` : '';
-        const inserted = await env.DB.prepare("INSERT OR IGNORE INTO p_records(business,kind,id,revision,value) SELECT 'main','supplierDocumentReminder',?,?,? WHERE EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='supplierDocument' AND id=? AND revision=?) AND EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='supplier' AND id=? AND revision=?)" + authSql).bind(id, crypto.randomUUID(), JSON.stringify(reminder), document.id, state.get('supplierDocument:' + document.id)!.revision, supplier.id, state.get('supplier:' + supplier.id)!.revision, ...(auth ? [...auth.params, revision] : [])).run();
+        const claimVersion=crypto.randomUUID();
+        const notificationRows=await notificationInserts(env.DB,state,[{kind:'supplierDocumentReminder',value:reminder}],{kind:'supplierDocumentReminder',id,revision:claimVersion});
+        const [inserted] = await env.DB.batch([env.DB.prepare("INSERT OR IGNORE INTO p_records(business,kind,id,revision,value) SELECT 'main','supplierDocumentReminder',?,?,? WHERE EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='supplierDocument' AND id=? AND revision=?) AND EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='supplier' AND id=? AND revision=?)" + authSql).bind(id, claimVersion, JSON.stringify(reminder), document.id, state.get('supplierDocument:' + document.id)!.revision, supplier.id, state.get('supplier:' + supplier.id)!.revision, ...(auth ? [...auth.params, revision] : [])),...notificationRows.map(statement=>statement)]);
         if (!inserted.meta.changes) { requireThat(!manual, 'State or authority changed; reload', 409); continue; }
         const refresh = await createSupplierRefresh(env, document.id, now);
         for (const target of ['supplier', 'owner']) {
             const recipient = target === 'owner' ? env.OWNER_EMAIL : supplier.contacts?.[0]?.email;
             let outcome: Data = { target, recipient: recipient ?? '', status: 'unavailable' };
+            const native=target==='owner'?await env.DB.prepare("SELECT id,email,role,version FROM oa_operators WHERE lower(email)=? AND status='active'").bind(recipient??'').first<any>():null;
+            if(native && notificationPreference(state,{...native,owner:native.role==='owner',session:'',dev:false}).version){ reminder.outcomes.push({...outcome,status:'suppressed',code:'notification-preferences'}); continue; }
             const sender = operatorMail(env);
             if (sender && env.MAIL_FROM && recipient) {
                 try {
