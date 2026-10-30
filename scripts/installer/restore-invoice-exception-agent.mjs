@@ -12,7 +12,7 @@ export function validateInvoiceExceptionAgent(all, get, check) {
         const invoice = get('invoice', run.invoice), order = get('order', run.order), exception = get('invoiceException', run.exception);
         check(run.workflow === 'invoice-exception' && run.version === 1 && run.mode === 'deterministic v1' && run.model === 'none' && run.provider === 'none'
             && run.algorithm === 'native-invoice-exception-v1' && !containsProtectedInput(run) && Number.isFinite(Date.parse(run.at)), 'exception_agent_execution');
-        check(invoice.order === order.id && exception.invoice === invoice.id && run.request === order.request && run.revision === order.revision
+        check(run.currency === invoice.currency && invoice.order === order.id && exception.invoice === invoice.id && run.request === order.request && run.revision === order.revision
             && run.openedAt === exception.openedAt, 'exception_agent_lineage');
         check(run.sourceValuesErased ? erasedSourceFact(all, 'agentRun', run.id, run)
             : run.inputDigest === digest(run.inputs) && run.outputDigest === digest({ explanations: run.explanations, proposals: run.proposals, holds: run.holds, outcomes: run.outcomes }), 'exception_agent_digest');

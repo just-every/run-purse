@@ -14,7 +14,7 @@ const businessRows = rows => rows.filter(r => !['agentRun', 'audit'].includes(r.
 
 test('Invoice exception drafts cite exact price and receipt evidence without executing purchasing or payment changes', async t => {
     const f = await invoiceExceptionAgentFixture(t), { h } = f;
-    const price = await f.create(7100), short = await f.create(7110, '10', '1000.00', '8');
+    const price = await f.create(7100), short = await f.create(7110, '10', '1000.00', '8'), excess = await f.create(7160, '11', '1100.00', '10');
     await f.run(price.invoice.id, f.buyer, 409);
     await f.controls();
     await h.command('agent-policy', { agent: 'AGENT-004', purchaseType: '*', version: 0, enabled: true,
@@ -66,6 +66,34 @@ test('Invoice exception drafts cite exact price and receipt evidence without exe
     assert.equal((await h.send('/api/purse/download/agentRun/' + priceRun.id, undefined, f.buyer)).status, 409);
     await f.controls(true); await f.run(price.invoice.id, f.buyer, 409, { sourceVersion: (await f.item(price.invoice.id)).sourceVersion });
     const current = await f.run(price.invoice.id);
+    const invoiceOnly = await h.command('access-role', { name: 'synthetic-purse-7164', permissions: ['invoice.read', 'invoice.review'] });
+    await h.command('member', { email: address(6207), name: 'synthetic-purse-6207', active: true, grants: [{ role: invoiceOnly.id }] });
+    await f.run(price.invoice.id, f.outsider, 403);
+    assert.equal((await h.send('/api/purse/download/agentRun/' + current.id, undefined, f.outsider)).status, 403);
+    // Invoice read alone also cannot execute or download a private review report.
+    await h.command('member', { email: address(6207), name: 'synthetic-purse-6207', active: true, roles: ['finance-viewer'] });
+    await f.run(price.invoice.id, f.outsider, 403);
+    assert.equal((await h.send('/api/purse/download/agentRun/' + current.id, undefined, f.outsider)).status, 403);
+    const over = await f.run(excess.invoice.id);
+    assert.equal(over.explanations[0].quantityMismatch, true);
+    assert.deepEqual([over.explanations[0].currentOrderedQ, over.explanations[0].cumulativeInvoiceQ], [10000, 11000]);
+    assert.ok(over.proposals.some(p => p.type === 'corrected-invoice-or-credit-request'));
+    // A later duplicate-original hold must survive proposal generation.
+    await h.command('attachment', { kind: 'invoice', record: short.invoice.id, ...price.original }, f.buyer);
+    const heldBefore = (await h.state()).data.invoice.find(i => i.id === short.invoice.id);
+    assert.ok(heldBefore.flags.some(flag => flag.code === 'duplicate-document'));
+    const heldRun = await f.run(short.invoice.id);
+    assert.ok(heldRun.holds.riskCodes.includes('duplicate-document'));
+    assert.deepEqual((await h.state()).data.invoice.find(i => i.id === short.invoice.id), heldBefore);
+    const terms = await h.command('payable-terms', { invoice: short.invoice.id, version: 0,
+        invoiceDate: '2026-10-28', term: 'Net 30', reason: 'Independent AP terms review' }, f.buyer);
+    await h.command('approve-payable', { invoice: short.invoice.id, version: terms.version, reason: 'Agent draft grants no risk waiver' }, f.buyer, 409);
+    const crossOrigin = await fetch(h.origin + '/api/purse/command/invoice-exception-agent-run', {
+        method: 'POST', headers: { origin: 'https://invalid.example.test', cookie: f.buyer, 'content-type': 'application/json' },
+        body: JSON.stringify({ id: price.invoice.id, sourceVersion: current.sourceVersion }) });
+    assert.equal(crossOrigin.status, 403);
+    await h.command('invoice-exception-agent-run', { id: price.invoice.id, sourceVersion: current.sourceVersion,
+        bankAccount: 'synthetic-purse-7163' }, f.buyer, 400);
     await h.command('member', { email: address(6204), name: 'synthetic-purse-6204', active: true,
         grants: [{ role: 'buyer', scope: { locations: ['Austin'] } }] });
     await h.command('invoice-exception-agent-run', { id: price.invoice.id, sourceVersion: current.sourceVersion }, f.buyer, 403);

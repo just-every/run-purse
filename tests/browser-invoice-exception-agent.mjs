@@ -25,7 +25,7 @@ try {
     await controls.getByLabel('Agent control reason', { exact: true }).fill('Owner enables invoice exception drafts');
     await controls.getByRole('button', { name: 'Save agent controls', exact: true }).click();
     await controls.getByRole('cell', { name: 'Invoice exceptions', exact: true }).waitFor();
-    await owner.screenshot({ path: join(evidence, 'exception-controls-1440.png'), fullPage: true });
+    await controls.screenshot({ path: join(evidence, 'exception-controls-1440.png') });
     await buyer.goto(f.h.origin + '/app?tab=Orders');
     const item = purchase => buyer.getByRole('region', { name: 'Exception ' + purchase.invoice.reference, exact: true });
     for (const purchase of [price, short]) {
@@ -36,7 +36,7 @@ try {
     }
     const priceReport = item(price).getByRole('region', { name: 'Exception agent report', exact: true });
     await priceReport.getByRole('heading', { name: 'Corrected invoice or credit request draft', exact: true }).waitFor();
-    assert.match(await priceReport.innerText(), /issued-price amount is 100000; the billed difference is 10000/);
+    assert.match(await priceReport.innerText(), /issued-price amount is USD 1000.00; the billed difference is USD 100.00/);
     const shortReport = item(short).getByRole('region', { name: 'Exception agent report', exact: true });
     await shortReport.getByRole('heading', { name: 'Receiver review draft', exact: true }).waitFor();
     assert.match(await shortReport.innerText(), /8 accepted against 10 invoiced/);
@@ -50,19 +50,19 @@ try {
     assert.deepEqual((await f.raw()).filter(r => !['agentRun', 'audit', 'agentPolicy'].includes(r.kind)), snapshot);
     assert.equal(f.h.messages.length, messages);
     assert.equal(await buyer.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    await buyer.screenshot({ path: join(evidence, 'exception-drafts-1440.png'), fullPage: true });
+    await buyer.getByRole('region', { name: 'Invoice exception work queue', exact: true }).screenshot({ path: join(evidence, 'exception-drafts-1440.png') });
     // Phone proof reuses the same outcomes, without duplicating the functional journey.
     const phoneOwner = await (await context(f.h.owner, 390)).newPage(), phoneBuyer = await (await context(f.buyer, 390)).newPage();
     await phoneOwner.goto(f.h.origin + '/app?tab=Settings');
     await phoneOwner.getByLabel('Native agent', { exact: true }).selectOption('AGENT-004');
-    await phoneOwner.screenshot({ path: join(evidence, 'exception-controls-390.png'), fullPage: true });
+    await phoneOwner.getByRole('region', { name: 'Agent controls', exact: true }).screenshot({ path: join(evidence, 'exception-controls-390.png') });
     await phoneBuyer.goto(f.h.origin + '/app?tab=Orders');
     for (const purchase of [price, short]) {
         const region = phoneBuyer.getByRole('region', { name: 'Exception ' + purchase.invoice.reference, exact: true });
         await region.getByText('Invoice exception agent', { exact: true }).click();
     }
     assert.equal(await phoneBuyer.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'Phone smoke fits the viewport');
-    await phoneBuyer.screenshot({ path: join(evidence, 'exception-drafts-390.png'), fullPage: true });
+    await phoneBuyer.getByRole('region', { name: 'Invoice exception work queue', exact: true }).screenshot({ path: join(evidence, 'exception-drafts-390.png') });
     await f.controls(false); await buyer.reload();
     await item(price).getByText('Invoice exception agent', { exact: true }).click();
     await item(price).getByText('Paused or not enabled', { exact: false }).waitFor();
