@@ -19,7 +19,7 @@ for (const [k, r] of after) {
     if (before.get(k)?.revision === r.revision)
         continue;
     if(r.kind==='agentPolicy' && r.value.agent==='AGENT-001') q.push(db.prepare('INSERT INTO p_intake_agent_authority(policy,version,actor,operator_version) VALUES(?,?,?,?) ON CONFLICT(policy) DO UPDATE SET version=excluded.version,actor=excluded.actor,operator_version=excluded.operator_version').bind(r.id,r.value.version,a.id,a.version));
-    if(r.kind==='agentRun' && r.value.agent==='AGENT-001' || r.kind==='intakeAgentReview') {
+    if((r.kind==='agentRun' && r.value.agent==='AGENT-001') || r.kind==='intakeAgentReview') {
         const run=r.kind==='agentRun'?r.value:after.get('agentRun:'+r.value.run)!.value;
         for(const proof of run.inputs.governance) q.push(db.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM p_intake_agent_authority p JOIN oa_operators o ON o.id=p.actor AND o.version=p.operator_version AND o.status='active' AND o.role='owner' WHERE p.policy=? AND p.version=?) THEN 1 ELSE 0 END").bind(proof.id,proof.version));
     }

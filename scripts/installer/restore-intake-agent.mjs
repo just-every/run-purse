@@ -3,7 +3,7 @@ import { erasedSourceFact } from '../../src/purse/erasure-journal.mjs';
 import { containsProtectedInput } from '../../src/purse/protected-context-fields.mjs';
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const same = (a,b) => JSON.stringify(a) === JSON.stringify(b);
-const kinds = new Set(['intakeForm','business','catalogue','supplier','revision','request','decision','agentPolicy']);
+const kinds = new Set(['intakeForm','business','catalogue','supplier','revision','request','decision','agentPolicy','policy']);
 
 /** Source records and reviewed drafts are history. Native execution consent is never imported. */
 export function validateIntakeAgent(all, get, check) {
