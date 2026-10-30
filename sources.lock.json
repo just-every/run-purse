@@ -112,7 +112,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "e59d9d6f56d25458fc0e29357a9ec01ba4293bff3b542b45ed595d687a65edee",
+      "sha256": "7d3007976af7a95fdb16c3b53a520a23d79d720452b5ef845564164ea9351661",
       "executable": false
     },
     "CLAUDE.md": {
@@ -396,15 +396,19 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "7f212d9f8db0377f285eb731c7032865930e610dcf79a373419c2f0434e827e1",
+      "sha256": "fecfa9ed4fa42976e8ced0158b78928b36645d6eb7b9b7d057a641afda24c800",
       "executable": false
     },
     "packaging.json": {
       "sha256": "16bcc328d91c7b26c866b79b02e74a07a6be380523adcf77762c01270305d57d",
       "executable": false
     },
+    "patches/miniflare@5.20260907.0-alpha.patch": {
+      "sha256": "9751f9c5ed79171ed70eb94667e6bb26ba08a0d5392f86d09a6ae7ad4819ddeb",
+      "executable": false
+    },
     "pnpm-lock.yaml": {
-      "sha256": "759c834febdd1dfe008138006163f72a69a81f9930a2c2dc1a8df77592c9cc13",
+      "sha256": "c6ba826926505158b26d94f567898b5537a74d879a4a2becaf4b12b4569d7c11",
       "executable": false
     },
     "public/brand/apple-touch-icon.png": {
@@ -1140,7 +1144,7 @@
       "executable": false
     },
     "SOURCE.md": {
-      "sha256": "e7a67332b8220fbd4b17ae60071bd02e425fd6d171b02f73826e8ce85a88bc84",
+      "sha256": "be11dfed00f49a590f1b620981d77184d9b826087dc982f043ba3a7b5ed88573",
       "executable": false
     },
     "src/agent-door/business.server.ts": {

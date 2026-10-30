@@ -89,3 +89,9 @@ test signer fixtures are excluded from these runtime copies. The pinned command
 dependency is now `@runeditrun/rer` 0.2.91; older origin paragraphs above describe
 the retained application source and migration history. New migrations 0042–0044
 append Business settings, durable Business identities and agent-door storage.
+
+The development toolchain also applies the recorded
+`patches/miniflare@5.20260907.0-alpha.patch` from that same Base commit. It waits
+for synchronous RPC message delivery after notification while retaining the
+message-identity assertion. The pnpm lock binds this patch for the CLI, Wrangler
+and native verification fixtures.

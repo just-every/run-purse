@@ -233,6 +233,20 @@
       }
     },
     {
+      "path": "patches/miniflare@5.20260907.0-alpha.patch",
+      "originPath": "patches/miniflare@5.20260907.0-alpha.patch",
+      "revision": "2135c394939f4a737adabdc8003b0e667b31ac5a",
+      "files": {
+        "patches/miniflare@5.20260907.0-alpha.patch": "9751f9c5ed79171ed70eb94667e6bb26ba08a0d5392f86d09a6ae7ad4819ddeb"
+      },
+      "modes": {
+        "patches/miniflare@5.20260907.0-alpha.patch": "100644"
+      },
+      "originFiles": [
+        "patches/miniflare@5.20260907.0-alpha.patch"
+      ]
+    },
+    {
       "path": "public/fonts/outfit/LICENSE.txt",
       "originPath": "default-seed/public/fonts/outfit/LICENSE.txt",
       "revision": "11f94fec479228d71ba6d7dd6ea7796c0d42c544",

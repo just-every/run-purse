@@ -69,6 +69,9 @@
   },
   "packageManager": "pnpm@10.12.4",
   "pnpm": {
+    "patchedDependencies": {
+      "miniflare@5.20260907.0-alpha": "patches/miniflare@5.20260907.0-alpha.patch"
+    },
     "onlyBuiltDependencies": [
       "esbuild",
       "workerd"
