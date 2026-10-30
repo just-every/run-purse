@@ -29,7 +29,12 @@ export function validateIntakeAgent(all, get, check) {
    check(get('catalogue',candidate.id) && Number.isSafeInteger(candidate.unitMinor) && candidate.sources.some(ref=>ref.kind==='catalogue'&&ref.id===candidate.id),'intake_agent_candidate');
    for(const reference of [...candidate.sources,...candidate.codingSources])check(run.references.some(ref=>same(ref,reference)),'intake_agent_citation');
    check(Object.keys(candidate.coding).every(key=>['costCentre','project','glAccount'].includes(key)),'intake_agent_safe_coding');
-   if(Object.keys(candidate.coding).length)check(candidate.codingSources.some(ref=>ref.kind==='revision'&&run.sources.some(source=>source.kind==='revision'&&source.id===ref.id&&same(source.value.coding,candidate.coding))),'intake_agent_coding_source');
+   if(Object.keys(candidate.coding).length)check(candidate.codingSources.some(ref=>ref.kind==='revision'&&run.sources.some(source=>{
+    if(source.kind!=='revision'||source.id!==ref.id)return false;
+    // Earlier immutable runs cite one line; new runs identify each line in a shared revision.
+    const line=candidate.codingLine ? source.value.lines?.find(line=>line.id===candidate.codingLine) : source.value;
+    return line && same(line.coding,candidate.coding);
+   })),'intake_agent_coding_source');
   }
   if(run.output.fields) {
    check(run.output.fields.intakeForm===run.inputs.intakeForm && run.output.fields.lines.length===1 && run.output.fields.lines[0].catalogue===run.output.item
