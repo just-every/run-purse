@@ -19,8 +19,8 @@ for(const id of selected){
     if(index<0){
         const preceding=contract.clauses.slice(0,contract.clauses.indexOf(clause)).reverse().find(other=>other.area===clause.area);
         const anchor=lines.findIndex(line=>line.startsWith('- **'+preceding?.id+' — '));
-        if(anchor<0)throw Error('Acceptance insertion anchor not found: '+id);
-        lines.splice(anchor+1,0,entry);
+        if(anchor<0)lines.push(entry);
+        else lines.splice(anchor+1,0,entry);
     }else lines[index]=entry;
     acceptance=lines.join('\n');
 }
