@@ -1,3 +1,4 @@
+import {depositsWebJourney} from './browser-deposits.mjs'
 import {supplierCreditsWebJourney} from './browser-supplier-credits.mjs'
 import assert from 'node:assert/strict'
 import {join} from 'node:path'
@@ -36,7 +37,7 @@ export async function payablesJourney(browser,root,origin,width,evidence){
   await buyer.page.screenshot({path:join(evidence,`AP-003-source-${width}.png`),fullPage:true});
   await requester.page.reload();await requester.page.getByRole('navigation').getByRole('button',{name:'Orders',exact:true}).click();assert.equal(await requester.page.getByRole('heading',{name:'Payment terms and cash requirements',exact:true}).count(),0);
   assert.equal(await buyer.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`AP-003 fits ${width}`);
-  if(width===1440)await supplierCreditsWebJourney();
+  if(width===1440){await supplierCreditsWebJourney();await depositsWebJourney();}
   return {clause:'AP-003',width,invoice:i.id,order:o.id};
  }finally{for(const s of [owner,buyer,requester,approver,receiver])await s.context.close()}
 }

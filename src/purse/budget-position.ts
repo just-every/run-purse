@@ -16,7 +16,7 @@ export function periodBudgetPosition(s: State, policy: Data) {
   for(const issued of scopes) {
   const sourceOrders=orders.filter(order=>order.request===request.id&&(!issued?.supplierGroup||order.supplierGroup?.key===issued.supplierGroup.key&&order.supplier===issued.supplier)&&order.currency===policy.currency&&budgetPortion(s,order,order.totalMinor,policy.id)>0&&(order.issuedAt||order.adoption)),ids=new Set(sourceOrders.map(order=>order.id));
   const billPart=(bill:Data)=>{const order=get(s,'order',bill.order);const lines=bill.allocations.map((allocation:Data)=>({...order.lines.find((line:Data)=>line.id===allocation.line),totalMinor:allocation.amountMinor}));return budgetPortion(s,{...order,lines,supplierGroup:undefined,charges:[],freightMinor:0,taxMinor:0,otherChargesMinor:0,totalMinor:bill.totalMinor},bill.totalMinor,policy.id);};
-  const bills=invoices.filter(invoice=>ids.has(invoice.order)&&invoice.currency===policy.currency&&billPart(invoice)>0);
+  const bills=invoices.filter(invoice=>ids.has(invoice.order)&&invoice.currency===policy.currency&&(!invoice.depositKind || invoice.paymentApproval)&&billPart(invoice)>0);
   const deposits=all(s,'deposit').filter(deposit=>ids.has(deposit.order));
   const actualMinor=bills.reduce((sum,bill)=>sum+billPart(bill),0)+deposits.reduce((sum,deposit)=>sum+budgetPortion(s,get(s,'order',deposit.order),deposit.amountMinor,policy.id),0)+all(s,'travelExpense').filter(expense=>expense.request===request.id&&expense.policy===policy.id&&expense.currency===policy.currency).reduce((sum,expense)=>sum+expense.totalMinor,0);
   if(!ledger&&!issued&&!actualMinor)continue;

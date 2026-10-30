@@ -1,3 +1,4 @@
+import { nativeDepositInvoice } from './deposit-position';
 import { operationalOrder } from './adoption-position';
 import { openInvoiceFlags } from './invoice-status';
 import { audit, date, get, put, requireThat, text, type Actor, type Data, type State } from './types';
@@ -20,6 +21,7 @@ export function payables(s: State, a: Actor, op: string, b: Data): Data | undefi
     }
     const invoice = get(s, 'invoice', b.invoice), order = get(s, 'order', invoice.order), old = s.get('payable:' + invoice.id)?.value;
     requirePermission(s, a, permission, invoice);
+    requireThat(!nativeDepositInvoice(invoice), 'Deposit bill terms and approval require the current exact-term owner rule and confirmed original', 409);
     requireThat(operationalOrder(s, order) && (!invoice.imported || invoice.adoptedVia), 'Native or explicitly adopted invoice evidence required', 409);
     if (invoice.imported || invoice.supplierSubmission) requireThat(invoice.sourceConfirmation === 'confirmed', 'Confirm the private invoice original through a source-bound invoice reading before new cash-planning terms or approval', 409);
     requireThat(b.version === (old?.version ?? 0), 'Payable changed; reload', 409);

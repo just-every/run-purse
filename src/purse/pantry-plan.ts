@@ -11,7 +11,7 @@ export function pantryPlan(state: State, input: Data, connection: Data) {
     requireThat(invoiceCreditApplied(state, invoice.id) === 0, 'Native credit applications need ledger credit transport before syncing this bill',409);
     requireThat(invoice.currency === connection.currency, 'Invoice currency must match the owner-confirmed Pantry book currency', 409);
     requireThat(payable.approvedAt && payable.version === input.payableVersion && payable.approvedMinor === invoice.totalMinor, 'Current cash-planning approval and version required', 409);
-    requireThat(!invoice.imported && !invoice.depositAppliedMinor, 'Imported and deposit bills need their own ledger identity and prepaid reconciliation before sync', 409);
+    requireThat(!invoice.imported && !invoice.depositKind && !order.poDetails?.deposit && !invoice.depositAppliedMinor, 'Imported and deposit bills need their own ledger identity and prepaid reconciliation before sync', 409);
     requireThat(!invoice.exception && !openInvoiceFlags(invoice).length && !discrepancies(state).filter(d => d.invoiceId === invoice.id).some(d => d.priceMismatch || d.quantityMismatch || d.receiptShortfall || d.closedBalance || d.exception), 'Resolve invoice discrepancies and risk holds before Pantry posting', 409);
     const accountId = text(input.accountId, 'Pantry expense account', 200), vendorId = input.vendorId ? text(input.vendorId, 'Pantry vendor', 200) : null;
     const lines = invoice.allocations.map((allocation: Data) => ({description: order.lines.find((line: Data) => line.id === allocation.line)!.description,accountId,amount:(allocation.amountMinor / 100).toFixed(2)}));

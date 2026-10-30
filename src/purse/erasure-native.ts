@@ -20,6 +20,7 @@ export async function eraseNativeCopies(env:Bindings,plan:ErasurePlan,a:Actor) {
    sql('DELETE FROM oa_external_identities WHERE operator_id=?',operator),
    sql('DELETE FROM p_scim_links WHERE operator_id=?',operator));
  }
+ for(const row of plan.affected.filter(row=>row.kind==='depositRule'))statements.push(sql('DELETE FROM p_deposit_rule_authority WHERE order_id=?',row.id));
  for(const row of plan.affected.filter(row=>row.kind==='crossTeamReview'))statements.push(sql('DELETE FROM p_cross_review_authority WHERE review=?',row.id));
  for(const value of plan.subject.values)statements.push(sql('DELETE FROM oa_limits WHERE instr(lower(key),lower(?))>0',value));
  for(const row of (await db.prepare('SELECT * FROM oa_auth_audit').all<Data>()).results) {

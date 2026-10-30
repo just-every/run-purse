@@ -1,3 +1,4 @@
+import { depositsJourney } from './deposits.test.mjs';
 import { supplierCreditsJourney } from './supplier-credits.test.mjs';
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -84,4 +85,5 @@ test('AP-003 terms, ordered due bills, expiring discount and weekly cash obligat
  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(rows),true,'AP-003 planning evidence survives portable graph validation');
  assert.ok((await state()).data.audit.some(a=>a.action==='approve-payable'&&a.record===i.id&&a.approvedMinor===60000));
  await supplierCreditsJourney(t);
+ await depositsJourney(t);
 });
