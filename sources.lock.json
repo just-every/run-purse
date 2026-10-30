@@ -5260,11 +5260,11 @@
       "executable": false
     },
     "tests/protected-value-assertions.mjs": {
-      "sha256": "5d318e743eed8e4db56d5da021ff8d3e225826a955b2f8b2b3f306eb6cae7b1e",
+      "sha256": "423e1e0ef722770f121544501f53bf64a4e689f54846166c0eda228d42df8514",
       "executable": false
     },
     "tests/protected-value-assertions.test.mjs": {
-      "sha256": "4f9df5bc7ee7eeb64fd5ff402d9abcdc9dff5051c8dfdf3da238bed69c95a829",
+      "sha256": "65307076d22bb2601c5875aa270c0f6ddac28940beb6bdfc63529e594b55389d",
       "executable": false
     },
     "tests/purse-harness.mjs": {
