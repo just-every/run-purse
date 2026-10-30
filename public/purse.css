@@ -411,3 +411,8 @@ select:not([multiple],[size]:not([size="1"])):disabled { --rer-select-ink: color
 
 .icon-tooltip { position: relative; }
 .control-tooltip { position: absolute; bottom: calc(100% + 6px); right: 0; z-index: 20; width: max-content; max-width: min(240px, 80vw); padding: 6px 9px; border-radius: 4px; background: #172333; color: #fff; font: 12px/1.4 Arial, sans-serif; text-align: left; white-space: normal; pointer-events: none; }
+
+/* Keep native agent evidence and decisions operable by touch. */
+.app:has(main:is([data-tab='Audit'], [data-tab='Requests'])) :is(button, input:not([type='checkbox']):not([type='radio']), select, summary, a[class*='btn']) {
+    min-height: 44px;
+}
