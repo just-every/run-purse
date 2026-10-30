@@ -9,6 +9,7 @@ import { createPortability } from '@runeditrun/rer/modules/portability';
 import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
 import portability from '../scripts/installer/portability.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
+import { assertNoProtectedValues } from './protected-value-assertions.mjs';
 
 const businessRows = rows => rows.filter(r => !['agentRun', 'audit'].includes(r.kind));
 
@@ -36,7 +37,8 @@ test('Invoice exception drafts cite exact price and receipt evidence without exe
             assert.ok(run.sources.some(s => s.kind === citation.kind && s.id === citation.id && s.version === citation.version));
         assert.ok(run.sources.some(s => s.kind === 'order' && s.id === purchase.order.id && s.value.revision === 1));
         assert.ok(run.sources.some(s => s.kind === 'receipt' && s.id === purchase.receipt.id));
-        for (const value of ['9876543215678', '987651234', '5678', '1234', 'send a wire']) assert.ok(!JSON.stringify(run).includes(value));
+        assertNoProtectedValues(run, ['9876543215678', '987651234'], ['5678', '1234']);
+        assert.ok(!JSON.stringify(run).includes('send a wire'));
         const downloaded = await h.send('/api/purse/download/agentRun/' + run.id, undefined, f.buyer);
         assert.equal(downloaded.status, 200); assert.deepEqual(downloaded.value, run);
         await h.command('edit-preparation', { id: run.id, version: 1, draft: 'Overwritten' }, f.buyer, 409);

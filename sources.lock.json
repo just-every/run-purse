@@ -376,7 +376,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "29d5b3483487385fefe9176787bbeaa19b4a2161c6dd546c6d62f817e14b0519",
+      "sha256": "558875f76e357873469b7f7d3bc7454186c32f313333a7dffc509a4f611c5654",
       "executable": false
     },
     "packaging.json": {
@@ -5044,7 +5044,7 @@
       "executable": false
     },
     "tests/coding-agent.test.mjs": {
-      "sha256": "c1e8e1b7e8bd422490d3b67659451f4e1e0db54627c86f7cf003015d0778f930",
+      "sha256": "a4886f5e1bfa4ed72c71d89b1c2bf912d7facc53f1a162a44469e4eda510aabd",
       "executable": false
     },
     "tests/comments-fixture.mjs": {
@@ -5136,7 +5136,7 @@
       "executable": false
     },
     "tests/invoice-exception-agent.test.mjs": {
-      "sha256": "f67593af18ded275141928ee3dd39c08195d130308b7252cfb1c472f1d098573",
+      "sha256": "3402902227a68f8e06809d2b498ae90dd97ca9033c2c455c9b9c2ee88063ac37",
       "executable": false
     },
     "tests/invoice-exceptions-fixture.mjs": {
@@ -5257,6 +5257,14 @@
     },
     "tests/private-schedule.mjs": {
       "sha256": "add07ba13aded7dca65f1c1168543b661ec91b6e4c72f0e45edbd551d24128c7",
+      "executable": false
+    },
+    "tests/protected-value-assertions.mjs": {
+      "sha256": "5d318e743eed8e4db56d5da021ff8d3e225826a955b2f8b2b3f306eb6cae7b1e",
+      "executable": false
+    },
+    "tests/protected-value-assertions.test.mjs": {
+      "sha256": "4f9df5bc7ee7eeb64fd5ff402d9abcdc9dff5051c8dfdf3da238bed69c95a829",
       "executable": false
     },
     "tests/purse-harness.mjs": {
