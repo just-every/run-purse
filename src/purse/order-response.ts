@@ -1,4 +1,5 @@
 import { prepareShipmentReference } from './shipment-references';
+import { notificationInserts } from './notifications';
 import type { Bindings } from '../auth.server';
 import { currentDecision } from './approval';
 import { allowed, date, extended, get, qty, quantity, requirePermission, requireThat, text, uid, put, type Actor, type Data, type State } from './types';
@@ -53,12 +54,14 @@ export async function recordOrderResponse(env: Bindings, state: State, revision:
     const previous = state.get('supplierOrderEvidence:' + event.order)?.value;
     const entry = { version: (previous?.version ?? 0) + 1, promisedDate: response.promisedDate, acknowledgedAt: at, source: 'Supplier response ' + response.id + ' · approved revision ' + event.revision + ' · stated identity unverified', response: response.id, revision: event.revision, actor: 'supplier-link', at };
     const evidence = { id: order.id, order: order.id, supplier: order.supplier, ...entry, history: [...(previous?.history ?? []), entry] };
+    const notificationRows=await notificationInserts(env.DB,state,!event.acknowledgment?[{kind:'orderAcknowledgment',value:acknowledgment}]:[]);
     try { await env.DB.batch([
         env.DB.prepare(`INSERT INTO p_guard SELECT CASE WHEN EXISTS(${liveOrderLink}) AND (SELECT revision FROM p_meta WHERE id=1)=? THEN 1 ELSE 0 END`).bind(hash, Date.now(), revision),
         env.DB.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(event.actor, event.operatorVersion),
         ...proofs.map((proof: Data) => env.DB.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(proof.actor, proof.version)),
         insertOrderSendRecord(env.DB, 'orderSupplierResponse', response),
         ...(shipment ? [insertOrderSendRecord(env.DB, 'shipmentReference', shipment), insertOrderSendRecord(env.DB, 'audit', { ...shipment, id: uid(), action: 'shipment-reference-recorded', record: order.id, shipmentReference: shipment.id })] : []),
+        ...notificationRows,
         ...(!event.acknowledgment ? [insertOrderSendRecord(env.DB, 'orderAcknowledgment', acknowledgment), insertOrderSendRecord(env.DB, 'audit', { id: uid(), action: 'order-acknowledged', record: event.order, send: event.id, actor: 'supplier-link', name: acknowledgment.name, identityVerified: false, revision: event.revision, pdfSha256: event.pdf.sha256, at })] : []),
         ...(response.promisedDate ? [env.DB.prepare("INSERT INTO p_records(business,kind,id,revision,value) VALUES('main','supplierOrderEvidence',?,?,?) ON CONFLICT(business,kind,id) DO UPDATE SET revision=excluded.revision,value=excluded.value").bind(order.id, uid(), JSON.stringify(evidence))] : []),
         env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.response',json(?),'$.acknowledgment',json(?)) WHERE business='main' AND kind='orderSend' AND id=?").bind(uid(), JSON.stringify(response), JSON.stringify(acknowledgment), event.id),

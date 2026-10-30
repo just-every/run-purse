@@ -1,3 +1,4 @@
+import { runNotificationDeliveries } from './purse/notification-delivery'
 import { withDemo } from './modules/demo/index.mjs'
 import start from '@tanstack/react-start/server-entry'
 import { api } from './purse/api'
@@ -17,7 +18,7 @@ function noTransform(response: Response): Response {
 }
 
 const worker = {
-  async scheduled(event, env, ctx) { ctx.waitUntil(runPurchasingSchedule(env, event.scheduledTime)); },
+  async scheduled(event, env, ctx) { ctx.waitUntil(new Date(event.scheduledTime).getUTCMinutes()===0 ? runPurchasingSchedule(env, event.scheduledTime) : runNotificationDeliveries(env,event.scheduledTime)); },
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)
     if (asset) return asset

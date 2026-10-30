@@ -282,10 +282,11 @@
     "EMAIL_INTAKE_WEBHOOK_SECRET",
     "PROTECTED_DATA_PREVIOUS_KEY",
     "OIDC_CREDENTIALS",
-    "OIDC_TRANSACTION_SECRET"
+    "OIDC_TRANSACTION_SECRET",
+    "NOTIFICATION_WEBHOOK_SECRET"
   ],
   "schedules": [
-    "0 * * * *"
+    "* * * * *"
   ],
   "queueConsumers": [],
   "healthPath": "/health",
