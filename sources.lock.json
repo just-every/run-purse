@@ -5256,7 +5256,7 @@
       "executable": false
     },
     "tests/po-supplier-groups.test.mjs": {
-      "sha256": "b9662eec12dd2c531ba5b7b1216a2d9969b75f2a41c04617a9d8d5a11f5a1bf4",
+      "sha256": "0ea3eda3734b4f658c308f8aa8b6afa5db37344ab9351eaa10b61d9a8e2215ed",
       "executable": false
     },
     "tests/private-schedule.mjs": {
