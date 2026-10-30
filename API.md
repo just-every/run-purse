@@ -641,7 +641,7 @@ dimension sync is implied. An allocation's explicit location/GL overrides its
 line and header defaults. Each share consumes its selected dated budget. A used
 period or coding selector cannot be relabelled; create another policy. Historical
 purchases retain their recorded budget identity. Ambiguous current mappings refuse
-rather than choosing a budget by identifier. Cross-period amendment dispositions remain unbuilt and refuse.
+rather than choosing a budget by identifier. Cross-period amendments require the reviewed remaining-commitment door described below.
 `overBudget:"block"|"owner"` and `budgetOwner` select refusal or an independent
 budget-owner step for each allocation’s overage. Reservation waits for every
 required owner’s exact decision. A later increase requires new budget authority.
@@ -656,7 +656,7 @@ recorded invoices, imported deposit/net-credit evidence and approved travel
 reports consume exposure once. Invoice identifiers keep their invoice-read gate.
 This is not a claim of matched/synced bills, payment or card settlement.
 Report filters and groupings include GL and the permitted native custom field
-keys returned in `customDimensions`. Cross-period dispositions, native deposits,
+keys returned in `customDimensions`. Dispositions involving received or billed supply, native deposits,
 matched/synced bills and provider-funded/settled cards remain BUDGET-001 gaps.
 
 ## Buyer conversion revisions
@@ -1113,3 +1113,33 @@ service, blanket, recurring or adopted groups remain unavailable. Grouped date
 changes and amendments require a separately supported disposition; this door
 refuses them. Native group issuance sends no supplier message and records no
 payment or connected-ledger posting.
+## Reviewed budget period disposition
+
+The current native owner opens an issued goods PO in Orders and chooses
+**Move commitment to another budget period**. Preview selects the new need date,
+shows the exact original and destination allocation budgets and amounts, and
+writes nothing. Every destination must have enough existing available capacity
+and a named current member budget owner, from its budget assignment or policy.
+Budget amounts never move or increase.
+
+`budget-disposition-preview` takes `{id:orderId,revision:currentRequestRevision,needDate}`
+through the native command door. `budget-disposition-amend` takes the same input
+with the returned `review`, `consent:true` and a reason. Review binds the native
+session, source commitment, exact remaining shares and every source and
+destination policy and assignment version. It creates an ordinary draft
+amendment with unchanged purchasing amounts and allocations. Submit, renew the
+independent purchase approval and every destination owner decision, then convert
+and issue. Existing source commitments stay in place through review and approval.
+Issuance releases the original shares and commits the same destination shares
+in the existing atomic state and live-authority transaction. Concurrent issuance
+cannot repeat that movement. Changed policies, revoked authority or insufficient
+current capacity require a fresh review or renewed approval.
+
+Only wholly unreceived, unbilled native goods orders qualify. Receipt history,
+service value, adopted history, deposits, card records and blanket orders refuse.
+Original documents, source budget amounts, historical decisions and monetary
+events remain evidence. Archives retain these facts and anonymous budget sums
+but exclude disposition consent authority; unissued restored proposals need
+fresh current-owner review and purchase approvals. Personal erasure invalidates
+affected unissued consent while retaining anonymous financial chronology.
+Scoped delegation and provider boundaries remain BUDGET-001 gaps.

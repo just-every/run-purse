@@ -67,7 +67,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   return value;
  };
  for(const [oldKey,row]of before) {
-  if(['nativeReviewAuthority','nativeTaxAuthority'].includes(row.kind))continue;
+  if(['nativeReviewAuthority','nativeTaxAuthority','nativeBudgetAuthority'].includes(row.kind))continue;
   if(row.kind==='erasureReceipt'&&row.value.actor===subject.operator){const value={...row.value,actor:alias};state.set(oldKey,{...row,value});fields.push({kind:row.kind,id:row.id,path:['actor'],before:erasureDigest(row.value.actor),after:erasureDigest(alias)});continue;}
   if(['supplierMatchingKey','invoiceEvidenceKey','erasureReceipt'].includes(row.kind))continue;
   const affected=linked.has(row.id),value=visit(row.value,'',affected);

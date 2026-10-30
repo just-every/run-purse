@@ -256,6 +256,12 @@
       "name": "0041_supplier_tax.sql",
       "sha256": "fd3339e2bbb7580ea2d7087d854506a23650eb9a4c1c7cc85178afa4f1fc9439",
       "sql": "-- Current review authority belongs to this installation and is never portable.\nCREATE TABLE p_supplier_tax_authority (\n    review TEXT PRIMARY KEY,\n    actor TEXT NOT NULL,\n    operator_version INTEGER NOT NULL\n);\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0042_budget_disposition.sql",
+      "sha256": "418fd4c8afc4800970ffaa2921ba1ae92ddc9f591035b22518bf0fbeda2de04f",
+      "sql": "CREATE TABLE p_budget_disposition_authority (\n disposition TEXT PRIMARY KEY,\n actor TEXT NOT NULL,\n operator_version INTEGER NOT NULL\n);\n"
     }
   ],
   "compatibilityDate": "2026-09-08",
