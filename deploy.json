@@ -45,12 +45,14 @@
     {
       "binding": "OIDC_PROVIDERS",
       "environment": "OIDC_PROVIDERS",
-      "optional": true
+      "optional": true,
+      "verifyStandIn": "[]"
     },
     {
       "binding": "OIDC_CREDENTIALS",
       "environment": "OIDC_CREDENTIALS",
-      "optional": true
+      "optional": true,
+      "verifyStandIn": "{}"
     },
     {
       "binding": "OIDC_TRANSACTION_SECRET",
