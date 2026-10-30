@@ -1,189 +1,523 @@
 {
   "1": [
-    ["tests/browser.mjs", "--width=390", "--journey=agreements"],
-    ["tests/browser-comments.mjs", "--width=1440"],
-    ["tests/browser-budget-import.mjs"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=agreements"
+    ],
+    [
+      "tests/browser-comments.mjs",
+      "--width=1440"
+    ],
+    [
+      "tests/browser-budget-import.mjs"
+    ]
   ],
   "2": [
-    ["tests/browser.mjs", "--width=390", "--journey=agent-value"],
-    ["tests/browser-comments.mjs", "--width=390"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=agent-value"
+    ],
+    [
+      "tests/browser-comments.mjs",
+      "--width=390"
+    ]
   ],
   "3": [
-    ["tests/browser.mjs", "--width=390", "--journey=quote-agent"],
-    ["tests/browser-cross-team-reviews.mjs"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=quote-agent"
+    ],
+    [
+      "tests/browser-cross-team-reviews.mjs"
+    ]
   ],
   "4": [
-    ["tests/browser.mjs", "--width=1440", "--journey=catalogue"],
-    ["tests/browser-catalogue-import.mjs"],
-    ["tests/browser-supplier-tax.mjs"],
-    ["tests/browser-supplier-proposals.mjs"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=catalogue"
+    ],
+    [
+      "tests/browser-catalogue-import.mjs"
+    ],
+    [
+      "tests/browser-supplier-tax.mjs"
+    ],
+    [
+      "tests/browser-supplier-proposals.mjs"
+    ]
   ],
   "5": [
-    ["tests/browser.mjs", "--width=390", "--journey=audit-log"],
-    ["tests/browser-invoice-exceptions.mjs", "--width=1440"],
-    ["tests/browser-custom-fields.mjs"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=audit-log"
+    ],
+    [
+      "tests/browser-invoice-exceptions.mjs",
+      "--width=1440"
+    ],
+    [
+      "tests/browser-custom-fields.mjs"
+    ]
   ],
   "6": [
-    ["tests/browser.mjs", "--width=1440", "--journey=supplier-duplicates"],
-    ["tests/browser-po-supplier-groups.mjs"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=supplier-duplicates"
+    ],
+    [
+      "tests/browser-po-supplier-groups.mjs"
+    ],
+    [
+      "tests/browser-intake-agent.mjs"
+    ]
   ],
   "7": [
-    ["tests/browser.mjs", "--width=1440", "--journey=order-adoption"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=order-adoption"
+    ]
   ],
   "8": [
-    ["tests/browser.mjs", "--width=1440", "--journey=supplier-documents"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=supplier-documents"
+    ]
   ],
   "9": [
-    ["tests/browser.mjs", "--width=390", "--journey=catalogue"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=catalogue"
+    ]
   ],
   "10": [
-    ["tests/browser.mjs", "--width=1440", "--journey=order-chasing"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=order-chasing"
+    ]
   ],
   "11": [
-    ["tests/browser.mjs", "--width=1440", "--journey=protected-storage"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=protected-storage"
+    ]
   ],
   "12": [
-    ["tests/browser.mjs", "--width=390", "--journey=rfq"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=rfq"
+    ]
   ],
   "13": [
-    ["tests/browser.mjs", "--width=1440", "--journey=invoice-risk"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=invoice-risk"
+    ]
   ],
   "14": [
-    ["tests/browser.mjs", "--width=1440", "--journey=invoice-inbox"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=invoice-inbox"
+    ]
   ],
   "15": [
-    ["tests/browser.mjs", "--width=1440", "--journey=email-intake"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=email-intake"
+    ]
   ],
   "16": [
-    ["tests/browser.mjs", "--width=390", "--journey=integration-tokens"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=integration-tokens"
+    ]
   ],
   "17": [
-    ["tests/browser.mjs", "--width=390", "--journey=spend-report"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=spend-report"
+    ]
   ],
   "18": [
-    ["tests/browser.mjs", "--width=1440", "--journey=rfq"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=rfq"
+    ]
   ],
   "19": [
-    ["tests/browser.mjs", "--width=1440", "--journey=spend-report"],
-    ["tests/browser-saved-reports.mjs"],
-    ["tests/browser-accrual-report.mjs"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=spend-report"
+    ],
+    [
+      "tests/browser-saved-reports.mjs"
+    ],
+    [
+      "tests/browser-accrual-report.mjs"
+    ]
   ],
   "20": [
-    ["tests/browser.mjs", "--width=390", "--journey=performance-report"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=performance-report"
+    ]
   ],
   "21": [
-    ["tests/browser.mjs", "--width=390", "--journey=quote-reading"],
-    ["tests/browser-po-generation.mjs", "--width=390"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=quote-reading"
+    ],
+    [
+      "tests/browser-po-generation.mjs",
+      "--width=390"
+    ]
   ],
   "22": [
-    ["tests/browser.mjs", "--width=1440", "--journey=agreements"],
-    ["tests/browser-identity.mjs", "--width=1440"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=agreements"
+    ],
+    [
+      "tests/browser-identity.mjs",
+      "--width=1440"
+    ]
   ],
   "23": [
-    ["tests/browser.mjs", "--width=390", "--journey=payables"],
-    ["tests/browser-integration-tokens.mjs", "--width=1440"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=payables"
+    ],
+    [
+      "tests/browser-integration-tokens.mjs",
+      "--width=1440"
+    ]
   ],
   "24": [
-    ["tests/browser.mjs", "--width=390", "--journey=po-documents"],
-    ["tests/browser-agent-governance.mjs", "--width=1440"],
-    ["tests/browser-po-generation.mjs", "--width=1440"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=po-documents"
+    ],
+    [
+      "tests/browser-agent-governance.mjs",
+      "--width=1440"
+    ],
+    [
+      "tests/browser-po-generation.mjs",
+      "--width=1440"
+    ]
   ],
   "25": [
-    ["tests/browser.mjs", "--width=390", "--journey=email-intake"],
-    ["tests/browser-coding-agent.mjs", "--width=1440"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=email-intake"
+    ],
+    [
+      "tests/browser-coding-agent.mjs",
+      "--width=1440"
+    ]
   ],
   "26": [
-    ["tests/browser.mjs", "--width=390", "--journey=protected-preparation"],
-    ["tests/browser-scim.mjs", "--width=1440"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=protected-preparation"
+    ],
+    [
+      "tests/browser-scim.mjs",
+      "--width=1440"
+    ]
   ],
   "27": [
-    ["tests/browser.mjs", "--width=1440", "--journey=search"],
-    ["tests/browser-scim.mjs", "--width=390"],
-    ["tests/browser-order-thread.mjs", "--width=1440"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=search"
+    ],
+    [
+      "tests/browser-scim.mjs",
+      "--width=390"
+    ],
+    [
+      "tests/browser-order-thread.mjs",
+      "--width=1440"
+    ]
   ],
   "28": [
-    ["tests/browser.mjs", "--width=390", "--journey=order-adoption"],
-    ["tests/browser-request-again.mjs", "--width=1440"],
-    ["tests/browser-identity.mjs", "--width=390"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=order-adoption"
+    ],
+    [
+      "tests/browser-request-again.mjs",
+      "--width=1440"
+    ],
+    [
+      "tests/browser-identity.mjs",
+      "--width=390"
+    ]
   ],
   "29": [
-    ["tests/browser.mjs", "--width=1440", "--journey=supplier-performance"],
-    ["tests/browser-protected-web.mjs", "--width=1440"],
-    ["tests/browser-supplier-invoice.mjs", "--width=390"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=supplier-performance"
+    ],
+    [
+      "tests/browser-protected-web.mjs",
+      "--width=1440"
+    ],
+    [
+      "tests/browser-supplier-invoice.mjs",
+      "--width=390"
+    ]
   ],
   "30": [
-    ["tests/browser.mjs", "--width=390", "--journey=invoice-risk"],
-    ["tests/browser-evidence-history.mjs", "--width=1440"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=invoice-risk"
+    ],
+    [
+      "tests/browser-evidence-history.mjs",
+      "--width=1440"
+    ]
   ],
   "31": [
-    ["tests/browser.mjs", "--width=1440", "--journey=quote-agent"],
-    ["tests/browser-erasure.mjs", "--width=1440"],
-    ["tests/browser-coding-agent.mjs", "--width=390"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=quote-agent"
+    ],
+    [
+      "tests/browser-erasure.mjs",
+      "--width=1440"
+    ],
+    [
+      "tests/browser-coding-agent.mjs",
+      "--width=390"
+    ]
   ],
   "32": [
-    ["tests/browser.mjs", "--width=390", "--journey=order-chasing"],
-    ["tests/browser-access.mjs", "--width=1440"],
-    ["tests/browser-spend-questions.mjs", "--width=390"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=order-chasing"
+    ],
+    [
+      "tests/browser-access.mjs",
+      "--width=1440"
+    ],
+    [
+      "tests/browser-spend-questions.mjs",
+      "--width=390"
+    ]
   ],
   "33": [
-    ["tests/browser.mjs", "--width=1440", "--journey=quote-reading"],
-    ["tests/browser-order-send.mjs", "--width=390"],
-    ["tests/browser-protected-web.mjs", "--width=390"],
-    ["tests/browser-agent-governance.mjs", "--width=390"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=quote-reading"
+    ],
+    [
+      "tests/browser-order-send.mjs",
+      "--width=390"
+    ],
+    [
+      "tests/browser-protected-web.mjs",
+      "--width=390"
+    ],
+    [
+      "tests/browser-agent-governance.mjs",
+      "--width=390"
+    ]
   ],
   "34": [
-    ["tests/browser.mjs", "--width=390", "--journey=supplier-performance"],
-    ["tests/browser-recurring-scenarios.mjs", "--width=1440"],
-    ["tests/browser-recurring-scenarios.mjs", "--width=390"],
-    ["tests/browser-supplier-invoice.mjs", "--width=1440"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=supplier-performance"
+    ],
+    [
+      "tests/browser-recurring-scenarios.mjs",
+      "--width=1440"
+    ],
+    [
+      "tests/browser-recurring-scenarios.mjs",
+      "--width=390"
+    ],
+    [
+      "tests/browser-supplier-invoice.mjs",
+      "--width=1440"
+    ]
   ],
   "35": [
-    ["tests/browser.mjs", "--width=390", "--journey=supplier-documents"],
-    ["tests/browser-intake.mjs", "--width=1440"],
-    ["tests/browser-evidence-history.mjs", "--width=390"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=supplier-documents"
+    ],
+    [
+      "tests/browser-intake.mjs",
+      "--width=1440"
+    ],
+    [
+      "tests/browser-evidence-history.mjs",
+      "--width=390"
+    ]
   ],
   "36": [
-    ["tests/browser.mjs", "--width=1440", "--journey=integration-tokens"],
-    ["tests/browser-order-send.mjs", "--width=1440"],
-    ["tests/browser-erasure.mjs", "--width=390"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=integration-tokens"
+    ],
+    [
+      "tests/browser-order-send.mjs",
+      "--width=1440"
+    ],
+    [
+      "tests/browser-erasure.mjs",
+      "--width=390"
+    ]
   ],
   "37": [
-    ["tests/browser.mjs", "--width=1440", "--journey=po-documents"],
-    ["tests/browser-intake.mjs", "--width=390"],
-    ["tests/browser-access.mjs", "--width=390"],
-    ["tests/browser-order-thread.mjs", "--width=390"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=po-documents"
+    ],
+    [
+      "tests/browser-intake.mjs",
+      "--width=390"
+    ],
+    [
+      "tests/browser-access.mjs",
+      "--width=390"
+    ],
+    [
+      "tests/browser-order-thread.mjs",
+      "--width=390"
+    ]
   ],
   "38": [
-    ["tests/browser.mjs", "--width=1440", "--journey=receipt-routing"],
-    ["tests/pantry-flow.mjs"],
-    ["tests/browser-pantry.mjs"],
-    ["tests/browser-request-again.mjs", "--width=390"],
-    ["tests/browser-spend-questions.mjs", "--width=1440"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=receipt-routing"
+    ],
+    [
+      "tests/pantry-flow.mjs"
+    ],
+    [
+      "tests/browser-pantry.mjs"
+    ],
+    [
+      "tests/browser-request-again.mjs",
+      "--width=390"
+    ],
+    [
+      "tests/browser-spend-questions.mjs",
+      "--width=1440"
+    ]
   ],
   "39": [
-    ["tests/browser.mjs", "--width=390", "--journey=protected-storage"],
-    ["tests/browser-search-scale.mjs"],
-    ["tests/browser-integration-tokens.mjs", "--width=390"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=protected-storage"
+    ],
+    [
+      "tests/browser-search-scale.mjs"
+    ],
+    [
+      "tests/browser-integration-tokens.mjs",
+      "--width=390"
+    ]
   ],
   "40": [
-    ["tests/browser.mjs", "--width=1440", "--journey=agent-value"],
-    ["tests/browser.mjs", "--width=1440", "--journey=audit-log"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=agent-value"
+    ],
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=audit-log"
+    ]
   ],
   "41": [
-    ["tests/browser.mjs", "--width=390", "--journey=supplier-duplicates"],
-    ["tests/browser.mjs", "--width=390", "--journey=invoice-inbox"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=supplier-duplicates"
+    ],
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=invoice-inbox"
+    ]
   ],
   "42": [
-    ["tests/browser.mjs", "--width=1440", "--journey=performance-report"],
-    ["tests/browser.mjs", "--width=1440", "--journey=payables"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=performance-report"
+    ],
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=payables"
+    ]
   ],
   "43": [
-    ["tests/browser.mjs", "--width=1440", "--journey=protected-preparation"],
-    ["tests/browser.mjs", "--width=390", "--journey=receipt-routing"]
+    [
+      "tests/browser.mjs",
+      "--width=1440",
+      "--journey=protected-preparation"
+    ],
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=receipt-routing"
+    ]
   ],
   "44": [
-    ["tests/browser.mjs", "--width=390", "--journey=search"],
-    ["tests/browser-po-kinds.mjs"],
-    ["tests/browser-shipment-references.mjs"]
+    [
+      "tests/browser.mjs",
+      "--width=390",
+      "--journey=search"
+    ],
+    [
+      "tests/browser-po-kinds.mjs"
+    ],
+    [
+      "tests/browser-shipment-references.mjs"
+    ]
   ]
 }
