@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { codingAgentFixture as fixture } from './coding-agent-fixture.mjs';
 import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
+import { assertNoProtectedValues } from './protected-value-assertions.mjs';
 
 
 test('AGENT-008 source-backed split review and two human GL corrections govern the third invoice without sends or purchasing changes', async t => {
@@ -32,7 +33,7 @@ test('AGENT-008 source-backed split review and two human GL corrections govern t
   const suggestion = run.suggestions.find(row => row.field === 'glAccount'); assert.equal(suggestion.value, '6100');
   assert.ok(suggestion.sources.some(ref => ref.kind === 'invoice' && bills.some(bill => bill.id === ref.id)));
   assert.deepEqual(new Set(run.suggestions.map(row => row.field)), new Set(['glAccount', 'class', 'costCentre', 'project']));
-  for (const secret of [...Object.values(protectedValues), '5678', '6789', '1234']) assert.ok(!JSON.stringify(run).includes(secret));
+  assertNoProtectedValues(run, Object.values(protectedValues), ['5678', '6789', '1234']);
   assert.deepEqual(run.messages, []); assert.equal(run.outcomes[0].purchasingChange, 'none');
  }
  const snapshot = structuredClone(runs[0]);
