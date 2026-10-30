@@ -5552,7 +5552,7 @@
       "executable": false
     },
     "tests/identity-fixture.mjs": {
-      "sha256": "828099f224547592bd7d67683cc68d2accff2ee2e58922f7cc01a05441930667",
+      "sha256": "0a20e0d984ac9b841219f977e416a5a6ae29599e901b637ca9fc16846e144729",
       "executable": false
     },
     "tests/identity-idp.mjs": {
