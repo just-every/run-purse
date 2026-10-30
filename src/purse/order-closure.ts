@@ -10,6 +10,7 @@ export function orderClosure(s: State, a: Actor, op: string, b: Data): Data | un
     if (!['close-order', 'reopen-order'].includes(op)) return;
     can(s, a, 'buyer');
     const o = get(s, 'order', b.id), r = get(s, 'request', o.request);
+    requireThat(!o.poDetails?.deposit, 'Deposit PO closure needs a reviewed supplier credit or refund disposition', 409);
     requireThat(o.issuedAt && !o.imported && ['issued', 'closed'].includes(o.status), 'An issued current PO is required', 409);
     requireThat(b.version === (o.closureVersion ?? 0), 'PO closure changed; reload', 409);
     const reason = text(b.reason, op === 'close-order' ? 'Closure reason' : 'Reopen reason');

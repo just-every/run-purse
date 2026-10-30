@@ -1,5 +1,6 @@
 import { Details, Form, Field, options, type D } from './shared';
 export function InvoiceForm({ order, mutate }: { order: D; mutate: (op: string, b: D) => Promise<any> }) {
+    if(order.poDetails?.deposit) return <p>Use invoice document review to classify a deposit or final bill and confirm its private original.</p>;
     return <Details label="Add invoice evidence"><Form label="Save invoice evidence" initial={{ order: order.id }} onSubmit={async b => {
         const file = b.invoiceFile as File;
         let document;

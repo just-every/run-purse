@@ -39,6 +39,7 @@ export function orders(s: State, a: Actor, op: string, b: Data, issuingGroup = f
         checkAdoptedDisposition(s, r);
         requireThat(!all(s, 'order').some(o => o.request === r.id && o.revision === r.revision), 'Approved lines already allocated to a PO', 409);
         requireThat(all(s, 'decision').some(d => d.request === r.id && d.revision === r.revision && d.decision === 'approved'), 'Approval decision missing', 409);
+        requireThat(!r.poDetails?.deposit || !hasSupplierGroups(r) && !b.conversionEdits, 'Deposit conversion retains the approved exact terms; amend and renew approval for changes', 409);
         const edit = conversionEdits(s, a, r, b.conversionEdits);
         if(edit) {
             r=reviseForConversion(s,a,r,edit);
@@ -116,7 +117,7 @@ export function orders(s: State, a: Actor, op: string, b: Data, issuingGroup = f
 export function discrepancies(s: State) {
     const invoices = all(s, 'invoice').sort((a, b) => (a.entrySequence ?? 0) - (b.entrySequence ?? 0)
         || (a.at ?? '').localeCompare(b.at ?? '') || a.id.localeCompare(b.id)), orders = all(s, 'order');
-    return invoices.flatMap((i, index) => i.allocations.map((x: Data) => {
+    return invoices.flatMap((i, index) => (i.depositKind === 'deposit' ? [] : i.allocations).map((x: Data) => {
         const o = get(s, 'order', i.order), l = o.lines.find((l: Data) => l.id === x.line);
         const lineage = orders.filter(p => p.request === o.request && operationalOrder(s, p) && p.lines.some((z: Data) => z.id === l.id));
         const current = lineage.reduce((latest, p) => p.revision > latest.revision ? p : latest, o);

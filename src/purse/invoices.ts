@@ -1,3 +1,4 @@
+import { prepareNativeDeposit } from './deposit-invoices';
 import { invoiceCustomFields } from './custom-fields';
 import { adoptionDeposits, operationalOrder } from './adoption-position';
 import { publicInvoice } from './invoice-status';
@@ -27,7 +28,7 @@ export function scopedInvoice(s: State, a: Actor, value: Data) {
 // submitted evidence and normalized allocations, independently of line order.
 function evidence(i: Data) {
     return JSON.stringify({ order: i.order, currency: i.currency, source: i.source,
-        evidenceHash: i.evidenceHash ?? null, depositAppliedMinor: i.depositAppliedMinor ?? 0, release: i.release ?? null, allocations: i.allocations.map((x: Data) => [x.line, x.q, x.amountMinor])
+        evidenceHash: i.evidenceHash ?? null, depositKind: i.depositKind ?? null, depositTermKey: i.depositTermKey ?? null, depositAppliedMinor: i.depositAppliedMinor ?? 0, release: i.release ?? null, allocations: i.allocations.map((x: Data) => [x.line, x.q, x.amountMinor])
             .sort((a: any[], b: any[]) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0) });
 }
 
@@ -77,6 +78,9 @@ export function captureInvoice(s: State, authority: InvoiceCaptureAuthority, b: 
     });
     const candidate: Data = { ...customFields, ...(b.release ? { release: text(b.release, 'Blanket release') } : {}), order: o.id, supplier: o.supplier, reference, source, currency: o.currency, allocations, totalMinor: minor(allocations.reduce((n: number, x: Data) => n + x.amountMinor, 0), 'Invoice total') };
     const identityPrior = all(s, 'invoice').find(i => canonicalSupplier(s, get(s, 'order', i.order).supplier) === canonicalSupplier(s, o.supplier) && i.reference === reference);
+    if(b.invoiceKind && a) requirePermission(s,a,'invoice.review',o);
+    prepareNativeDeposit(s, o, candidate, b, confirmation);
+    if (confirmation) Object.assign(candidate, {sourceConfirmation:'confirmed', confirmedReading:confirmation.reading, confirmedAt:new Date().toISOString(), confirmedBy:actorId});
     const grossMinor = candidate.totalMinor;
     const depositAppliedMinor = b.depositAppliedAmount !== undefined || b.depositAppliedMinor !== undefined ? moneyInput(b, 'depositAppliedAmount', 'depositAppliedMinor', 'Deposit credit') : 0;
     if (depositAppliedMinor) {

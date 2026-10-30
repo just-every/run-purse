@@ -18,6 +18,7 @@ export function receipt(s: State, a: Actor, b: Data) {
     requireThat(event === 'return' ? q <= position.accepted : q <= position.outstanding, 'Quantity exceeds received or outstanding quantity', 409);
     requireThat(event !== 'receive' || o.replenishmentStatus !== 'held', 'Replenishment is held for review; amend the request and obtain new approval before receiving replacements', 409);
     if (event === 'cancel' && orderAdoption(s, o)) requireThat(false, 'An adopted PO cancellation needs a native approved amendment; record physical receiving separately', 409);
+    requireThat(event !== 'cancel' || !o.poDetails?.deposit, 'Deposit cancellation needs a reviewed supplier credit or refund disposition', 409);
     if (event === 'cancel') requirePermission(s, a, 'procurement.manage', o);
     const id = uid();
     const record = { order: o.id, line: l.id, event, q, quantity: b.quantity,
