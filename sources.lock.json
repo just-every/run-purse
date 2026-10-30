@@ -5300,7 +5300,7 @@
       "executable": false
     },
     "tests/browser-journey.mjs": {
-      "sha256": "670e94b32524773c880e90d924e775917ecadc83f8497ebb924e62fc454a4f9d",
+      "sha256": "f8e9ebaf53a58a8266b1a8f819768b3a118560461295c05c5c24898e16112dff",
       "executable": false
     },
     "tests/browser-order-adoption.mjs": {
@@ -5696,7 +5696,7 @@
       "executable": false
     },
     "tests/private-schedule.mjs": {
-      "sha256": "add07ba13aded7dca65f1c1168543b661ec91b6e4c72f0e45edbd551d24128c7",
+      "sha256": "1d5ac73047fef69e0aac4833b0dad87a167d05c731c4a50af132e5a794bce658",
       "executable": false
     },
     "tests/purse-harness.mjs": {
