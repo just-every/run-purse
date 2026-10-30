@@ -100,7 +100,7 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "91a017214c77705332af56ab35955eb295635417cb90b5a4471e509807afa135",
+      "sha256": "6f9bcfb506ff3ee445cbb15b5ecabdf945ebf8f78814892d1a0c02f0684ce391",
       "executable": false
     },
     "API.md": {
@@ -376,7 +376,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "7fadf58f0b03e34ea484fd0af12afa9beebd2aee8840d9cf6e4816fa1e3cd7c1",
+      "sha256": "e089f2097465ab49b31ce2157cad6b1bcae20ce9b5f1779fc75e9be4636ea989",
       "executable": false
     },
     "packaging.json": {
@@ -704,7 +704,7 @@
       "executable": false
     },
     "scripts/ci/shards.json": {
-      "sha256": "b823c7a736a413c78f18d410f9ec51c555daf9aa7ad4d7d58d3f7ba97d6916ae",
+      "sha256": "b77ddb949ff3870adc38218247e7d4477975264d0a67060d85f8517e063be699",
       "executable": false
     },
     "scripts/ci/shared-build.mjs": {

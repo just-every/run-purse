@@ -106,12 +106,6 @@
     },
     {
       "args": [
-        "tests/browser-payables.mjs",
-        "--width=1440"
-      ]
-    },
-    {
-      "args": [
         "tests/browser-supplier-invoice.mjs",
         "--width=1440"
       ]
@@ -125,6 +119,24 @@
     {
       "args": [
         "tests/browser-supplier-tax.mjs"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser-supplier-proposals.mjs",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser-invoice-exceptions.mjs",
+        "--width=1440"
+      ]
+    },
+    {
+      "args": [
+        "tests/browser-po-supplier-groups.mjs",
+        "--width=1440"
       ]
     }
   ]
