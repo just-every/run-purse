@@ -256,6 +256,12 @@
       "name": "0041_supplier_tax.sql",
       "sha256": "fd3339e2bbb7580ea2d7087d854506a23650eb9a4c1c7cc85178afa4f1fc9439",
       "sql": "-- Current review authority belongs to this installation and is never portable.\nCREATE TABLE p_supplier_tax_authority (\n    review TEXT PRIMARY KEY,\n    actor TEXT NOT NULL,\n    operator_version INTEGER NOT NULL\n);\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0042_intake_agent_authority.sql",
+      "sha256": "440d267bc3b5929fd0bdcbb1c0e3a9d84fa0bb231730147363a31cd17217355e",
+      "sql": "-- Execution consent is installation-local; archives retain policy history only.\nCREATE TABLE p_intake_agent_authority (\n policy TEXT PRIMARY KEY,\n version INTEGER NOT NULL,\n actor TEXT NOT NULL,\n operator_version INTEGER NOT NULL\n);\n"
     }
   ],
   "compatibilityDate": "2026-09-08",

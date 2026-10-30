@@ -2,11 +2,12 @@ import { harness } from './purse-harness.mjs';
 export const intakeEmail = n => ['synthetic-purse-'+n,'example.test'].join('@');
 export async function intakeAgentFixture() {
  const h=await harness({worker:'tests/accrual-worker.ts',clock:'2026-10-29T17:00:00.000Z',protectedKey:'42'.repeat(32)}),cmd=h.command;
- await cmd('business',{name:'synthetic-purse-1',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Site']});
+ await cmd('business',{name:'synthetic-purse-1',currencies:['USD'],locations:['Denver'],costCentres:['Operations','Finance'],projects:['Site']});
  const requester=await h.member(intakeEmail(2),['requester']),other=await h.member(intakeEmail(3),['requester']),buyer=await h.member(intakeEmail(4),['buyer']),approver=await h.member(intakeEmail(5),['approver']);
+ const secondary=await h.member(intakeEmail(9),['approver']);
  const supplier=await cmd('supplier',{name:'synthetic-purse-6',status:'preferred',reason:'Reviewed native supplier'},buyer);
  const item=await cmd('catalogue',{supplier:supplier.id,description:'Portable laptop',currency:'USD',unitMinor:25000,category:'Equipment',project:'Site',approved:true,partNumber:'synthetic-purse-7'},buyer);
- const policy=await cmd('policy',{name:'Equipment approval',currency:'USD',category:'Equipment',project:'Site',approver:intakeEmail(5),limitMinor:1000000,budgetMinor:5000000,approvalSteps:[]});
+ const policy=await cmd('policy',{name:'Equipment approval',currency:'USD',category:'Equipment',project:'Site',approver:intakeEmail(5),limitMinor:1000000,budgetMinor:5000000,approvalSteps:[{email:intakeEmail(9),minMinor:50000}]});
  const form=await cmd('intake-form',{name:'Equipment requests',purchaseType:'equipment',active:true,consent:true,defaults:{category:'Equipment',project:'Site',costCentre:'Operations',location:'Denver',currency:'USD'}});
  const create=async(cookie=requester,glAccount='6100')=>{
   const request=await cmd('request',{title:'synthetic-purse-8',supplier:supplier.id,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre:'Operations',terms:'Net 30',intakeForm:form.id,answers:{},customFields:{},lines:[{catalogue:item.id,quantity:'1',unitMinor:25000,category:'Equipment',project:'Site',glAccount,customFields:{}}]},cookie);
