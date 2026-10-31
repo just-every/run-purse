@@ -13,7 +13,7 @@ const serve = { main: './src/server.dev.ts', vars: { ...local('RER_DEV_ORIGIN'),
 // `vite dev` serves only the folders the app is built from (and what they
 // import), never the rest of the checkout: not rer's private folders (the dev
 // key, installer state), export archives, settings or local data.
-const server = { fs: { allow: ['src', 'public', 'node_modules'], deny: ['**/.rer/**', '**/.seed/**', '**/exports/**', '**/*.rer'] } }
+const server = { fs: { allow: ['src', 'public', 'node_modules', 'agent-surface.json'], deny: ['**/.rer/**', '**/.seed/**', '**/exports/**', '**/*.rer'] } }
 
 // The existing journey flag selects a test-only fetch dependency in dev. Builds
 // and ordinary local development retain the production transport, regardless of CI.

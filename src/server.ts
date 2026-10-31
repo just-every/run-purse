@@ -9,7 +9,8 @@ import { setupStateResponse } from './base/setup-state'
 import { authResponse, runtimeBindings, type Bindings } from './auth.server'
 import { identity } from './identity'
 import { seedDemo } from './demo'
-import { purseAgentDoor, purseBusinessSettings } from './agent-door/index.server'
+import { purseAgentDoor, purseAgentOptions, purseBusinessSettings } from './agent-door/index.server'
+import { agentDocumentationResponse } from './agent-door/docs.server'
 import { runPurchasingSchedule } from './purse/schedule'
 
 function noTransform(response: Response): Response {
@@ -22,6 +23,7 @@ const worker = {
   async scheduled(event, env, ctx) { ctx.waitUntil(new Date(event.scheduledTime).getUTCMinutes()===0 ? runPurchasingSchedule(env, event.scheduledTime) : runNotificationDeliveries(env,event.scheduledTime)); },
   async fetch(request, env, execution) {
     const bindings = runtimeBindings(env)
+    if (new URL(request.url).pathname === '/docs/agents') return agentDocumentationResponse(request, purseAgentOptions(bindings))!
     const business = await purseBusinessSettings(bindings).handle(request)
     if (business) return business
     const agent = await purseAgentDoor(bindings).handle(request)

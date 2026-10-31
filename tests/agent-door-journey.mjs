@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
 import {agentDoorBrowser,agentPendingBrowser} from './agent-door-browser.mjs'
+import agentDocumentationJourney from './agent-door-docs.mjs'
 
 export async function afterStep({phase,step,tool,request,origin,cookie}) {
  if(phase!=='held'||step.id!=='snapshot')return
@@ -12,6 +13,7 @@ export async function afterStep({phase,step,tool,request,origin,cookie}) {
 
 // Real native persistence, policy and audit; no application or auth stand-ins.
 export default async function({tool,request,origin,cookie,email}) {
+ await agentDocumentationJourney()
  const marker='synthetic-structured-protected-value-'+randomUUID()
  const before=await tool('purse.workspace.snapshot',{})
  for(const name of ['tin','bank_account','BANK-ROUTING','client_secret','apiKey','access_token','refreshToken','supplierMatchingKey']) {

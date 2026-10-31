@@ -849,6 +849,17 @@
     "policy",
     "pause",
     "audit",
-    "idempotency"
+    "idempotency",
+    "prompts"
+  ],
+  "prompts": [
+    {
+      "name": "purse.procurement.inspect",
+      "job": "Inspect scoped purchasing"
+    },
+    {
+      "name": "purse.procurement.prepare",
+      "job": "Prepare editable purchasing"
+    }
   ]
 }
