@@ -3688,7 +3688,7 @@
       "executable": false
     },
     "src/purse/erasure-subject.ts": {
-      "sha256": "da29d42335e610ae734e450a85cf22e711bbe22b0246a325933126360aec0d73",
+      "sha256": "91d1bb22174316b351b62d0910158d4d3ce12a9a042ddde5ce4a295be95e2232",
       "executable": false
     },
     "src/purse/gsa-rates.ts": {
@@ -5784,7 +5784,7 @@
       "executable": false
     },
     "tests/po-generation.test.mjs": {
-      "sha256": "1544312a4a62fae5ff8da73361347359c1e2abbbce381b156470c4e6d8923957",
+      "sha256": "81cbf12997fd2e809300a124b1cd5d76ba8084c7a8cf002892538a8cc4f4a31b",
       "executable": false
     },
     "tests/po-supplier-groups-fixture.mjs": {

@@ -1,5 +1,6 @@
 import { all, get, requireThat, type Data, type State } from './types';
 function noticeSuppliers(state:State,value:Data):string[]{return (state.get('recurringScenario:'+value.scenario)?.value.snapshot?.sources??[]).filter((r:Data)=>r.kind==='agreement').map((r:Data)=>r.value.supplier);}
+function generationContacts(value:Data):Data[]{return [value,...(value.history??[])].filter(entry=>typeof entry.sendRecipient==='string').map(entry=>({id:entry.supplier,email:entry.sendRecipient}));}
 export type ErasureSubject = { kind:'member'|'contact'; id:string; email:string; values:string[]; operator?:string; supplier?:string };
 export async function erasureSubject(db:D1Database,state:State,input:Data):Promise<ErasureSubject> {
  requireThat(['member','contact'].includes(input.kind),'Choose a departed member or supplier contact');
@@ -18,6 +19,7 @@ export async function erasureSubject(db:D1Database,state:State,input:Data):Promi
  // Historical nominated contacts remain selectable after a register edit.
  for(const row of state.values()) {
   const v=row.value;
+  if(row.kind==='poGenerationPolicy')contacts.push(...generationContacts(v).filter(c=>c.id===supplier.id&&c.email.toLowerCase()===input.email.toLowerCase()));
   if(row.kind==='supplierProposal'&&v.supplier===supplier.id&&!v.erasure&&v.contactEmail.toLowerCase()===input.email.toLowerCase())contacts.push({email:v.contactEmail,name:v.contactName,phone:v.phone,address:v.address});
   if(v.supplierSnapshot?.id===supplier.id)contacts.push(...v.supplierSnapshot.contacts.filter((c:Data)=>c.email.toLowerCase()===input.email.toLowerCase()));
   if(['orderSend','orderThreadMessage'].includes(row.kind)&&v.supplier===supplier.id&&v.recipient?.toLowerCase()===input.email.toLowerCase()&&!v.erasure)contacts.push({email:v.recipient});
@@ -39,6 +41,7 @@ export function erasureChoices(state:State) {
  for(const supplier of all(state,'supplier'))for(const contact of supplier.contacts??[])if(contact.email&&!contact.email.endsWith('@erased.invalid'))contacts.set(supplier.id+':'+contact.email,{kind:'contact',id:supplier.id,email:contact.email,label:supplier.name+' · '+contact.name+' · '+contact.email});
  for(const row of state.values()) {
   const v=row.value;
+  if(row.kind==='poGenerationPolicy')for(const contact of generationContacts(v))if(!contact.email.endsWith('@erased.invalid')){const supplier=state.get('supplier:'+contact.id)?.value;if(supplier)contacts.set(contact.id+':'+contact.email,{kind:'contact',id:contact.id,email:contact.email,label:supplier.name+' · '+contact.email});}
   if(row.kind==='supplierProposal'&&!v.erasure&&v.contactEmail&&!v.contactEmail.endsWith('@erased.invalid'))contacts.set(v.supplier+':'+v.contactEmail,{kind:'contact',id:v.supplier,email:v.contactEmail,label:v.name+' · '+v.contactEmail});
   if(['orderSend','orderThreadMessage'].includes(row.kind)&&!v.erasure&&v.recipient&&!v.recipient.endsWith('@erased.invalid')){const supplier=state.get('supplier:'+v.supplier)?.value;if(supplier)contacts.set(v.supplier+':'+v.recipient,{kind:'contact',id:v.supplier,email:v.recipient,label:supplier.name+' · '+v.recipient});}
   if(row.kind==='recurringNoticeSend'&&!v.erasure&&v.recipient&&!v.recipient.endsWith('@erased.invalid'))for(const id of noticeSuppliers(state,v)){const supplier=state.get('supplier:'+id)?.value;if(supplier)contacts.set(id+':'+v.recipient,{kind:'contact',id,email:v.recipient,label:supplier.name+' · '+v.recipient});}

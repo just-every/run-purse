@@ -67,8 +67,50 @@ test('Automatic PO generation rechecks live approval grants, current catalogue t
     await cmd('po-generation-policy',{...rule,currency:'AUD',supplier:item.supplier,version:0,enabled:false});
     assert.equal((await h.state()).data.poGenerationPolicy.filter(p=>p.currency==='AUD').length,1);
     await cmd('po-generation-policy',{...rule,version:3,combineDaily:true},h.owner,409);
+    await historicalConsentErasure(t);
     await automaticSendFences(t);
 });
+
+async function historicalConsentErasure(t) {
+    for(const paused of [false,true]) {
+        const {h,cmd,supplier,rule,fields,approve,tick}=await fixture(t);
+        const former=supplier.contacts[0].email,replacement=['synthetic-purse-834','example.test'].join('@');
+        const consent={...rule,supplier:supplier.id,sendEnabled:true,sendConsent:true,sendRecipient:former};
+        await cmd('po-generation-policy',consent);
+        await cmd('supplier',{...supplier,contacts:[{name:'Replacement supplier contact',email:replacement}]});
+        if(paused)await cmd('po-generation-policy',{...consent,version:1,sendEnabled:false});
+        assert.equal((await h.state()).data.order.length,0,'No purchase snapshot or send can identify the former contact');
+        assert.equal(h.messages.filter(m=>m.subject.startsWith('Purchase order:')).length,0);
+        await reauthenticateErasure(h);
+        const meta=await h.send('/api/purse/erasure',undefined,h.owner);
+        const preview=await h.send('/api/purse/erasure/preview',{kind:'contact',id:supplier.id,email:former,revision:meta.value.revision},h.owner);
+        assert.equal(preview.status,200,JSON.stringify(preview.value));
+        assert.ok(meta.value.choices.some(c=>c.kind==='contact'&&c.id===supplier.id&&c.email===former),'Consent-only historical contacts remain selectable');
+        assert.ok(preview.value.fields.some(f=>f.kind==='poGenerationPolicy'&&f.path.includes('history')&&f.path.includes('sendRecipient')));
+        const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);
+        assert.equal(erased.status,200,JSON.stringify(erased.value));
+        const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+        assert.ok(!JSON.stringify(rows).includes(former),'Erasure removes all current and historical consent copies');
+        const policy=JSON.parse(rows.find(r=>r.kind==='poGenerationPolicy').value);
+        assert.equal(policy.history.length,paused?2:1,'Anonymous consent revisions remain intact');
+        assert.ok(policy.history[0].sendRecipient.endsWith('@erased.invalid'));
+        assert.equal(policy.sendEnabled,!paused);
+        const after=await h.send('/api/purse/erasure',undefined,h.owner);
+        assert.ok(!after.value.choices.some(c=>c.email===former));
+        assert.ok(after.value.choices.some(c=>c.id===supplier.id&&c.email===replacement),'The replacement contact is preserved');
+        await approve(fields('Erased historical consent cannot send'));await tick();
+        assert.equal(h.messages.filter(m=>m.subject.startsWith('Purchase order:')).length,0);
+        const archive=join(h.dir,'historical-consent.rer');
+        assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
+        await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
+        const restored=await harness();t.after(()=>restored.close());
+        await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
+        assert.ok(!JSON.stringify((await restored.db.prepare('SELECT * FROM p_records').all()).results).includes(former));
+        const restoredTick=await restored.mf.dispatchFetch(restored.origin+'/cdn-cgi/local/scheduled?time='+Date.now());
+        assert.equal(restoredTick.status,200);assert.equal(restored.messages.filter(m=>m.subject.startsWith('Purchase order:')).length,0);
+    }
+    console.log('PROBE PO-008 B: native consent command, contact replacement, erasure preview and execute -> current and history-only former contacts erased; replacement retained; scheduled and restored sends remain inert');
+}
 
 async function automaticSendJourney(t) {
     let f,uncertain=false,claimed=0;
