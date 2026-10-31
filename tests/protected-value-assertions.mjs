@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { containsProtectedInput } from '../src/purse/protected-context-fields.mjs';
 
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}(?::[1-9][0-9]*)?$/i;
-const identifiers = new Set(['id', 'actor', 'line', 'target', 'request', 'supplier', 'proposal', 'order', 'invoice', 'exception', 'attachment', 'version']);
+const identifiers = new Set(['id', 'actor', 'line', 'target', 'request', 'requester', 'supplier', 'proposal', 'order', 'invoice', 'exception', 'attachment', 'correctionOf', 'version']);
 const digests = new Set(['inputDigest', 'outputDigest', 'sourceVersion', 'sha256']);
 
 /** Inspect all content, including bare and masked suffixes. Native UUIDs and
