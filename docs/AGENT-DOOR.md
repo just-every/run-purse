@@ -49,6 +49,8 @@ provider and connector capabilities are not advertised.
 | `purse.preparations.execute` | standard; money and commitment for approval or issuance | PUR-014, PUR-006, PUR-007, PUR-008, PUR-009, PUR-010 |
 | `purse.spend.answer` | sensitive | AGENT-011, PUR-014 |
 | `purse.coding.prepare` | sensitive | AGENT-008, PUR-014 |
+| `purse.agents.prepare` | sensitive | PUR-014, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006 |
+| `purse.agents.advance` | sensitive, external for supplier follow-up | PUR-014, AGENT-003, AGENT-010, PO-003 |
 | `purse.workspace.snapshot` | standard | PUR-017, AUDIT-001 |
 | `purse.records.list`, `purse.records.read` | standard, sensitive | PUR-017, SECURITY-001 |
 
@@ -113,8 +115,8 @@ conversion, issue, receipt and invoice tools require their current native
 authority. A draft never establishes payment, supplier sending or approval.
 There is no advertised MCP prompt family in this CORE declaration.
 
-The declaration contains 33 tools, no public resource templates, and the
-standard, sensitive, access, money and commitment classes. Its 46 journey steps retain
+The declaration contains 35 tools, no public resource templates, and the
+standard, sensitive, access, money and commitment classes. Its 48 journey steps retain
 every declared tool/class pair, autonomous and held policy, injection variants,
 read-only witnesses, replay/conflicts and native attribution. The pending-decision
 reader returns only requests the current sponsor can decide; its empty bounded
@@ -125,7 +127,7 @@ The separate ct proposal at
 `36f0d9c9f9984ebecc95a201462367df15fb2420` remains unjudged and is not merged.
 Its 116 proposed capability names, nine proposed resource URI shapes and wider
 seeded week remain outside this declared registry. No proposed tool name matches
-the current 33 names exactly; current tools cover bounded parts of the same
+the current 35 names exactly; current tools cover bounded parts of the same
 native purchasing clauses, rather than aliases for the broad proposed verbs.
 The ct classes external, accounts, gated, access, security and destructive are
 not claimed. Its supplier chase, invoice-exception resolution, approved-bill
@@ -206,5 +208,16 @@ review and autonomous policy run under both company and native controls.
 Native erasure now removes matching personal data from company tool replay
 results, approvals, reviews, audit evidence and agent identity labels. Affected
 pending approvals expire, erased sponsors are revoked, and replay claims remain.
-This does not migrate the remaining quotation, exception, value or recurring
-assistants, or existing scheduled agents, to the shared registry.
+The source preparation tool now covers the remaining existing native quotation,
+clarification, invoice exception, late-order, value and recurring research jobs.
+Native HTTP selects each job from its existing operation; a source argument
+cannot choose a different executor. Generated reports keep their native source
+checks, per-type controls, human review actions and model and provider none.
+
+Scheduled supplier follow-up uses the same advance tool from MCP, the native
+HTTP action and Cron. The recorded buyer or owner remains its sponsor. Exact
+schedule and source versions bind the pending action, and caller-supplied future
+time is refused by the transport. The native once-only event claim includes the
+company admission fence in its D1 predicate; the mail edge rechecks it before
+sending. Native limits, consent and honest provider outcomes remain required.
+Value check-ins and recurring discovery still need their scheduled adapters.

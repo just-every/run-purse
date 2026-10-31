@@ -4,6 +4,8 @@ import {quoteNativeJourney,quoteStepProof} from './agent-door-quotes.mjs'
 import {coreNativeJourney,coreStepProof,coreCoverageProof} from './agent-door-core.mjs'
 import {embeddedNativeJourney} from './agent-door-embedded.mjs'
 import {proposalNativeJourney} from './agent-door-proposals.mjs'
+import {sourceAgentNativeJourneys} from './agent-door-source-agents.mjs'
+import {scheduledNativeChaseJourney} from './agent-door-scheduled.mjs'
 import {agentDoorBrowser,agentPendingBrowser} from './agent-door-browser.mjs'
 
 export async function afterStep(context) {
@@ -138,6 +140,8 @@ async function nativeJourney({tool,request,origin,cookie,email}) {
  await embeddedNativeJourney({tool,request,origin,cookie})
  await proposalNativeJourney({tool,request,origin,cookie})
  await agentDoorBrowser({request,origin,cookie,order,native,quotation,tool})
+ await sourceAgentNativeJourneys()
+ await scheduledNativeChaseJourney()
  console.log('Native agent journey: self-approval refused; receipt replay once; changed arguments and stale position refused; agent and sponsor attribution; zero policy differences')
 }
 export default async function(context) {

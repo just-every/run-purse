@@ -16,6 +16,37 @@
       ]
     },
     {
+      "name": "purse.agents.advance",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "sensitive",
+        "external"
+      ],
+      "clauses": [
+        "PUR-014",
+        "AGENT-003",
+        "AGENT-010",
+        "PO-003"
+      ]
+    },
+    {
+      "name": "purse.agents.prepare",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "sensitive"
+      ],
+      "clauses": [
+        "PUR-014",
+        "AGENT-002",
+        "AGENT-003",
+        "AGENT-004",
+        "AGENT-005",
+        "AGENT-006"
+      ]
+    },
+    {
       "name": "purse.attachments.add",
       "scope": "purchasing:write",
       "readOnly": false,
@@ -1614,6 +1645,49 @@
           "pointer": "/records/0/id"
         }
       }
+    },
+    {
+      "id": "core-value",
+      "tool": "purse.agents.prepare",
+      "args": {
+        "job": "value",
+        "request": {
+          "$from": "decision",
+          "pointer": "/id"
+        },
+        "revision": {
+          "$from": "decision",
+          "pointer": "/revision"
+        }
+      },
+      "expect": [
+        {
+          "class": "sensitive"
+        }
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "decision",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "scheduled-chase",
+      "tool": "purse.agents.advance",
+      "args": {
+        "$fixture": "scheduledChase",
+        "pointer": ""
+      },
+      "expect": [
+        {
+          "class": "sensitive"
+        },
+        {
+          "class": "external"
+        }
+      ]
     }
   ],
   "spend": {
@@ -1644,6 +1718,9 @@
       "prepare": [
         "preparation"
       ]
+    },
+    "fixtures": {
+      "module": "tests/agent-door-schedule-fixtures.mjs"
     }
   },
   "capabilities": [

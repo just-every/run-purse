@@ -1,6 +1,6 @@
 import {harness} from './purse-harness.mjs';
-export async function recurringScenarioFixture({mixedTypes=false,mail}={}) {
- const h=await harness({mail}),cmd=h.command;
+export async function recurringScenarioFixture({mixedTypes=false,mail,worker}={}) {
+ const h=await harness({mail,...(worker?{worker}:{})}),cmd=h.command;
  try {
   await cmd('business',{name:'Canyon Design Studio',currencies:['USD'],locations:['Denver'],costCentres:['IT','Finance'],projects:['Operations']});
   const requester=await h.member('synthetic-purse-901@example.test',['requester']),approver=await h.member('synthetic-purse-902@example.test',['approver']),finance=await h.member('synthetic-purse-903@example.test',['buyer']);

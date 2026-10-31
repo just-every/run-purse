@@ -1,3 +1,5 @@
+import {companyConfigured,scheduledInvocation,type CompanyEffect} from '../agent-door/scheduled-identity.server';
+import {valueDigest,canonicalValue} from './agent-value-evidence';
 import { notificationInserts } from './notifications';
 import type { Bindings } from '../auth.server';
 import { operatorMail } from '../mail.server.mjs';
@@ -113,7 +115,7 @@ function governance(s: State, policy: Data, order: Data) {
 }
 
 /** The claim is durable; every effect then rechecks pause, native identity, grants and source facts. */
-async function send(env: Bindings, event: Data, order: Data, policy: Data, now: number): Promise<Data> {
+async function send(env: Bindings, event: Data, order: Data, policy: Data, now: number, company?:CompanyEffect): Promise<Data> {
     const outcome: Data = { recipient: event.outcome.recipient, status: 'unavailable', at: new Date(now).toISOString() };
     if (!outcome.recipient || !env.MAIL_FROM) return outcome;
     const fresh = await load(env.DB), currentPolicy = fresh.state.get(key('orderChasePolicy', order.id))?.value;
@@ -127,9 +129,9 @@ async function send(env: Bindings, event: Data, order: Data, policy: Data, now: 
     if (!principal) return outcome;
     const recipient = event.kind === 'escalation' ? await escalationAuthority(env, fresh.state, currentPolicy, currentOrder) : undefined;
     if (event.kind === 'escalation' && !recipient) return outcome;
-    const permitted = await env.DB.prepare(`SELECT 1 AS ok WHERE (SELECT revision FROM p_meta WHERE id=1)=? AND ${principal.sql}${recipient ? ' AND '+recipient.sql : ''}`)
-        .bind(fresh.revision, ...principal.params, ...(recipient?.params ?? [])).first();
-    if (!permitted) return outcome;
+    const permitted = await env.DB.prepare(`SELECT 1 AS ok WHERE (SELECT revision FROM p_meta WHERE id=1)=? AND ${principal.sql}${recipient ? ' AND '+recipient.sql : ''}${company ? ' AND '+company.sql : ''}`)
+        .bind(fresh.revision, ...principal.params, ...(recipient?.params ?? []), ...(company?.params??[])).first();
+    if (!permitted || company && !await company.live()) return outcome;
     try {
         const sender = operatorMail(env);
         if (!sender) return outcome;
@@ -138,7 +140,7 @@ async function send(env: Bindings, event: Data, order: Data, policy: Data, now: 
 }
 
 /** Claiming the deterministic event consumes the attempt, even if a worker stops before saving its outcome. */
-async function attempt(env: Bindings, policyId: string, escalation: boolean, now: number): Promise<Data | undefined> {
+export async function orderChasePlan(env: Bindings, policyId: string, escalation: boolean, now: number) {
     const { state, revision } = await load(env.DB), policyRow = state.get(key('orderChasePolicy', policyId));
     if (!policyRow) return;
     const policy = policyRow.value, orderRow = state.get(key('order', policy.order));
@@ -158,6 +160,14 @@ async function attempt(env: Bindings, policyId: string, escalation: boolean, now
     const recipient = escalation ? await escalationAuthority(env, state, policy, order) : undefined;
     if (escalation && !recipient) return;
     const id = `${order.id}:${policy.version}:${escalation ? 'escalation' : `chase:${sequence}`}`;
+    const sourceVersion=await valueDigest(canonicalValue({orderRevision:orderRow.revision,policyRevision:policyRow.revision,controls:controls.map(control=>[control.id,control.version]),current,sequence,kind,principal,recipient}));
+    return {state,revision,policyRow,policy,orderRow,order,controls,principal,current,sequence,kind,recipient,id,sourceVersion,sponsor:policy.actor};
+}
+
+export async function runOrderChaseAttempt(env: Bindings, policyId: string, escalation: boolean, now: number, company?:CompanyEffect): Promise<Data | undefined> {
+    const plan=await orderChasePlan(env,policyId,escalation,now);
+    if(!plan)return;
+    const {state,revision,policyRow,policy,orderRow,order,controls,principal,current,sequence,kind,recipient,id}=plan;
     const event: Data = { id, order: order.id, policyVersion: policy.version, sequence, kind, reason: current.reason,
         at: new Date(now).toISOString(), startedAt: new Date().toISOString(), actor: policy.actor, request: order.request, revision: order.revision, agent: policy.agent ?? null, evidence: current.evidence, supplierAcknowledgment: current.supplierAcknowledgment,
         outcome: { recipient: escalation ? policy.escalateTo : order.supplierSnapshot?.contacts?.[0]?.email ?? '', status: 'unknown' } };
@@ -170,6 +180,7 @@ async function attempt(env: Bindings, policyId: string, escalation: boolean, now
             ...(current.supplierAcknowledgment ? [{ kind: 'orderAcknowledgment', id: current.supplierAcknowledgment.send, value: current.supplierAcknowledgment }] : [])];
         event.references = [{ kind: 'order', id: order.id, version: orderRow.revision }];
     }
+    if(company)Object.assign(event,company.record(event));
     const claimVersion = uid(), runVersion = uid();
     const conditionalInsert = (kind: string, recordId: string, value: Data) => env.DB.prepare(`INSERT OR IGNORE INTO p_records(business,kind,id,revision,value)
         SELECT 'main',?,?,?,? WHERE EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='orderChaseEvent' AND id=? AND revision=?)`)
@@ -178,16 +189,16 @@ async function attempt(env: Bindings, policyId: string, escalation: boolean, now
         env.DB.prepare(`INSERT OR IGNORE INTO p_records(business,kind,id,revision,value)
         SELECT 'main','orderChaseEvent',?,?,? WHERE (SELECT revision FROM p_meta WHERE id=1)=?
         AND EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='orderChasePolicy' AND id=? AND revision=?)
-        AND EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='order' AND id=? AND revision=?) AND ${principal.sql}${recipient ? ' AND '+recipient.sql : ''}`)
+        AND EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='order' AND id=? AND revision=?) AND ${principal.sql}${recipient ? ' AND '+recipient.sql : ''}${company ? ' AND '+company.sql : ''}`)
             .bind(id, claimVersion, JSON.stringify(event), revision, policyId, policyRow.revision, order.id, orderRow.revision,
-                ...principal.params, ...(recipient?.params ?? [])),
+                ...principal.params, ...(recipient?.params ?? []), ...(company?.params??[])),
         ...(policy.agent === 'AGENT-003' ? [agentRecordInsert(env.DB, event, policy, claimVersion, runVersion)] : []),
-        conditionalInsert('audit', 'chase-claim:'+id, { id: 'chase-claim:'+id, actor: policy.actor, email: policy.email,
+        conditionalInsert('audit', 'chase-claim:'+id, (company?.audit??((row:Data)=>row))({ id: 'chase-claim:'+id, actor: policy.actor, email: policy.email,
             action: 'order-chase-claimed', record: order.id, revision: order.revision, chase: id, agent: policy.agent ?? null,
-            policyVersion: policy.version, kind, sequence, at: event.startedAt }),
+            policyVersion: policy.version, kind, sequence, at: event.startedAt })),
     ]);
     if (!claimed[0].meta.changes) return;
-    event.outcome = await send(env, event, order, policy, now);
+    event.outcome = await send(env, event, order, policy, now, company);
     // An erasure/cleanup while mail is in flight changes these row revisions.
     // Never replace that newer source record with a pre-erasure snapshot.
     const outcomeVersion=uid();
@@ -209,9 +220,18 @@ async function attempt(env: Bindings, policyId: string, escalation: boolean, now
 export async function runOrderChases(env: Bindings, now = Date.now()): Promise<{ events: Data[] }> {
     const { state } = await load(env.DB), events: Data[] = [];
     for (const policy of all(state, 'orderChasePolicy').filter(row => row.enabled)) {
-        const chase = await attempt(env, policy.id, false, now);
+        if(policy.agent==='AGENT-003'&&await companyConfigured(env)) {
+            for(const escalation of [false,true]) {
+                const plan=await orderChasePlan(env,policy.id,escalation,now);
+                if(!plan)continue;
+                const answer=await scheduledInvocation(env,'purse.agents.advance',{job:'chase',id:policy.id,version:policy.version,tick:now,sourceVersion:plan.sourceVersion,escalation},plan.sponsor,'AGENT-003','Purse scheduled supplier follow-up','order-chase:'+plan.id);
+                if(answer.outcome==='done')events.push(...((answer.result as Data).events??[]));
+            }
+            continue;
+        }
+        const chase = await runOrderChaseAttempt(env, policy.id, false, now);
         if (chase) events.push(chase);
-        const escalation = await attempt(env, policy.id, true, now);
+        const escalation = await runOrderChaseAttempt(env, policy.id, true, now);
         if (escalation) events.push(escalation);
     }
     return { events };

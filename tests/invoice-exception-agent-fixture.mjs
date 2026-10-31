@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { invoiceExceptionsFixture, address } from './invoice-exceptions-fixture.mjs';
 export { address };
 
-export async function invoiceExceptionAgentFixture(t) {
-    const f = await invoiceExceptionsFixture(t), { h } = f;
+export async function invoiceExceptionAgentFixture(t,options={}) {
+    const f = await invoiceExceptionsFixture(t,options), { h } = f;
     const controls = async (enabled = true, type = 'equipment') => {
         const policies = (await h.state()).data.agentPolicy;
         return h.command('agent-policy', { agent: 'AGENT-004', purchaseType: type,

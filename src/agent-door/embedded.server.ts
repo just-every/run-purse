@@ -7,11 +7,13 @@ import { type Actor, type Data } from '../purse/types'
 import { nativeRefusal, snapshot, execute } from './native.server'
 import { object, id, text } from './schemas'
 import { recordUri } from './resources.server'
+import { sourceJobs } from './source-agents.server'
 
 export const embeddedJobs={
   'spend-question':{tool:'purse.spend.answer',agent:'AGENT-011',name:'Purse spend questions'},
   'coding-agent-run':{tool:'purse.coding.prepare',agent:'AGENT-008',name:'Purse coding assistant'},
 } as const
+const sourceByOperation=Object.fromEntries(Object.entries(sourceJobs).map(([job,spec])=>[spec.op,{...spec,job,tool:'purse.agents.prepare'}]))
 
 export function embeddedTools(env:Bindings):ToolDefinition[] {
   const specs=[
@@ -45,12 +47,12 @@ export function embeddedTools(env:Bindings):ToolDefinition[] {
  * company or local policy is configured, removal or expiry cannot bypass it.
  */
 export async function invokeEmbedded(env:Bindings,a:Actor,op:string,input:Data):Promise<CallResult|null> {
-  if(!Object.hasOwn(embeddedJobs,op))return null
+  if(!Object.hasOwn(embeddedJobs,op)&&!Object.hasOwn(sourceByOperation,op))return null
   const policy=await env.DB.prepare('SELECT envelope,local_revision FROM agent_door_state WHERE id=1').first<{envelope:string|null;local_revision:number}>()
   if(!env.RER_OWNER_CLAIM_ISSUER&&!env.RER_BUSINESS_TRUST&&!policy?.envelope&&!policy?.local_revision)return null
-  const job=embeddedJobs[op as keyof typeof embeddedJobs]
+  const job=Object.hasOwn(embeddedJobs,op)?embeddedJobs[op as keyof typeof embeddedJobs]:sourceByOperation[op]
   const {purseAgentDoor}=await import('./index.server')
   const key=input.idempotency_key??crypto.randomUUID()
   const sponsor=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(a.id))),byte=>byte.toString(16).padStart(2,'0')).join('')
-  return purseAgentDoor(env).invoke(job.tool,{...input,idempotency_key:key},{person:{id:a.id},agent:{id:`purse:${job.agent}:${sponsor}`,name:job.name,specialist:'procurement'},scopes:['purchasing:write','purchasing:read']})
+  return purseAgentDoor(env).invoke(job.tool,{...input,...('job' in job?{job:job.job}:{}),idempotency_key:key},{person:{id:a.id},agent:{id:`purse:${job.agent}:${sponsor}`,name:job.name,specialist:'procurement'},scopes:['purchasing:write','purchasing:read']})
 }

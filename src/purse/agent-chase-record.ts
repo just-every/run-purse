@@ -22,7 +22,7 @@ export function chaseRun(event: Data, policy: Data) {
         messages: [event.message], proposals: [], outcomes: [event.outcome], chase: event.id };
 }
 export function agentRecordInsert(db: D1Database, event: Data, policy: Data, claimVersion: string, runVersion: string) {
-    const run = chaseRun(event, policy);
+    const raw = chaseRun(event, policy), run = event.preparedBy ? {...raw,preparedBy:event.preparedBy,companyDecision:event.companyDecision,...(event.companyApprovers?{companyApprovers:event.companyApprovers}:{})} : raw;
     return db.prepare(`INSERT OR IGNORE INTO p_records(business,kind,id,revision,value)
         SELECT 'main','agentRun',?,?,? WHERE EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='orderChaseEvent' AND id=? AND revision=?)`)
         .bind(run.id, runVersion, JSON.stringify(run), event.id, claimVersion);

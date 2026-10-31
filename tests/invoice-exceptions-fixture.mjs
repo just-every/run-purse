@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { harness } from './purse-harness.mjs';
 
 export const address = n => ['synthetic-purse-' + n, 'example.test'].join('@');
-export async function invoiceExceptionsFixture(t) {
-    const h = await harness(); t?.after(() => h.close());
+export async function invoiceExceptionsFixture(t,options={}) {
+    const h = await harness(options); t?.after(() => h.close());
     await h.command('business', { name: 'synthetic-purse-6201', currencies: ['USD'], locations: ['Denver', 'Austin'], costCentres: ['Operations'], projects: ['Equipment'] });
     const requester = await h.member(address(6202), ['requester']), approver = await h.member(address(6203), ['approver']);
     const buyer = await h.member(address(6204), ['buyer']), receiver = await h.member(address(6205), ['receiver']);

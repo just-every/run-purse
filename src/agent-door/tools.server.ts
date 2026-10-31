@@ -7,6 +7,8 @@ import { quotationTools } from './quotes.server'
 import { coreTools } from './core.server'
 import { embeddedTools } from './embedded.server'
 import { proposalTools } from './proposals.server'
+import { sourceAgentTools } from './source-agents.server'
+import { scheduledTools } from './scheduled.server'
 import { purchaseFlowTools } from './purchase-flow.server'
 import { recordClasses, recordKinds, recordUri } from './resources.server'
 import { object,id,text,integer,data,list,request,amended,supplier,catalogue,prepare } from './schemas'
@@ -41,5 +43,5 @@ export function purchasingTools(env:Bindings):ToolDefinition[] {
     async classify(args,ctx){const {projected}=await snapshot(env,ctx);return recordClasses(projected.data[args.kind as string]??[])},
     async run(args,ctx){const {projected}=await snapshot(env,ctx);return {result:{records:projected.data[args.kind as string]??[]}}}
   }))
-  return [...tools,...purchaseFlowTools(env),...quotationTools(env),...coreTools(env),...embeddedTools(env),...proposalTools(env)]
+  return [...tools,...purchaseFlowTools(env),...quotationTools(env),...coreTools(env),...embeddedTools(env),...proposalTools(env),...sourceAgentTools(env),...scheduledTools(env)]
 }

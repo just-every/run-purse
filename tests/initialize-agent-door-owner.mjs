@@ -2,6 +2,24 @@ import {readFile} from 'node:fs/promises'
 // Disposable conformance drives the same native owner and purchasing HTTP doors.
 // It holds no signer, raw database capability or production credential.
 import {documentProfileFixture} from './document-profile-fixture.mjs'
+const nativeSessions=new Map()
+export async function prepareNativeSchedule({request,origin,cookie}) {
+ const requester=nativeSessions.get(origin)
+ if(!requester)throw Error('Fresh native requester fixture is unavailable')
+ const command=async(op,input,session=cookie)=>{const response=await request(origin+'/api/purse/command/'+op,{method:'POST',headers:{origin,cookie:session,'content-type':['application','json'].join('/')},body:JSON.stringify(input)});if(!response.ok)throw Error('Native schedule fixture command refused: '+op);return response.json()}
+ const stateResponse=await request(origin+'/api/purse/state',{headers:{cookie}}),state=(await stateResponse.json()).data
+ const supplier=state.supplier.find(row=>['active','preferred'].includes(row.status))
+ const draft=await command('request',{title:'Due native scheduled assistant',supplier:supplier.id,currency:'USD',needDate:new Date(Date.now()-172800000).toISOString().slice(0,10),location:'Denver',costCentre:'Operations',lines:[{description:'Synthetic scheduled goods',quantity:'1',unitMinor:1000,category:'Safety',project:'Workshop'}],freightMinor:0,taxMinor:0,terms:'Native exact supplier consent'},requester)
+ await command('submit',{id:draft.id,revision:draft.revision},requester)
+ await command('decision',{id:draft.id,revision:draft.revision,decision:'approved',reason:'Independent native fixture approval'})
+ const order=await command('convert',{id:draft.id,revision:draft.revision,issue:true})
+ const actorResponse=await request(origin+'/auth/session',{headers:{cookie}}),actor=(await actorResponse.json()).operator
+ const policy=await command('order-chase-policy',{order:order.id,version:0,agent:'AGENT-003',enabled:true,cadenceDays:1,maxChases:2,escalateTo:actor.email})
+ const response=await request(origin+'/api/purse/agent-schedule/plan',{method:'POST',headers:{origin,cookie,'content-type':['application','json'].join('/')},body:JSON.stringify({id:order.id,version:policy.version})})
+ if(!response.ok)throw Error('Native schedule plan refused')
+ return (await response.json()).args
+}
+
 export default async function({request,origin,claim,displayName,returnTo,email,reviewers}) {
  const response=await request(new URL(claim.path,origin).href,{method:'POST',redirect:'manual',headers:{origin,'content-type':'application/json'},body:JSON.stringify({token:claim.token,displayName,returnTo})})
  if(response.status!==303){console.error('Native owner bootstrap status',response.status);throw Error('Native owner bootstrap refused')}
@@ -13,11 +31,13 @@ export default async function({request,origin,claim,displayName,returnTo,email,r
  }
  await command('business',{name:'Cedar Workshop',currencies:['USD','EUR'],locations:['Denver'],costCentres:['Operations'],projects:['Workshop']})
  await command('supplier',{name:'Cedar Office Supply',status:'preferred',reason:'Established office supplier',contacts:[{name:'Alex Cedar',email:'orders@cedar.example.test'}]})
- for(const agent of ['AGENT-011','AGENT-008'])await command('agent-policy',{agent,purchaseType:'*',version:0,enabled:true,cadenceDays:1,maxChases:2,reason:'Enable native source reports for company policy proof'})
+ for(const agent of ['AGENT-011','AGENT-008','AGENT-003'])await command('agent-policy',{agent,purchaseType:'*',version:0,enabled:true,cadenceDays:1,maxChases:2,reason:'Enable native source reports for company policy proof'})
  await command('po-profile',documentProfileFixture({name:'Cedar Workshop'},'Denver'))
  await command('member',{email,name:'Native owner membership',roles:['approver'],active:true})
  await command('policy',{name:'Safety purchases',currency:'USD',category:'Safety',project:'Workshop',approver:email,limitMinor:1000000,budgetMinor:5000000})
+ await command('value-policy',{version:0,enabled:true,reason:'Enable native source-bound value reports'})
  const requester=await reviewers.initialize('requester',{cookie})
+ nativeSessions.set(origin,requester.cookie)
  const suppliers=await request(new URL('/api/purse/state',origin).href,{headers:{cookie:requester.cookie}})
  const supplier=(await suppliers.json()).data.supplier[0]
  const surface=JSON.parse(await readFile(new URL('../agent-surface.json',import.meta.url),'utf8'))
@@ -25,7 +45,7 @@ export default async function({request,origin,claim,displayName,returnTo,email,r
  const independentDecisions=surface.journey.filter(step=>step.tool==='purse.requests.decide'||step.tool==='purse.preparations.propose'&&step.args.action==='decision').length
  for(let index=0;index<phases*independentDecisions+4;index++) {
   const title='Workshop source purchase '+(index+1)
-  const native=await request(new URL('/api/purse/command/request',origin).href,{method:'POST',headers:{origin,cookie:requester.cookie,'content-type':'application/json'},body:JSON.stringify({title,supplier:supplier.id,currency:'USD',needDate:'2026-12-15',location:'Denver',costCentre:'Operations',lines:[{description:'Safety gloves',quantity:'2',unitMinor:1500,category:'Safety',project:'Workshop'}],freightMinor:0,taxMinor:0,terms:'Internal fixture purchase'})})
+  const native=await request(new URL('/api/purse/command/request',origin).href,{method:'POST',headers:{origin,cookie:requester.cookie,'content-type':'application/json'},body:JSON.stringify({title,supplier:supplier.id,currency:'USD',needDate:'2026-12-15',location:'Denver',costCentre:'Operations',lines:[{description:'Safety gloves',quantity:'2',unitMinor:1500,category:'Safety',project:'Workshop'}],freightMinor:0,taxMinor:0,terms:'Internal fixture purchase',valuePromise:{kind:'seats',seats:2}})})
   if(!native.ok)throw Error('Native requester preparation refused')
   const draft=await native.json()
   const submitted=await request(new URL('/api/purse/command/submit',origin).href,{method:'POST',headers:{origin,cookie:requester.cookie,'content-type':'application/json'},body:JSON.stringify({id:draft.id,revision:draft.revision})})

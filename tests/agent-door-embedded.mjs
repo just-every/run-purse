@@ -95,6 +95,6 @@ export async function embeddedPolicyProof({c,h,reader,readerToken}) {
  assert.equal(paused.status,409);assert.equal(paused.value.code,'native_conflict')
  await c.adopt(policy('autonomous'),{revoked:{agents:[result.spend.preparedBy.agent.id],consents:[]}})
  const revoked=await h.send('/api/purse/command/spend-question',{question:'Show committed spend all recorded dates'},h.owner)
- assert.equal(revoked.status,409);assert.equal(revoked.value.code,'unauthenticated')
+ assert.equal(revoked.status,401);assert.equal(revoked.value.code,'unauthenticated')
  console.log('PROBE BASE-AGENT-002 embedded policy: native HTTP -> autonomous, review, held approval and blocked; current-source denial, pause and revoked embedded identity refuse without purchasing effects')
 }
