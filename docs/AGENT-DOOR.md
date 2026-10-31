@@ -4,7 +4,7 @@ Purse's procurement specialist uses one shared Base door at `/mcp`, with the
 2025-11-25 and 2026-07-28 protocols. Discovery, canonical OAuth resource
 metadata, signed company policy, person approval pages and `/agents` use the
 same runtime. The runtime and `agent-surface.json` declare exactly `tools`,
-`policy`, `pause`, `audit` and `idempotency`. Events, resources, prompts and
+`policy`, `pause`, `audit`, `idempotency` and `prompts`. Events, resources and
 subscriptions are omitted: discovery does not advertise them, their catalogues
 are empty, and calls return typed `capability_not_declared` refusals. Unknown
 tools return typed `tool_not_found`. A signed company policy must answer every declared class before
