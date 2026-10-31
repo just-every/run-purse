@@ -1,7 +1,7 @@
 import { rejectProtectedInput } from './protected-input';
 import { all, audit, get, put, requireThat, text, type Actor, type Data, type State } from './types';
 
-export const governedAgents = ['AGENT-002', 'AGENT-003', 'AGENT-006', 'AGENT-011', 'AGENT-008'];
+export const governedAgents = ['AGENT-004', 'AGENT-002', 'AGENT-003', 'AGENT-006', 'AGENT-011', 'AGENT-008'];
 export function purchaseTypes(subject: Data): string[] {
     const declared=subject.purchaseType??subject.intakeFormSnapshot?.purchaseType;
     if(typeof declared==='string'&&declared.trim())return [declared.trim().toLowerCase()];

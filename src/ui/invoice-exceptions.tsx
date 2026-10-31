@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { InvoiceExceptionAgent } from './invoice-exception-agent';
 import { Comments } from './comments';
 import { call, Details, Field, Form, Table, money, when, type D } from './shared';
 
@@ -30,6 +31,7 @@ export function InvoiceExceptions({ data, mutate, openOrder }: { data: D; mutate
                 </Form>
             </Details>}
             <Details label="Assignment history"><ul className="ruled-list">{item.history.map((e: D) => <li key={e.version}>Assignment {e.version} · {when(e.at)} · {e.reason}</li>)}</ul></Details>
+            <InvoiceExceptionAgent item={item} data={data} mutate={mutate}/>
             <Comments kind="invoiceException" record={item.id} mutate={mutate}/>
         </section>)}
     </section>}</>;
