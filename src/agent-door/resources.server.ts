@@ -2,7 +2,7 @@ import { ToolRefusal, type ResourceDefinition, type ClassAndFacts } from '../mod
 import type { Bindings } from '../auth.server'
 import { snapshot } from './native.server'
 
-export const recordKinds=['request','supplier','catalogue','order','receipt','invoice','agreement','policy','agentRun','revision','proposedAction'] as const
+export const recordKinds=['request','supplier','catalogue','order','receipt','invoice','agreement','policy','agentRun','revision','proposedAction','quote'] as const
 export const recordUri=(kind:string,id:string)=>`purse://${kind}/${encodeURIComponent(id)}`
 export function recordClasses(record:unknown):ClassAndFacts[] {
   const personal=(value:unknown):boolean=>Boolean(value&&typeof value==='object'&&Object.entries(value).some(([key,v])=> /^(email|requesterEmail|contacts|actorEmail|ownerEmail)$/.test(key)&&Boolean(v)&&(!Array.isArray(v)||v.length>0)||personal(v)))

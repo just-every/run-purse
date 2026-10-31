@@ -67,6 +67,17 @@ export function authorizedApproval(s: State, a: Actor, r: Data) {
     requireThat(a.email === p.approver || delegated, 'You do not hold authority for this policy', 403);
     return { p, delegated, assignment: undefined };
 }
+/** Resolve the UI's supplied-quotation authority before retaining agent input. */
+export function quoteRequest(s: State, a: Actor, b: Data, completed = false) {
+    const r = get(s, 'request', b.request);
+    requirePermission(s, a, 'request.edit', r);
+    if (!completed && b.revision !== undefined) requireThat(b.revision === r.revision, 'Stale request revision', 409);
+    supplier(s, b.supplier);
+    currency(s, b.currency);
+    const ls = lines(s, b.lines, a);
+    requirePermission(s, a, 'request.edit', { ...r, lines: ls });
+    return { r, ls };
+}
 export function requests(s: State, a: Actor, op: string, b: Data): Data | undefined {
     if (op === 'request' || op === 'amend') {
         b = intakeDefaults(s,b);
@@ -200,13 +211,8 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         return get(s, 'request', r.id);
     }
     if (op === 'quote') {
-        const r = get(s, 'request', b.request);
-        requirePermission(s, a, 'request.edit', r);
-        supplier(s, b.supplier);
-        currency(s, b.currency);
+        const { r, ls } = quoteRequest(s, a, b);
         const id = uid();
-        const ls = lines(s, b.lines, a);
-        requirePermission(s, a, 'request.edit', { ...r, lines: ls });
         const q = { id, at: new Date().toISOString(), sequence: all(s, 'quote').filter(q => q.request === r.id && q.revision === r.revision).length + 1, request: r.id, revision: r.revision, supplier: b.supplier, currency: b.currency, lines: ls, freightMinor: moneyInput(b, 'freightAmount', 'freightMinor', 'Freight', { optional: true }), taxMinor: moneyInput(b, 'taxAmount', 'taxMinor', 'Supplied tax', { optional: true }), delivery: b.delivery ? date(b.delivery) : null, conditions: b.conditions ? text(b.conditions, 'Conditions') : null, source: text(b.source, 'Quote source evidence'), missing: [] as string[] };
         q.missing = ['freightMinor', 'taxMinor', 'delivery', 'conditions'].filter(k => (q as Data)[k] === null);
         put(s, 'quote', id, q);

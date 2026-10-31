@@ -100,6 +100,28 @@
       ]
     },
     {
+      "name": "purse.quotes.compare",
+      "scope": "purchasing:read",
+      "readOnly": true,
+      "classes": [
+        "standard"
+      ],
+      "clauses": [
+        "PUR-005"
+      ]
+    },
+    {
+      "name": "purse.quotes.record",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "standard"
+      ],
+      "clauses": [
+        "PUR-005"
+      ]
+    },
+    {
       "name": "purse.receipts.record",
       "scope": "purchasing:write",
       "readOnly": false,
@@ -447,6 +469,111 @@
           "pointer": "/id"
         }
       }
+    },
+    {
+      "id": "quote-usd",
+      "tool": "purse.quotes.record",
+      "args": {
+        "request": {
+          "$from": "amend",
+          "pointer": "/id"
+        },
+        "revision": {
+          "$from": "amend",
+          "pointer": "/revision"
+        },
+        "supplier": {
+          "$from": "suppliers",
+          "pointer": "/records/0/id"
+        },
+        "currency": "USD",
+        "lines": [
+          {
+            "description": "Safety gloves",
+            "quantity": "2.5",
+            "unitMinor": 1234,
+            "category": "Safety",
+            "project": "Workshop"
+          }
+        ],
+        "freightMinor": null,
+        "taxMinor": 0,
+        "delivery": null,
+        "conditions": null,
+        "source": "Supplied quotation page 2; USD"
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "amend",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "quote-eur",
+      "tool": "purse.quotes.record",
+      "args": {
+        "request": {
+          "$from": "amend",
+          "pointer": "/id"
+        },
+        "revision": {
+          "$from": "amend",
+          "pointer": "/revision"
+        },
+        "supplier": {
+          "$from": "suppliers",
+          "pointer": "/records/0/id"
+        },
+        "currency": "EUR",
+        "lines": [
+          {
+            "description": "Safety gloves",
+            "quantity": "2.5",
+            "unitMinor": 1234,
+            "category": "Safety",
+            "project": "Workshop"
+          }
+        ],
+        "freightMinor": 0,
+        "taxMinor": null,
+        "delivery": null,
+        "conditions": null,
+        "source": "Supplied quotation page 2; EUR"
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "amend",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "quote-comparison",
+      "tool": "purse.quotes.compare",
+      "args": {
+        "request": {
+          "$from": "amend",
+          "pointer": "/id"
+        }
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ]
     },
     {
       "id": "submit",

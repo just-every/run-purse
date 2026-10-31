@@ -37,7 +37,7 @@ export async function snapshot(env:Bindings,ctx:ResourceContext|ToolContext) {
   throw error
  }
 }
-export async function execute(env:Bindings,op:string,args:Record<string,unknown>,ctx:ToolContext) {
+export async function execute(env:Bindings,op:string,args:Record<string,unknown>,ctx:ToolContext,resultKind?:string) {
   try {
     const a=await nativeActor(env,ctx), {state,revision}=await load(env.DB), before=structuredClone(state)
     if(a.agent)a.agent.admission=ctx.operationId
@@ -47,7 +47,7 @@ export async function execute(env:Bindings,op:string,args:Record<string,unknown>
       put(state,row.kind,row.id,{...row.value,preparedBy:{agent:{id:ctx.agent.id,name:ctx.agent.name},for:{id:a.id,name:ctx.person.name},label:ctx.actor.label},companyDecision:{id:ctx.operationId},...(ctx.approvers.length?{companyApprovers:ctx.approvers}:{})})
     }
     await save(env.DB,a,before,state,revision)
-    return JSON.parse(JSON.stringify(projectCommandResult(state,a,result))) as Data
+    return JSON.parse(JSON.stringify(projectCommandResult(state,a,resultKind?state.get(`${resultKind}:${result.id}`)!.value:result))) as Data
   } catch(error) {
     if(error instanceof Fault) throw new ToolRefusal(error.status===409?'native_conflict':error.status===403?'permission_denied':error.status===404?'not_found':'invalid_arguments',error.message)
     throw error

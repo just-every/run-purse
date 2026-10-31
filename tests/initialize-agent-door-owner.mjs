@@ -11,7 +11,7 @@ export default async function({request,origin,claim,displayName,returnTo,email,r
   if(!result.ok){console.error('Native fixture command refused',op,result.status,await result.text());throw Error('Native fixture command refused')}
   return result.json()
  }
- await command('business',{name:'Cedar Workshop',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Workshop']})
+ await command('business',{name:'Cedar Workshop',currencies:['USD','EUR'],locations:['Denver'],costCentres:['Operations'],projects:['Workshop']})
  await command('supplier',{name:'Cedar Office Supply',status:'preferred',reason:'Established office supplier',contacts:[{name:'Alex Cedar',email:'orders@cedar.example.test'}]})
  await command('po-profile',documentProfileFixture({name:'Cedar Workshop'},'Denver'))
  await command('policy',{name:'Safety purchases',currency:'USD',category:'Safety',project:'Workshop',approver:email,limitMinor:1000000,budgetMinor:5000000})
