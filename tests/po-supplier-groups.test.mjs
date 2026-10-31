@@ -20,6 +20,9 @@ test('Native supplier groups reconcile source lines, frozen originals, separate 
  let state=(await h.state()).data;assert.deepEqual(f.policies.map(policy=>{const position=state.periodBudgets.find(row=>row.id===policy.id);return [position.reservedMinor,position.committedMinor]}),[[60000,0],[40000,0]]);
  const issued=await cmd('issue',{id:groups[1].id,revision:2,reason:'Issue the exact supplier groups together'},buyer);assert.ok(issued.supplierOrders.every(group=>group.status==='issued'));state=(await h.state()).data;
  assert.deepEqual(f.policies.map(policy=>{const p=state.periodBudgets.find(row=>row.id===policy.id);return [p.reservedMinor,p.committedMinor,p.actualMinor]}),[[0,60000,0],[0,40000,0]]);
+ const beforeDisposition=(await h.state()).data;
+ for(const group of groups) await cmd('budget-disposition-preview',{id:group.id,revision:2,needDate:'2027-05-15'},h.owner,409);
+ assert.deepEqual((await h.state()).data,beforeDisposition,'Supplier groups retain their complete commitment and require a separately supported disposition');
  const report=await f.report();assert.deepEqual(report.totals,[{currency:'USD',reservedMinor:0,committedMinor:100000,actualMinor:0}]);assert.deepEqual(report.rows.map(row=>[row.order,row.supplier,row.amountMinor]).sort(),groups.map(group=>[group.id,group.supplier,group.totalMinor]).sort());
  await cmd('po-profile',{...documentProfileFixture(f.business,'Denver'),id:profile.id,version:profile.version,standardTerms:'Changed current terms'});
  await cmd('supplier',{...f.suppliers[1],name:'Changed supplier name',reason:'Later supplier edit'});
