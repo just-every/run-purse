@@ -3,6 +3,8 @@ import {randomUUID} from 'node:crypto'
 import {pathToFileURL} from 'node:url'
 import {schemaErrors} from '../src/modules/agent-door/conformance/schema.mjs'
 import {corePolicyProof} from './agent-door-core.mjs'
+import {embeddedPolicyProof} from './agent-door-embedded.mjs'
+import {proposalPolicyProof} from './agent-door-proposals.mjs'
 
 const code=answer=>answer.result?._meta?.['com.runeditrun/error']?.code
 const value=answer=>{assert.equal(answer.result?.isError,false,code(answer));return answer.result.structuredContent}
@@ -200,6 +202,8 @@ async function policyJourney() {
   await h.command('member',{email:requesterEmail,name:'Quotation requester',roles:['requester'],active:false})
   assert.equal((await c.tool('purse.quotes.record',ownInput,{token:requesterToken})).status,401)
   assert.equal((await c.tool('purse.quotes.compare',{request:ownDraft.id},{token:requesterToken})).status,401)
+  const erasedGrantArgs={email:requesterEmail,name:'Quotation requester',grants:[{role:'requester'}],active:false,idempotency_key:randomUUID()}
+  value(await c.tool('purse.members.set',erasedGrantArgs))
   const {reauthenticateErasure}=await import('./erasure-flow.mjs')
   await reauthenticateErasure(h)
   const meta=await h.send('/api/purse/erasure',undefined,h.owner),member=meta.value.choices.find(row=>row.kind==='member'&&row.label.includes(requesterEmail))
@@ -212,6 +216,11 @@ async function policyJourney() {
   const visible=value(await c.tool('purse.quotes.compare',{request:ownDraft.id}))
   assert.ok(!JSON.stringify(visible).includes(requesterEmail));assert.ok(!JSON.stringify(visible).includes(own.preparedBy.for.id))
   assert.equal((await h.state()).data.quote.filter(row=>row.request===ownDraft.id).length,1)
+  assert.equal(code(await c.tool('purse.members.set',erasedGrantArgs)),'not_found')
+  const erasedAudit=await c.personJson('/agents/api/audit')
+  assert.ok(!JSON.stringify(erasedAudit).includes(requesterEmail))
+  assert.ok(!JSON.stringify(erasedAudit).includes(own.preparedBy.for.id))
+  assert.equal(erasedAudit.differs_from_policy,0)
   const after=(await h.state()).data
   for(const kind of ['decision','order','quoteAward','commitment','orderSend','rfqMailEvent'])assert.deepEqual(after[kind]??[],before[kind])
   // Current native comparison includes private supplier responses only for
@@ -237,6 +246,8 @@ async function policyJourney() {
   assert.deepEqual(quotesOf(limited),[supplied])
   assert.deepEqual(quotesOf(limited),(await h.state(reader)).data.quote.filter(row=>row.request===rfqDraft.id))
   assert.deepEqual(effects((await h.state()).data),sourceEffects)
+  await embeddedPolicyProof({c,h,reader,readerToken})
+  await proposalPolicyProof({c,h,reader,readerToken})
   assert.ok(c.points.every(point=>point.ok),JSON.stringify(c.points.filter(point=>!point.ok)))
   console.log('PROBE BASE-AGENT-002 quotation recording and comparison: native HTTP and MCP -> matching state and quote audit; 3085 integer minor units; USD and EUR separate; missing differs from zero')
   console.log('PROBE BASE-AGENT-002 authority and policy: MCP -> autonomous, review, approval and blocked; unauthorized and stale refused before retention; revoked and erased sponsors cannot replay')

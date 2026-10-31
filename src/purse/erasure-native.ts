@@ -35,6 +35,28 @@ export async function eraseNativeCopies(env:Bindings,plan:ErasurePlan,a:Actor) {
  for(const row of (await db.prepare('SELECT * FROM p_integration_tokens').all<Data>()).results) {
   const next=plan.scrub(row);if(JSON.stringify(next)!==JSON.stringify(row))statements.push(sql('UPDATE p_integration_tokens SET requester=?,requester_email=?,name=?,revoked_at=? WHERE id=?',next.requester,next.requester_email,next.name,new Date().toISOString(),row.id));
  }
+ // Company approvals, audit and cached tool results are private native copies.
+ // Keep replay claims and policy evidence while removing matching personal data.
+ for(const row of (await db.prepare('SELECT agent,key,outcome FROM agent_door_calls WHERE outcome IS NOT NULL').all<Data>()).results) {
+  const next=JSON.stringify(plan.scrub(JSON.parse(row.outcome)));
+  if(next!==row.outcome)statements.push(sql('UPDATE agent_door_calls SET outcome=? WHERE agent=? AND key=?',next,row.agent,row.key));
+ }
+ for(const row of (await db.prepare('SELECT id,row,evidence FROM agent_door_audit').all<Data>()).results) {
+  const next=JSON.stringify(plan.scrub(JSON.parse(row.row))),evidence=row.evidence?JSON.stringify(plan.scrub(JSON.parse(row.evidence))):null;
+  if(next!==row.row||evidence!==row.evidence)statements.push(sql('UPDATE agent_door_audit SET row=?,evidence=? WHERE id=?',next,evidence,row.id));
+ }
+ for(const row of (await db.prepare('SELECT id,saved,approvals,result,state FROM agent_door_approvals').all<Data>()).results) {
+  const saved=JSON.stringify(plan.scrub(JSON.parse(row.saved))),approvals=JSON.stringify(plan.scrub(JSON.parse(row.approvals))),result=row.result?JSON.stringify(plan.scrub(JSON.parse(row.result))):null;
+  if(saved!==row.saved||approvals!==row.approvals||result!==row.result)statements.push(sql('UPDATE agent_door_approvals SET saved=?,approvals=?,result=?,state=?,version=version+1 WHERE id=?',saved,approvals,result,row.state==='pending'?'expired':row.state,row.id));
+ }
+ for(const row of (await db.prepare('SELECT id,saved,marked_by FROM agent_door_reviews').all<Data>()).results) {
+  const saved=JSON.stringify(plan.scrub(JSON.parse(row.saved))),marked=plan.scrub(row.marked_by);
+  if(saved!==row.saved||marked!==row.marked_by)statements.push(sql('UPDATE agent_door_reviews SET saved=?,marked_by=? WHERE id=?',saved,marked,row.id));
+ }
+ for(const row of (await db.prepare('SELECT id,name,sponsor,sponsor_name FROM agent_door_agents').all<Data>()).results) {
+  const next=plan.scrub(row);
+  if(JSON.stringify(next)!==JSON.stringify(row))statements.push(sql('UPDATE agent_door_agents SET name=?,sponsor=?,sponsor_name=?,revoked=1 WHERE id=?',next.name,next.sponsor,next.sponsor_name,row.id));
+ }
  for(const row of (await db.prepare('SELECT sequence,message FROM rer_mail_development_outbox').all<Data>()).results) {
   if(JSON.stringify(plan.scrub(row.message))!==JSON.stringify(row.message))statements.push(sql('DELETE FROM rer_mail_development_outbox WHERE sequence=?',row.sequence));
  }
@@ -50,6 +72,6 @@ export async function eraseNativeCopies(env:Bindings,plan:ErasurePlan,a:Actor) {
   installationFields.push({store:'protected supplier metadata',supplier:row.supplier,field:row.field,fields:['reason','evidence reference']});
   statements.push(sql('UPDATE p_supplier_protected SET key_id=?,nonce=?,ciphertext=?,tag=? WHERE business=\'main\' AND supplier=? AND field=?',encrypted.key_id,encrypted.nonce,encrypted.ciphertext,encrypted.tag,row.supplier,row.field));
  }
- installationFields.push({store:'installation copies',fields:['matching auth audit identity','matching mail outbox entries','matching integration replay responses','affected supplier link capabilities','matching rate-limit identity']});
+ installationFields.push({store:'installation copies',fields:['matching auth audit identity','matching mail outbox entries','matching integration replay responses','matching company tool results and approvals','matching company audit and agent identities','affected supplier link capabilities','matching rate-limit identity']});
  return {statements,protectedMetadata,installationFields};
 }

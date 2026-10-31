@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
 import {schemaErrors} from '../src/modules/agent-door/conformance/schema.mjs'
+import {readFile} from 'node:fs/promises'
+import {missingCoreJobs} from '../scripts/agent-core-coverage.mjs'
 
 const code=answer=>answer.result?._meta?.['com.runeditrun/error']?.code
 const value=answer=>{assert.equal(answer.result?.isError,false,JSON.stringify(answer.result));return answer.result.structuredContent}
@@ -54,7 +56,7 @@ export async function coreNativeJourney({tool,request,origin,cookie,order}) {
  assert.equal(accounting.status,200);assert.equal(csv,await accounting.text())
  if(order) {
   const before=await state(),source=before.request.find(row=>row.id===order.request)
-  const input={...source,id:source.id,revision:source.revision,title:'Renewed issued purchase terms',lines:source.lines.map(row=>({...row,unitMinor:row.unitMinor+100})),reason:'Exact issued amendment requires fresh purchasing approval',idempotency_key:randomUUID()}
+  const input={...source,id:source.id,revision:source.revision,title:'Renewed issued purchase terms',lines:source.lines.map(row=>({id:row.id,description:row.description,quantity:row.quantity,unitMinor:row.unitMinor+100,category:row.category,project:row.project,...(row.catalogue?{catalogue:row.catalogue}:{})})),reason:'Exact issued amendment requires fresh purchasing approval',idempotency_key:randomUUID()}
   const amendedOrder=value(await tool('purse.requests.amend',input))
   assert.equal(amendedOrder.status,'draft');assert.equal(amendedOrder.revision,source.revision+1)
   const blocked=await tool('purse.orders.issue',{id:order.id,revision:amendedOrder.revision,reason:'Must not bypass renewed approval',idempotency_key:randomUUID()})
@@ -66,6 +68,17 @@ export async function coreNativeJourney({tool,request,origin,cookie,order}) {
  }
  console.log('PROBE BASE-AGENT-002 Core: native HTTP and MCP -> matching amendments, integer 3085, immutable bytes, preparation downloads and accounting CSV; replay once and stale refusal unchanged')
  return {request:draft.id,file:captured.id}
+}
+
+export async function coreCoverageProof() {
+ const contract=await readFile(new URL('../CONTRACT.md',import.meta.url),'utf8'),surface=JSON.parse(await readFile(new URL('../agent-surface.json',import.meta.url),'utf8'))
+ assert.deepEqual(missingCoreJobs(contract,surface),[])
+ const inventory=[...new Set(surface.tools.flatMap(row=>row.clauses))].filter(id=>/^PUR-/.test(id))
+ for(const clause of inventory) {
+  const missing={...surface,tools:surface.tools.map(tool=>({...tool,clauses:tool.clauses.filter(id=>id!==clause)})),notTools:surface.notTools.map(item=>({...item,clauses:item.clauses.filter(id=>id!==clause)}))}
+  assert.ok(missingCoreJobs(contract,missing).includes(clause))
+ }
+ console.log('PROBE BASE-AGENT-002 Core coverage: published inventory -> every native Core id mapped; removal from both tools and supported exceptions is refused')
 }
 
 export async function coreStepProof({step,result,request,origin,cookie}) {

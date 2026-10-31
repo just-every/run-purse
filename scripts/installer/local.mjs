@@ -7,6 +7,10 @@ import { ownerDeploy } from '@runeditrun/rer/deploy';
 import { localPortability } from '@runeditrun/rer/portability';
 import { journalSignal, unverifiedHistory } from './restore-history.mjs';
 import * as model from './ui/seed.mjs';
+import { requireCoreCoverage } from '../agent-core-coverage.mjs';
+
+// Shared rer commands load this native seed adapter, including rer check.
+await requireCoreCoverage(new URL('../../',import.meta.url));
 
 export { selectLocalState };
 const localArchive = localPortability({ database: 'foundation', buckets: { ORIGINALS: 'ORIGINALS' }, policyModule: 'scripts/installer/portability.mjs', transient: ['local runtime caches and logs'] });

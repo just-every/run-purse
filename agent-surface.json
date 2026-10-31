@@ -50,6 +50,18 @@
       ]
     },
     {
+      "name": "purse.coding.prepare",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "sensitive"
+      ],
+      "clauses": [
+        "AGENT-008",
+        "PUR-014"
+      ]
+    },
+    {
       "name": "purse.delegations.create",
       "scope": "purchasing:write",
       "readOnly": false,
@@ -195,6 +207,24 @@
       ]
     },
     {
+      "name": "purse.preparations.execute",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "standard",
+        "money",
+        "commitment"
+      ],
+      "clauses": [
+        "PUR-014",
+        "PUR-006",
+        "PUR-007",
+        "PUR-008",
+        "PUR-009",
+        "PUR-010"
+      ]
+    },
+    {
       "name": "purse.preparations.propose",
       "scope": "purchasing:write",
       "readOnly": false,
@@ -336,6 +366,18 @@
       ],
       "clauses": [
         "PUR-006"
+      ]
+    },
+    {
+      "name": "purse.spend.answer",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "sensitive"
+      ],
+      "clauses": [
+        "AGENT-011",
+        "PUR-014"
       ]
     },
     {
@@ -1366,6 +1408,212 @@
           "class": "sensitive"
         }
       ]
+    },
+    {
+      "id": "core-spend",
+      "tool": "purse.spend.answer",
+      "args": {
+        "question": "Show committed spend by supplier all recorded dates"
+      },
+      "expect": [
+        {
+          "class": "sensitive"
+        }
+      ]
+    },
+    {
+      "id": "core-coding",
+      "tool": "purse.coding.prepare",
+      "args": {
+        "kind": "request",
+        "id": {
+          "$from": "draft",
+          "pointer": "/id"
+        }
+      },
+      "expect": [
+        {
+          "class": "sensitive"
+        }
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "draft",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "proposal-draft",
+      "tool": "purse.requests.create",
+      "args": {
+        "title": "Native proposed submission",
+        "supplier": {
+          "$from": "suppliers",
+          "pointer": "/records/0/id"
+        },
+        "currency": "USD",
+        "needDate": "2026-12-15",
+        "location": "Denver",
+        "costCentre": "Operations",
+        "lines": [
+          {
+            "description": "Safety gloves",
+            "quantity": "2",
+            "unitMinor": 1500,
+            "category": "Safety",
+            "project": "Workshop"
+          }
+        ],
+        "freightMinor": 0,
+        "taxMinor": 0,
+        "terms": "Internal procurement draft"
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ]
+    },
+    {
+      "id": "proposal-run",
+      "tool": "purse.preparations.create",
+      "args": {
+        "workflow": "intake",
+        "draft": "Exact native purchasing proposals",
+        "references": []
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ]
+    },
+    {
+      "id": "proposal-submit",
+      "tool": "purse.preparations.propose",
+      "args": {
+        "run": {
+          "$from": "proposal-run",
+          "pointer": "/id"
+        },
+        "action": "submit",
+        "input": {
+          "id": {
+            "$from": "proposal-draft",
+            "pointer": "/id"
+          },
+          "revision": {
+            "$from": "proposal-draft",
+            "pointer": "/revision"
+          }
+        }
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ],
+      "target": {
+        "kind": "agentRun",
+        "id": {
+          "$from": "proposal-run",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "execute-submit",
+      "tool": "purse.preparations.execute",
+      "args": {
+        "id": {
+          "$from": "proposal-submit",
+          "pointer": "/id"
+        }
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "proposal-draft",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "proposal-awaiting",
+      "tool": "purse.requests.awaiting_decision",
+      "args": {},
+      "expect": [
+        {
+          "class": "sensitive"
+        }
+      ]
+    },
+    {
+      "id": "proposal-decision",
+      "tool": "purse.preparations.propose",
+      "args": {
+        "run": {
+          "$from": "proposal-run",
+          "pointer": "/id"
+        },
+        "action": "decision",
+        "input": {
+          "id": {
+            "$from": "proposal-awaiting",
+            "pointer": "/records/0/id"
+          },
+          "revision": {
+            "$from": "proposal-awaiting",
+            "pointer": "/records/0/revision"
+          },
+          "decision": "approved",
+          "reason": "Independent exact native proposal review"
+        }
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ],
+      "target": {
+        "kind": "agentRun",
+        "id": {
+          "$from": "proposal-run",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "execute-decision",
+      "tool": "purse.preparations.execute",
+      "args": {
+        "id": {
+          "$from": "proposal-decision",
+          "pointer": "/id"
+        }
+      },
+      "expect": [
+        {
+          "class": "money"
+        },
+        {
+          "class": "commitment"
+        }
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "proposal-awaiting",
+          "pointer": "/records/0/id"
+        }
+      }
     }
   ],
   "spend": {

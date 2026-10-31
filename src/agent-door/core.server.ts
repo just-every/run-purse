@@ -36,6 +36,7 @@ export function coreTools(env:Bindings):ToolDefinition[] {
       if(spec.op==='member') {
         if(!a.owner)throw new ToolRefusal('permission_denied','Current native owner required to change grants')
         target={kind:'member',id:String(args.email).trim().toLowerCase()}
+        if(completed&&!state.has(`member:${target.id}`))throw new ToolRefusal('not_found')
       } else if(spec.op==='business'||spec.op==='policy') {
         requirePermission(state,a,'access.manage')
         const previous=state.get(`${spec.kind}:${spec.op==='business'?'main':args.id}`)?.value

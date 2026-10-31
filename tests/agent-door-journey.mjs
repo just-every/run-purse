@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
 import {quoteNativeJourney,quoteStepProof} from './agent-door-quotes.mjs'
-import {coreNativeJourney,coreStepProof} from './agent-door-core.mjs'
+import {coreNativeJourney,coreStepProof,coreCoverageProof} from './agent-door-core.mjs'
+import {embeddedNativeJourney} from './agent-door-embedded.mjs'
+import {proposalNativeJourney} from './agent-door-proposals.mjs'
 import {agentDoorBrowser,agentPendingBrowser} from './agent-door-browser.mjs'
 
 export async function afterStep(context) {
@@ -16,7 +18,8 @@ export async function afterStep(context) {
 }
 
 // Real native persistence, policy and audit; no application or auth stand-ins.
-export default async function({tool,request,origin,cookie,email}) {
+async function nativeJourney({tool,request,origin,cookie,email}) {
+ await coreCoverageProof()
  const marker='synthetic-structured-protected-value-'+randomUUID()
  const before=await tool('purse.workspace.snapshot',{})
  for(const name of ['tin','bank_account','BANK-ROUTING','client_secret','apiKey','access_token','refreshToken','supplierMatchingKey']) {
@@ -132,6 +135,16 @@ export default async function({tool,request,origin,cookie,email}) {
  assert.ok(Number.isInteger(admission.revision))
  const quotation=await quoteNativeJourney({tool,request,origin,cookie})
  await coreNativeJourney({tool,request,origin,cookie,order})
+ await embeddedNativeJourney({tool,request,origin,cookie})
+ await proposalNativeJourney({tool,request,origin,cookie})
  await agentDoorBrowser({request,origin,cookie,order,native,quotation,tool})
  console.log('Native agent journey: self-approval refused; receipt replay once; changed arguments and stale position refused; agent and sponsor attribution; zero policy differences')
+}
+export default async function(context) {
+ try {await nativeJourney(context)}
+ catch(error) {
+  console.error('Native agent journey assertion:',error.name,String(error.message).split('\n').slice(0,4).join(' ').slice(0,400))
+  console.error(String(error.stack).split('\n').filter(line=>line.includes('agent-door-')).slice(0,3).join('\n'))
+  throw error
+ }
 }
