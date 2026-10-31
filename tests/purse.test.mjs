@@ -206,6 +206,7 @@ test('APPROVAL-004 exact pending header edits carry or renew chain approvals and
  await decide(r,finance).then(()=>assert.fail('later approver cannot skip first'),error=>assert.match(error.message,/403/));
  assert.equal((await decide(r,manager)).status,'pending');
  const edited=await cmd('approver-edit',{id:r.id,revision:1,changes:{class:'Equipment',needDate:'2026-11-04'},reason:'synthetic-purse-10'},finance);
+ const notices=(await h.send('/api/purse/notifications',undefined,requester)).value.items;assert.ok(notices.some(n=>n.type==='approver-edit'&&n.record===r.id&&n.sourceRevision===2&&n.canRead));
  assert.equal(edited.revision,2);assert.equal(edited.status,'pending');assert.equal(edited.class,'Equipment');assert.equal(edited.approverEdit.carried.length,1);assert.equal(edited.approverEdit.renewed.length,0);
  assert.equal((await h.state(requester)).data.request.find(row=>row.id===r.id).approverEdit.differences.length,2);
  await cmd('approver-edit',{id:r.id,revision:1,changes:{class:'Old'},reason:'synthetic-purse-11'},finance,409);

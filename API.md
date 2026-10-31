@@ -1160,3 +1160,70 @@ Prepaid account mapping and all provider posting, payment, refund and
 settlement transports are unavailable. The UI and accounting export label
 these targets unmapped and unpostable. No cash movement or paid status follows
 from a native deposit approval or application.
+
+## Native notification list
+
+The current native session reads `GET /api/purse/notifications` and receives an
+`items` list, including read and dismissed history. Native approval-needed,
+returned, approved, comment-mention and receipt-needed events bind the recipient's
+native identity to an exact source event and purchasing revision or comment version.
+This list grants no purchasing permission and creates no outbound delivery.
+
+`POST /api/purse/command/notification-read` and
+`POST /api/purse/command/notification-dismiss` accept `{ "id": "notification identifier" }`.
+Read and dismissal are monotonic; repeated requests return the same state. Dismissal
+also marks the item read. Every read and action checks current membership and source
+scope. Another recipient's identifier returns 404. An inaccessible source has no
+source identifiers, title, body or link in the list, and its actions return 403.
+Historical purchasing tasks are labelled earlier events when their source revision
+or current approval step is no longer actionable.
+
+Archives retain notification history and state. Native recipient identity is not
+restored, and signing in with a newly invited identity for the same mailbox never
+claims historical notices. Only fresh native events address that identity. Erasure
+anonymizes recipients and withdraws affected source content. Channel preferences,
+digests, quiet hours, urgent bypass and external delivery remain the NOTIFY-001 Gap.
+
+## Native notification preferences
+
+The current member reads `GET /api/purse/notifications` and
+`GET /api/purse/notification-settings`. Source content and identifiers are
+projected under current membership and record permissions on every request.
+`POST /api/purse/command/notification-read` and
+`POST /api/purse/command/notification-dismiss` are monotonic, recipient-only
+changes; they never approve a purchase or reset its queue age.
+
+Members save their own versioned choices with
+`POST /api/purse/command/notification-preferences`: channel (`in-app`, `email`,
+`slack`, `teams` or `push`), cadence (`immediate` or `daily`), IANA `timezone`,
+`quiet`, `quietStart`, `quietEnd`, `weekends` and `digestAt`. The default quiet
+window is 20:00 to 07:00. Choosing a channel enrolls only subsequently captured
+native notices. The in-app list remains available during quiet hours. Daily
+batches and weekend holds use real instants in the member's zone, including
+clock changes. Current choices are rechecked before dispatch. Slack, Teams and
+push currently record Unavailable; they never fall back to email.
+
+The current native owner configures a versioned reminder cadence with
+`POST /api/purse/command/notification-nudge-policy` (`enabled`, `hours`) and
+marks event families urgent with
+`POST /api/purse/command/notification-urgency` (`type`, `urgent`, `version`).
+Urgent events bypass both digest and quiet hours. Nudges retain the current
+approval step and original queue age; this adds no escalation or delegation.
+The minute scheduler releases due notifications. Native command events also
+attempt due dispatch immediately. The owner-only
+`POST /api/purse/notification-deliveries` processes current receipt prompts
+and due notifications. Each notice has one durable attempt, consumed before
+any external effect; an interrupted or uncertain attempt is never automatically
+resent. Development mail is recorded as suppressed.
+
+For a configured Resend sender, provision a separate private
+`NOTIFICATION_WEBHOOK_SECRET` through setup and configure delivery callbacks at
+`POST /api/purse/notification-mail-events`. The route verifies the original
+signed bytes, event identity, message reference, exact recipient and current
+source authorization before recording normalized outcomes. Replays are inert,
+conflicting event identities are refused, and an earlier acceptance cannot
+replace a bounce. Raw callback bodies, mailbox addresses and notification
+content are not retained in delivery receipts. The signing secret is excluded
+from archives; restored historical recipient IDs confer no current identity,
+channel enrollment or callback authority. Network-edge proof is synthetic;
+live sender, inbox, bounce, Slack, Teams and device qualification remain open.

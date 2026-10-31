@@ -39,6 +39,7 @@ export interface Bindings extends IdentityBindings {
  MAIL_PROVIDER?: 'development' | 'resend' | 'sendgrid' | 'cloudflare' | 'rer'
  MAIL_RELAY_URL?: string
  MAIL_FROM?: string
+ NOTIFICATION_WEBHOOK_SECRET?: string
  EMAIL_INTAKE_WEBHOOK_SECRET?: string
  MAIL_API_KEY?: string
  MAIL_ACCOUNT_ID?: string
