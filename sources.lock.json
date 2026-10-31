@@ -5632,7 +5632,7 @@
       "executable": false
     },
     "tests/browser-spend-questions.mjs": {
-      "sha256": "7dad72ca54d23ff3130e726767c998b1138f587049d80d7dbdecbceab98dccd9",
+      "sha256": "77c3fde0e72d0220e5f91314eb089b6afef763a3e61671c080195282eb193624",
       "executable": false
     },
     "tests/browser-spend-report.mjs": {
