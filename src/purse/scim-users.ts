@@ -8,7 +8,7 @@ import { all, audit, put, requireThat, uid, type Actor, type Data } from './type
 export async function provisionScimUser(db: D1Database, auth: ScimAuthority, input: Data, previous?: Data): Promise<Data> {
     const operators = await nativeOperators(db);
     const link = await db.prepare('SELECT l.*,EXISTS(SELECT 1 FROM oa_external_identities i WHERE i.operator_id=l.operator_id AND i.issuer=l.issuer AND i.subject=l.external_id) AS activated FROM p_scim_links l WHERE l.issuer=? AND l.external_id=?').bind(auth.config.issuer, input.externalId).first<Data>();
-    if (link) requireThat(!link.revoked_at && link.activated && link.email === input.userName, 'Owner-confirmed member link requires its matching OIDC sign-in', 409);
+    if (link) requireThat(!link.revoked_at && link.activated && link.email === input.userName, 'Owner-confirmed member link requires its matching provider sign-in', 409);
     const native = operators.find(o => o.id === (previous?.id ?? link?.operator_id));
     requireThat((!previous || native) && (!native || native.role !== 'owner'), 'SCIM cannot change native owners', 403);
     if (!previous) {

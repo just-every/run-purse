@@ -21,7 +21,8 @@
   "5": [
     ["tests/browser.mjs", "--width=390", "--journey=audit-log"],
     ["tests/browser-invoice-exceptions.mjs", "--width=1440"],
-    ["tests/browser-custom-fields.mjs"]
+    ["tests/browser-custom-fields.mjs"],
+    ["tests/browser-invoice-exception-agent.mjs"]
   ],
   "6": [
     ["tests/browser.mjs", "--width=1440", "--journey=supplier-duplicates"],

@@ -77,6 +77,16 @@
       "group": "owner"
     },
     {
+      "name": "SAML_PROVIDERS",
+      "label": "SAML provider configuration (private JSON)",
+      "help": "Optional array with id beginning saml-, label, exact issuer, ssoUrl, PEM certificate and optional entityId. Register the installation metadata with the IdP and enable native owner admission in Settings. Keep this installation-only configuration out of archives.",
+      "kind": "secret",
+      "required": false,
+      "ownerVisible": true,
+      "input": "entered",
+      "group": "identity"
+    },
+    {
       "name": "OIDC_PROVIDERS",
       "label": "OIDC provider metadata (JSON)",
       "help": "Optional public metadata array using auth, google, microsoft or okta presets. Include id and clientId, plus issuer or tenant where required. Never include credentials. Configure native owner admission at /auth/purse/identity after setup.",

@@ -55,7 +55,8 @@
         "PROTECTED_DATA_PREVIOUS_KEY",
         "OIDC_CREDENTIALS",
         "OIDC_TRANSACTION_SECRET",
-        "NOTIFICATION_WEBHOOK_SECRET"
+        "NOTIFICATION_WEBHOOK_SECRET",
+        "SAML_PROVIDERS"
       ],
       "healthPath": "/health",
       "recovery": "Follow OPERATIONS.md: retain exact source, a private native export and installation secrets; restore only into empty resources at the release that made the archive, verify records and original attachment bytes, then upgrade source in place. Preserve applied migration names and bytes.",
