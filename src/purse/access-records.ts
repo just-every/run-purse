@@ -1,3 +1,4 @@
+import { intakeAgentRunVisible } from './intake-agent';
 import { invoiceExceptionAgentVisible } from './invoice-exception-agent';
 import { mayReadInvoiceException } from './invoice-exception-access';
 import { codingAgentRunVisible } from './coding-agent';
@@ -77,7 +78,9 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
         const request=order&&s.get('request:'+order.request)?.value;
         return Boolean(order&&request&&(allowed(s,a,'procurement.manage',order)||request.requester===a.id&&allowed(s,a,'po.read',order)));
     }
+    if (kind === 'intakeAgentReview') { const run = s.get('agentRun:' + record.run)?.value; return Boolean(run && intakeAgentRunVisible(s,a,run)); }
     if (kind === 'agentRun') {
+        if (record.agent === 'AGENT-001') return intakeAgentRunVisible(s,a,record);
         if (record.agent === 'AGENT-004') return invoiceExceptionAgentVisible(s,a,record);
         if (record.agent === 'AGENT-008') return codingAgentRunVisible(s,a,record);
         if (a.owner) return true;
