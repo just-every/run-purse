@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "92c2ff3f73edc0aa234526ae95b5241d0ff2d962f8131c1d2adf277c6ed8da0a",
+      "sha256": "7483a9b5a806e8006dffbacf2a1bb117274122701e34b232a4ea0ed7b3c17427",
       "executable": false
     },
     "DEMO.md": {
@@ -204,7 +204,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "b27c505fa49d2fd8e22bf12f6eb59c8ce191315430b13c5a2d264d604ad3fa5c",
+      "sha256": "c8a27d1a25f5d8f8924bc7c2b9396ea3117990993a5f594490cca23cf83f7de2",
       "executable": false
     },
     "migrations/core/0001_operator_auth.sql": {
@@ -736,7 +736,7 @@
       "executable": false
     },
     "scripts/ci/shards.json": {
-      "sha256": "2e7e2ffa4e2207475d76e507feb9b26ccd08859609f13cb950682137de8fcb29",
+      "sha256": "26d481acf5b1fc832133354dccdc332866d4ed2e07a899d06048fe2c84eecaab",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
@@ -984,7 +984,7 @@
       "executable": false
     },
     "scripts/installer/restore-intake-agent.mjs": {
-      "sha256": "b6a77169a24ce262f18c113c75a8d49e82bc4649f04f1ec995e5c28e5853ec1f",
+      "sha256": "c9ec5000f744c4cf3b7dc32a41d09901788457abdb2557286e7cfdab2caac582",
       "executable": false
     },
     "scripts/installer/restore-intake.mjs": {
@@ -3632,7 +3632,7 @@
       "executable": false
     },
     "src/purse/erasure-coverage.ts": {
-      "sha256": "b8e5d9b4f408a92afb12c27df4389fe455afaf151e581cd0b5b3e58fd1e95bb0",
+      "sha256": "05cb74eb4d1e654de10b1e03da42514898fe05b420afb21596bd2aac2344f649",
       "executable": false
     },
     "src/purse/erasure-diff.ts": {
@@ -3696,7 +3696,7 @@
       "executable": false
     },
     "src/purse/guided-intake.ts": {
-      "sha256": "837b4f3ce193a1b2f390c42a37d803ab5525b5c4727a3c23e215d8ebd90c1be9",
+      "sha256": "b7308e198844bf656d45f23de125895a12613d0a82e7b009dc40fc14b5929550",
       "executable": false
     },
     "src/purse/identity-authority.ts": {
@@ -3736,7 +3736,7 @@
       "executable": false
     },
     "src/purse/intake-agent.ts": {
-      "sha256": "e179eb12d116ed4144b0f22a31db9a5d47f522a4a2b36005a6c644624b4b19d7",
+      "sha256": "383a85d1b500678eca28302b3e3b6eea790fc6abfac1991935a039385d8b543e",
       "executable": false
     },
     "src/purse/intake-fields.ts": {
@@ -4280,7 +4280,7 @@
       "executable": false
     },
     "src/purse/store.ts": {
-      "sha256": "358678d8bfc3d3634ad62fa02c95d4c98a1d75e8e3e2271fcf2d5e9946f45e4e",
+      "sha256": "62ecc244b19373098aac00b5a3878d3e4a5390258954d4f339e7ac83a7f79197",
       "executable": false
     },
     "src/purse/supplier-credits.ts": {
@@ -4676,7 +4676,7 @@
       "executable": false
     },
     "src/ui/agent-governance.tsx": {
-      "sha256": "971cff07f28f5f8014aced64fa61423d5fd1f3d26dda89c63220d93cd3f0babf",
+      "sha256": "41060136ffc26ba956356e3bd5e9f9eb108950ca822d562100dcc7bb41e59020",
       "executable": false
     },
     "src/ui/agent-records.tsx": {
@@ -4804,7 +4804,7 @@
       "executable": false
     },
     "src/ui/intake-agent.tsx": {
-      "sha256": "9fc2eb2c15e20092075b033782add6534eb15de57aefc1340b1359cab5aba339",
+      "sha256": "38857275767cbdd72944cbb5c6decf1fb1c4e290afc383e69f30498c6c115c17",
       "executable": false
     },
     "src/ui/intake-settings.tsx": {
@@ -5324,7 +5324,7 @@
       "executable": false
     },
     "tests/browser-intake-agent.mjs": {
-      "sha256": "cd379a9bf2d5320d376061a5ce50ec1c1c3ad8878b03428b946ca669c3b1cf32",
+      "sha256": "d721f3dbd67f86a68c90471ddf9d4e5254c2f02fac0cabe3aa3cb2b778d73d64",
       "executable": false
     },
     "tests/browser-intake.mjs": {
@@ -5632,11 +5632,11 @@
       "executable": false
     },
     "tests/intake-agent-fixture.mjs": {
-      "sha256": "81e5e7c51811afd00b3ecc960a3d8761e2cb3c956c0fd64db05cd2b3f657ca03",
+      "sha256": "6feba99c0444f43150935919f59cd10bc85ee45119d18497519661dd39c4739a",
       "executable": false
     },
     "tests/intake-agent.test.mjs": {
-      "sha256": "ff4d5566b91bf71a29fcf09d7378de0d43671b3402c69da0bb148c8eb4c8426d",
+      "sha256": "1f6fcf2006e69ca6d31e9856ee22c8364b77503e18cfd9321beee2f492fef0e2",
       "executable": false
     },
     "tests/intake-flow.mjs": {

@@ -10,7 +10,7 @@ import { all, audit, date, get, put, quantity, requireThat, text, uid, type Acto
 const ref = (s: State, kind: string, id: string) => ({ kind, id, version: s.get(kind + ':' + id)!.revision });
 const digest = async (value: unknown) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(value))))].map(n => n.toString(16).padStart(2, '0')).join('');
 const coding = (value: Data) => Object.fromEntries(['costCentre','project','glAccount'].filter(key => typeof value[key] === 'string' && value[key]).map(key => [key, value[key]]));
-const words = (value: string) => value.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+const words = (value: string) => (value.toLowerCase().match(/[a-z0-9]+/g) ?? []).map(word=>word.length>3&&word.endsWith('s')&&!word.endsWith('ss')?word.slice(0,-1):word);
 const stop = new Set(['a','an','the','for','i','we','need','some','please','of','and','to','new']);
 
 function controls(s: State, form: Data) {
@@ -35,12 +35,12 @@ function sourceAllowed(s: State, a: Actor, reference: Data) {
         const parent = reference.kind === 'request' ? source : s.get('request:' + source.request)?.value;
         return Boolean(parent && allowed(s, a, 'request.read', parent) && allowed(s, a, 'request.read', source));
     }
-    return ['business','intakeForm','agentPolicy'].includes(reference.kind);
+    return ['business','intakeForm','agentPolicy','policy'].includes(reference.kind);
 }
 export function intakeAgentRunVisible(s: State, a: Actor, run: Data) {
     if (run.agent !== 'AGENT-001') return false;
     if (a.owner) return true;
-    return run.actor === a.id && allowed(s, a, 'request.create') && !run.sourceValuesErased
+    return run.actor === a.id && allowed(s, a, 'request.create', run.output.fields ? { ...run.output.fields, requester: a.id } : undefined) && !run.sourceValuesErased
         && run.references.every((reference: Data) => sourceAllowed(s, a, reference));
 }
 function fresh(s: State, a: Actor, run: Data) {
@@ -89,6 +89,12 @@ export async function intakeAgent(s: State, a: Actor, op: string, input: Data): 
     const business = get(s, 'business', 'main'); add('business', business, { currencies: business.currencies, locations: business.locations, costCentres: business.costCentres, projects: business.projects });
     const matches = all(s, 'catalogue').filter(item => itemAllowed(s, a, item)).map(item => ({ item, score: words(item.description + ' ' + item.category + ' ' + item.partNumber).filter(word => tokens.has(word)).length }))
         .filter(match => match.score > 0).sort((a, b) => b.score - a.score || a.item.id.localeCompare(b.item.id)).slice(0, 10);
+    const permittedCoding = (revision: Data, line: Data) => {
+        const result = coding({ ...revision, ...line });
+        if (result.project && !business.projects.includes(result.project)) delete result.project;
+        if (result.costCentre && !business.costCentres.includes(result.costCentre)) delete result.costCentre;
+        return result;
+    };
     const candidates = matches.map(({ item }) => {
         const supplier = get(s, 'supplier', item.supplier);
         const itemRef = add('catalogue', item, { description: item.description, supplier: item.supplier, currency: item.currency, unitMinor: item.unitMinor, category: item.category,
@@ -102,15 +108,15 @@ export async function intakeAgent(s: State, a: Actor, op: string, input: Data): 
         const example = examples[0]; let suggestedCoding: Data = {}, codingSources: Data[] = [];
         if (example) {
             const { revision, line } = example, parent = get(s, 'request', revision.request);
-            suggestedCoding = coding({ ...revision, ...line });
-            if (suggestedCoding.project && !business.projects.includes(suggestedCoding.project)) delete suggestedCoding.project;
-            if (suggestedCoding.costCentre && !business.costCentres.includes(suggestedCoding.costCentre)) delete suggestedCoding.costCentre;
-            codingSources = [add('revision', revision, { request: revision.request, revision: revision.revision, line: line.id, catalogue: line.catalogue, coding: suggestedCoding }), add('request', parent, { revision: parent.revision })];
+            suggestedCoding = permittedCoding(revision, line);
+            codingSources = [add('revision', revision, { request: revision.request, revision: revision.revision,
+                lines: revision.lines.map((sourceLine: Data) => ({ id: sourceLine.id, catalogue: sourceLine.catalogue, coding: permittedCoding(revision, sourceLine) })) }),
+                add('request', parent, { revision: parent.revision })];
             const decision = all(s, 'decision').find(row => row.request === revision.request && row.revision === revision.revision && row.decision === 'approved')!;
             codingSources.push(add('decision', decision, { request: decision.request, revision: decision.revision, decision: decision.decision }));
         }
         return { id: item.id, description: item.description, supplier: supplier.name, currency: item.currency, unitMinor: item.unitMinor,
-            sources: [itemRef, supplierRef], coding: suggestedCoding, codingSources };
+            sources: [itemRef, supplierRef], coding: suggestedCoding, codingSources, ...(example ? { codingLine: example.line.id } : {}) };
     });
     const chosenId = input.item ?? previous?.output.item ?? (candidates.length === 1 ? candidates[0].id : '');
     const selected = candidates.find(item => item.id === chosenId);
@@ -129,6 +135,7 @@ export async function intakeAgent(s: State, a: Actor, op: string, input: Data): 
             const trial = structuredClone(s), draft = await guidedIntake(trial, a, 'intake-draft', { fields });
             const predicted = await guidedIntake(trial, a, 'intake-route', { id: draft!.id, version: draft!.version });
             requireThat(predicted, 'Route prediction failed'); route = predicted;
+            for (const step of route.steps) if (step.policy) { const policy=get(s,'policy',step.policy); add('policy',policy,{name:policy.name,approver:policy.approver,currency:policy.currency}); }
         }
     }
     const output = { item: selected?.id ?? '', candidates, missing, fields, route,
@@ -136,7 +143,7 @@ export async function intakeAgent(s: State, a: Actor, op: string, input: Data): 
         limitations: ['Lexical catalogue matching only; language and dates in prose are not interpreted.', 'No automatic attachment reuse, PunchOut, external model or channel execution. Supplier terms and required form answers remain for requester review.'] };
     const governance = policies.map(policy => ({ id: policy.id, version: policy.version, purchaseType: policy.purchaseType }));
     const references = [...sources.map(({ kind, id, version }) => ({ kind, id, version })), ...policies.map(policy => ref(s, 'agentPolicy', policy.id))];
-    const inputs = { intakeForm: form.id, need, quantity: suppliedQuantity, needDate: suppliedDate, terms: terms.trim(), governance, previous: previous?.id ?? null };
+    const inputs = { intakeForm: form.id, need, quantity: chosenQuantity, needDate, terms: terms.trim(), governance, previous: previous?.id ?? null };
     const run = { id: uid(), agent: 'AGENT-001', workflow: 'requirements-intake', mode: 'deterministic v1', model: 'none', provider: 'none',
         actor: a.id, operatorVersion: a.version, version: 1, at: new Date().toISOString(), inputs, sources, references, output, messages: [],
         outcomes: [{ status: 'suggestions-only', submitted: false, reserved: false, approval: false, outbound: false }],
