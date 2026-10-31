@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "a16a86a1022122e99bca495243d17b666ea4a9fc926c746857cfbb277b140496",
+      "sha256": "7483a9b5a806e8006dffbacf2a1bb117274122701e34b232a4ea0ed7b3c17427",
       "executable": false
     },
     "DEMO.md": {
@@ -976,7 +976,7 @@
       "executable": false
     },
     "scripts/installer/restore-intake-agent.mjs": {
-      "sha256": "6d05d1d865aeed24d402cfe21feea9e4732ab5d02ec1f27dbbd2d46733b2ee39",
+      "sha256": "c9ec5000f744c4cf3b7dc32a41d09901788457abdb2557286e7cfdab2caac582",
       "executable": false
     },
     "scripts/installer/restore-intake.mjs": {
@@ -3716,7 +3716,7 @@
       "executable": false
     },
     "src/purse/intake-agent.ts": {
-      "sha256": "3e9d2beea23463a7c5f55a43d8fc62f96e7387a16ed04b3af4eba29163ba9af6",
+      "sha256": "383a85d1b500678eca28302b3e3b6eea790fc6abfac1991935a039385d8b543e",
       "executable": false
     },
     "src/purse/intake-fields.ts": {
@@ -4780,7 +4780,7 @@
       "executable": false
     },
     "src/ui/intake-agent.tsx": {
-      "sha256": "9fc2eb2c15e20092075b033782add6534eb15de57aefc1340b1359cab5aba339",
+      "sha256": "38857275767cbdd72944cbb5c6decf1fb1c4e290afc383e69f30498c6c115c17",
       "executable": false
     },
     "src/ui/intake-settings.tsx": {
@@ -5296,7 +5296,7 @@
       "executable": false
     },
     "tests/browser-intake-agent.mjs": {
-      "sha256": "0bdcf6e78785f0aee7cc6737ab8980e13fd7d4d205a2e5312c1cdbf60ebbe017",
+      "sha256": "d721f3dbd67f86a68c90471ddf9d4e5254c2f02fac0cabe3aa3cb2b778d73d64",
       "executable": false
     },
     "tests/browser-intake.mjs": {
@@ -5596,11 +5596,11 @@
       "executable": false
     },
     "tests/intake-agent-fixture.mjs": {
-      "sha256": "98c984a2b1024a5fd530ce5aaec109b97701c7449cc1cce6748284703be51add",
+      "sha256": "6feba99c0444f43150935919f59cd10bc85ee45119d18497519661dd39c4739a",
       "executable": false
     },
     "tests/intake-agent.test.mjs": {
-      "sha256": "fded3b3d68790550428f25e6797225b623883daa82b5347b03743d0be240c0a3",
+      "sha256": "6b474777c33c6beab57e9372d69d567bf3aeff25d67306fb0e242ebec80eb835",
       "executable": false
     },
     "tests/intake-flow.mjs": {

@@ -7,10 +7,11 @@ export async function intakeAgentFixture() {
  const secondary=await h.member(intakeEmail(9),['approver']);
  const supplier=await cmd('supplier',{name:'synthetic-purse-6',status:'preferred',reason:'Reviewed native supplier'},buyer);
  const item=await cmd('catalogue',{supplier:supplier.id,description:'Portable laptop',currency:'USD',unitMinor:25000,category:'Equipment',project:'Site',approved:true,partNumber:'synthetic-purse-7'},buyer);
+ const dock=await cmd('catalogue',{supplier:supplier.id,description:'Equipment dock',currency:'USD',unitMinor:10000,category:'Equipment',project:'Site',approved:true,partNumber:'synthetic-purse-21'},buyer);
  const policy=await cmd('policy',{name:'Equipment approval',currency:'USD',category:'Equipment',project:'Site',approver:intakeEmail(5),limitMinor:1000000,budgetMinor:5000000,approvalSteps:[{email:intakeEmail(9),minMinor:50000}]});
  const form=await cmd('intake-form',{name:'Equipment requests',purchaseType:'equipment',active:true,consent:true,defaults:{category:'Equipment',project:'Site',costCentre:'Operations',location:'Denver',currency:'USD'}});
  const create=async(cookie=requester,glAccount='6100')=>{
-  const request=await cmd('request',{title:'synthetic-purse-8',supplier:supplier.id,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre:'Operations',terms:'Net 30',intakeForm:form.id,answers:{},customFields:{},lines:[{catalogue:item.id,quantity:'1',unitMinor:25000,category:'Equipment',project:'Site',glAccount,customFields:{}}]},cookie);
+  const request=await cmd('request',{title:'synthetic-purse-8',supplier:supplier.id,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre:'Operations',terms:'Net 30',intakeForm:form.id,answers:{},customFields:{},lines:[{catalogue:item.id,quantity:'1',unitMinor:25000,category:'Equipment',project:'Site',glAccount,customFields:{}},{catalogue:dock.id,quantity:'1',unitMinor:10000,category:'Equipment',project:'Site',glAccount:'6500',customFields:{}}]},cookie);
   await cmd('submit',{id:request.id,revision:1},cookie);await cmd('decision',{id:request.id,revision:1,decision:'approved',reason:'Reviewed native catalogue history'},approver);return request;
  };
  const history=await create();
@@ -18,5 +19,5 @@ export async function intakeAgentFixture() {
  const enable=async(enabled=true)=>{const old=(await h.state()).data.agentPolicy.find(row=>row.agent==='AGENT-001'&&row.purchaseType==='equipment');return cmd('agent-policy',{...controls,version:old?.version??0,enabled});};
  const input={intakeForm:form.id,need:'We need a laptop for a new colleague',needDate:'2026-12-01',terms:'Net 30'};
  const run=async(extra={},cookie=requester)=>cmd('intake-agent-run',{...input,quantity:'3',...extra},cookie);
- return {h,cmd,requester,other,buyer,approver,supplier,item,policy,form,history,controls,enable,input,run,create,close:()=>h.close()};
+ return {h,cmd,requester,other,buyer,approver,supplier,item,dock,policy,form,history,controls,enable,input,run,create,close:()=>h.close()};
 }

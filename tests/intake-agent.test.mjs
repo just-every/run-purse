@@ -21,7 +21,7 @@ test('Native intake follow-up cites permitted history, creates only a reviewed e
  assert.deepEqual(first.output.candidates.map(row=>row.id),[item.id]);
  const candidate=first.output.candidates[0];assert.equal(candidate.unitMinor,25000);assert.equal(candidate.coding.glAccount,'6100');
  const citation=candidate.codingSources.find(row=>row.kind==='revision');assert.equal(citation.id,history.id+':1');
- const source=first.sources.find(row=>row.kind==='revision'&&row.id===citation.id);assert.equal(source.value.revision,1);assert.equal(source.value.coding.glAccount,'6100');
+ const source=first.sources.find(row=>row.kind==='revision'&&row.id===citation.id);assert.equal(source.value.revision,1);assert.equal(source.value.lines.find(line=>line.id===candidate.codingLine).coding.glAccount,'6100');
  const raw=(await h.db.prepare("SELECT revision FROM p_records WHERE kind='revision' AND id=?").bind(citation.id).first());assert.equal(citation.version,raw.revision);
  assert.ok(!JSON.stringify(first).includes(hidden.id));assert.ok(!JSON.stringify(first).includes(inaccessible.id));
  await cmd('intake-agent-draft',{id:first.id,consent:true},requester,409);
@@ -55,6 +55,15 @@ test('Native intake follow-up cites permitted history, creates only a reviewed e
  const scoped=await run();await cmd('member',{email:intakeEmail(2),name:'Scoped requester',active:true,grants:[{role:'requester',scope:{departments:['Finance']}}]});await cmd('intake-agent-draft',{id:scoped.id,consent:true},requester,403);assert.ok(!(await h.state(requester)).data.agentRun.some(row=>row.id===scoped.id));await cmd('member',{email:intakeEmail(2),name:'Requester',active:true,roles:['requester']});
  const blocked=await run();await cmd('supplier',{...f.supplier,status:'blocked',reason:'Supplier paused during source review'},buyer);await cmd('intake-agent-draft',{id:blocked.id,consent:true},requester,409);assert.equal((await run()).output.candidates.length,0);await cmd('supplier',{...f.supplier,status:'preferred',reason:'Supplier review complete'},buyer);
  await cmd('catalogue',{...item,unitMinor:26000,validUntil:'2026-10-29'},buyer);const expires=await run();await h.setClock('2026-10-30T17:00:00.000Z');await cmd('intake-agent-draft',{id:expires.id,consent:true},requester,403);assert.equal((await run()).output.candidates.length,0);await h.setClock('2026-10-29T17:00:00.000Z');
+ const multiple=await run({need:'Laptop dock',item:f.dock.id});
+ assert.equal(multiple.output.candidates.length,2);assert.equal(multiple.output.fields.lines[0].glAccount,'6500');
+ for(const [id,glAccount] of [[item.id,'6100'],[f.dock.id,'6500']]){
+  const suggestion=multiple.output.candidates.find(row=>row.id===id),reference=suggestion.codingSources.find(row=>row.kind==='revision');
+  assert.equal(reference.id,history.id+':1');assert.equal(suggestion.coding.glAccount,glAccount);
+  const snapshot=multiple.sources.find(row=>row.kind==='revision'&&row.id===reference.id);
+  assert.equal(snapshot.value.lines.find(line=>line.id===suggestion.codingLine).coding.glAccount,glAccount);
+  assert.equal(suggestion.codingLine,history.lines.find(line=>line.catalogue===id).id);
+ }
  const records=(await h.db.prepare('SELECT * FROM p_records').all()).results;assert.equal(validatePurchasingArchive(records),true);
  const forged=structuredClone(records),row=forged.find(row=>row.kind==='agentRun'&&row.id===answered.id),value=JSON.parse(row.value);value.output.fields.lines[0].unitMinor=1;row.value=JSON.stringify(value);assert.throws(()=>validatePurchasingArchive(forged),/intake_agent_digest/);
  const archive=join(h.dir,'intake.rer');await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);

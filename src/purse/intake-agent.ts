@@ -89,6 +89,12 @@ export async function intakeAgent(s: State, a: Actor, op: string, input: Data): 
     const business = get(s, 'business', 'main'); add('business', business, { currencies: business.currencies, locations: business.locations, costCentres: business.costCentres, projects: business.projects });
     const matches = all(s, 'catalogue').filter(item => itemAllowed(s, a, item)).map(item => ({ item, score: words(item.description + ' ' + item.category + ' ' + item.partNumber).filter(word => tokens.has(word)).length }))
         .filter(match => match.score > 0).sort((a, b) => b.score - a.score || a.item.id.localeCompare(b.item.id)).slice(0, 10);
+    const permittedCoding = (revision: Data, line: Data) => {
+        const result = coding({ ...revision, ...line });
+        if (result.project && !business.projects.includes(result.project)) delete result.project;
+        if (result.costCentre && !business.costCentres.includes(result.costCentre)) delete result.costCentre;
+        return result;
+    };
     const candidates = matches.map(({ item }) => {
         const supplier = get(s, 'supplier', item.supplier);
         const itemRef = add('catalogue', item, { description: item.description, supplier: item.supplier, currency: item.currency, unitMinor: item.unitMinor, category: item.category,
@@ -102,15 +108,15 @@ export async function intakeAgent(s: State, a: Actor, op: string, input: Data): 
         const example = examples[0]; let suggestedCoding: Data = {}, codingSources: Data[] = [];
         if (example) {
             const { revision, line } = example, parent = get(s, 'request', revision.request);
-            suggestedCoding = coding({ ...revision, ...line });
-            if (suggestedCoding.project && !business.projects.includes(suggestedCoding.project)) delete suggestedCoding.project;
-            if (suggestedCoding.costCentre && !business.costCentres.includes(suggestedCoding.costCentre)) delete suggestedCoding.costCentre;
-            codingSources = [add('revision', revision, { request: revision.request, revision: revision.revision, line: line.id, catalogue: line.catalogue, coding: suggestedCoding }), add('request', parent, { revision: parent.revision })];
+            suggestedCoding = permittedCoding(revision, line);
+            codingSources = [add('revision', revision, { request: revision.request, revision: revision.revision,
+                lines: revision.lines.map((sourceLine: Data) => ({ id: sourceLine.id, catalogue: sourceLine.catalogue, coding: permittedCoding(revision, sourceLine) })) }),
+                add('request', parent, { revision: parent.revision })];
             const decision = all(s, 'decision').find(row => row.request === revision.request && row.revision === revision.revision && row.decision === 'approved')!;
             codingSources.push(add('decision', decision, { request: decision.request, revision: decision.revision, decision: decision.decision }));
         }
         return { id: item.id, description: item.description, supplier: supplier.name, currency: item.currency, unitMinor: item.unitMinor,
-            sources: [itemRef, supplierRef], coding: suggestedCoding, codingSources };
+            sources: [itemRef, supplierRef], coding: suggestedCoding, codingSources, ...(example ? { codingLine: example.line.id } : {}) };
     });
     const chosenId = input.item ?? previous?.output.item ?? (candidates.length === 1 ? candidates[0].id : '');
     const selected = candidates.find(item => item.id === chosenId);
