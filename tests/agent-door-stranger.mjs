@@ -53,10 +53,12 @@ export async function strangerSpecialist({url,request,authorize,approve,task}) {
  const read=choose(inspection,tool=>tool.annotations.readOnlyHint&&tool.inputSchema.required.includes('kind')&&tool.inputSchema.required.includes('id'))
  const create=choose(preparation,tool=>!tool.annotations.readOnlyHint&&tool.inputSchema.required.includes('workflow')&&tool.inputSchema.required.includes('draft'))
  const edit=choose(preparation,tool=>!tool.annotations.readOnlyHint&&tool.inputSchema.required.includes('version')&&tool.inputSchema.required.includes('draft'))
+ const requestDraft=choose(preparation,tool=>!tool.annotations.readOnlyHint&&tool.inputSchema.required.includes('title')&&!tool.inputSchema.required.includes('revision'))
+ const amendDraft=choose(preparation,tool=>!tool.annotations.readOnlyHint&&tool.inputSchema.required.includes('title')&&tool.inputSchema.required.includes('revision'))
  let approvals=0
  const decisions=[],calls=[]
  const call=async(tool,input)=>{
-  const args={...input,...(!tool.annotations.readOnlyHint?{idempotency_key:randomUUID()}:{})}
+  const args={...input,...(!tool.annotations.readOnlyHint?{idempotency_key:input.idempotency_key??randomUUID()}:{})}
   let answer=await rpc('tools/call',{name:tool.name,arguments:args})
   const decision=answer._meta?.['com.runeditrun/decision']
   assert.ok(decision)
@@ -96,5 +98,32 @@ export async function strangerSpecialist({url,request,authorize,approve,task}) {
  const edited=await call(edit,{id:draft.id,version:draft.version,draft:task.reviewedDraft})
  assert.equal(edited.draft,task.reviewedDraft)
  assert.equal(edited.version,draft.version+1)
- return {draft:edited,decisions,approvals,calls,supplier:detail.record}
+ const catalogue=await call(list,{kind:'catalogue'})
+ const item=catalogue.records.find(record=>record.supplier===supplier.id&&record.description===task.need)
+ assert.ok(item,'Find a currently visible catalogue source without a fixture id')
+ const source=await call(read,{kind:'catalogue',id:item.id})
+ const input={...task.reviewedRequest,supplier:supplier.id,currency:source.record.currency,
+  lines:[{catalogue:source.record.id,quantity:task.quantity,project:task.reviewedRequest.project}]}
+ delete input.project
+ const key=randomUUID()
+ // Retrying the identical discovered action must return the same draft.
+ const created=await call(requestDraft,{...input,idempotency_key:key})
+ const replay=await call(requestDraft,{...input,idempotency_key:key})
+ assert.deepEqual(replay,created,'A transport retry creates one editable request')
+ assert.equal(created.status,'draft')
+ assert.equal(created.policy,null,'Preparation supplies no native approval policy')
+ const amendedInput={...input,id:created.id,revision:created.revision,
+  lines:[{...input.lines[0],id:created.lines[0].id,quantity:task.reviewedQuantity}],reason:'Explicit requester quantity review'}
+ const amended=await call(amendDraft,amendedInput)
+ assert.equal(amended.status,'draft')
+ assert.equal(amended.policy,null)
+ assert.equal(amended.revision,created.revision+1)
+ assert.equal(amended.requester,created.requester)
+ const stale=await rpc('tools/call',{name:amendDraft.name,arguments:{...amendedInput,idempotency_key:randomUUID()}})
+ assert.equal(stale.isError,true)
+ assert.equal(stale._meta['com.runeditrun/error'].code,'native_conflict','A stale edit cannot replace the reviewed draft')
+ const current=await call(read,{kind:'request',id:amended.id})
+ assert.equal(current.record.revision,amended.revision)
+ assert.equal(current.record.lines[0].quantity,task.reviewedQuantity)
+ return {draft:edited,request:current.record,originalRequest:created,catalogue:source.record,decisions,approvals,calls,supplier:detail.record}
 }

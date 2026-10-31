@@ -1,3 +1,4 @@
+import { historicalLineId } from './procurify-lines';
 import { documentMetadata, senderAddress } from './invoice-risk';
 import { invoiceReadingText, postalRemit } from './invoice-reading-values';
 import { extended, requireThat, text, type Data } from './types';
@@ -6,7 +7,7 @@ type Columns = (row: Data, name: string) => string;
 export function importedInvoice(row: Data, col: Columns, parse: { quantity: (v: string) => number; money: (v: string) => number; date: (v: string) => string }, reference: (field: string, kind: string) => string, meta: Data) {
     const q = parse.quantity(col(row, 'quantity')), unitMinor = parse.money(col(row, 'unitPrice'));
     const amountMinor = col(row, 'amount') ? parse.money(col(row, 'amount')) : extended(q, unitMinor);
-    const order = reference('orderId', 'order'), line = 'procurify:line:' + col(row, 'orderId');
+    const order = reference('orderId', 'order'), line = historicalLineId(col(row, 'orderId'), col(row, 'orderLineId'));
     const invoiceDate = col(row, 'date') ? parse.date(col(row, 'date')) : null;
     const document = col(row, 'documentBase64') ? { name: text(col(row, 'documentName'), 'Invoice original filename', 200), mediaType: text(col(row, 'documentMediaType'), 'Invoice original media type', 150), base64: col(row, 'documentBase64') } : null;
     const original = document ? { ...documentMetadata(document), base64: document.base64 } : null;

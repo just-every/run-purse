@@ -45,6 +45,9 @@ export default async function agentDocumentationJourney() {
   const supplierResponse=await request(origin+'/api/purse/command/supplier',{method:'POST',headers:{origin,cookie,'content-type':'application/json'},body:JSON.stringify({name:'Synthetic Purse supplier',status:'active',reason:'Independent specialist inspection source',contacts:[{name:'Synthetic Purse contact',email}]})})
   assert.equal(supplierResponse.status,200,await supplierResponse.clone().text())
   const seededSupplier=await supplierResponse.json()
+  const catalogueResponse=await request(origin+'/api/purse/command/catalogue',{method:'POST',headers:{origin,cookie,'content-type':'application/json'},body:JSON.stringify({supplier:seededSupplier.id,description:'Workshop safety gloves',currency:'USD',unitMinor:1500,category:'Safety',project:'Workshop',approved:true})})
+  assert.equal(catalogueResponse.status,200,await catalogueResponse.clone().text())
+  const seededCatalogue=await catalogueResponse.json()
   const complete=await request(origin+'/setup',{method:'POST',redirect:'manual',headers:{origin,cookie,'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({displayName:'Synthetic Purse docs',confirm:'yes'}).toString()})
   assert.equal(complete.status,303)
   await complete.body?.cancel()
@@ -113,6 +116,8 @@ export default async function agentDocumentationJourney() {
    assert.ok((await c.mcp('prompts/get',{name:docs.prompts[0].name,arguments:{scope:'purchasing:write'}},{token:readOnlyToken})).result.messages.length)
    const denied=await c.mcp('tools/call',{name:'purse.preparations.create',arguments:{workflow:'intake',draft:'synthetic-purse-2',idempotency_key:randomUUID()}},{token:readOnlyToken})
    assert.equal(denied.status,403,'Prompt arguments cannot confer a write scope')
+   const deniedDraft=await c.mcp('tools/call',{name:'purse.requests.create',arguments:{title:'Synthetic Purse draft',supplier:seededSupplier.id,currency:'USD',needDate:'2026-12-15',location:'Denver',costCentre:'Operations',terms:'Requester-reviewed supplier terms',lines:[{catalogue:seededCatalogue.id,quantity:'2',project:'Workshop'}],idempotency_key:randomUUID()}},{token:readOnlyToken})
+   assert.equal(deniedDraft.status,403,'A specialist prompt cannot let a read-only agent create a request')
    assert.deepEqual((await c.tool('purse.workspace.snapshot',{})).result.structuredContent,before)
    assert.deepEqual(await (await request(origin+'/api/purse/state',{headers:{cookie}})).json(),stateBefore,'Prompt reads cannot change purchasing, approvals or native audit')
    const html=await request(origin+'/docs/agents')
@@ -123,6 +128,7 @@ export default async function agentDocumentationJourney() {
    for(const prompt of docs.prompts)assert.ok(text.includes(`data-prompt="${prompt.name}"`))
    assert.equal((await request(origin+'/docs/agents',{method:'POST'})).status,405)
    const nativeBefore=(await (await request(origin+'/api/purse/state',{headers:{cookie}})).json()).data
+   let approvalsSeen=0
    const completed=await strangerSpecialist({url:origin,request,
     authorize:async metadata=>{
      assert.equal(metadata.resource,origin+'/mcp')
@@ -131,27 +137,53 @@ export default async function agentDocumentationJourney() {
     },
     approve:async handle=>{
      const heldState=(await (await request(origin+'/api/purse/state',{headers:{cookie}})).json()).data
-     assert.deepEqual(heldState,nativeBefore,'Held inspection has no native effect before the person acts')
+     if(approvalsSeen++<2)assert.deepEqual(heldState,nativeBefore,'Held inspection has no native effect before the person acts')
+     for(const kind of ['commitment','decision','order','receipt','invoice'])assert.deepEqual(heldState[kind],nativeBefore[kind],'Held inspection cannot authorize purchasing')
      await agentSpecialistApprovalBrowser({request,origin,cookie,handle})
+     assert.deepEqual((await (await request(origin+'/api/purse/state',{headers:{cookie}})).json()).data,heldState,'Approving inspection does not change purchasing or editable drafts')
     },
-    task:{supplier:'Synthetic Purse supplier',need:'Workshop safety gloves',quantity:'2',draft:'Two pairs of workshop gloves; need date unknown.',reviewedDraft:'Two pairs of workshop gloves; confirm size and need date before submission.'},
+    task:{supplier:'Synthetic Purse supplier',need:'Workshop safety gloves',quantity:'2',reviewedQuantity:'3',draft:'Two pairs of workshop gloves; need date unknown.',reviewedDraft:'Two pairs of workshop gloves; confirm size and need date before submission.',
+     reviewedRequest:{title:'Synthetic Purse gloves',needDate:'2026-12-15',location:'Denver',costCentre:'Operations',project:'Workshop',terms:'Requester-reviewed supplier terms'}},
    })
    assert.equal(completed.supplier.id,seededSupplier.id)
    assert.ok(completed.draft.preparedBy.agent.id)
    assert.equal(completed.draft.preparedBy.for.id,completed.draft.actor)
    assert.ok(completed.decisions.every(decision=>decision.revision===c.revision))
    assert.ok(completed.decisions.every(decision=>decision.disposition===(phase==='autonomous'?'autonomous':decision.classes.some(item=>item.class!=='standard')?'approval':'review')))
-   assert.equal(completed.approvals,phase==='autonomous'?0:2)
+   assert.equal(completed.approvals,phase==='autonomous'?0:3)
+   assert.equal(completed.originalRequest.totalMinor,3000,'Two catalogue pairs cost exactly 3000 minor USD units')
+   assert.equal(completed.request.totalMinor,4500,'The reviewed three-pair draft costs exactly 4500 minor USD units')
+   assert.equal(completed.catalogue.id,seededCatalogue.id)
+   assert.equal(completed.request.lines[0].catalogue,seededCatalogue.id)
+   assert.equal(completed.request.lines[0].unitMinor,1500)
+   assert.equal(completed.request.requester,completed.request.preparedBy.for.id)
+   assert.equal(completed.request.preparedBy.agent.id,completed.draft.preparedBy.agent.id)
    const nativeAfter=(await (await request(origin+'/api/purse/state',{headers:{cookie}})).json()).data
-   const {agentRun:beforeRuns,audit:beforeAudit,...beforePurchasing}=nativeBefore
-   const {agentRun:afterRuns,audit:afterAudit,...afterPurchasing}=nativeAfter
-   assert.deepEqual(afterPurchasing,beforePurchasing,'Specialist completion creates no request, commitment, receipt, invoice, send or approval')
+   const {agentRun:beforeRuns,audit:beforeAudit,request:beforeRequests,revision:beforeRevisions,...beforePurchasing}=nativeBefore
+   const {agentRun:afterRuns,audit:afterAudit,request:afterRequests,revision:afterRevisions,...afterPurchasing}=nativeAfter
+   const familyDrafts=afterPurchasing.supplierFamilies.flatMap(family=>family.requests.filter(row=>row.id===completed.request.id))
+   assert.equal(familyDrafts.length,1,'The supplier register includes the one new editable draft')
+   assert.equal(familyDrafts[0].totalMinor,4500)
+   assert.equal(familyDrafts[0].status,'draft')
+   assert.deepEqual({...afterPurchasing,supplierFamilies:afterPurchasing.supplierFamilies.map(family=>({...family,requests:family.requests.filter(row=>row.id!==completed.request.id)}))},beforePurchasing,'Apart from the explicit draft projection, purchasing records and authority are unchanged')
+   assert.deepEqual(afterRequests.filter(row=>row.id!==completed.request.id),beforeRequests,'Existing requests are unchanged')
+   assert.equal(afterRequests.length,beforeRequests.length+1,'A replayed create retains exactly one draft')
+   const savedRequest=afterRequests.find(row=>row.id===completed.request.id)
+   assert.equal(savedRequest.status,'draft')
+   assert.equal(savedRequest.revision,2)
+   assert.equal(savedRequest.totalMinor,4500)
+   assert.equal(savedRequest.requester,completed.request.requester)
+   assert.equal(savedRequest.policy,null)
+   const revisions=afterRevisions.filter(row=>row.request===completed.request.id).sort((a,b)=>a.revision-b.revision)
+   assert.equal(afterRevisions.length,beforeRevisions.length+2)
+   assert.deepEqual(afterRevisions.filter(row=>row.request!==completed.request.id),beforeRevisions)
+   assert.deepEqual(revisions.map(row=>[row.revision,row.status,row.totalMinor]),[[1,'draft',3000],[2,'draft',4500]],'Exact editable source revisions remain unapproved')
    assert.equal(afterRuns.length,beforeRuns.length+1)
    assert.equal(afterRuns.find(run=>run.id===completed.draft.id).draft,completed.draft.draft)
-   assert.equal(afterAudit.length,beforeAudit.length+2)
+   assert.equal(afterAudit.length,beforeAudit.length+4)
    const priorAudit=new Set(beforeAudit.map(row=>row.id))
-   assert.deepEqual(afterAudit.filter(row=>!priorAudit.has(row.id)).map(row=>row.action).sort(),['edit-preparation','prepare'])
-   console.log(`PROBE BASE-AGENT-013.5 ${phase}: URL-only MCP discovery -> populated supplier inspection, source-bound editable preparation and edit; ${completed.approvals} signed-in URL approvals; no purchasing effect`)
+   assert.deepEqual(afterAudit.filter(row=>!priorAudit.has(row.id)).map(row=>row.action).sort(),['amend','edit-preparation','prepare','request'])
+   console.log(`PROBE BASE-AGENT-013.5 ${phase}: URL-only MCP discovery -> populated supplier and catalogue inspection, editable preparation and requester-owned 3000-to-4500 minor-unit draft; replay once; stale edit refused; ${completed.approvals} signed-in URL approvals; no purchasing authority or commitment`)
    if(phase==='held')await agentDocsBrowser({request,origin,cookie,docs})
    console.log(`PROBE BASE-AGENT-013 ${phase}: MCP catalogues match generated docs; specialist prompts ignore authority arguments; read-only token cannot prepare; purchasing unchanged`)
   }
