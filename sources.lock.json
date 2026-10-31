@@ -5196,7 +5196,7 @@
       "executable": false
     },
     "tests/agent-door-quotes.mjs": {
-      "sha256": "caec5f6825de9c9bf2201392908bd93565cf08190c1e483c910cde5a7e40fa20",
+      "sha256": "dddaecba5902d40e7323ea6f862100725fbdb608ab81f10a06c04dec2dab6600",
       "executable": false
     },
     "tests/agent-door-worker.ts": {

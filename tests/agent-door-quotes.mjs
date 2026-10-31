@@ -116,6 +116,14 @@ async function policyJourney() {
   const policy=doWhat=>({schema:'rer-agent-policy/1',catalogue:'rer-agent-classes/1',rules:[{id:'all',class:'*',do:doWhat,...(doWhat==='approval'?{approver:['sponsor'],wait:'PT1H'}:{})}],...(doWhat==='review'?{reviewers:['sponsor']} : {}),spend:{none:true}})
   for(const disposition of ['blocked','review','approval']) {
    await c.adopt(policy(disposition))
+   const readArgs={request:current.id},read=await c.tool('purse.quotes.compare',readArgs)
+   assert.equal(read.decision.disposition,disposition)
+   if(disposition==='blocked')assert.equal(code(read),'policy_blocked')
+   else {
+    if(disposition==='approval') {assert.equal(read.result.structuredContent,undefined);assert.equal((await c.decideApproval(read)).body.approval.state,'executed')}
+    const compared=value(disposition==='approval'?await c.tool('purse.quotes.compare',readArgs,{requestState:read.result.requestState}):read)
+    assert.deepEqual(quotesOf(compared).sort((a,b)=>a.id.localeCompare(b.id)),(await h.state()).data.quote.filter(row=>row.request===current.id).sort((a,b)=>a.id.localeCompare(b.id)))
+   }
    const args={...input,idempotency_key:randomUUID()},count=(await h.state()).data.quote.length,answer=await c.tool('purse.quotes.record',args)
    assert.equal(answer.decision.disposition,disposition)
    if(disposition==='blocked'){assert.equal(code(answer),'policy_blocked');assert.equal((await h.state()).data.quote.length,count);continue}
@@ -167,6 +175,26 @@ async function policyJourney() {
   const ownInput={...input,request:ownDraft.id,revision:ownDraft.revision,idempotency_key:randomUUID()}
   const requesterToken=await (await import('../src/modules/agent-door/conformance/crypto.mjs')).accessToken({...c,person:{email:requesterEmail,sub:requesterSub},agentId:randomUUID()})
   const own=value(await c.tool('purse.quotes.record',ownInput,{token:requesterToken}))
+  assert.deepEqual(value(await c.tool('purse.records.read',{kind:'quote',id:own.id},{token:requesterToken})).record,own)
+  await h.command('member',{email:requesterEmail,name:'Quotation requester',grants:[{role:'requester',scope:{projects:['Workshop']}}],active:true})
+  await c.adopt(policy('approval'))
+  const pendingCount=(await c.personJson('/agents/api/approvals')).approvals.length,ownedQuoteCount=(await h.state()).data.quote.length
+  const crossScope={...ownInput,idempotency_key:randomUUID(),lines:[{...input.lines[0],project:'Restricted'}]}
+  assert.equal(code(await c.tool('purse.quotes.record',crossScope,{token:requesterToken})),'permission_denied')
+  await h.command('quote',crossScope,requester,403)
+  assert.equal((await c.personJson('/agents/api/approvals')).approvals.length,pendingCount)
+  assert.equal((await h.state()).data.quote.length,ownedQuoteCount)
+  const removedArgs={...ownInput,idempotency_key:randomUUID()},removed=await c.tool('purse.quotes.record',removedArgs,{token:requesterToken})
+  assert.ok(removed.result?._meta?.['com.runeditrun/approval'])
+  await h.command('member',{email:requesterEmail,name:'Quotation requester',roles:['finance-viewer'],active:true})
+  const removedHandle=removed.result._meta['com.runeditrun/approval']
+  const view=await h.send('/agents/api/approvals/'+removedHandle.id,undefined,requester)
+  assert.equal(view.status,200)
+  const refused=await h.send('/agents/api/approvals/'+removedHandle.id+'/approve',{revision:view.value.approval.revision,summary_sha256:view.value.approval.summary_sha256},requester)
+  assert.equal(refused.status,200);assert.equal(refused.value.approval.state,'refused')
+  assert.equal((await h.state()).data.quote.length,ownedQuoteCount)
+  assert.equal(code(await c.tool('purse.quotes.record',ownInput,{token:requesterToken})),'permission_denied')
+  await c.adopt(autonomousPolicy())
   await h.command('member',{email:requesterEmail,name:'Quotation requester',roles:['requester'],active:false})
   assert.equal((await c.tool('purse.quotes.record',ownInput,{token:requesterToken})).status,401)
   assert.equal((await c.tool('purse.quotes.compare',{request:ownDraft.id},{token:requesterToken})).status,401)
