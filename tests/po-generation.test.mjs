@@ -47,6 +47,7 @@ test('PO generation rules create one native PO, wait above the limit and for sup
     await cmd('po-generation-review',{id:manual.id,revision:1},requester,403);await cmd('po-generation-review',{id:manual.id,revision:0},buyer,409);await cmd('po-generation-review',{id:manual.id,revision:1},buyer);
     assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results),true,'Activated guided suppliers retain portable purchasing history');
     await automaticSendJourney(t);
+    await historicalConsentErasure(t);
     const invoice={order:order.id,reference:'synthetic-purse-807',source:'Supplier invoice source',invoiceDate:'2026-10-23',allocations:[{line:order.lines[0].id,quantity:'0.5',amountMinor:5000}]};
     const captured=await cmd('invoice',invoice,buyer);assert.equal((await cmd('invoice',invoice,buyer)).id,captured.id);await cmd('invoice',{...invoice,source:'Changed source under the same supplier reference'},buyer,409);
     const over=await cmd('invoice',{...invoice,reference:'synthetic-purse-808',allocations:[{line:order.lines[0].id,quantity:'1',amountMinor:10000}]},buyer);assert.ok(over.flags.some(flag=>flag.code==='po-balance'));
@@ -172,4 +173,39 @@ async function automaticSendFences(t) {
     assert.equal(h.messages.filter(m=>m.subject.startsWith('Purchase order:')).length,2);
     assert.equal((await fetch(ownerLink+'/pdf')).status,410,'A standing-send supplier link cannot outlive its native owner authority');
     console.log('PROBE PO-008 consent fences: native policy command and scheduler -> default off, pause, changed contacts and owner transfer refuse further sends; renewed exact consent sends once');
+}
+
+async function historicalConsentErasure(t) {
+    const f=await fixture(t),{h,cmd,supplier,tick}=f;
+    const former=supplier.contacts[0].email,current=['synthetic-purse-834','example.test'].join('@');
+    const rule={...f.rule,supplier:supplier.id,sendEnabled:true,sendConsent:true,sendRecipient:former};
+    await cmd('po-generation-policy',rule);
+    await cmd('supplier',{...supplier,contacts:[{name:'Current supplier contact',email:current}]});
+    // No request or send snapshot exists; only superseded consent retains the former contact.
+    await cmd('po-generation-policy',{...rule,version:1,sendEnabled:false});
+    assert.equal((await h.state()).data.order.length,0);
+    assert.equal(h.messages.filter(message=>message.subject.startsWith('Purchase order:')).length,0);
+    await reauthenticateErasure(h);
+    const meta=await h.send('/api/purse/erasure',undefined,h.owner);
+    assert.ok(meta.value.choices.some(choice=>choice.kind==='contact'&&choice.id===supplier.id&&choice.email===former),'Historical consent contact must remain selectable before any send');
+    const preview=await h.send('/api/purse/erasure/preview',{kind:'contact',id:supplier.id,email:former,revision:meta.value.revision},h.owner);
+    assert.equal(preview.status,200,JSON.stringify(preview.value));
+    assert.ok(preview.value.fields.some(field=>field.kind==='poGenerationPolicy'&&field.path.includes('sendRecipient')));
+    const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner);
+    assert.equal(erased.status,200,JSON.stringify(erased.value));
+    const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results;
+    assert.ok(!JSON.stringify(rows).toLowerCase().includes(former));
+    const data=(await h.state()).data,policy=data.poGenerationPolicy[0];
+    assert.equal(policy.history.length,2);assert.match(policy.history[0].sendRecipient,/@erased\.invalid$/);
+    assert.equal(data.supplier.find(row=>row.id===supplier.id).contacts[0].email,current);
+    assert.equal((await h.send('/api/purse/erasure',undefined,h.owner)).value.choices.some(choice=>choice.email===former),false);
+    assert.equal(validatePurchasingArchive(rows),true);
+    const archive=join(h.dir,'synthetic-purse-consent-erased.rer');
+    await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
+    const restored=await harness();t.after(()=>restored.close());
+    await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
+    const restoredRows=(await restored.db.prepare('SELECT * FROM p_records').all()).results;
+    assert.ok(!JSON.stringify(restoredRows).toLowerCase().includes(former));assert.equal(validatePurchasingArchive(restoredRows),true);
+    await tick();assert.equal(h.messages.filter(message=>message.subject.startsWith('Purchase order:')).length,0);
+    console.log('PROBE PO-008 B: native supplier replacement before any send, disabled consent history and owner erasure -> former contact selectable, preview 200, execute 200, consent and restored history anonymized; current contact preserved; no supplier sends');
 }
