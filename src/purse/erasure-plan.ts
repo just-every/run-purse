@@ -82,7 +82,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
    requireThat(row.value.evidence,'Migrate legacy invoice evidence before erasure',409);
    value.sourceValuesErased=id;
   }
-  const newId=['member','catalogueGrant'].includes(row.kind)?replace(row.id):row.id;
+  const newId=['member','catalogueGrant','scimUser'].includes(row.kind)?replace(row.id):row.id;
   value.id=newId;
   if(JSON.stringify(value)===JSON.stringify(row.value)&&newId===row.id)continue;
   state.delete(oldKey);state.set(key(row.kind,newId),{...row,id:newId,value});

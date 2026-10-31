@@ -9,6 +9,9 @@ import branding from './branding.json'
 import { scimIdentityAdmission } from './purse/identity-scim'
 import { identityProviderConfiguration, type IdentityBindings } from './purse/identity-config'
 import { identitySettingsPath, identitySettingsResponse } from './purse/identity-settings'
+import { samlProviders } from './purse/saml-config'
+import { samlResponse } from './purse/saml'
+import { samlControls } from './purse/saml-control'
 
 // The edition's declared theme (public/rer-theme.css), as Base frames link it.
 const theme = { href: '/rer-theme.css', productName: branding.name, accentColor: branding.primaryColor }
@@ -54,7 +57,8 @@ export interface Bindings extends IdentityBindings {
 export const runtimeBindings = (env: Bindings): Bindings => env.RER_DEV_ORIGIN && env.AUTH_LOCAL === 'true' ? { ...env, AUTH_ORIGIN: env.RER_DEV_ORIGIN } : env
 export const authConfig = (env: Bindings): AuthConfig => ({ origin: env.AUTH_ORIGIN, local: env.AUTH_LOCAL === 'true', OWNER_EMAIL: env.OWNER_EMAIL, SESSION_SECRET: env.SESSION_SECRET, SETUP_TOKEN: env.SETUP_TOKEN, MAIL_FROM: env.MAIL_FROM, ...identityProviderConfiguration(env), branding: { productName: branding.name, accentColor: branding.primaryColor, signInPath: '/signin', theme: theme.href } })
 export function operatorAuth(env: Bindings) {
- return scimIdentityAdmission(createOperatorAuth({ db: env.DB, config: authConfig(env), mailSender: operatorMail(env), clientIp: request => request.headers.get('CF-Connecting-IP') ?? '' }), env.DB)
+ const auth = scimIdentityAdmission(createOperatorAuth({ db: env.DB, config: authConfig(env), mailSender: operatorMail(env), clientIp: request => request.headers.get('CF-Connecting-IP') ?? '' }), env.DB)
+ return samlProviders(env).length ? samlControls(auth,env.DB,env.AUTH_ORIGIN) : auth
 }
 
 const privateHeaders = { 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex, nofollow' }
@@ -68,9 +72,10 @@ export async function authResponse(request: Request, original: Bindings): Promis
  const env = runtimeBindings(original), url = new URL(request.url)
  if (url.pathname.startsWith('/__dev/')) return devNotFound()
  if (url.pathname === identitySettingsPath) return identitySettingsResponse(request, env, operatorAuth(env), html)
+ if (url.pathname.startsWith('/auth/saml/')) return samlResponse(request, env, operatorAuth, html)
  // Base pin replacement has no edition transaction fence yet. Keep these
  // existing direct transports closed as well as omitting their page controls.
- if (['/auth/providers/relink', '/auth/providers/unlink'].includes(url.pathname) && identityProviderConfiguration(env).providers?.length) {
+ if (['/auth/providers/relink', '/auth/providers/unlink'].includes(url.pathname) && (identityProviderConfiguration(env).providers?.length || samlProviders(env).length)) {
   const session = await operatorAuth(env).getSession(request)
   return Response.json({ error: session ? 'provider_management_unavailable' : 'unauthenticated' }, { status: session ? 403 : 401, headers: securityHeaders() })
  }
@@ -79,7 +84,19 @@ export async function authResponse(request: Request, original: Bindings): Promis
   const page = await createSignInHandler(operatorAuth(env), {
    defaultReturnTo: '/setup',
   })(request)
-  if (page) return fontDocumentResponse(page)
+  if (page) {
+   const providers = samlProviders(env)
+   const enabled = providers.length && (await env.DB.prepare('SELECT idp_sign_in FROM oa_auth_settings WHERE singleton=1').first<{idp_sign_in:number}>())?.idp_sign_in
+   if (enabled && request.method === 'GET' && page.headers.get('content-type')?.includes('text/html')) {
+    const controls = providers.map(provider => `<form method="post" action="/auth/saml/${provider.id}/start"><input type="hidden" name="returnTo" value="/app"><button>Continue with ${escape(provider.label)}</button></form>`).join('')
+    const body = (await page.text()).replace('</main>', controls + '</main>')
+    const headers = new Headers(page.headers)
+    const origins = [...new Set(providers.map(provider => new URL(provider.ssoUrl).origin))].join(' ')
+    headers.set('content-security-policy',(headers.get('content-security-policy') ?? "default-src 'none'; form-action 'self'").replace(/form-action[^;]*/, rule => rule + ' ' + origins))
+    return fontDocumentResponse(new Response(body, {status:page.status,headers}))
+   }
+   return fontDocumentResponse(page)
+  }
  }
  // Base's signed owner claim, served only where its public keys are configured.
  if (url.pathname === '/auth/owner-claim' && env.RER_OWNER_CLAIM_PUBLIC_KEYS) {
