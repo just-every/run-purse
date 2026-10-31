@@ -280,6 +280,12 @@
       "name": "0045_deposit_rule_authority.sql",
       "sha256": "0dd944c862ad056999f10ea9c0ca89a4c2905843fcf57468f93d15dbf3052eaf",
       "sql": "-- Installation-local owner consent never travels with purchasing archives.\nCREATE TABLE IF NOT EXISTS p_deposit_rule_authority (\n    order_id TEXT PRIMARY KEY,\n    version INTEGER NOT NULL,\n    actor TEXT NOT NULL,\n    operator_version INTEGER NOT NULL\n);\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0046_saml.sql",
+      "sha256": "e4531dcab36805a6376a07fb8d95fe5b2db961a600b5d89a287645877fc8205d",
+      "sql": "-- Installation-local SAML correlation and immutable configuration pins.\nCREATE TABLE p_saml_pins (\n provider_id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, linked_at INTEGER NOT NULL\n);\nCREATE TABLE p_saml_transactions (\n relay_hash TEXT PRIMARY KEY, request_id TEXT NOT NULL UNIQUE, provider_id TEXT NOT NULL,\n binding_hash TEXT NOT NULL, generation INTEGER NOT NULL, fingerprint TEXT NOT NULL,\n expires_at INTEGER NOT NULL, consumed_at INTEGER\n);\nCREATE INDEX p_saml_transaction_expiry ON p_saml_transactions(expires_at);\nCREATE TABLE p_saml_limits (bucket TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);\n"
     }
   ],
   "compatibilityDate": "2026-09-08",
@@ -307,7 +313,8 @@
     "PROTECTED_DATA_PREVIOUS_KEY",
     "OIDC_CREDENTIALS",
     "OIDC_TRANSACTION_SECRET",
-    "NOTIFICATION_WEBHOOK_SECRET"
+    "NOTIFICATION_WEBHOOK_SECRET",
+    "SAML_PROVIDERS"
   ],
   "schedules": [
     "* * * * *"

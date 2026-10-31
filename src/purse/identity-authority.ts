@@ -1,4 +1,4 @@
-/** Repeat Base's OIDC admission and pinned-provider boundary in the same D1
+/** Repeat Base's shared provider admission and pin boundary in the same D1
  * transaction as a purchasing write. A session authenticated before a provider
  * was disabled or unlinked must not settle a later domain mutation.
  * Native email, password and dev sessions keep their existing authority.

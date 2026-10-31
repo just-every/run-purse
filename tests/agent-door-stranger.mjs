@@ -86,6 +86,8 @@ export async function strangerSpecialist({url,request,authorize,approve,task}) {
  assert.equal(detail.record.name,task.supplier)
  const draft=await call(create,{workflow:'intake',draft:task.draft,fields:{need:task.need,supplier:supplier.name,quantity:task.quantity},references:[{kind:'supplier',id:supplier.id}]})
  assert.equal(draft.draft,task.draft)
+ assert.equal(draft.workflow,'intake')
+ assert.deepEqual(draft.fields,{need:task.need,supplier:supplier.name,quantity:task.quantity})
  assert.equal(draft.mode,'human-preparation')
  assert.equal(draft.model,null)
  assert.ok(draft.missing.includes('need date'),'Missing evidence stays unknown')

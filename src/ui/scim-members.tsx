@@ -3,7 +3,7 @@ import { Field, Form, Table, type D } from './shared';
 /** Explicit native consent records an association; provider email never does. */
 export function ScimMembers({ data, action }: {data: D; action: (body: D) => Promise<any>}) {
     return <section aria-label="Owner-confirmed identity links"><h4>Link an existing member</h4>
-        <p>Confirm the exact issuer and external ID with your identity provider. The link activates on this member’s next matching OIDC sign-in. Linking or unlinking ends their current sessions. Existing purchasing history stays in place.</p>
+        <p>Confirm the exact issuer and external ID with your identity provider. The link activates on this member’s next matching provider sign-in. Linking or unlinking ends their current sessions. Existing purchasing history stays in place.</p>
         <Form label="Confirm member identity link" onSubmit={body => action({action:'link-member',operator:body.operator,externalId:body.externalId,consent:body.consent === 'on'})}>
             <Field name="operator" label="Existing native member" options={data.delegates.filter((d: D) => d.id !== data.config?.consentBy).map((d: D) => ({value:d.id,label:d.name + ' · ' + d.email}))}/>
             <Field name="externalId" label="Exact provider external ID"/>
