@@ -6,9 +6,11 @@ import { visible } from '../purse/documents'
 import { projectCommandResult } from '../purse/command-projection'
 import { Fault, roles, put, type Actor, type Data } from '../purse/types'
 import { nativePeople } from './people.server'
+import { importJobs } from '../purse/import-custody'
+import { nativeFaultCode } from '../purse/fault-code'
 
 export function nativeRefusal(error: unknown): never {
-  if(error instanceof Fault) throw new ToolRefusal(error.status===409?'native_conflict':error.status===403?'permission_denied':error.status===404?'not_found':'invalid_arguments',error.message)
+  if(error instanceof Fault) throw new ToolRefusal(nativeFaultCode(error.status),error.message)
   throw error
 }
 
@@ -30,6 +32,7 @@ export async function snapshot(env:Bindings,ctx:ResourceContext|ToolContext) {
   // Use the native HTTP JSON representation, which omits optional undefined
   // view fields before the door validates and retains an outcome.
   const projected=JSON.parse(JSON.stringify(visible(state,a))) as ReturnType<typeof visible>
+  if(a.owner)projected.data.importJobs=await importJobs(env.DB,a)
   await readFence(env.DB,a,revision)
   return {a,state,revision,projected}
  } catch(error) {
@@ -49,7 +52,7 @@ export async function execute(env:Bindings,op:string,args:Record<string,unknown>
     await save(env.DB,a,before,state,revision)
     return JSON.parse(JSON.stringify(projectCommandResult(state,a,resultKind?state.get(`${resultKind}:${result.id}`)!.value:result))) as Data
   } catch(error) {
-    if(error instanceof Fault) throw new ToolRefusal(error.status===409?'native_conflict':error.status===403?'permission_denied':error.status===404?'not_found':'invalid_arguments',error.message)
+    if(error instanceof Fault) throw new ToolRefusal(nativeFaultCode(error.status),error.message)
     throw error
   }
 }

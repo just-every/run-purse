@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
 import {pathToFileURL} from 'node:url'
 import {schemaErrors} from '../src/modules/agent-door/conformance/schema.mjs'
+import {corePolicyProof} from './agent-door-core.mjs'
 
 const code=answer=>answer.result?._meta?.['com.runeditrun/error']?.code
 const value=answer=>{assert.equal(answer.result?.isError,false,code(answer));return answer.result.structuredContent}
@@ -147,6 +148,7 @@ async function policyJourney() {
   assert.deepEqual(audit.resource,{kind:'request',id:current.id});assert.equal(audit.agent.id,quote.preparedBy.agent.id)
   assert.equal(audit.sponsor.id,quote.preparedBy.for.id)
   const readerToken=await (await import('../src/modules/agent-door/conformance/crypto.mjs')).accessToken({...c,person:{email:readerEmail,sub:readerSub},agentId:randomUUID()})
+  await corePolicyProof({c,h,request,origin:h.origin,cookie:h.owner,descriptions,readerToken})
   const restricted=(name,args)=>c.tool(name,args,{token:readerToken})
   await c.adopt(policy('approval'))
   const pendingBefore=(await c.personJson('/agents/api/approvals')).approvals.length

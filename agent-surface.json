@@ -4,6 +4,40 @@
   "specialist": "procurement",
   "tools": [
     {
+      "name": "purse.accounting.export",
+      "scope": "purchasing:read",
+      "readOnly": true,
+      "classes": [
+        "sensitive"
+      ],
+      "clauses": [
+        "PUR-011",
+        "PUR-017"
+      ]
+    },
+    {
+      "name": "purse.attachments.add",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "standard"
+      ],
+      "clauses": [
+        "PUR-004"
+      ]
+    },
+    {
+      "name": "purse.business.configure",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "standard"
+      ],
+      "clauses": [
+        "PUR-001"
+      ]
+    },
+    {
       "name": "purse.catalogue.upsert",
       "scope": "purchasing:write",
       "readOnly": false,
@@ -16,6 +50,42 @@
       ]
     },
     {
+      "name": "purse.delegations.create",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "access"
+      ],
+      "clauses": [
+        "PUR-007"
+      ]
+    },
+    {
+      "name": "purse.delegations.revoke",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "access"
+      ],
+      "clauses": [
+        "PUR-007"
+      ],
+      "sponsorEscalation": false
+    },
+    {
+      "name": "purse.files.read",
+      "scope": "purchasing:read",
+      "readOnly": true,
+      "classes": [
+        "sensitive"
+      ],
+      "clauses": [
+        "PUR-004",
+        "PUR-014",
+        "PUR-017"
+      ]
+    },
+    {
       "name": "purse.invoices.capture",
       "scope": "purchasing:write",
       "readOnly": false,
@@ -25,6 +95,18 @@
       "clauses": [
         "PUR-011",
         "INVOICE-003"
+      ]
+    },
+    {
+      "name": "purse.members.set",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "access"
+      ],
+      "clauses": [
+        "PUR-001",
+        "PUR-017"
       ]
     },
     {
@@ -60,6 +142,30 @@
       "clauses": [
         "PUR-010",
         "PUR-017"
+      ]
+    },
+    {
+      "name": "purse.overview.read",
+      "scope": "purchasing:read",
+      "readOnly": true,
+      "classes": [
+        "sensitive"
+      ],
+      "clauses": [
+        "PUR-012",
+        "PUR-016",
+        "PUR-017"
+      ]
+    },
+    {
+      "name": "purse.policies.set",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "access"
+      ],
+      "clauses": [
+        "PUR-006"
       ]
     },
     {
@@ -156,6 +262,19 @@
       "clauses": [
         "PUR-017",
         "SECURITY-001"
+      ]
+    },
+    {
+      "name": "purse.requests.amend",
+      "scope": "purchasing:write",
+      "readOnly": false,
+      "classes": [
+        "standard"
+      ],
+      "clauses": [
+        "PUR-004",
+        "PUR-009",
+        "PUR-016"
       ]
     },
     {
@@ -287,7 +406,54 @@
     "tool": "purse.workspace.snapshot",
     "args": {}
   },
-  "escalations": [],
+  "escalations": [
+    {
+      "id": "core-member-self",
+      "tool": "purse.members.set",
+      "args": {
+        "email": {
+          "$sponsor": "email"
+        },
+        "name": "Forbidden widening",
+        "grants": [
+          {
+            "role": "buyer"
+          }
+        ],
+        "active": true
+      }
+    },
+    {
+      "id": "core-policy-self",
+      "tool": "purse.policies.set",
+      "args": {
+        "name": "Forbidden sponsor policy",
+        "currency": "USD",
+        "category": "Core",
+        "project": "Workshop",
+        "limitMinor": 100000,
+        "budgetMinor": 1000000,
+        "approver": {
+          "$sponsor": "email"
+        }
+      }
+    },
+    {
+      "id": "core-delegate-self",
+      "tool": "purse.delegations.create",
+      "args": {
+        "policy": {
+          "$from": "core-policy",
+          "pointer": "/id"
+        },
+        "delegate": {
+          "$sponsor": "email"
+        },
+        "expires": "2099-01-01T00:00:00.000Z",
+        "reason": "Forbidden sponsor delegation"
+      }
+    }
+  ],
   "journey": [
     {
       "id": "suppliers",
@@ -471,15 +637,105 @@
       }
     },
     {
-      "id": "quote-usd",
-      "tool": "purse.quotes.record",
+      "id": "core-amend",
+      "tool": "purse.requests.amend",
       "args": {
-        "request": {
-          "$from": "amend",
+        "title": "Native Core amendment",
+        "supplier": {
+          "$from": "suppliers",
+          "pointer": "/records/0/id"
+        },
+        "currency": "USD",
+        "needDate": "2026-12-15",
+        "location": "Denver",
+        "costCentre": "Operations",
+        "lines": [
+          {
+            "description": "Safety gloves",
+            "quantity": "2",
+            "unitMinor": 1500,
+            "category": "Safety",
+            "project": "Workshop"
+          }
+        ],
+        "freightMinor": 0,
+        "taxMinor": 0,
+        "terms": "Internal procurement draft",
+        "id": {
+          "$from": "draft",
           "pointer": "/id"
         },
         "revision": {
           "$from": "amend",
+          "pointer": "/revision"
+        },
+        "reason": "Correct source quantity"
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "draft",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "core-attachment",
+      "tool": "purse.attachments.add",
+      "args": {
+        "kind": "request",
+        "record": {
+          "$from": "draft",
+          "pointer": "/id"
+        },
+        "name": "synthetic-purse-source.txt",
+        "mediaType": "text/plain",
+        "base64": "c3ludGhldGljLXB1cnNlLXNvdXJjZQ=="
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "draft",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "core-file",
+      "tool": "purse.files.read",
+      "args": {
+        "kind": "attachment",
+        "id": {
+          "$from": "core-attachment",
+          "pointer": "/id"
+        }
+      },
+      "expect": [
+        {
+          "class": "sensitive"
+        }
+      ]
+    },
+    {
+      "id": "quote-usd",
+      "tool": "purse.quotes.record",
+      "args": {
+        "request": {
+          "$from": "core-amend",
+          "pointer": "/id"
+        },
+        "revision": {
+          "$from": "core-amend",
           "pointer": "/revision"
         },
         "supplier": {
@@ -510,7 +766,7 @@
       "target": {
         "kind": "request",
         "id": {
-          "$from": "amend",
+          "$from": "core-amend",
           "pointer": "/id"
         }
       }
@@ -520,11 +776,11 @@
       "tool": "purse.quotes.record",
       "args": {
         "request": {
-          "$from": "amend",
+          "$from": "core-amend",
           "pointer": "/id"
         },
         "revision": {
-          "$from": "amend",
+          "$from": "core-amend",
           "pointer": "/revision"
         },
         "supplier": {
@@ -555,7 +811,7 @@
       "target": {
         "kind": "request",
         "id": {
-          "$from": "amend",
+          "$from": "core-amend",
           "pointer": "/id"
         }
       }
@@ -565,7 +821,7 @@
       "tool": "purse.quotes.compare",
       "args": {
         "request": {
-          "$from": "amend",
+          "$from": "core-amend",
           "pointer": "/id"
         }
       },
@@ -577,7 +833,7 @@
       "target": {
         "kind": "request",
         "id": {
-          "$from": "amend",
+          "$from": "core-amend",
           "pointer": "/id"
         }
       }
@@ -587,11 +843,11 @@
       "tool": "purse.requests.submit",
       "args": {
         "id": {
-          "$from": "amend",
+          "$from": "core-amend",
           "pointer": "/id"
         },
         "revision": {
-          "$from": "amend",
+          "$from": "core-amend",
           "pointer": "/revision"
         }
       },
@@ -603,7 +859,7 @@
       "target": {
         "kind": "request",
         "id": {
-          "$from": "amend",
+          "$from": "core-amend",
           "pointer": "/id"
         }
       }
@@ -944,6 +1200,170 @@
       "expect": [
         {
           "class": "standard"
+        }
+      ]
+    },
+    {
+      "id": "core-business",
+      "tool": "purse.business.configure",
+      "args": {
+        "name": "Cedar Workshop",
+        "currencies": [
+          "USD",
+          "EUR"
+        ],
+        "locations": [
+          "Denver"
+        ],
+        "costCentres": [
+          "Operations"
+        ],
+        "projects": [
+          "Workshop"
+        ]
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ]
+    },
+    {
+      "id": "core-member",
+      "tool": "purse.members.set",
+      "args": {
+        "email": {
+          "$from": "awaiting",
+          "pointer": "/records/0/requesterEmail"
+        },
+        "name": "Core delegate",
+        "grants": [
+          {
+            "role": "requester"
+          },
+          {
+            "role": "approver"
+          }
+        ],
+        "active": true
+      },
+      "expect": [
+        {
+          "class": "access"
+        }
+      ],
+      "target": {
+        "kind": "member",
+        "id": {
+          "$from": "awaiting",
+          "pointer": "/records/0/requesterEmail"
+        }
+      }
+    },
+    {
+      "id": "core-policy",
+      "tool": "purse.policies.set",
+      "args": {
+        "name": "Native Core policy",
+        "currency": "USD",
+        "category": "Core",
+        "project": "Workshop",
+        "limitMinor": 100000,
+        "budgetMinor": 1000000,
+        "approver": {
+          "$from": "core-member",
+          "pointer": "/email"
+        }
+      },
+      "expect": [
+        {
+          "class": "access"
+        }
+      ]
+    },
+    {
+      "id": "core-delegation",
+      "tool": "purse.delegations.create",
+      "args": {
+        "policy": {
+          "$from": "core-policy",
+          "pointer": "/id"
+        },
+        "delegate": {
+          "$from": "core-member",
+          "pointer": "/email"
+        },
+        "expires": "2099-01-01T00:00:00.000Z",
+        "reason": "Explicit native delegation"
+      },
+      "expect": [
+        {
+          "class": "access"
+        }
+      ],
+      "target": {
+        "kind": "policy",
+        "id": {
+          "$from": "core-policy",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "core-revoke",
+      "tool": "purse.delegations.revoke",
+      "args": {
+        "id": {
+          "$from": "core-delegation",
+          "pointer": "/id"
+        }
+      },
+      "expect": [
+        {
+          "class": "access"
+        }
+      ],
+      "target": {
+        "kind": "delegation",
+        "id": {
+          "$from": "core-delegation",
+          "pointer": "/id"
+        }
+      }
+    },
+    {
+      "id": "core-overview",
+      "tool": "purse.overview.read",
+      "args": {},
+      "expect": [
+        {
+          "class": "sensitive"
+        }
+      ]
+    },
+    {
+      "id": "core-accounting",
+      "tool": "purse.accounting.export",
+      "args": {},
+      "expect": [
+        {
+          "class": "sensitive"
+        }
+      ]
+    },
+    {
+      "id": "core-preparation-file",
+      "tool": "purse.files.read",
+      "args": {
+        "kind": "agentRun",
+        "id": {
+          "$from": "edit",
+          "pointer": "/id"
+        }
+      },
+      "expect": [
+        {
+          "class": "sensitive"
         }
       ]
     }

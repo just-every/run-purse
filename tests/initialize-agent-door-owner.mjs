@@ -14,6 +14,7 @@ export default async function({request,origin,claim,displayName,returnTo,email,r
  await command('business',{name:'Cedar Workshop',currencies:['USD','EUR'],locations:['Denver'],costCentres:['Operations'],projects:['Workshop']})
  await command('supplier',{name:'Cedar Office Supply',status:'preferred',reason:'Established office supplier',contacts:[{name:'Alex Cedar',email:'orders@cedar.example.test'}]})
  await command('po-profile',documentProfileFixture({name:'Cedar Workshop'},'Denver'))
+ await command('member',{email,name:'Native owner membership',roles:['approver'],active:true})
  await command('policy',{name:'Safety purchases',currency:'USD',category:'Safety',project:'Workshop',approver:email,limitMinor:1000000,budgetMinor:5000000})
  const requester=await reviewers.initialize('requester',{cookie})
  const suppliers=await request(new URL('/api/purse/state',origin).href,{headers:{cookie:requester.cookie}})

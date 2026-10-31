@@ -15,7 +15,7 @@ The current declaration is deliberately bounded. It supports safe native
 record inspection, supplier and catalogue maintenance, request drafts and
 submission, independently authorized native decisions, PO conversion and issuance, physical receiving, supplied quotation recording and currency-separated comparison, invoice evidence capture, and editable source-bound preparations and proposed actions. It
 **does not cover all native purchasing actions**. Company approval of a
-proposal does not execute its proposed purchase. The sponsor must be the current designated approver or delegate for a native decision, and self approval is refused even when company policy is autonomous. Issuance is a separate explicit tool; conversion cannot smuggle an issue flag. There is no supplier send, payment, ledger post, protected-data reveal, erasure or grant administration in this registry. Those remain their existing native doors. Target-only card,
+proposal does not execute its proposed purchase. The sponsor must be the current designated approver or delegate for a native decision, and self approval is refused even when company policy is autonomous. Issuance is a separate explicit tool; conversion cannot smuggle an issue flag. There is no supplier send, payment, ledger post, protected-data reveal, erasure in this registry. Member grants, native policies and scoped delegation use the native administration actions and the access class. Target-only card,
 provider and connector capabilities are not advertised.
 
 | Tool | Classes | Native clauses |
@@ -37,6 +37,15 @@ provider and connector capabilities are not advertised.
 | `purse.preparations.create` | standard | AGENT-001, AGENT-002, AGENT-004, AGENT-009, AGENT-010 |
 | `purse.preparations.edit` | standard | AGENT-010 |
 | `purse.preparations.propose` | standard | AGENT-010 |
+| `purse.business.configure` | standard | PUR-001 |
+| `purse.members.set` | access | PUR-001, PUR-017 |
+| `purse.policies.set` | access | PUR-006 |
+| `purse.delegations.create`, `purse.delegations.revoke` | access | PUR-007 |
+| `purse.requests.amend` | standard | PUR-004, PUR-009, PUR-016 |
+| `purse.attachments.add` | standard | PUR-004 |
+| `purse.overview.read` | sensitive | PUR-012, PUR-016, PUR-017 |
+| `purse.files.read` | sensitive | PUR-004, PUR-014, PUR-017 |
+| `purse.accounting.export` | sensitive | PUR-011, PUR-017 |
 | `purse.workspace.snapshot` | standard | PUR-017, AUDIT-001 |
 | `purse.records.list`, `purse.records.read` | standard, sensitive | PUR-017, SECURITY-001 |
 
@@ -101,8 +110,8 @@ conversion, issue, receipt and invoice tools require their current native
 authority. A draft never establishes payment, supplier sending or approval.
 There is no advertised MCP prompt family in this CORE declaration.
 
-The declaration contains 20 tools, no public resource templates, and the
-standard, sensitive, money and commitment classes. Its 26 journey steps retain
+The declaration contains 30 tools, no public resource templates, and the
+standard, sensitive, access, money and commitment classes. Its 38 journey steps retain
 every declared tool/class pair, autonomous and held policy, injection variants,
 read-only witnesses, replay/conflicts and native attribution. The pending-decision
 reader returns only requests the current sponsor can decide; its empty bounded
@@ -113,7 +122,7 @@ The separate ct proposal at
 `36f0d9c9f9984ebecc95a201462367df15fb2420` remains unjudged and is not merged.
 Its 116 proposed capability names, nine proposed resource URI shapes and wider
 seeded week remain outside this declared registry. No proposed tool name matches
-the current 20 names exactly; current tools cover bounded parts of the same
+the current 30 names exactly; current tools cover bounded parts of the same
 native purchasing clauses, rather than aliases for the broad proposed verbs.
 The ct classes external, accounts, gated, access, security and destructive are
 not claimed. Its supplier chase, invoice-exception resolution, approved-bill
@@ -166,3 +175,16 @@ The production journey and browser proof in `tests/agent-door-journey.mjs` and
 quotation state and native audit events. These tools do not submit a request,
 award a quotation, issue a PO or send to a supplier. Full Core-job coverage and
 delegation of the existing embedded or scheduled agents remain incomplete.
+
+The added Core tools call the existing native handlers. Setup, policy, member
+and delegation input is validated on an isolated native state before a company
+approval can retain it; actual execution rechecks the same handlers and the
+native transaction. Grant or delegation widening that targets the sponsor is
+refused by the shared door. Native owner restrictions remain mandatory.
+Amendments retain old issued terms and need renewed purchasing approval.
+Attachment downloads preserve exact original bytes and current record access;
+erased originals remain unavailable. Accounting CSV is the native scoped
+export, with no ledger posting or payment. Native HTTP refusals now include the
+same stable code as their MCP counterpart while retaining the native message.
+These additions do not yet close proposed-action execution or migration of all
+embedded and scheduled agents to the shared registry.

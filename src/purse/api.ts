@@ -78,6 +78,7 @@ import { performanceMetrics } from './performance-metrics';
 import { savingsReport } from './savings-report';
 import { deploymentHealth } from '../base/deployment-health';
 import { Hono } from 'hono';
+import { nativeFaultCode } from './fault-code';
 import { operatorAuth, runtimeBindings, type Bindings } from '../auth.server';
 import { poDocument } from './po-document';
 import { poProfiles } from './po-profiles';
@@ -111,7 +112,7 @@ export const api = new Hono<{
 api.get('/health', c => c.json({ status: 'ok', ...deploymentHealth(c.env) }));
 api.use('/api/purse/*', async (c, next) => { c.header('cache-control', 'no-store'); c.header('x-content-type-options', 'nosniff'); await next(); });
 api.use('/api/purse/*', integrationRefusals);
-api.onError((e, c) => c.json({ error: e.message }, e instanceof Fault ? e.status as 400 : 400));
+api.onError((e, c) => c.json({ error: e.message, code:nativeFaultCode(e instanceof Fault?e.status:400) }, e instanceof Fault ? e.status as 400 : 400));
 export async function command(s: State, a: Actor, op: string, b: Data, env?: Bindings): Promise<Data> { travelGuard(s,op,b); authorizeAccessCommand(s,a,op,b); if (op === 'execute-action') {
     const p = actionInput(s, a, b);
     const result = await command(s, a, p.action, p.action==='value-confirm'?{...p.input,usefulness:b.usefulness,notes:b.notes}:p.input, env);
