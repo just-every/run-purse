@@ -4,7 +4,7 @@ Purse's procurement specialist uses one shared Base door at `/mcp`, with the
 2025-11-25 and 2026-07-28 protocols. Discovery, canonical OAuth resource
 metadata, signed company policy, person approval pages and `/agents` use the
 same runtime. The runtime and `agent-surface.json` declare exactly `tools`,
-`policy`, `pause`, `audit` and `idempotency`. Events, resources, prompts and
+`resources`, `policy`, `pause`, `audit` and `idempotency`. Events, prompts and
 subscriptions are omitted: discovery does not advertise them, their catalogues
 are empty, and calls return typed `capability_not_declared` refusals. Unknown
 tools return typed `tool_not_found`. A signed company policy must answer every declared class before
@@ -49,16 +49,48 @@ a later policy cannot authorize a previously admitted write. A concurrent change
 Native audit retains the agent as preparer and the native person as sponsor;
 company approvers are recorded separately from native purchasing decisions.
 
-Public resources are undeclared. Eleven internal visibility readers remain for
-request, supplier, catalogue, order, receipt, invoice, agreement, policy (budget),
-agentRun, revision and proposedAction, using `purse://<kind>/{id}`. They support
-native visibility and internal audit; CORE does not expose resource links or
-`resources/read`. Use the argument-taking `purse.records.list` and
-`purse.records.read` tools for policy-controlled inspection instead. Their
-current native field projection excludes protected supplier values and bearer
-credentials; personal purchasing fields carry `sensitive`. Imported text is
-untrusted. No provider cost is registered; the journey declares
-`spend: {none:true}`.
+Public JSON resources use the following URI templates. Each requires
+`purchasing:read` and passes through the shared policy, approval, review and
+audit pipeline. Tools return resource links for the records they create or
+change; reading a link recomputes the current native HTTP field projection.
+
+| Record | URI template |
+| --- | --- |
+| Request | `purse://request/{id}` |
+| Supplier | `purse://supplier/{id}` |
+| Catalogue item | `purse://catalogue/{id}` |
+| Purchase order | `purse://order/{id}` |
+| Receipt | `purse://receipt/{id}` |
+| Invoice | `purse://invoice/{id}` |
+| Agreement | `purse://agreement/{id}` |
+| Budget policy | `purse://policy/{id}` |
+| Agent preparation | `purse://agentRun/{id}` |
+| Request revision | `purse://revision/{id}` |
+| Proposed action | `purse://proposedAction/{id}` |
+
+The native resource and record-tool readers share the same projection and final
+read fence. Missing and inaccessible records return the same
+`resource_unavailable` error without content. Personal purchasing fields are
+classified as `sensitive`. A required approval withholds all content; an approved
+retry rechecks current access and serves the current projection, including edits
+made since approval. A projection changed during a read is refused as
+`resource_changed`. Narrowed purchasing grants, missing token scopes, revoked
+consent and suspended sponsors cannot retrieve retained content. Protected
+supplier values, masked suffixes and bearer credentials are excluded. Resource
+content has `_meta: {"com.runeditrun/untrusted": true}`: source instructions remain
+data and confer no authority. No provider cost is registered; the journey
+declares `spend: {none:true}`.
+
+The JSON resource journey is `tests/agent-door-resources.mjs`, invoked by
+`tests/agent-door-journey.mjs` during normal Verify. It compares real owner and
+requester sessions with native HTTP projections, reads changed write links,
+exercises both sides of approval and current-authority refusals, and inspects
+the retained audit. The production browser journey compares both native roles
+on the same request at 1440 pixels, with screenshots also at 390 pixels.
+File-content resources and file-byte grant budgets require a shared Base resource
+interface beyond the retained JSON and text interface; they remain unqualified.
+Additional record families and resource-refresh lifecycle qualification remain
+open. Events and subscriptions are not introduced.
 
 Business `owner_id` resolves to the native bootstrap owner. Team `id` resolves
 only through Business's durable native operator binding; email in a token never
@@ -99,7 +131,7 @@ conversion, issue, receipt and invoice tools require their current native
 authority. A draft never establishes payment, supplier sending or approval.
 There is no advertised MCP prompt family in this CORE declaration.
 
-The declaration contains 18 tools, no public resource templates, and the
+The declaration contains 18 tools, eleven public JSON resource templates, and the
 standard, sensitive, money and commitment classes. Its 23 journey steps retain
 every declared tool/class pair, autonomous and held policy, injection variants,
 read-only witnesses, replay/conflicts and native attribution. The pending-decision
@@ -125,13 +157,12 @@ not-tool dispositions for PUR-016/017 and IMPORT-004 remain a ct delta. Existing
 personal-field sensitivity also does not prove ct’s protected tax/bank/card
 reveal semantics; those values are excluded from this registry.
 
-Events/handoffs, resources, prompts and subscriptions are explicitly undeclared.
+Events, handoffs, prompts and subscriptions are explicitly undeclared.
 Multiple Business sponsors, resource refresh, timed/dual-host lifecycle,
 delegation of existing scheduled agents, queued continuation, owner-native
 administration and provider spend remain unscoped by Base's first subset. CORE
 does not prove or refuse those families as a whole. Native bootstrap, named
 approvals, owner-bound credentials, current authority and consent revocation
 remain mandatory. Existing native agent jobs retain their governance and human
-consent until their own company-door adapters and journeys exist. The omitted
-resource family does not claim the former resource admission/projection races
-proved. Provider spend caps are unenforced.
+consent until their own company-door adapters and journeys exist. File-byte budgets and the remaining resource-refresh lifecycle are unqualified.
+Provider spend caps are unenforced.

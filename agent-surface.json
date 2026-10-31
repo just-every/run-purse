@@ -223,7 +223,19 @@
       ]
     }
   ],
-  "resources": [],
+  "resources": [
+    "purse://request/{id}",
+    "purse://supplier/{id}",
+    "purse://catalogue/{id}",
+    "purse://order/{id}",
+    "purse://receipt/{id}",
+    "purse://invoice/{id}",
+    "purse://agreement/{id}",
+    "purse://policy/{id}",
+    "purse://agentRun/{id}",
+    "purse://revision/{id}",
+    "purse://proposedAction/{id}"
+  ],
   "notTools": [
     {
       "clauses": [
@@ -846,6 +858,7 @@
   },
   "capabilities": [
     "tools",
+    "resources",
     "policy",
     "pause",
     "audit",

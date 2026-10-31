@@ -53,3 +53,9 @@ export async function execute(env:Bindings,op:string,args:Record<string,unknown>
     throw error
   }
 }
+
+// Public tools and resources share the native HTTP projection and read fence.
+export async function nativeRecord(env:Bindings,ctx:ResourceContext|ToolContext,kind:string,id:string) {
+  const {projected}=await snapshot(env,ctx)
+  return (projected.data[kind] as Record<string,unknown>[]|undefined)?.find(row=>row.id===id)??null
+}
