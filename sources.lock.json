@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "3674272390f01947a4f13a154d053aa360db1fa46fed26088f2b5b34a015a252",
+      "sha256": "8eb1d5efee293df20386968ef6e391f6c980bacd1760584387630cc157abe72a",
       "executable": false
     },
     "DEMO.md": {
@@ -1024,7 +1024,7 @@
       "executable": false
     },
     "scripts/installer/restore-order-sends.mjs": {
-      "sha256": "cd80d280c62b9b911692d1d2bb6e73ae11680281cc77ea6084d8a54c8894f5a5",
+      "sha256": "57e0f0f4570939c96bdf1d8ebf50e47a8673c28ab18416e9628d27261e85f3f5",
       "executable": false
     },
     "scripts/installer/restore-order-thread.mjs": {
@@ -1044,7 +1044,7 @@
       "executable": false
     },
     "scripts/installer/restore-po-generation.mjs": {
-      "sha256": "761ad8e6823a8f14a058bac641e56e26c0a005daf12b59a2cf5a7e41d1928704",
+      "sha256": "0934ede48008e4ac29ec907b0de294767b41939636eb1fddfb13b94948800e7f",
       "executable": false
     },
     "scripts/installer/restore-po-kinds.mjs": {
@@ -3908,7 +3908,7 @@
       "executable": false
     },
     "src/purse/order-send-mail.ts": {
-      "sha256": "026cab8031c6748c698a2f3bd4b2e47a5dcda2366ae31be53d6c8740b014e4e1",
+      "sha256": "71168a3bf00456844f70ed80ae898ce195d924c4099f79c698a0c04cab4ddd57",
       "executable": false
     },
     "src/purse/order-send-public.ts": {
@@ -3916,7 +3916,7 @@
       "executable": false
     },
     "src/purse/order-send.ts": {
-      "sha256": "d3064fd0f76f41361ac5a279e1ef15a9e03a5fbe61efcec4453d921d62ea0b3c",
+      "sha256": "4efd683c2da883af1548d9a6270da471741aa4d905b6f1501065dbbadd509aa6",
       "executable": false
     },
     "src/purse/order-thread-api.ts": {
@@ -3988,11 +3988,11 @@
       "executable": false
     },
     "src/purse/po-generation-schedule.ts": {
-      "sha256": "b344e597d7de66258b66d182135cb9abbfd4380a6b6e486107bc4c323967eef4",
+      "sha256": "8bc41a6aed68ee22549d351b1ccaeda764f58d115fcec8983d50e87d840bdc14",
       "executable": false
     },
     "src/purse/po-generation.ts": {
-      "sha256": "c51b1e23e7bf4be4d5a2395e222bcf9135018403d25a0ac56fe43581ee1133b5",
+      "sha256": "3289c42ee9e7232cc57f6538a423f383335f992949b6580a8bce69f64df8b3ee",
       "executable": false
     },
     "src/purse/po-line-tax.ts": {
@@ -4920,7 +4920,7 @@
       "executable": false
     },
     "src/ui/po-generation.tsx": {
-      "sha256": "f82f6ad53e8cd67faea159af3eeb4284a9f8dfad06ce3a2466dbc0851550ddaa",
+      "sha256": "49189030d347ff759bd434b4fd568d52cbcdcbe9033da01c43200447ac753888",
       "executable": false
     },
     "src/ui/po-profiles.tsx": {
@@ -5420,7 +5420,7 @@
       "executable": false
     },
     "tests/browser-po-generation.mjs": {
-      "sha256": "bb8904468e0e671e0bb702f7aeedaa1741254183aa95743a262e21a1fa900f48",
+      "sha256": "a821c75989bfcb371816cc10e813318d4789b01168f650f9d63508ad1f11345d",
       "executable": false
     },
     "tests/browser-po-kinds.mjs": {
@@ -5700,7 +5700,7 @@
       "executable": false
     },
     "tests/invoice-risk.test.mjs": {
-      "sha256": "c1702a88394116428486bca4da4815f5e7f132cb5a736ba7d915acd94802bd01",
+      "sha256": "e96273e5d33ffdacb121aab81d1542ee9de8f3f123e99c2bff5f13f72d98d977",
       "executable": false
     },
     "tests/late-order-resolution.test.mjs": {
@@ -5784,7 +5784,7 @@
       "executable": false
     },
     "tests/po-generation.test.mjs": {
-      "sha256": "3bb2f6eb36a53ac4d6d6f4e336488ce9b16bfaeccbcfa2a6b6087d3aae7d20d7",
+      "sha256": "1544312a4a62fae5ff8da73361347359c1e2abbbce381b156470c4e6d8923957",
       "executable": false
     },
     "tests/po-supplier-groups-fixture.mjs": {
