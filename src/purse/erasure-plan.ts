@@ -77,7 +77,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   if(row.kind==='emailIntakeMailEvent'&&value.status==='pending'&&contains(row.value)){value.status='suppressed';}
   if(row.kind==='rfq')for(let index=0;index<value.suppliers.length;index++)if(contains(row.value.suppliers[index]))value.suppliers[index].contactErased=id;
   if((['recurringScenario','recurringScenarioDraft','recurringDiscoveryNotice'].includes(row.kind)||row.kind==='agentRun'&&row.value.workflow==='recurring-discovery')&&JSON.stringify(value)!==JSON.stringify(row.value))value.sourceValuesErased=id;
-  if(row.kind==='agentRun'&&row.value.agent==='AGENT-008'&&JSON.stringify(value)!==JSON.stringify(row.value))value.sourceValuesErased=id;
+  if(row.kind==='agentRun'&&['AGENT-008','AGENT-004'].includes(row.value.agent)&&JSON.stringify(value)!==JSON.stringify(row.value))value.sourceValuesErased=id;
   if(row.kind==='invoice'&&row.value.evidenceHash&&JSON.stringify(value)!==JSON.stringify(row.value)) {
    requireThat(row.value.evidence,'Migrate legacy invoice evidence before erasure',409);
    value.sourceValuesErased=id;
