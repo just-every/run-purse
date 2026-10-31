@@ -184,6 +184,7 @@
   "44": [
     ["tests/browser.mjs", "--width=390", "--journey=search"],
     ["tests/browser-po-kinds.mjs"],
-    ["tests/browser-shipment-references.mjs"]
+    ["tests/browser-shipment-references.mjs"],
+    ["tests/browser-intake-agent.mjs"]
   ]
 }

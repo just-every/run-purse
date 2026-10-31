@@ -106,6 +106,8 @@ export function scopeAuditRows(s: State, a: Actor, data: Data) {
     const policyIds = new Set(data.policy.map((policy: Data) => policy.id));
     data.decision=data.decision.map((decision:Data)=>decision.policySnapshot&&!policyIds.has(decision.policy)?{...decision,policySnapshot:null,snapshotBasis:'Whole-policy snapshot outside your purchase scope'}:decision);
     return all(s, 'audit').filter(event => {
+        if (event.agent === 'AGENT-001') { const run=s.get('agentRun:'+event.record)?.value; return Boolean(run && canReadRecord(s,a,'agentRun',run)); }
+        if (event.action === 'intake-agent-draft') { const run=s.get('agentRun:'+event.run)?.value; return Boolean(run && canReadRecord(s,a,'agentRun',run)); }
         const action = typeof event.action === 'string' ? event.action : '';
         if(['amend','approver-edit'].includes(action)&&event.revision){const prior=s.get('revision:'+event.record+':'+(event.revision-1))?.value;if(prior&&!allowed(s,a,'request.read',prior))return false;}
         if (action.startsWith('supplier-credit-') && !allowed(s,a,'invoice.read',event)) return false;
