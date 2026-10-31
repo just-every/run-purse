@@ -51,10 +51,13 @@ export async function strangerSpecialist({url,request,authorize,approve,task}) {
  const inspection=namedTools(inspect),preparation=namedTools(prepare)
  const list=choose(inspection,tool=>tool.annotations.readOnlyHint&&tool.inputSchema.required.includes('kind')&&!tool.inputSchema.properties.id)
  const read=choose(inspection,tool=>tool.annotations.readOnlyHint&&tool.inputSchema.required.includes('kind')&&tool.inputSchema.required.includes('id'))
+ const awaiting=choose(inspection,tool=>tool.annotations.readOnlyHint&&tool.inputSchema.properties.limit&&!tool.inputSchema.properties.kind)
+ const position=choose(inspection,tool=>tool.annotations.readOnlyHint&&tool.inputSchema.required.includes('id')&&!tool.inputSchema.properties.kind)
  const create=choose(preparation,tool=>!tool.annotations.readOnlyHint&&tool.inputSchema.required.includes('workflow')&&tool.inputSchema.required.includes('draft'))
  const edit=choose(preparation,tool=>!tool.annotations.readOnlyHint&&tool.inputSchema.required.includes('version')&&tool.inputSchema.required.includes('draft'))
  const requestDraft=choose(preparation,tool=>!tool.annotations.readOnlyHint&&tool.inputSchema.required.includes('title')&&!tool.inputSchema.required.includes('revision'))
  const amendDraft=choose(preparation,tool=>!tool.annotations.readOnlyHint&&tool.inputSchema.required.includes('title')&&tool.inputSchema.required.includes('revision'))
+ const propose=choose(preparation,tool=>!tool.annotations.readOnlyHint&&tool.inputSchema.required.includes('run')&&tool.inputSchema.required.includes('action'))
  let approvals=0
  const decisions=[],calls=[]
  const call=async(tool,input)=>{
@@ -86,7 +89,16 @@ export async function strangerSpecialist({url,request,authorize,approve,task}) {
  assert.ok(supplier,'Find the task supplier without a fixture id')
  const detail=await call(read,{kind:'supplier',id:supplier.id})
  assert.equal(detail.record.name,task.supplier)
- const draft=await call(create,{workflow:'intake',draft:task.draft,fields:{need:task.need,supplier:supplier.name,quantity:task.quantity},references:[{kind:'supplier',id:supplier.id}]})
+ const decisionsAwaiting=await call(awaiting,{})
+ const pending=decisionsAwaiting.records.find(record=>record.title===task.pendingTitle)
+ assert.ok(pending,'Inspection must reach an independently submitted pending decision')
+ assert.equal(pending.status,'pending')
+ const orders=await call(list,{kind:'order'})
+ const order=orders.records.find(record=>record.number===task.orderNumber)
+ assert.ok(order,'Find the human-issued order by its visible business reference')
+ const receiving=await call(position,{id:order.id})
+ assert.equal(receiving.record.number,task.orderNumber)
+ const draft=await call(create,{workflow:'intake',draft:task.draft,fields:{need:task.need,supplier:supplier.name,quantity:task.quantity},references:[{kind:'supplier',id:supplier.id},{kind:'order',id:order.id}]})
  assert.equal(draft.draft,task.draft)
  assert.equal(draft.workflow,'intake')
  assert.deepEqual(draft.fields,{need:task.need,supplier:supplier.name,quantity:task.quantity})
@@ -95,9 +107,19 @@ export async function strangerSpecialist({url,request,authorize,approve,task}) {
  assert.ok(draft.missing.includes('need date'),'Missing evidence stays unknown')
  assert.equal(draft.references[0].id,supplier.id)
  assert.ok(draft.references[0].version)
+ assert.equal(draft.references[1].id,order.id)
+ assert.ok(draft.references[1].version)
  const edited=await call(edit,{id:draft.id,version:draft.version,draft:task.reviewedDraft})
  assert.equal(edited.draft,task.reviewedDraft)
  assert.equal(edited.version,draft.version+1)
+ const proposalInput={run:edited.id,action:'receipt',input:{order:order.id,line:order.lines[0].id,quantity:'1',event:'receive',reason:'Unconfirmed physical evidence; human review required',receiptVersion:receiving.receiptVersion},idempotency_key:randomUUID()}
+ const proposal=await call(propose,proposalInput)
+ assert.deepEqual(await call(propose,proposalInput),proposal,'A proposal retry retains one inert proposal')
+ assert.equal(proposal.status,'proposed')
+ assert.equal(proposal.runVersion,edited.version)
+ assert.equal(proposal.input.order,order.id)
+ assert.equal(proposal.input.quantity,'1')
+ assert.deepEqual(await call(position,{id:order.id}),receiving,'Proposing receiving never records physical evidence')
  const catalogue=await call(list,{kind:'catalogue'})
  const item=catalogue.records.find(record=>record.supplier===supplier.id&&record.description===task.need)
  assert.ok(item,'Find a currently visible catalogue source without a fixture id')
@@ -125,5 +147,5 @@ export async function strangerSpecialist({url,request,authorize,approve,task}) {
  const current=await call(read,{kind:'request',id:amended.id})
  assert.equal(current.record.revision,amended.revision)
  assert.equal(current.record.lines[0].quantity,task.reviewedQuantity)
- return {draft:edited,request:current.record,originalRequest:created,catalogue:source.record,decisions,approvals,calls,supplier:detail.record}
+ return {draft:edited,proposal,pending,position:receiving,request:current.record,originalRequest:created,catalogue:source.record,decisions,approvals,calls,supplier:detail.record}
 }

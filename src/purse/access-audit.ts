@@ -10,6 +10,7 @@ export function auditEventAllowed(s:State,a:Actor,event:Data,permission='audit.r
  if(event.action==='supplier-tax-review')return a.owner;
  if(unrestrictedAccess(s,a,permission))return true;
  if(!allowed(s,a,permission))return false;
+ if(event.action==='entity')return allowed(s,a,permission,{entity:event.record});
  if(event.review && event.action.startsWith('cross-review-')) {
   const review=s.get('crossTeamReview:'+event.review)?.value, current=review&&s.get('request:'+review.request)?.value, source=review&&s.get('revision:'+review.request+':'+review.revision)?.value;
   return Boolean(current && source && allowed(s,a,permission,current) && allowed(s,a,permission,source));

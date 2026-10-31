@@ -171,7 +171,7 @@ The native specialist journey now also uses a discovery-only MCP client in
 credential acquisition and a task, it discovers the OAuth resource, specialist
 prompts and live tool schemas without importing the manifest, tool registry or
 native services. It inspects a populated supplier and approved catalogue item through the
-discovered read tools, creates a source-bound editable preparation and edits it.
+discovered read tools. It also finds an independently submitted pending decision, locates a human-issued order by its visible number and reads its wholly outstanding receiving position. It creates a source-bound editable preparation, edits it and retains one inert receipt proposal on retry. Reading the position again proves that the proposal recorded no physical receipt.
 After the requester supplies and reviews the remaining facts, it creates one
 requester-owned catalogue draft, retries the same call without duplicating it,
 and applies the requester’s quantity change through the discovered draft-edit
@@ -179,10 +179,10 @@ tool. A stale draft revision is refused. The independently checked totals move
 from 3000 to 4500 minor USD units while both retained revisions remain drafts
 with no purchasing policy or commitment. Under the held
 policy, the separate signed-in person follows the returned approval URLs before
-private inspection completes. Under autonomous policy, no call waits. Both runs
+private inspection completes, including the pending-decision queue and order catalogue. Under autonomous policy, no call waits. Both runs
 retain unknown evidence, agent attribution and native source versions. Existing
 requests, commitments, decisions, receipts, invoices and supplier sending remain
-unchanged; only the explicit editable preparation, one unsubmitted request and
+unchanged; only the explicit editable preparation, one inert proposal, one unsubmitted request and
 their audited revisions are added. A read-only token cannot create either form
 of preparation, regardless of prompt arguments.
 This is deterministic native client proof, not external model qualification.

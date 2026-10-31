@@ -5,11 +5,13 @@ import {resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {serveHosted,HOSTED_ORIGIN} from '@runeditrun/rer/internal/cli/hosted-output.mjs'
 import {verificationSponsors} from '@runeditrun/rer/internal/cli/agent-sponsors.mjs'
+import {verificationReviewers} from '@runeditrun/rer/internal/cli/agent-reviewers.mjs'
+import {createAgentConformanceNetwork} from '@runeditrun/rer/internal/cli/agent-network.mjs'
 import {createProtocol} from '../src/modules/agent-door/conformance/protocol.mjs'
 import {accessToken, signJws, seconds, autonomousPolicy, heldPolicy} from '../src/modules/agent-door/conformance/crypto.mjs'
 import {agentDocsBrowser,agentSpecialistApprovalBrowser} from './agent-door-browser.mjs'
 import {strangerSpecialist} from './agent-door-stranger.mjs'
-import screeningEdge from './agent-door-provider-edge.mjs'
+import {documentProfileFixture} from './document-profile-fixture.mjs'
 
 // A second, empty production installation gives these catalogue and prompt
 // probes their own test signer. No credential or authority escapes the test.
@@ -18,11 +20,20 @@ export default async function agentDocumentationJourney() {
  const root=resolve(fileURLToPath(new URL('..',import.meta.url)))
  const surface=JSON.parse(await readFile(new URL('../agent-surface.json',import.meta.url),'utf8'))
  const [{email,sub}]=await verificationSponsors(root,surface.verification)
+ const reviewers=await verificationReviewers(root,surface.verification.reviewers,email)
+ const network=await createAgentConformanceNetwork(root,surface.verification.network,{email})
  const kid=randomUUID(),installationId=randomUUID(),business='synthetic-purse-docs',issuer='https://synthetic-purse-docs.invalid'
  const pair=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify'])
  const publicKeys={[kid]:await webcrypto.subtle.exportKey('jwk',pair.publicKey)}
  const signer={issuer,installationId,kid,privateKey:pair.privateKey}
- const hosted=await serveHosted(root,{outboundService:request=>screeningEdge.fetch(request),bindings:{
+ let hosted
+ try {
+ hosted=await serveHosted(root,{outboundService:async request=>{
+  const copy=reviewers.observes(request)?request.clone():null
+  const response=await network.fetch(request)
+  if(copy)await reviewers.capture(copy,response.clone())
+  return response
+ },bindings:{
   RER_OWNER_CLAIM_ISSUER:issuer,RER_OWNER_CLAIM_INSTALLATION_ID:installationId,RER_OWNER_CLAIM_PUBLIC_KEYS:JSON.stringify(publicKeys),
   RER_OWNER_CLAIM_APP_ORIGIN:HOSTED_ORIGIN,RER_BUSINESS_TRUST:JSON.stringify({v:1,issuer,audience:HOSTED_ORIGIN,subject:installationId,email,keys:publicKeys}),
   OWNER_EMAIL:email,MAIL_FROM:email,SESSION_SECRET:randomBytes(32).toString('hex'),
@@ -32,7 +43,6 @@ export default async function agentDocumentationJourney() {
   assert.equal(new URL(absolute).origin,origin)
   return hosted.fetch(new URL(absolute).href.slice(origin.length+1),{...init,signal:AbortSignal.timeout(30000)})
  }
- try {
   const iat=seconds()
   const claim=await signJws(pair.privateKey,kid,'rer-owner-claim+jwt',{v:1,iss:issuer,aud:origin,installationId,email,jti:randomUUID(),iat,exp:iat+300})
   const bootstrap=await request(origin+'/auth/owner-claim',{method:'POST',redirect:'manual',headers:{origin,'content-type':'application/json'},body:JSON.stringify({token:claim,displayName:'Synthetic Purse docs',returnTo:'/'})})
@@ -51,6 +61,24 @@ export default async function agentDocumentationJourney() {
   const complete=await request(origin+'/setup',{method:'POST',redirect:'manual',headers:{origin,cookie,'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({displayName:'Synthetic Purse docs',confirm:'yes'}).toString()})
   assert.equal(complete.status,303)
   await complete.body?.cancel()
+  // Separate people create and approve real purchasing sources. The stranger
+  // receives only their visible names, never these sessions or fixture ids.
+  const requester=await reviewers.initialize('requester',{cookie},{request,origin})
+  const commandAs=async(op,input,session=cookie)=>{
+   const response=await request(origin+'/api/purse/command/'+op,{method:'POST',headers:{origin,cookie:session,'content-type':'application/json'},body:JSON.stringify(input)})
+   assert.equal(response.status,200,op+': '+await response.clone().text())
+   return response.json()
+  }
+  await commandAs('po-profile',documentProfileFixture({name:'Synthetic Purse docs'},'Denver'))
+  await commandAs('policy',{name:'Synthetic Purse source review',currency:'USD',category:'Safety',project:'Workshop',approver:email,limitMinor:1000000,budgetMinor:5000000})
+  const sourceInput={title:'Synthetic Purse inspection source',supplier:seededSupplier.id,currency:'USD',needDate:'2026-12-15',location:'Denver',costCentre:'Operations',lines:[{catalogue:seededCatalogue.id,quantity:'2',project:'Workshop'}],freightMinor:0,taxMinor:0,terms:'Human-reviewed source terms'}
+  const source=await commandAs('request',sourceInput,requester.cookie)
+  await commandAs('submit',{id:source.id,revision:source.revision},requester.cookie)
+  await commandAs('decision',{id:source.id,revision:source.revision,decision:'approved',reason:'Independent human source review'})
+  const converted=await commandAs('convert',{id:source.id,revision:source.revision})
+  const issued=await commandAs('issue',{id:converted.id,revision:converted.revision,reason:'Human source issuance; no supplier sending'})
+  const pending=await commandAs('request',{...sourceInput,title:'Synthetic Purse pending inspection'},requester.cookie)
+  await commandAs('submit',{id:pending.id,revision:pending.revision},requester.cookie)
   const settings=await signJws(pair.privateKey,kid,'rer-business-settings+jwt',{v:1,iss:issuer,aud:origin,sub:installationId,business,email,owner_id:sub,jti:randomUUID(),iat,exp:iat+300,rev:1,values:{},logo:null,team:null})
   const paired=await request(origin+'/api/rer/business-settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({settings})})
   assert.equal(paired.status,200)
@@ -142,7 +170,7 @@ export default async function agentDocumentationJourney() {
      await agentSpecialistApprovalBrowser({request,origin,cookie,handle})
      assert.deepEqual((await (await request(origin+'/api/purse/state',{headers:{cookie}})).json()).data,heldState,'Approving inspection does not change purchasing or editable drafts')
     },
-    task:{supplier:'Synthetic Purse supplier',need:'Workshop safety gloves',quantity:'2',reviewedQuantity:'3',draft:'Two pairs of workshop gloves; need date unknown.',reviewedDraft:'Two pairs of workshop gloves; confirm size and need date before submission.',
+    task:{supplier:'Synthetic Purse supplier',need:'Workshop safety gloves',pendingTitle:pending.title,orderNumber:issued.number,quantity:'2',reviewedQuantity:'3',draft:'Two pairs of workshop gloves; need date unknown.',reviewedDraft:'Two pairs of workshop gloves; confirm size and need date before submission.',
      reviewedRequest:{title:'Synthetic Purse gloves',needDate:'2026-12-15',location:'Denver',costCentre:'Operations',project:'Workshop',terms:'Requester-reviewed supplier terms'}},
    })
    assert.equal(completed.supplier.id,seededSupplier.id)
@@ -150,7 +178,14 @@ export default async function agentDocumentationJourney() {
    assert.equal(completed.draft.preparedBy.for.id,completed.draft.actor)
    assert.ok(completed.decisions.every(decision=>decision.revision===c.revision))
    assert.ok(completed.decisions.every(decision=>decision.disposition===(phase==='autonomous'?'autonomous':decision.classes.some(item=>item.class!=='standard')?'approval':'review')))
-   assert.equal(completed.approvals,phase==='autonomous'?0:3)
+   assert.equal(completed.approvals,phase==='autonomous'?0:5)
+   assert.equal(completed.pending.id,pending.id)
+   assert.equal(completed.position.record.id,issued.id)
+   assert.deepEqual(completed.position.record.lines.map(line=>[line.quantity,line.accepted,line.cancelled,line.closed,line.outstanding]),[['2',0,0,0,2000]],'The specialist sees two wholly outstanding units at native quantity precision')
+   assert.ok(completed.position.receiptVersion)
+   assert.equal(completed.proposal.run,completed.draft.id)
+   assert.equal(completed.proposal.runVersion,completed.draft.version)
+   assert.equal(completed.proposal.status,'proposed')
    assert.equal(completed.originalRequest.totalMinor,3000,'Two catalogue pairs cost exactly 3000 minor USD units')
    assert.equal(completed.request.totalMinor,4500,'The reviewed three-pair draft costs exactly 4500 minor USD units')
    assert.equal(completed.catalogue.id,seededCatalogue.id)
@@ -159,8 +194,8 @@ export default async function agentDocumentationJourney() {
    assert.equal(completed.request.requester,completed.request.preparedBy.for.id)
    assert.equal(completed.request.preparedBy.agent.id,completed.draft.preparedBy.agent.id)
    const nativeAfter=(await (await request(origin+'/api/purse/state',{headers:{cookie}})).json()).data
-   const {agentRun:beforeRuns,audit:beforeAudit,request:beforeRequests,revision:beforeRevisions,...beforePurchasing}=nativeBefore
-   const {agentRun:afterRuns,audit:afterAudit,request:afterRequests,revision:afterRevisions,...afterPurchasing}=nativeAfter
+   const {agentRun:beforeRuns,proposedAction:beforeProposals,audit:beforeAudit,request:beforeRequests,revision:beforeRevisions,...beforePurchasing}=nativeBefore
+   const {agentRun:afterRuns,proposedAction:afterProposals,audit:afterAudit,request:afterRequests,revision:afterRevisions,...afterPurchasing}=nativeAfter
    const familyDrafts=afterPurchasing.supplierFamilies.flatMap(family=>family.requests.filter(row=>row.id===completed.request.id))
    assert.equal(familyDrafts.length,1,'The supplier register includes the one new editable draft')
    assert.equal(familyDrafts[0].totalMinor,4500)
@@ -180,10 +215,18 @@ export default async function agentDocumentationJourney() {
    assert.deepEqual(revisions.map(row=>[row.revision,row.status,row.totalMinor]),[[1,'draft',3000],[2,'draft',4500]],'Exact editable source revisions remain unapproved')
    assert.equal(afterRuns.length,beforeRuns.length+1)
    assert.equal(afterRuns.find(run=>run.id===completed.draft.id).draft,completed.draft.draft)
-   assert.equal(afterAudit.length,beforeAudit.length+4)
+   assert.equal(afterProposals.length,beforeProposals.length+1,'A replayed proposal has one inert effect')
+   assert.deepEqual(afterProposals.filter(row=>row.id!==completed.proposal.id),beforeProposals)
+   const savedProposal=afterProposals.find(row=>row.id===completed.proposal.id)
+   const {preparedBy,companyDecision,...proposedEvidence}=savedProposal
+   assert.deepEqual(proposedEvidence,completed.proposal)
+   assert.equal(preparedBy.agent.id,completed.draft.preparedBy.agent.id)
+   assert.equal(preparedBy.for.id,completed.draft.actor)
+   assert.ok(companyDecision.id)
+   assert.equal(afterAudit.length,beforeAudit.length+5)
    const priorAudit=new Set(beforeAudit.map(row=>row.id))
-   assert.deepEqual(afterAudit.filter(row=>!priorAudit.has(row.id)).map(row=>row.action).sort(),['amend','edit-preparation','prepare','request'])
-   console.log(`PROBE BASE-AGENT-013.5 ${phase}: URL-only MCP discovery -> populated supplier and catalogue inspection, editable preparation and requester-owned 3000-to-4500 minor-unit draft; replay once; stale edit refused; ${completed.approvals} signed-in URL approvals; no purchasing authority or commitment`)
+   assert.deepEqual(afterAudit.filter(row=>!priorAudit.has(row.id)).map(row=>row.action).sort(),['amend','edit-preparation','prepare','propose-action','request'])
+   console.log(`PROBE BASE-AGENT-013.5 ${phase}: URL-only MCP discovery -> populated supplier, catalogue, pending decision and receiving-position inspection; editable preparation, one inert proposal and requester-owned 3000-to-4500 minor-unit draft; replay once; stale edit refused; ${completed.approvals} signed-in URL approvals; no purchasing authority or commitment`)
    if(phase==='held')await agentDocsBrowser({request,origin,cookie,docs})
    console.log(`PROBE BASE-AGENT-013 ${phase}: MCP catalogues match generated docs; specialist prompts ignore authority arguments; read-only token cannot prepare; purchasing unchanged`)
   }
@@ -193,5 +236,5 @@ export default async function agentDocumentationJourney() {
   assert.equal((await c.mcp('prompts/get',{name:docs.prompts[0].name})).status,401)
   assert.equal((await c.mcp('prompts/list')).status,401)
   console.log('PROBE BASE-AGENT-013 revoked: prompts refused with HTTP 401')
- } finally {await hosted.close()}
+ } finally {reviewers.close();try {await hosted?.close()}finally {await network.close()}}
 }

@@ -1,3 +1,4 @@
+import { entityId } from './entities';
 import type { Bindings } from '../auth.server';
 import { requirePermission } from './access';
 import { currentDecision } from './approval';
@@ -21,6 +22,7 @@ export async function sendOrderChange(env: Bindings, actor: Actor, body: Data) {
     requirePermission(state, actor, 'po.issue', order); requirePermission(state, actor, 'po.issue', request);
     const cancellation = Boolean(order.cancellation && order.cancelledByApproval?.request === order.request && order.cancelledByApproval?.revision === order.revision);
     requireThat((order.status === 'issued' || cancellation && order.status === 'cancelled') && order.issuedAt && !order.imported && !order.adoption && request.status === 'approved' && request.revision === order.revision && body.revision === order.revision, 'Exact current issued native approved amendment required', 409);
+    requireThat(entityId(order)==='main', 'Supplier sending is not qualified for additional entities',409);
     const source = get(state, 'revision', order.request + ':' + order.revision);
     const mode = source.amends || order.cancellation ? 'change' : 'initial';
     requireThat(body.mode === undefined || body.mode === mode, 'Choose this exact initial order or approved change revision', 409);

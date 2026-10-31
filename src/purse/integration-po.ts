@@ -51,7 +51,7 @@ integrationPoApi.get('/api/purse/integration/orders/:id', async c => {
     requireThat(counted, 'Read rate limit exceeded or token ended', 429);
     const {state, revision} = await load(c.env.DB);
     const order = all(state, 'order').find(order => order.id === c.req.param('id'));
-    requireThat(order && JSON.parse(token.suppliers).includes(order.supplier), 'Purchase order unavailable in token scope', 404);
+    requireThat(order && (order.entity ?? 'main') === 'main' && JSON.parse(token.suppliers).includes(order.supplier), 'Purchase order unavailable in token scope', 404);
     const result = orderData(order, all(state, 'invoice').filter(invoice => invoice.order === order.id && invoice.supplier === order.supplier));
     // Revocation/rotation/expiry and source revision are checked in the same transaction as the read audit.
     await guardedBatch(c.env.DB, [

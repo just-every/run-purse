@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { depositTerm, requireDepositAmendment } from './deposit-terms';
+import { bindRequestEntity, requireEntityPurchase } from './entities';
 import { linePosition } from './orders';
 import { hasSupplierGroups, supplierLineRemaining } from './po-supplier-groups';
 import { openReviews, requireReviews } from './cross-team-reviews';
@@ -29,7 +30,7 @@ export function requestTotal(r: Data) { const total = r.lines.reduce((n: number,
 export function policies(s: State, r: Data) { return coveringPolicies(all(s, 'policy'), r); }
 export const reserved = (s: State, policy: string) => all(s, 'commitment').reduce((n, e) => n + eventBudgetPortion(e, policy), 0);
 export function reservationAvailable(s: State, r: Data, amountMinor: number) { const p = policies(s, r).find(p => p.id === r.policy); return Boolean(p && ((!p.budgetPeriod && p.overBudget==='owner' && r.budgetOwnerReview && r.totalMinor===s.get('request:'+r.id)?.value.totalMinor && all(s,'decision').some(decision=>decision.request===r.id&&decision.revision===r.revision&&(!r.approvalRoute||decision.approvalAttempt===r.approvalAttempt)&&decision.decision==='approved'&&decision.email===p.budgetOwner&&decision.policyVersion===s.get('policy:'+p.id)?.revision)) || (budgetRoom(s,r,p,amountMinor) ?? reserved(s,p.id)+all(s,'travelExpense').filter(expense=>expense.policy===p.id&&expense.currency===p.currency).reduce((sum,expense)=>sum+expense.totalMinor,0)+amountMinor<=p.budgetMinor))); }
-export function ledger(s: State, a: Actor, r: Data, amountMinor: number, kind: string, budgetFace: Data = r) { requireThat(amountMinor <= 0 || reservationAvailable(s, r, amountMinor), 'Current policy or budget does not authorize replenishment; renew approval', 409); const balance=all(s,'commitment').filter(e=>e.currency===r.currency).reduce((n,e)=>n+e.amountMinor,0);requireThat(Number.isSafeInteger(balance+amountMinor),'Commitment exceeds supported integer range',409);const id = uid(); put(s, 'commitment', id, { request: r.id, revision: r.revision, policy: r.policy, currency: r.currency, amountMinor, budgetAllocations: conversionBudgetShares(s,r,budgetFace,amountMinor,kind), kind, actor: a.id, at: new Date().toISOString() }); }
+export function ledger(s: State, a: Actor, r: Data, amountMinor: number, kind: string, budgetFace: Data = r) { requireThat(amountMinor <= 0 || reservationAvailable(s, r, amountMinor), 'Current policy or budget does not authorize replenishment; renew approval', 409); const balance=all(s,'commitment').filter(e=>e.currency===r.currency).reduce((n,e)=>n+e.amountMinor,0);requireThat(Number.isSafeInteger(balance+amountMinor),'Commitment exceeds supported integer range',409);const id = uid(); put(s, 'commitment', id, { request: r.id, revision: r.revision, ...(r.entity ? {entity:r.entity} : {}), policy: r.policy, currency: r.currency, amountMinor, budgetAllocations: conversionBudgetShares(s,r,budgetFace,amountMinor,kind), kind, actor: a.id, at: new Date().toISOString() }); }
 /** A grouped buyer revision can move remainder cents between budgets even
  * when its aggregate reservation is unchanged. Preserve the exact delta. */
 function conversionBudgetShares(s: State,r: Data,budgetFace: Data,amount: number,kind: string) {
@@ -76,11 +77,13 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             requirePermission(s, a, 'request.edit', old);
             requireThat(!old.imported, 'Imported historical records cannot grant native authority', 409);
         }
+        const entityBinding = bindRequestEntity(s, b, old);
+        requireThat(!entityBinding.entity || Boolean(a.session), 'Additional entities require native interactive request creation',409);
         const counterparty = requestSupplier(s, a, b.supplier, old);
         currency(s, b.currency);
         const id = old?.id ?? uid();
         const supplierSnapshot = { id: counterparty.id, name: counterparty.name, address: counterparty.address || '', remitTo: counterparty.remitTo || '', postalState: counterparty.postalState || '', contacts: structuredClone(counterparty.contacts), contractRef: counterparty.contractRef };
-        const r = { id, requester: old?.requester ?? a.id, requesterEmail:old?.requesterEmail??a.email, requesterOwner:old?.requesterOwner??a.owner, title: text(b.title, 'Request title'), supplier: b.supplier, supplierSnapshot, currency: b.currency, needDate: date(b.needDate), location: text(b.location, 'Location'), costCentre: text(b.costCentre, 'Cost centre'), lines: lines(s, b.lines, old && !a.owner ? { ...a, id: old.requester, email: old.requesterEmail, owner: old.requesterOwner === true } : a), freightMinor: moneyInput(b, 'freightAmount', 'freightMinor', 'Freight', { fallback: 0 }), taxMinor: moneyInput(b, 'taxAmount', 'taxMinor', 'Supplied tax', { fallback: 0 }), terms: text(b.terms, 'Supplier-supplied terms'), revision: (old?.revision ?? 0) + 1, status: 'draft', policy: null, totalMinor: 0 };
+        const r = { ...entityBinding, id, requester: old?.requester ?? a.id, requesterEmail:old?.requesterEmail??a.email, requesterOwner:old?.requesterOwner??a.owner, title: text(b.title, 'Request title'), supplier: b.supplier, supplierSnapshot, currency: b.currency, needDate: date(b.needDate), location: text(b.location, 'Location'), costCentre: text(b.costCentre, 'Cost centre'), lines: lines(s, b.lines, old && !a.owner ? { ...a, id: old.requester, email: old.requesterEmail, owner: old.requesterOwner === true } : a), freightMinor: moneyInput(b, 'freightAmount', 'freightMinor', 'Freight', { fallback: 0 }), taxMinor: moneyInput(b, 'taxAmount', 'taxMinor', 'Supplied tax', { fallback: 0 }), terms: text(b.terms, 'Supplier-supplied terms'), revision: (old?.revision ?? 0) + 1, status: 'draft', policy: null, totalMinor: 0 };
         for(const field of ['glAccount','class','shipTo','notes']) if(b[field]!==undefined||old?.[field]!==undefined)(r as Data)[field]=text(b[field]??old?.[field],field);
         if(Object.hasOwn(b,'valuePromise')||Object.hasOwn(old??{},'valuePromise')) (r as Data).valuePromise=normalizeValuePromise(Object.hasOwn(b,'valuePromise')?b.valuePromise:old?.valuePromise,r.currency,r.needDate);
         if (old?.cancellation) requireThat(false, 'A cancellation revision is frozen for independent approval; submit it or create a new proposal', 409);
@@ -109,6 +112,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
         r.totalMinor = requestTotal(r);
         (r as Data).poDetails.deposit = depositTerm((b.poDetails ?? old?.poDetails)?.deposit, r);
         if (old) requireDepositAmendment(s, old, r);
+        requireEntityPurchase(s, r);
     requireThat(!all(s,'order').some(order=>order.request===id&&order.supplierGroup),'Existing supplier groups require a separate supported disposition; grouped amendments are unavailable',409);
         const issued = all(s, 'order').find(o => o.request === id && (o.status === 'issued' || o.status === 'adopted' || o.status === 'amendment-pending'));
         if (issued) {
@@ -155,6 +159,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
     }
     if (['submit', 'decision'].includes(op)) {
         const r = get(s, 'request', b.id);
+        requireEntityPurchase(s, r);
         requirePermission(s,a,op==='decision'?'request.approve':'request.edit',r);
         requireThat(r.revision === b.revision, 'Stale request revision', 409);
         if (r.purchaseType !== 'travel') requestSupplier(s, a, r.supplier, r);
