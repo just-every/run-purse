@@ -1,3 +1,4 @@
+import { entityId } from './entities';
 import { shipmentHistory } from './shipment-references';
 import { nativeDepositInvoice, depositApprovalEligible, nativeDepositPosition } from './deposit-position';
 import { creditInvoiceVersion, invoiceCreditApplied } from './invoices';
@@ -20,6 +21,7 @@ import { mayReceive, receiptDay, receiptAssignment, receiptMatch, receiptMatchin
 import { all, type Actor, type Data, type State } from './types';
 
 function mayApprove(s: State, a: Actor, request: Data) {
+    if (entityId(request)!=='main' && !s.get('entity:'+request.entity)?.value.active) return false;
     if (request.status !== 'pending' || !allowed(s, a, 'request.approve', request)
         || request.requester === a.id || request.requesterEmail?.toLowerCase() === a.email.toLowerCase()) return false;
     if (request.approvalRoute) return chainHolder(s,a,request);
@@ -56,7 +58,7 @@ export function purchasingProjection(s: State, a: Actor) {
             mayCaptureInvoice: allowed(s, a, 'invoice.capture', order), maySetCashExpectation: allowed(s, a, 'payable.terms', order),
             mayManageReceipt: allowed(s, a, 'procurement.manage', order), mayReassignReceipt: ['issued','adopted'].includes(order.status) && mayReceive(s, a, order) && allowed(s, a, 'receive', order),
             mayManagePurchasing: allowed(s, a, 'procurement.manage', order),
-            mayAuthorizeSupplierInvoices:a.owner, mayReadSupplierThread: allowed(s,a,'procurement.manage',order) || (s.get('request:'+order.request)?.value.requester === a.id && allowed(s,a,'po.read',order)), mayIssue: allowed(s, a, 'po.issue', order), supplierInitial: Boolean(!order.imported && !order.adoption && order.issuedAt && !s.get('revision:'+order.request+':'+order.revision)?.value.amends && !order.cancellation), supplierChange: Boolean(!order.imported && !order.adoption && (s.get('revision:'+order.request+':'+order.revision)?.value.amends || order.cancellation)), positions: order.lines.map((line: Data) => ({ line: line.id, ...linePosition(s, order.id, line), ...(line.service ? servicePosition(s, order, line) : {}) })) })),
+            mayAuthorizeSupplierInvoices:entityId(order)==='main' && a.owner, mayReadSupplierThread: allowed(s,a,'procurement.manage',order) || (s.get('request:'+order.request)?.value.requester === a.id && allowed(s,a,'po.read',order)), mayIssue: allowed(s, a, 'po.issue', order), supplierInitial: Boolean(entityId(order)==='main' && !order.imported && !order.adoption && order.issuedAt && !s.get('revision:'+order.request+':'+order.revision)?.value.amends && !order.cancellation), supplierChange: Boolean(!order.imported && !order.adoption && (s.get('revision:'+order.request+':'+order.revision)?.value.amends || order.cancellation)), positions: order.lines.map((line: Data) => ({ line: line.id, ...linePosition(s, order.id, line), ...(line.service ? servicePosition(s, order, line) : {}) })) })),
         invoice: invoices.map(invoice => ({ ...publicEvidence(invoice), ...(nativeDepositInvoice(invoice)?{depositEligible:depositApprovalEligible(s,invoice),mayEvaluateDeposit:!invoice.paymentApproval && allowed(s,a,'payable.approve',invoice)}:{}), creditVersion: creditInvoiceVersion(s,invoice), creditAppliedMinor: invoiceCreditApplied(s,invoice.id), receiptMatch: receiptMatch(s, invoice), matchingException: discrepancies(s).find(d => d.invoiceId === invoice.id && d.exception === 'Invoice exceeds received service value')?.exception,
             maySetTerms: !nativeDepositInvoice(invoice) && allowed(s, a, 'payable.terms', invoice), mayApprove: !nativeDepositInvoice(invoice) && allowed(s, a, 'payable.approve', invoice),
             mayReview: allowed(s, a, 'invoice.review', invoice), mayCapture: allowed(s, a, 'invoice.capture', invoice),

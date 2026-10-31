@@ -1,3 +1,4 @@
+import { visibleEntities } from './entities';
 import { mayChooseSupplier, mayReadProposal } from './supplier-proposals';
 import { proposalView } from './supplier-review';
 import { supplierTaxView } from './supplier-tax';
@@ -103,6 +104,7 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     data.recurringSeries = all(s, 'recurringSeries').filter(series => orderIds.has(series.order)).map(series => ({...series, mayAuthorize: allowed(s,a,'request.approve',get(s,'request',series.request)) && get(s,'request',series.request).requester !== a.id, mayDecide: a.owner && series.owner === a.id}));
     data.recurringEvent = all(s, 'recurringEvent').filter(event => data.recurringSeries.some((series: Data) => series.id === event.series));
     Object.assign(data, visibleRecurringScenarios(s,a));
+    data.entity = visibleEntities(s,a);
     data.poProfile = a.owner ? all(s, 'poProfile') : [];
     data.deposit = all(s, 'deposit').filter(deposit => orderIds.has(deposit.order) && allowed(s, a, 'invoice.read', get(s, 'order', deposit.order)));
     data.budget = a.owner ? all(s, 'budget') : [];

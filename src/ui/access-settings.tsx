@@ -18,13 +18,13 @@ function ScopeFields({ prefix, choices, value, change }: { prefix: string; choic
                 }}/> Restrict {prefix.toLowerCase()} {label}</label>
                 {!restricted && <p className="quiet">All {label} (unrestricted)</p>}
                 {restricted && <label className="field">{prefix} {label}<select aria-label={prefix + ' ' + label} multiple required value={value[dimension]} size={Math.max(2, Math.min(4, choices[dimension].length))} onChange={e => change({ ...value, [dimension]: [...e.target.selectedOptions].map(option => option.value) })}>
-                    {choices[dimension].map((option: string) => <option key={option} value={option}>{dimension === 'entities' && option === 'main' ? 'Main business' : option}</option>)}
+                    {choices[dimension].map((option: string) => <option key={option} value={option}>{dimension === 'entities' ? option === 'main' ? 'Main business' : choices.entityNames[option] : option}</option>)}
                 </select></label>}
             </div>;
         })}
     </fieldset>;
 }
-function choices(data: D) { const business = data.business[0] ?? {}; return { departments: business.costCentres ?? [], locations: business.locations ?? [], projects: business.projects ?? [], entities: ['main'] }; }
+function choices(data: D) { const business = data.business[0] ?? {}; return { departments: business.costCentres ?? [], locations: business.locations ?? [], projects: business.projects ?? [], entities: ['main',...(data.entity??[]).map((entity:D)=>entity.id)], entityNames: Object.fromEntries((data.entity??[]).map((entity:D)=>[entity.id,entity.legalName])) }; }
 function LimitFields({ prefix, initial = {} }: { prefix: string; initial?: D }) {
     return <>
         <Field label={prefix + ' dollar increase limit'} name={prefix + 'absoluteMinor'} defaultValue={dollarText(initial.absoluteMinor)} required={false}/>
