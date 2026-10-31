@@ -13,10 +13,10 @@ export function AgentGovernance({ data, mutate }: { data: D; mutate: (op: string
         <label className="field">Native agent<select aria-label="Native agent" value={agent} onChange={event => setAgent(event.target.value)}><option value="AGENT-001">Requirements intake</option><option value="AGENT-002">Quote collection</option><option value="AGENT-003">Late-order follow-up</option><option value="AGENT-006">Recurring spend</option><option value="AGENT-011">Spend questions</option><option value="AGENT-008">Coding and policy</option></select></label>
         <label className="field">Agent purchase type<input aria-label="Agent purchase type" value={type} onChange={event => setType(event.target.value)}/></label>
         <Form key={agent + ':' + type + ':' + (current?.version ?? 0)} label="Save agent controls" onSubmit={body => mutate('agent-policy', { agent, purchaseType: type, version: current?.version ?? 0,
-            enabled: body.enabled === 'yes', cadenceDays: Number(body.cadenceDays), maxChases: Number(body.maxChases), reason: body.reason })}>
+            enabled: body.enabled === 'yes', cadenceDays: Number(body.cadenceDays ?? 1), maxChases: Number(body.maxChases ?? 2), reason: body.reason })}>
             <Field label="Agent state" name="enabled" defaultValue={current?.enabled ? 'yes' : 'no'} options={[{ value: 'yes', label: 'Enabled' }, { value: 'no', label: 'Paused' }]}/>
-            <Field label="Minimum days between supplier chases" name="cadenceDays" type="number" defaultValue={current?.cadenceDays ?? 1}/>
-            <Field label="Maximum supplier chase attempts" name="maxChases" type="number" defaultValue={current?.maxChases ?? 2}/>
+            {agent!=='AGENT-001'&&<><Field label="Minimum days between supplier chases" name="cadenceDays" type="number" defaultValue={current?.cadenceDays ?? 1}/>
+            <Field label="Maximum supplier chase attempts" name="maxChases" type="number" defaultValue={current?.maxChases ?? 2}/></>}
             <Field label="Agent control reason" name="reason"/>
         </Form>
         <Form label="Pause this agent for every type" onSubmit={body => mutate('agent-pause', { agent, reason: body.reason })}><Field label="Pause reason" name="reason"/></Form>
