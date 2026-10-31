@@ -166,8 +166,24 @@ or list prompts. `agentDocsBrowser` in `./tests/agent-door-browser.mjs` checks t
 rendered catalogue and schema disclosure at 1440 and captures the page at 1440
 and 390, including the registry JSON link.
 
-Full stranger-agent specialist completion and conformance across every
-BASE-AGENT-001–012 obligation remain unproved. The unjudged broader purchasing
+The native specialist journey now also uses a discovery-only MCP client in
+`./tests/agent-door-stranger.mjs`. Given the installation URL, separate
+credential acquisition and a task, it discovers the OAuth resource, specialist
+prompts and live tool schemas without importing the manifest, tool registry or
+native services. It inspects a populated supplier through the discovered read
+tools, creates a source-bound editable preparation and edits it. Under the held
+policy, the separate signed-in person follows the returned approval URLs before
+private inspection completes. Under autonomous policy, no call waits. Both runs
+retain unknown evidence, agent attribution and native source versions, while
+requests, commitments, receipts, invoices and supplier sending remain unchanged.
+This is deterministic native client proof, not external model qualification.
+
+Full conformance across every BASE-AGENT-001–012 obligation remains unproved.
+The pinned Base module explicitly leaves multiple sponsors, mail edges,
+resource refresh, timed lifecycle, dual host, queued lifecycle and owner-native
+administration unscoped in `./src/modules/agent-door/capabilities.mjs`; those
+shared lifecycle duties need a Base change before this seed can qualify them.
+The complete broader specialist journey remains unproved. The unjudged broader purchasing
 registry, events, subscriptions, provider spend and unscoped lifecycle families
 remain omitted. Every existing account, prerequisite and gate-loop hold remains
 unchanged. This documentation and prompt slice does not promote those duties.

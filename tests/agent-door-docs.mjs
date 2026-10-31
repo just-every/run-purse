@@ -7,7 +7,9 @@ import {serveHosted,HOSTED_ORIGIN} from '@runeditrun/rer/internal/cli/hosted-out
 import {verificationSponsors} from '@runeditrun/rer/internal/cli/agent-sponsors.mjs'
 import {createProtocol} from '../src/modules/agent-door/conformance/protocol.mjs'
 import {accessToken, signJws, seconds, autonomousPolicy, heldPolicy} from '../src/modules/agent-door/conformance/crypto.mjs'
-import {agentDocsBrowser} from './agent-door-browser.mjs'
+import {agentDocsBrowser,agentSpecialistApprovalBrowser} from './agent-door-browser.mjs'
+import {strangerSpecialist} from './agent-door-stranger.mjs'
+import screeningEdge from './agent-door-provider-edge.mjs'
 
 // A second, empty production installation gives these catalogue and prompt
 // probes their own test signer. No credential or authority escapes the test.
@@ -20,7 +22,7 @@ export default async function agentDocumentationJourney() {
  const pair=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify'])
  const publicKeys={[kid]:await webcrypto.subtle.exportKey('jwk',pair.publicKey)}
  const signer={issuer,installationId,kid,privateKey:pair.privateKey}
- const hosted=await serveHosted(root,{outboundService:()=>new Response('No outbound effect allowed',{status:400}),bindings:{
+ const hosted=await serveHosted(root,{outboundService:request=>screeningEdge.fetch(request),bindings:{
   RER_OWNER_CLAIM_ISSUER:issuer,RER_OWNER_CLAIM_INSTALLATION_ID:installationId,RER_OWNER_CLAIM_PUBLIC_KEYS:JSON.stringify(publicKeys),
   RER_OWNER_CLAIM_APP_ORIGIN:HOSTED_ORIGIN,RER_BUSINESS_TRUST:JSON.stringify({v:1,issuer,audience:HOSTED_ORIGIN,subject:installationId,email,keys:publicKeys}),
   OWNER_EMAIL:email,MAIL_FROM:email,SESSION_SECRET:randomBytes(32).toString('hex'),
@@ -40,6 +42,9 @@ export default async function agentDocumentationJourney() {
   const command=await request(origin+'/api/purse/command/business',{method:'POST',headers:{origin,cookie,'content-type':'application/json'},body:JSON.stringify({name:'Synthetic Purse docs',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Workshop']})})
   assert.equal(command.status,200)
   await command.body?.cancel()
+  const supplierResponse=await request(origin+'/api/purse/command/supplier',{method:'POST',headers:{origin,cookie,'content-type':'application/json'},body:JSON.stringify({name:'Synthetic Purse supplier',status:'active',reason:'Independent specialist inspection source',contacts:[{name:'Synthetic Purse contact',email}]})})
+  assert.equal(supplierResponse.status,200,await supplierResponse.clone().text())
+  const seededSupplier=await supplierResponse.json()
   const complete=await request(origin+'/setup',{method:'POST',redirect:'manual',headers:{origin,cookie,'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({displayName:'Synthetic Purse docs',confirm:'yes'}).toString()})
   assert.equal(complete.status,303)
   await complete.body?.cancel()
@@ -117,6 +122,36 @@ export default async function agentDocumentationJourney() {
    for(const tool of tools)assert.ok(text.includes(`data-tool="${tool.name}"`))
    for(const prompt of docs.prompts)assert.ok(text.includes(`data-prompt="${prompt.name}"`))
    assert.equal((await request(origin+'/docs/agents',{method:'POST'})).status,405)
+   const nativeBefore=(await (await request(origin+'/api/purse/state',{headers:{cookie}})).json()).data
+   const completed=await strangerSpecialist({url:origin,request,
+    authorize:async metadata=>{
+     assert.equal(metadata.resource,origin+'/mcp')
+     assert.ok(metadata.authorization_servers.includes(issuer))
+     return accessToken(c,{scope:metadata.scopes_supported.join(' ')})
+    },
+    approve:async handle=>{
+     const heldState=(await (await request(origin+'/api/purse/state',{headers:{cookie}})).json()).data
+     assert.deepEqual(heldState,nativeBefore,'Held inspection has no native effect before the person acts')
+     await agentSpecialistApprovalBrowser({request,origin,cookie,handle})
+    },
+    task:{supplier:'Synthetic Purse supplier',need:'Workshop safety gloves',quantity:'2',draft:'Two pairs of workshop gloves; need date unknown.',reviewedDraft:'Two pairs of workshop gloves; confirm size and need date before submission.'},
+   })
+   assert.equal(completed.supplier.id,seededSupplier.id)
+   assert.ok(completed.draft.preparedBy.agent.id)
+   assert.equal(completed.draft.preparedBy.for.id,completed.draft.actor)
+   assert.ok(completed.decisions.every(decision=>decision.revision===c.revision))
+   assert.ok(completed.decisions.every(decision=>decision.disposition===(phase==='autonomous'?'autonomous':decision.classes.some(item=>item.class!=='standard')?'approval':'review')))
+   assert.equal(completed.approvals,phase==='autonomous'?0:2)
+   const nativeAfter=(await (await request(origin+'/api/purse/state',{headers:{cookie}})).json()).data
+   const {agentRun:beforeRuns,audit:beforeAudit,...beforePurchasing}=nativeBefore
+   const {agentRun:afterRuns,audit:afterAudit,...afterPurchasing}=nativeAfter
+   assert.deepEqual(afterPurchasing,beforePurchasing,'Specialist completion creates no request, commitment, receipt, invoice, send or approval')
+   assert.equal(afterRuns.length,beforeRuns.length+1)
+   assert.equal(afterRuns.find(run=>run.id===completed.draft.id).draft,completed.draft.draft)
+   assert.equal(afterAudit.length,beforeAudit.length+2)
+   const priorAudit=new Set(beforeAudit.map(row=>row.id))
+   assert.deepEqual(afterAudit.filter(row=>!priorAudit.has(row.id)).map(row=>row.action).sort(),['edit-preparation','prepare'])
+   console.log(`PROBE BASE-AGENT-013.5 ${phase}: URL-only MCP discovery -> populated supplier inspection, source-bound editable preparation and edit; ${completed.approvals} signed-in URL approvals; no purchasing effect`)
    if(phase==='held')await agentDocsBrowser({request,origin,cookie,docs})
    console.log(`PROBE BASE-AGENT-013 ${phase}: MCP catalogues match generated docs; specialist prompts ignore authority arguments; read-only token cannot prepare; purchasing unchanged`)
   }

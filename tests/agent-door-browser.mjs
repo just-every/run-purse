@@ -78,3 +78,13 @@ export async function agentPendingBrowser({request,origin,cookie,approval}) {
  })
  console.log('Native agent browser: pending exact-summary approval rejected by the named person at 1440 and 390; touch controls at least 44px')
 }
+
+// Person approval stays outside the discovery-only agent client.
+export async function agentSpecialistApprovalBrowser({request,origin,cookie,handle}) {
+ await withAgentBrowser({request,origin,cookie},async({page})=>{
+  await page.goto(handle.url,{waitUntil:'networkidle'})
+  await page.locator('[data-approval-state="pending"]').waitFor()
+  await page.getByRole('button',{name:'Approve',exact:true}).click()
+  await page.locator('[data-approval-state="executed"]').waitFor()
+ })
+}
