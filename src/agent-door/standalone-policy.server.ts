@@ -1,19 +1,17 @@
 import type { Bindings } from '../auth.server'
-import { CATALOGUE } from '../modules/agent-door/policy/catalogue.ts'
+import { CATALOGUE, classIds } from '../modules/agent-door/policy/catalogue.ts'
 import { SCHEMA, validateDocument } from '../modules/agent-door/policy/document.ts'
 
 /** Purse's default agent policy for a standalone installation. Without pairing no
  * outside agent can authenticate, so it decides only Purse's own assistants: their
- * source-scoped reports and their scheduled supplier and requester messages, which
- * still need the owner's per-type enablement, native grants, consent and limits.
- * Every other agent action is blocked. The owner replaces it at /agents. */
+ * source-scoped reports (sensitive) and their scheduled supplier and requester
+ * messages (external), which still need the owner's per-type enablement, native
+ * grants, consent and limits. Every other class is blocked. One rule per class
+ * keeps the Agents page answer exact. The owner replaces it at /agents. */
+const allowed = ['sensitive', 'external']
 export const standalonePolicy = validateDocument({
   schema: SCHEMA, catalogue: CATALOGUE,
-  rules: [
-    { id: 'purse-assistants', class: 'sensitive', do: 'autonomous' },
-    { id: 'purse-scheduled-messages', class: 'external', do: 'autonomous' },
-    { id: 'other-agent-actions', class: '*', do: 'blocked' },
-  ],
+  rules: classIds.map(cls => ({ id: cls, class: cls, do: allowed.includes(cls) ? 'autonomous' : 'blocked' })),
   spend: { none: true },
 })
 

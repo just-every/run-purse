@@ -1248,7 +1248,7 @@
       "executable": false
     },
     "src/agent-door/standalone-policy.server.ts": {
-      "sha256": "60efd4e325efa16a3d8a5295bd9e30db839f34f836e0dfa49b822befe4816165",
+      "sha256": "9efabc8b601589d583a9770ee5a1359727f9cec411d89f9ead5092cbe9ac9360",
       "executable": false
     },
     "src/agent-door/tools.server.ts": {
