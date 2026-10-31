@@ -5827,6 +5827,10 @@
       "sha256": "c8e0d85fa08b40d1216b4d2d9f3582f385bc7b9151a7c6146d60efd94089c94a",
       "executable": false
     },
+    "tests/local-assistant-policy.mjs": {
+      "sha256": "6e155e77ec56322336e25fe351c66a9498396d731935fa2b70ccfd977471afa3",
+      "executable": false
+    },
     "tests/mail.test.mjs": {
       "sha256": "3f63deeddee3913a2d580b5f27e6755216ba9920dcdc8d78c6ef4f1babe94642",
       "executable": false
