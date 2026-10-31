@@ -54,14 +54,14 @@ emailIntakeApi.post('/api/purse/email-intake/inbound', async c => {
         // retained receipt records source custody; they never create an intake.
         const thread = await consumeOrderThreadInbound(env, emailId, source, normalized);
         if (thread) return c.json(thread, 202);
-        const { state, revision } = await load(env.DB), before = new Set(state.keys());
+        const { state: routingState } = await load(env.DB);
         const recipients = normalized.to.map((email: string) => email.toLowerCase());
-        const requestAddress = state.get('emailIntakeConfig:main')?.value.address, apAddress = state.get('invoiceInboxConfig:main')?.value.address;
+        const requestAddress = routingState.get('emailIntakeConfig:main')?.value.address, apAddress = routingState.get('invoiceInboxConfig:main')?.value.address;
         // The AP address takes supplier invoice mail only; it never becomes a purchase request, even when the request address is also a recipient.
         const ap = Boolean(apAddress && recipients.includes(apAddress));
         requireThat(ap || requestAddress && recipients.includes(requestAddress), 'Email was not addressed to this business request or AP address');
         requireThat(normalized.subject.length <= 2000 && normalized.attachments.every((file: Data) => file.filename.length <= 2000), 'Email subject or attachment name is too large');
-        const from = normalized.from.toLowerCase(), requester = ap ? null : await activeIntakeRequester(env.DB, state, from);
+        const from = normalized.from.toLowerCase();
         const custody = (file: string) => ap ? apFileKey(id, file) : `intake/${id}/${file}`;
         const original = await retain(env, custody('original'), 'original', 'provider-email.json', 'application/json', source); retained.push(original.key);
         const files: Data[] = [];
@@ -69,8 +69,8 @@ emailIntakeApi.post('/api/purse/email-intake/inbound', async c => {
             const fileId = uid(), file = await retain(env, custody(fileId), fileId, attachment.filename || 'attachment', attachment.contentType, attachment.content);
             files.push(file); retained.push(file.key);
         }
+        const embedded: Data[] = [];
         if (ap) {
-            const embedded: Data[] = [];
             let decoded = normalized.attachments.reduce((n: number, file: Data) => n + file.content.length, 0);
             for (const [index, attachment] of normalized.attachments.entries()) for (const pdf of embeddedInvoicePdfs(attachment.content)) {
                 // The XML original keeps every embedded byte; a separate copy is kept only within the transport limits.
@@ -79,20 +79,41 @@ emailIntakeApi.post('/api/purse/email-intake/inbound', async c => {
                 const fileId = uid(), file = await retain(env, custody(fileId), fileId, pdf.name, pdf.mediaType, pdf.bytes);
                 embedded.push({ ...file, embeddedIn: files[index].id, path: pdf.path }); retained.push(file.key);
             }
-            const capture = apInvoiceEmail(state, { id, emailId, from, normalized, original, files, embedded });
-            put(state, 'apInvoiceEmail', id, capture);
-            put(state, 'audit', uid(), { actor: 'invoice-inbox', action: 'invoice-inbox-received', record: id, provider: 'resend', providerEmailId: emailId, status: capture.status, supplier: capture.supplier, match: capture.match, at: capture.receivedAt });
-        } else {
-            const intake = { id, provider: 'resend', providerEmailId: emailId, providerSender: from, providerSenderLabel, senderVerified: false, to: normalized.to, subject: normalized.subject, title: normalized.subject, body: normalized.text ?? '', sourceText: normalized.text, sourceHtml: normalized.html, messageId: normalized.messageId, originalFormat: 'provider-api-json', original, files, status: requester ? 'draft' : 'held', holdReason: requester ? null : 'Sender has no active native requester membership', requester: requester?.id ?? null, requesterEmail: requester?.email ?? null, requesterVersion: requester?.version ?? null, version: 1, receivedAt: new Date().toISOString() };
-            put(state, 'emailIntake', id, intake);
-            if (requester) queueIntakeLink(state, intake);
-            const auditId = uid(); put(state, 'audit', auditId, { actor: 'email-intake', action: 'email-intake-received', record: id, provider: 'resend', providerEmailId: emailId, status: intake.status, at: intake.receivedAt });
         }
-        const queries = [env.DB.prepare('INSERT INTO p_guard SELECT CASE WHEN (SELECT revision FROM p_meta WHERE id=1)=? THEN 1 ELSE 0 END').bind(revision)];
-        if (requester) queries.push(env.DB.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(requester.id, requester.version));
-        for (const [key, row] of state) if (!before.has(key)) queries.push(env.DB.prepare('INSERT INTO p_records(business,kind,id,revision,value) VALUES(?,?,?,?,?)').bind(row.business, row.kind, row.id, row.revision, JSON.stringify(row.value)));
-        queries.push(env.DB.prepare("UPDATE p_email_intake_receipts SET status='stored' WHERE provider='resend' AND email_id=? AND intake_id=?").bind(emailId, id), env.DB.prepare('DELETE FROM p_guard'));
-        await env.DB.batch(queries); persisted = true;
+        // Hydration and source custody happen once. Only a rolled-back, guarded
+        // database capture may retry, always with current routing and authority.
+        for (let attempt = 0; attempt < 5; attempt++) {
+            const { state, revision } = await load(env.DB), before = new Set(state.keys());
+            const currentAp = state.get('invoiceInboxConfig:main')?.value.address;
+            const currentRequest = state.get('emailIntakeConfig:main')?.value.address;
+            requireThat(ap ? currentAp && recipients.includes(currentAp)
+                : !(currentAp && recipients.includes(currentAp)) && currentRequest && recipients.includes(currentRequest),
+                'Email intake routing changed; owner reconciliation required', 409);
+            const requester = ap ? null : await activeIntakeRequester(env.DB, state, from);
+            if (ap) {
+                const capture = apInvoiceEmail(state, { id, emailId, from, normalized, original, files, embedded });
+                put(state, 'apInvoiceEmail', id, capture);
+                put(state, 'audit', uid(), { actor: 'invoice-inbox', action: 'invoice-inbox-received', record: id, provider: 'resend', providerEmailId: emailId, status: capture.status, supplier: capture.supplier, match: capture.match, at: capture.receivedAt });
+            } else {
+                const intake = { id, provider: 'resend', providerEmailId: emailId, providerSender: from, providerSenderLabel, senderVerified: false, to: normalized.to, subject: normalized.subject, title: normalized.subject, body: normalized.text ?? '', sourceText: normalized.text, sourceHtml: normalized.html, messageId: normalized.messageId, originalFormat: 'provider-api-json', original, files, status: requester ? 'draft' : 'held', holdReason: requester ? null : 'Sender has no active native requester membership', requester: requester?.id ?? null, requesterEmail: requester?.email ?? null, requesterVersion: requester?.version ?? null, version: 1, receivedAt: new Date().toISOString() };
+                put(state, 'emailIntake', id, intake);
+                if (requester) queueIntakeLink(state, intake);
+                const auditId = uid(); put(state, 'audit', auditId, { actor: 'email-intake', action: 'email-intake-received', record: id, provider: 'resend', providerEmailId: emailId, status: intake.status, at: intake.receivedAt });
+            }
+            const queries = [env.DB.prepare('INSERT INTO p_guard SELECT CASE WHEN (SELECT revision FROM p_meta WHERE id=1)=? THEN 1 ELSE 0 END').bind(revision)];
+            if (requester) queries.push(env.DB.prepare("INSERT INTO p_guard SELECT CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END").bind(requester.id, requester.version));
+            for (const [key, row] of state) if (!before.has(key)) queries.push(env.DB.prepare('INSERT INTO p_records(business,kind,id,revision,value) VALUES(?,?,?,?,?)').bind(row.business, row.kind, row.id, row.revision, JSON.stringify(row.value)));
+            queries.push(env.DB.prepare("UPDATE p_email_intake_receipts SET status='stored' WHERE provider='resend' AND email_id=? AND intake_id=?").bind(emailId, id), env.DB.prepare('DELETE FROM p_guard'));
+            try {
+                await env.DB.batch(queries);
+                persisted = true;
+                break;
+            } catch (error) {
+                // D1 batches are atomic. Never retry transport or other uncertain
+                // failures, and never resend or rehydrate the provider email.
+                if (attempt === 4 || !/CHECK constraint failed: ok\s*=\s*1/.test(String(error))) throw error;
+            }
+        }
         await sendEmailIntakeLinks(env);
         return c.json({ received: true }, 202);
     } catch {
