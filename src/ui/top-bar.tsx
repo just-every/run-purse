@@ -11,7 +11,7 @@ export function workspaceTabs(actor: D) {
         ...(has('procurement.manage') ? ['Catalogue'] : []), ...(has('procurement.manage','performance.read') || actor.mayReadAssignedAgreement ? ['Agreements'] : []),
         ...(has('request.create','procurement.manage','payable.approve') || actor.mayReviewRecurring ? ['Preparation'] : []),
         ...(has('request.approve') ? ['Authority'] : []),
-        ...(has('access.manage') || catalogueManager ? ['Settings'] : []),
+        'Settings',
         ...(actor.roles.includes('owner') ? ['Imports'] : []), ...(has('audit.read') ? ['Audit'] : [])];
 }
 /** One white top bar: the mark and slab wordmark, the business, search, and Ask Purse; under a hairline,
