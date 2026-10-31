@@ -3616,7 +3616,7 @@
       "executable": false
     },
     "src/purse/email-intake-api.ts": {
-      "sha256": "74349b4556a1af97fb637cef4322e1913acbd862c99e95e91e874d05a11d1825",
+      "sha256": "e4c10edbe3aeb92ae03f0f2b69bae428da5a43b758b95ab8640d63e826c3447d",
       "executable": false
     },
     "src/purse/email-intake.ts": {
@@ -5623,8 +5623,12 @@
       "sha256": "e44cd17bc67727dfa6e7674807e07133943356a602c8138d7476e9a2e847ec5f",
       "executable": false
     },
+    "tests/email-intake-race-worker.ts": {
+      "sha256": "cfdb8c4922f6a1a1759bbd89b0e03e0fd9835da7d023f6c6244f31832851c799",
+      "executable": false
+    },
     "tests/email-intake.test.mjs": {
-      "sha256": "3e9e2e113d7f66fb476afc754f3cbe658499cbefd708fc70901895ebec067896",
+      "sha256": "38d7613c072611855fe618a09dd559d641c57e21c3a5dc14d9529ae1d504cc03",
       "executable": false
     },
     "tests/entities-fixture.mjs": {
