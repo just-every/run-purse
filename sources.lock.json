@@ -140,7 +140,7 @@
       "executable": false
     },
     "docs/AGENT-DOOR.md": {
-      "sha256": "f1039d3bdea7cc03f845593fddb9e87ecb990fe01feb5d4ab59ae7ea60f8dd2f",
+      "sha256": "3b38fc338b2aa31100c3dcc4e9df09c31ace16325fb2c026685a4bac7d965093",
       "executable": false
     },
     "docs/backup-and-restore.md": {
@@ -1172,7 +1172,7 @@
       "executable": false
     },
     "src/agent-door/index.server.ts": {
-      "sha256": "235742c053e83400600fe487ec3e0a269ae94f1a5f7a45f6e6f7d801d5ce50a2",
+      "sha256": "e260d6667482b55b486c1e6abefc552f0a3c6cf302aabdc8b5b61b56160eeb15",
       "executable": false
     },
     "src/agent-door/mutation-authority.server.ts": {
@@ -5192,7 +5192,7 @@
       "executable": false
     },
     "tests/agent-door-docs.mjs": {
-      "sha256": "b43dcc7515bd2a9d74732762a99865b85f22f5bf1d948405b2280c139f2575b3",
+      "sha256": "5163384a0d380180497edcadd8fbb2eb44702f7963123ff5c6c37ecc9d75caeb",
       "executable": false
     },
     "tests/agent-door-journey.mjs": {

@@ -31,7 +31,7 @@ export function purseAgentDoor(env: Bindings) {
   const options=purseAgentOptions(env), door=createAgentDoor(options)
   return {...door, async handle(request:Request) {
     const response=await door.handle(request)
-    if(!response || new URL(request.url).pathname!=='/mcp' || !response.ok || !response.headers.get('content-type')?.includes('application/json'))return response
+    if(!response || new URL(request.url).pathname!=='/mcp' || !response.ok || !response.headers.get('content-type')?.includes('application/json') || ![null,'initialize','server/discover'].includes(request.headers.get('mcp-method')))return response
     const body=await response.clone().json() as {result?:{instructions?:string}}
     if(typeof body.result?.instructions!=='string')return response
     body.result.instructions=specialistInstructions(options)
