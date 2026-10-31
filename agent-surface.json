@@ -573,7 +573,14 @@
         {
           "class": "standard"
         }
-      ]
+      ],
+      "target": {
+        "kind": "request",
+        "id": {
+          "$from": "amend",
+          "pointer": "/id"
+        }
+      }
     },
     {
       "id": "submit",

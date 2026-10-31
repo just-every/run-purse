@@ -1,0 +1,96 @@
+diff --git a/lib/exclusive-canonicalization.js b/lib/exclusive-canonicalization.js
+index bfb976005131adb8d0e656c37666d7dd39aba631..d8a9dc8541d6560aea62a58438919275fa0fa8ea 100644
+--- a/lib/exclusive-canonicalization.js
++++ b/lib/exclusive-canonicalization.js
+@@ -4,7 +4,7 @@ exports.ExclusiveCanonicalizationWithComments = exports.ExclusiveCanonicalizatio
+ exports.warnUnlessExclusiveC14nNamespace = warnUnlessExclusiveC14nNamespace;
+ const utils = require("./utils");
+ const isDomNode = require("@xmldom/is-dom-node");
+-const util_1 = require("util");
++const util_1 = require("./node-util.mjs");
+ const warnInclusiveNamespacesNamespace = (0, util_1.deprecate)(() => { }, "Reading an `InclusiveNamespaces` element that is not in the `http://www.w3.org/2001/10/xml-exc-c14n#` namespace is deprecated, and a signature that has one will not verify in version 7.0. xml-crypto 6.3.2 and earlier wrote one when signing with `xml-exc-c14n#WithComments` and a prefix list, so sign those documents again.", "XML_CRYPTO_INCLUSIVE_NAMESPACES_NAMESPACE");
+ // https://www.w3.org/TR/xml-exc-c14n/#sec-Use
+ function warnUnlessExclusiveC14nNamespace(inclusiveNamespaces) {
+diff --git a/lib/hash-algorithms.js b/lib/hash-algorithms.js
+index 312739738c4490e2316ff2ccee21c45e8b64d60e..9ce255761c8324556171321964735194313cf678 100644
+--- a/lib/hash-algorithms.js
++++ b/lib/hash-algorithms.js
+@@ -1,7 +1,7 @@
+ "use strict";
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.Sha512 = exports.Sha256 = exports.Sha1 = void 0;
+-const crypto = require("crypto");
++const crypto = require("./node-crypto.mjs");
+ class Sha1 {
+     constructor() {
+         this.getHash = function (xml) {
+diff --git a/lib/index.js b/lib/index.js
+index 368a3c4f0bff6d112e5ce1c21cab2bfbbcd032b7..5a20f5183ac45df68ef6c1293fd5b37390166a00 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -15,7 +15,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
+ };
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.BASE64_REGEX = exports.EXTRACT_X509_CERTS = exports.PEM_FORMAT_REGEX = exports.derToPem = exports.validateDigestValue = exports.encodeSpecialCharactersInText = exports.encodeSpecialCharactersInAttribute = exports.isDescendantOf = exports.findChilds = exports.findChildren = exports.findAttr = exports.isArrayHasLength = exports.createOptionalCallbackFunction = exports.toPem = exports.pemToDer = exports.pemCertificates = exports.normalizePem = exports.findAncestorNs = exports.SignedXml = exports.ExclusiveCanonicalizationWithComments = exports.ExclusiveCanonicalization = exports.C14nCanonicalizationWithComments = exports.C14nCanonicalization = void 0;
+-const util_1 = require("util");
++const util_1 = require("./node-util.mjs");
+ const types = require("./types");
+ const utils = require("./utils");
+ var c14n_canonicalization_1 = require("./c14n-canonicalization");
+diff --git a/lib/node-crypto.mjs b/lib/node-crypto.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..c0b25962bbc4db37c56821582dae6342ec3ccb21
+--- /dev/null
++++ b/lib/node-crypto.mjs
+@@ -0,0 +1 @@
++export * from 'node:crypto';
+diff --git a/lib/node-util.mjs b/lib/node-util.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..26f19860bb37c6a1e6e3e312b6b7749c76cfd933
+--- /dev/null
++++ b/lib/node-util.mjs
+@@ -0,0 +1 @@
++export * from 'node:util';
+diff --git a/lib/signature-algorithms.js b/lib/signature-algorithms.js
+index 9055b73818125c55d59f4caad4e14da972818c84..ac16575df116e780d0fa6ed4943d891037d6bde7 100644
+--- a/lib/signature-algorithms.js
++++ b/lib/signature-algorithms.js
+@@ -1,7 +1,7 @@
+ "use strict";
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.HmacSha1 = exports.RsaSha512 = exports.RsaSha256Mgf1 = exports.RsaSha256 = exports.RsaSha1 = void 0;
+-const crypto = require("crypto");
++const crypto = require("./node-crypto.mjs");
+ const types_1 = require("./types");
+ class RsaSha1 {
+     constructor() {
+diff --git a/lib/signed-xml.js b/lib/signed-xml.js
+index 8ba3cfd9aaaf02ba5d75b962a2c7ac261492ada4..8f701d7385d107f0929df0bd0d38072c855cfede 100644
+--- a/lib/signed-xml.js
++++ b/lib/signed-xml.js
+@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.SignedXml = void 0;
+ const isDomNode = require("@xmldom/is-dom-node");
+ const xmldom = require("@xmldom/xmldom");
+-const util_1 = require("util");
++const util_1 = require("./node-util.mjs");
+ const xpath = require("xpath");
+ const c14n = require("./c14n-canonicalization");
+ const envelopedSignatures = require("./enveloped-signature");
+diff --git a/lib/utils.js b/lib/utils.js
+index b3e5c9e87fe9af7ebfac0cb51f97cae1cff00ebc..39776cb33c00b4e18c5b8a6b51247b84d4263a8b 100644
+--- a/lib/utils.js
++++ b/lib/utils.js
+@@ -22,10 +22,10 @@ exports.insideProcess = insideProcess;
+ exports.warnOutsideProcess = warnOutsideProcess;
+ exports.validateDigestValue = validateDigestValue;
+ exports.isDescendantOf = isDescendantOf;
+-const crypto_1 = require("crypto");
++const crypto_1 = require("./node-crypto.mjs");
+ const xpath = require("xpath");
+ const isDomNode = require("@xmldom/is-dom-node");
+-const util_1 = require("util");
++const util_1 = require("./node-util.mjs");
+ function isArrayHasLength(array) {
+     return Array.isArray(array) && array.length > 0;
+ }

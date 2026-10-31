@@ -2,6 +2,7 @@ import { AuthError, type AuthConfig, type IdentityProviderConfig } from '../modu
 
 /** Deployment bindings only. Credentials never enter purchasing records or a public projection. */
 export interface IdentityBindings {
+    SAML_PROVIDERS?: string;
     OIDC_PROVIDERS?: string;
     OIDC_CREDENTIALS?: string;
     OIDC_TRANSACTION_SECRET?: string;
@@ -27,6 +28,7 @@ export function identityProviderConfiguration(env: IdentityBindings): Pick<AuthC
     const providers = metadata.map(value => {
         if (!object(value) || Object.keys(value).some(key => !publicFields.has(key))
             || typeof value.id !== 'string' || !/^[a-z][a-z0-9-]{0,31}$/.test(value.id)
+            || value.id.startsWith('saml-')
             || ids.has(value.id) || typeof value.preset !== 'string' || !presets.has(value.preset)) configurationError();
         ids.add(value.id);
         const secret = credentials[value.id];

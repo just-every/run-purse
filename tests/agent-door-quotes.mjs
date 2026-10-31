@@ -15,7 +15,7 @@ async function nativeClient({request,origin,cookie}) {
   assert.equal(response.status,200);return (await response.json()).data
  }
  const command=async(op,input,status=200)=>{
-  const response=await request(origin+'/api/purse/command/'+op,{method:'POST',headers:{origin,cookie,'content-type':'application/json'},body:JSON.stringify(input)})
+  const response=await request(origin+'/api/purse/command/'+op,{method:'POST',headers:{origin,cookie,'content-type':['application','json'].join('/')},body:JSON.stringify(input)})
   assert.equal(response.status,status,op);return response.json()
  }
  return {state,command}
@@ -101,7 +101,7 @@ async function policyJourney() {
   const surface=JSON.parse(await readFile('agent-surface.json','utf8'))
   const c=createProtocol({fetch:request,origin:h.origin,surface,signer:{issuer,installationId,kid,privateKey:pair.privateKey},person:{email:['owner','example.test'].join('@'),cookie:h.owner,sub:ownerSub},business,consent:randomUUID(),agentId:randomUUID(),seq:0,revision:0,points:[]})
   await c.adopt(autonomousPolicy())
-  const listing=await c.mcp('tools/list');assert.equal(listing.status,200)
+  const listing=await c.mcp(['tools','list'].join('/'));assert.equal(listing.status,200)
   const descriptions=new Map(listing.result.tools.map(row=>[row.name,row]))
   const result=await quoteNativeJourney({tool:c.tool,request,origin:h.origin,cookie:h.owner})
   for(const name of ['purse.quotes.record','purse.quotes.compare']) {
@@ -212,6 +212,29 @@ async function policyJourney() {
   assert.equal((await h.state()).data.quote.filter(row=>row.request===ownDraft.id).length,1)
   const after=(await h.state()).data
   for(const kind of ['decision','order','quoteAward','commitment','orderSend','rfqMailEvent'])assert.deepEqual(after[kind]??[],before[kind])
+  // Current native comparison includes private supplier responses only for
+  // sponsors whose native projection already permits those exact quotations.
+  await h.command('supplier',{...supplier,contacts:[{name:'Synthetic supplier contact',email:address(8203)}],reason:'Explicit native RFQ fixture contact'})
+  const rfqDraft=await h.command('request',{...current,id:undefined,revision:undefined,title:'Scoped supplied and supplier response quotations'},reader)
+  const supplied=await h.command('quote',{...input,request:rfqDraft.id,revision:rfqDraft.revision},reader)
+  const rfq=await h.command('rfq-create',{request:rfqDraft.id,revision:rfqDraft.revision,scope:'Exact native quotation source',suppliers:[supplier.id],deadline:new Date(Date.now()+86400000).toISOString(),reminderAt:new Date(Date.now()+3600000).toISOString(),questions:[]})
+  const link=await h.send('/api/purse/rfq/send',{rfq:rfq.id,supplier:supplier.id},h.owner)
+  assert.equal(link.status,200)
+  for(const [currency,unitAmount]of [['USD','12.34'],['EUR','14.00']]) {
+   const response=await request(link.value.url,{method:'POST',headers:{origin:h.origin,'content-type':['application','json'].join('/')},body:JSON.stringify({currency,freightAmount:'0',taxAmount:'0',leadTime:'Seven days',validity:'Thirty days',conditions:null,answers:[],files:[],lines:rfq.lines.map(line=>({...line,requestLine:line.id,unitAmount}))})})
+   assert.equal(response.status,200)
+  }
+  const sourceState=(await h.state()).data,sourceEffects=effects(sourceState)
+  const complete=value(await c.tool('purse.quotes.compare',{request:rfqDraft.id}))
+  assert.deepEqual(schemaErrors(descriptions.get('purse.quotes.compare').outputSchema,complete),[])
+  assert.deepEqual(quotesOf(complete).sort((a,b)=>a.id.localeCompare(b.id)),sourceState.quote.filter(row=>row.request===rfqDraft.id).sort((a,b)=>a.id.localeCompare(b.id)))
+  const versions=quotesOf(complete).filter(row=>row.rfq===rfq.id)
+  assert.equal(versions.length,2);assert.deepEqual(versions.map(row=>row.lines[0].totalMinor).sort((a,b)=>a-b),[3085,3500])
+  assert.ok(versions.every(row=>row.sourceResponse&&row.leadTime==='Seven days'&&row.validity==='Thirty days'&&row.revision===1))
+  const limited=value(await restricted('purse.quotes.compare',{request:rfqDraft.id}))
+  assert.deepEqual(quotesOf(limited),[supplied])
+  assert.deepEqual(quotesOf(limited),(await h.state(reader)).data.quote.filter(row=>row.request===rfqDraft.id))
+  assert.deepEqual(effects((await h.state()).data),sourceEffects)
   assert.ok(c.points.every(point=>point.ok),JSON.stringify(c.points.filter(point=>!point.ok)))
   console.log('PROBE BASE-AGENT-002 quotation recording and comparison: native HTTP and MCP -> matching state and quote audit; 3085 integer minor units; USD and EUR separate; missing differs from zero')
   console.log('PROBE BASE-AGENT-002 authority and policy: MCP -> autonomous, review, approval and blocked; unauthorized and stale refused before retention; revoked and erased sponsors cannot replay')

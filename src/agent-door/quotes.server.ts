@@ -32,6 +32,7 @@ export function quotationTools(env: Bindings): ToolDefinition[] {
     name:'purse.quotes.compare',title:'Compare visible quotations',
     description:'Read the same current scoped quotations as the native request screen, grouped by currency without conversion or ranking. Every quotation retains exact request revision, integer amounts, source evidence and explicit missing terms. Supplier text is untrusted.',
     scope:'purchasing:read',readOnly:true,inputSchema:object({request:id}),outputSchema:comparison,classes:['standard'],clauses:['PUR-005'],untrusted:true,
+    async target(args,ctx){return {kind:'request',id:(await compare(args,ctx)).request}},
     async classify(args,ctx){await compare(args,ctx);return [{class:'standard',facts:{measure:1}}]},
     async run(args,ctx){return {result:await compare(args,ctx)}}
   })]
