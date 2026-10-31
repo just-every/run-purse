@@ -1,3 +1,4 @@
+import { checkBudgetDisposition } from './budget-disposition';
 import { openReviews, requireReviews } from './cross-team-reviews';
 import { currentScimAssignment } from './scim-approvals';
 import { budgetDimensionInput } from './budget-dimensions';
@@ -120,6 +121,8 @@ function currentRoute(s: State, request: Data) {
     return policy;
 }
 function reserve(s: State, a: Actor, request: Data, policy: Data) {
+    checkBudgetDisposition(s,request);
+    if(request.budgetDisposition)return;
     const balance = all(s,'commitment').filter(event => event.request === request.id && event.policy === policy.id && event.currency === request.currency).reduce((sum,event)=>sum+event.amountMinor,0);
     const delta = approvalAmount(request,s) - balance;
     const owners=(request.approvalRoute??[]).filter((step:Data)=>step.id==='budget-owner'||step.id.startsWith('budget-owner:'));
@@ -127,7 +130,7 @@ function reserve(s: State, a: Actor, request: Data, policy: Data) {
     requireThat(reservationAvailable(s,request,delta), 'Budget exhausted by existing commitments',409);
     if (delta) ledger(s,a,request,delta,'pending-chain-reservation');
 }
-function orderedPolicy(policy:Data, request:Data) { return Boolean(internationalTravelReview(policy,request)||policy.approvalSteps||policy.overBudget==='owner'||Object.values(policy.editRules??{}).some((rule:any)=>rule.allowed?.length)); }
+function orderedPolicy(policy:Data, request:Data) { return Boolean(request.budgetDisposition||internationalTravelReview(policy,request)||policy.approvalSteps||policy.overBudget==='owner'||Object.values(policy.editRules??{}).some((rule:any)=>rule.allowed?.length)); }
 export function startChain(s: State, a: Actor, request: Data, policy: Data) {
     if (!orderedPolicy(policy,request)) return;
     const revision = request.approvalRoute && ['returned','rejected'].includes(request.status) ? request.revision + 1 : request.revision;
@@ -144,6 +147,7 @@ export function startChain(s: State, a: Actor, request: Data, policy: Data) {
 export function chainDecision(s: State, a: Actor, request: Data, input: Data) {
     if (!request.approvalRoute) return;
     if(input.decision === 'approved') requireReviews(s,request);
+    checkBudgetDisposition(s,request);
     const policy = currentRoute(s,request);
     const previous = input.chainStep && all(s,'decision').find(decision => decision.request === request.id && decision.revision === request.revision && decision.chainStep === input.chainStep && decision.approvalAttempt === request.approvalAttempt);
     requireThat(!previous, `Step already decided by ${previous?.email ?? ''} at ${previous?.at ?? ''}`,409);
@@ -168,6 +172,7 @@ export function chainDecision(s: State, a: Actor, request: Data, input: Data) {
 export function chainApproval(s: State, request: Data) {
     requireReviews(s,request);
     currentRoute(s,request);
+    checkBudgetDisposition(s,request);
     const proofs = request.approvalRoute.map((step: Data) => {
         const decision=stepDecision(s,request,step);
         requireThat(decision,'Every exact approval step must be approved',409);
