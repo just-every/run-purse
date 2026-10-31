@@ -5464,7 +5464,7 @@
       "executable": false
     },
     "tests/browser-journey.mjs": {
-      "sha256": "f8e9ebaf53a58a8266b1a8f819768b3a118560461295c05c5c24898e16112dff",
+      "sha256": "883411cb26139ba62499825cfaca82a50b402237276d20551af1587b90b0ecbf",
       "executable": false
     },
     "tests/browser-notifications.mjs": {
