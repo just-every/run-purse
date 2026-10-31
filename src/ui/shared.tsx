@@ -3,7 +3,9 @@ import { separated } from './separated';
 import { Children, cloneElement, isValidElement, useState, type ReactElement, type ReactNode } from 'react';
 export type D = Record<string, any>;
 export async function call(path: string, input?: D) { const response = await fetch('/api/purse/' + path, input ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) } : undefined); const body: any = await response.json(); if (!response.ok)
-    throw new Error(body.error || 'Request failed'); return body; }
+    throw Object.assign(new Error(body.error || 'Request failed'), body.agents ? { agents: body.agents } : {}); return body; }
+/** Company agent refusals and pending approvals name the page that decided them. */
+type AgentsLink = { href: string; label: string };
 export function Field({ label, name = label, defaultValue = '', type = 'text', required = true, options }: {
     label: string;
     name?: string;
@@ -23,15 +25,16 @@ export function Form({ children, onSubmit, label = 'Save', initial = {}, classNa
     tooltip?: string;
     initial?: D;
     className?: string;
-}) { const [busy, setBusy] = useState(false), [error, setError] = useState(''); return <form className={`record-form ${className}`.trim()} onSubmit={async (e) => { e.preventDefault(); const form = e.currentTarget; setBusy(true); setError(''); try {
+}) { const [busy, setBusy] = useState(false), [error, setError] = useState(''), [agents, setAgents] = useState<AgentsLink>(); return <form className={`record-form ${className}`.trim()} onSubmit={async (e) => { e.preventDefault(); const form = e.currentTarget; setBusy(true); setError(''); setAgents(undefined); try {
     await onSubmit({ ...initial, ...Object.fromEntries(new FormData(form)) });
 }
 catch (error) {
     setError((error as Error).message);
+    setAgents((error as Error & { agents?: AgentsLink }).agents);
 }
 finally {
     setBusy(false);
-} }}>{children}<div className="form-end">{tooltip ? <TooltipButton label={tooltip} aria-label={label} className="btn-primary" disabled={busy}>{busy ? 'Saving…' : label}</TooltipButton> : <button className="btn-primary" disabled={busy}>{busy ? 'Saving…' : label}</button>}{error && <p role="alert">{error}</p>}</div></form>; }
+} }}>{children}<div className="form-end">{tooltip ? <TooltipButton label={tooltip} aria-label={label} className="btn-primary" disabled={busy}>{busy ? 'Saving…' : label}</TooltipButton> : <button className="btn-primary" disabled={busy}>{busy ? 'Saving…' : label}</button>}{error && <p role="alert">{error}{agents && <> · <a href={agents.href}>{agents.label}</a></>}</p>}</div></form>; }
 export const options = (rows: D[], label = 'name') => rows.map(r => ({ value: r.id, label: r[label] || r.id }));
 const grouped = (whole: string) => whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 /** Exact minor units: "$5,148.00" in US dollars, "AUD 5,148.00" in any other currency; unlike currencies are never added together. */

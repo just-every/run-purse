@@ -26,3 +26,7 @@ export function moneyInput(input: Data, amountKey: string, minorKey: string, lab
     if (options.optional && input[minorKey] === null) return null;
     return minor(input[minorKey] ?? options.fallback, label);
 }
+
+/** Stored money is integer hundredths in every currency. The agent door's approval
+ * page formats a summary amount as currency units, so 11000 minor units reads $110.00. */
+export const approvalAmountUnits = (minorAmount: number, currency: string) => ({ value: minorAmount / 100, currency });

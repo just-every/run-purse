@@ -197,13 +197,22 @@ combined conversion and issue. Generated source reports retain their own human
 review actions. Source changes, self-approval and consumed proposals are refused;
 a successful replay returns the retained result once under current authority.
 
-Native spend questions and coding reports use these same tools through embedded
-invocation after company or local policy is configured. Native HTTP selects the
-signed-in sponsor; source arguments cannot select an identity or grants.
-Unpaired installations keep their existing native governance. A removed,
-expired or paused configured policy cannot fall back to that legacy path.
-Approval policy retains a pending action in Agents and leaves native state alone;
-review and autonomous policy run under both company and native controls.
+Native spend questions, coding reports and the source assistants always use
+these same tools through embedded invocation, so each run is audited as a call
+to the shared tool. Native HTTP selects the signed-in sponsor; source arguments
+cannot select an identity or grants. An unpaired installation with no saved
+agent policy saves Purse's standalone default before its first assistant call.
+Without pairing no outside agent can authenticate, so the default decides only
+Purse's own assistants: the sensitive class of their source reports and the
+external class of their scheduled supplier and requester messages are
+autonomous, and every other class is blocked. Native per-type enablement,
+grants, consent and limits still apply. The default never replaces a saved
+owner policy or an owner's pause; the owner changes it at `/agents`, linked
+from Agent controls in Settings. A paired installation without a Business
+policy is refused `policy_unset`. Approval policy retains a pending action in
+Agents and leaves native state alone; review and autonomous policy run under
+both company and native controls. A refused or pending assistant command
+answers with an `agents` link to that policy or to the pending approval.
 
 Native erasure now removes matching personal data from company tool replay
 results, approvals, reviews, audit evidence and agent identity labels. Affected

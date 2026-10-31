@@ -9,6 +9,7 @@ import { object, id, text } from './schemas'
 import { recordUri } from './resources.server'
 import { sourceJobs } from './source-agents.server'
 import {readFence} from '../purse/store'
+import { ensureStandalonePolicy } from './standalone-policy.server'
 
 export const embeddedJobs={
   'spend-question':{tool:'purse.spend.answer',agent:'AGENT-011',name:'Purse spend questions'},
@@ -45,16 +46,26 @@ export function embeddedTools(env:Bindings):ToolDefinition[] {
 }
 
 /** Native HTTP supplies the authenticated sponsor; no input may select it.
- * Every assistant call is a call to the shared tool: with no company or local
- * policy the registry answers policy_unset and changes nothing.
+ * Every assistant call is a call to the shared tool. An unpaired installation with
+ * no saved policy first saves Purse's standalone default; a paired one without a
+ * Business policy is refused policy_unset and changes nothing.
  */
 export async function invokeEmbedded(env:Bindings,a:Actor,op:string,input:Data):Promise<CallResult|null> {
   if(!Object.hasOwn(embeddedJobs,op)&&!Object.hasOwn(sourceByOperation,op))return null
   // The registry drops undeclared fields, so the native command alone can refuse and audit protected structured input.
   if(containsProtectedInput(input))return null
+  await ensureStandalonePolicy(env)
   const job=Object.hasOwn(embeddedJobs,op)?embeddedJobs[op as keyof typeof embeddedJobs]:sourceByOperation[op]
   const {purseAgentDoor}=await import('./index.server')
   const key=input.idempotency_key??crypto.randomUUID()
   const sponsor=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(a.id))),byte=>byte.toString(16).padStart(2,'0')).join('')
   return purseAgentDoor(env).invoke(job.tool,{...input,...('job' in job?{job:job.job}:{}),idempotency_key:key},{person:{id:a.id},agent:{id:`purse:${job.agent}:${sponsor}`,name:job.name,specialist:'procurement'},scopes:['purchasing:write','purchasing:read']})
+}
+
+const policyRefusals=['policy_unset','policy_blocked','policy_unavailable','agents_paused']
+/** Where the person sees the pending approval, or the agent policy that refused the call. */
+export function agentsLink(result:CallResult):{agents?:{href:string;label:string}} {
+  if(result.outcome==='pending'&&result.approval)return {agents:{href:result.approval.url,label:'Review in Agents'}}
+  if(result.outcome==='refused'&&policyRefusals.includes(result.code??''))return {agents:{href:typeof result.fields?.setup_url==='string'?result.fields.setup_url:'/agents',label:'Agent policy'}}
+  return {}
 }

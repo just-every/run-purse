@@ -84,6 +84,21 @@ export async function proposalPolicyProof({c,h,reader,readerToken}) {
  await c.adopt(cap(11000))
  const paid=await proof.execute(raise)
  assert.equal(paid.result.status,'issued');assert.equal(paid.result.totalMinor,11000)
+ // Stored hundredths reach the approver as currency units: the corrected conversion and a native $110 issuance both read $110.00.
+ const amountShown=async answer=>{
+  const approval=answer.result?._meta?.['com.runeditrun/approval'];assert.ok(approval?.id,code(answer))
+  const page=await h.send('/agents/approvals/'+encodeURIComponent(approval.id),undefined,h.owner)
+  assert.equal(page.status,200);assert.ok(page.value.includes('$110.00'));assert.ok(!page.value.includes('$11,000.00'))
+ }
+ const shown=await corrected('Safety','Workshop')
+ const draft=await h.command('request',{title:'Issued at the corrected price',supplier:supplier.id,currency:'USD',needDate:'2026-12-15',location:'Denver',costCentre:'Operations',lines:[{description:'Corrected item',quantity:'1',unitMinor:11000,category:'Safety',project:'Workshop'}],freightMinor:0,taxMinor:0,terms:'Native issuance approval'},reader)
+ await h.command('submit',{id:draft.id,revision:draft.revision},reader)
+ await h.command('decision',{id:draft.id,revision:draft.revision,decision:'approved',reason:'Independent approval of $110'})
+ const prepared=await h.command('convert',{id:draft.id,revision:draft.revision})
+ await c.adopt({...automatic,rules:[{id:'asked',class:'*',do:'approval',approver:['role:owner'],wait:'P1D'}]})
+ await amountShown(await c.tool('purse.preparations.execute',{id:shown.id,idempotency_key:randomUUID()}))
+ await amountShown(await c.tool('purse.orders.issue',{id:prepared.id,revision:prepared.revision,reason:'Issue the corrected order',idempotency_key:randomUUID()}))
+ await c.adopt(automatic)
  // A correction that needs renewed approval commits the pending revision on both doors, never a server error.
  await h.command('policy',{name:'Correction needs budget owner',currency:'USD',category:'Tooling',project:'Workshop',approver:owner,limitMinor:1000000,budgetMinor:10500,overBudget:'owner',budgetOwner:owner})
  const routed=await corrected('Tooling','Workshop'),request=routed.input.id

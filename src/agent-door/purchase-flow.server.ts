@@ -1,6 +1,7 @@
 import { defineTool, ToolRefusal, type ToolContext, type ToolDefinition } from '../modules/agent-door/index.ts'
 import type { Bindings } from '../auth.server'
 import { get, quantity, extended, type Data } from '../purse/types'
+import { approvalAmountUnits } from '../purse/money'
 import { requirePermission } from '../purse/access'
 import { authorizedApproval, approvalAmount } from '../purse/requests'
 import { requireGroupFace } from '../purse/po-supplier-groups'
@@ -68,7 +69,7 @@ export function purchaseFlowTools(env: Bindings): ToolDefinition[] {
         })
         items.unshift(`Invoice ${args.reference}`)
       }
-      return {target:{id:record.id,name:record.title??record.number},amount:{value,currency:record.currency},payee:[...new Set(affected.map(row=>row.supplierSnapshot?.name??row.supplier))].join(', '),items:[String(args.decision??spec.op),...items,...(args.reason?[String(args.reason)]:[])]}
+      return {target:{id:record.id,name:record.title??record.number},amount:approvalAmountUnits(value,record.currency),payee:[...new Set(affected.map(row=>row.supplierSnapshot?.name??row.supplier))].join(', '),items:[String(args.decision??spec.op),...items,...(args.reason?[String(args.reason)]:[])]}
     },
     async run(args,ctx){
       await resolve(spec,args,ctx)

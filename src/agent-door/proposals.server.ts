@@ -8,6 +8,7 @@ import { authorizedApproval, approvalAmount } from '../purse/requests'
 import { requireGroupFace } from '../purse/po-supplier-groups'
 import { mayReceive } from '../purse/receipt-routing'
 import { get, type Data } from '../purse/types'
+import { approvalAmountUnits } from '../purse/money'
 import { snapshot, execute, nativeRefusal } from './native.server'
 import { recordUri } from './resources.server'
 import { object, id } from './schemas'
@@ -54,7 +55,7 @@ export function proposalTools(env:Bindings):ToolDefinition[] {
     },
     async target(args,ctx){const {record,kind}=await resolve(args,ctx);return {kind,id:record.id}},
     async revision(args,ctx){const {state,p}=await resolve(args,ctx);return state.get(`proposedAction:${p.id}`)!.revision},revisionType:'string',
-    async summary(args,ctx){const {p,record,amount}=await resolve(args,ctx);return {target:{id:record.id,name:record.title??record.number},items:[`Execute native ${p.action}`,JSON.stringify(p.input)],...(p.action==='issue'||p.action==='convert'&&p.input.issue===true?{amount:{value:amount,currency:record.currency}}:{})}},
+    async summary(args,ctx){const {p,record,amount}=await resolve(args,ctx);return {target:{id:record.id,name:record.title??record.number},items:[`Execute native ${p.action}`,JSON.stringify(p.input)],...(p.action==='issue'||p.action==='convert'&&p.input.issue===true?{amount:approvalAmountUnits(amount,record.currency)}:{})}},
     async run(args,ctx) {
       const {p}=await resolve(args,ctx),planned=p.action==='convert'||p.action==='issue'?'order':p.action==='receipt'?'receipt':'request'
       // A buyer conversion that needs renewed approval commits a pending request revision, not an order.
