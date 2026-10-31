@@ -1,6 +1,7 @@
 import { validateShipmentReferences } from './restore-shipment-references.mjs';
 import { validateDeposits } from './restore-deposits.mjs';
 import { validateInvoiceExceptions } from './restore-invoice-exceptions.mjs';
+import { validateBudgetDispositions } from './restore-budget-disposition.mjs';
 import { validateSupplierTax } from './restore-supplier-tax.mjs';
 import { validateSupplierCredits } from './restore-supplier-credits.mjs';
 import { validateCrossTeamReviews } from './restore-cross-team-reviews.mjs';
@@ -177,6 +178,7 @@ export function validatePurchasingArchive(rows) {
   check(quantity(stock.reorderPoint) === stock.reorderPointQ && quantity(stock.replenishTo) === stock.replenishToQ && stock.replenishToQ >= stock.reorderPointQ,'stockroom_quantity');
   check(stock.count === null ? stock.countQ === null : typeof stock.count === 'string' && (stock.count === '0' ? stock.countQ === 0 : quantity(stock.count) === stock.countQ),'stockroom_count');
  }
+ validateBudgetDispositions(all,get,check,same);
  validateReceivedDates(all,get,check);
  validatePoKinds(all,get,check,same);
  validateOrderAdoptions(all,get);

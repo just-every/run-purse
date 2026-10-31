@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { depositTerm, requireDepositAmendment } from './deposit-terms';
 import { linePosition } from './orders';
 import { hasSupplierGroups, supplierLineRemaining } from './po-supplier-groups';
+import { checkBudgetDisposition } from './budget-disposition';
 import { openReviews, requireReviews } from './cross-team-reviews';
 import { normalizePurchaseCharges } from './purchase-charges';
 import { eventBudgetPortion, requestBudgetShares } from './budget-allocations';
@@ -169,6 +170,7 @@ export function requests(s: State, a: Actor, op: string, b: Data): Data | undefi
             r.attachmentIds = all(s, 'attachment').filter(file => file.kind === 'request' && file.record === r.id && !file.erasure).map(file => file.id);
             put(s, 'revision', `${r.id}:${r.revision}`, {...r, request: r.id});
             const p = policies(s, r)[0];
+            checkBudgetDisposition(s,{...r,policy:p?.id});
             requireThat(p, 'No amount/category/project authority policy covers this request', 409);
             requireThat(!all(s, 'scimUser').some(user => user.userName === p.approver && user.active === false), 'The designated approver was deactivated; the owner must select a current approval policy before submission', 409);
             startChain(s,a,r,p) ?? put(s, 'request', r.id, { ...r, status: 'pending', policy: p.id });
