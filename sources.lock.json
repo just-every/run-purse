@@ -204,7 +204,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "b27c505fa49d2fd8e22bf12f6eb59c8ce191315430b13c5a2d264d604ad3fa5c",
+      "sha256": "c8a27d1a25f5d8f8924bc7c2b9396ea3117990993a5f594490cca23cf83f7de2",
       "executable": false
     },
     "migrations/core/0001_operator_auth.sql": {
@@ -5636,7 +5636,7 @@
       "executable": false
     },
     "tests/intake-agent.test.mjs": {
-      "sha256": "6b474777c33c6beab57e9372d69d567bf3aeff25d67306fb0e242ebec80eb835",
+      "sha256": "1f6fcf2006e69ca6d31e9856ee22c8364b77503e18cfd9321beee2f492fef0e2",
       "executable": false
     },
     "tests/intake-flow.mjs": {
