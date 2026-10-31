@@ -20,7 +20,7 @@ export function QuoteAgent({ data, current, mutate }: { data: D; current: D; mut
                 {consent && <p>Buyer consent retained for revision {consent.revision}. Invitations use the existing native supplier RFQ controls.</p>}
                 {exact && consent && <>
                     <Form label="Run quote normalization" onSubmit={() => mutate('quote-agent-run', { rfq: rfq.id, revision: current.revision })}><p>Read the latest exact response from each supplier and verify each original’s digest. This creates an immutable comparison and nonbinding recommendation.</p></Form>
-                    <Details label="Review a supplier clarification"><Form label="Prepare specification answer" onSubmit={body => mutate('quote-agent-clarify', { ...body, rfq: rfq.id, revision: current.revision })}>
+                    <Details label="Review a supplier clarification"><Form label="Prepare specification answer" onSubmit={({ sourceLine, ...body }) => mutate('quote-agent-clarify', { ...body, ...(sourceLine ? { sourceLine } : {}), rfq: rfq.id, revision: current.revision })}>
                         <Field label="Clarification supplier" name="supplier" options={rfq.suppliers.map((supplier: D) => ({ value: supplier.id, label: supplier.name }))}/>
                         <Field label="Supplier clarification question" name="question" type="textarea"/>
                         <Field label="Clarification request line" name="sourceLine" required={false} options={[{ value: '', label: 'Whole RFQ' }, ...rfq.lines.map((line: D) => ({ value: line.id, label: line.description }))]}/>

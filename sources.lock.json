@@ -5032,7 +5032,7 @@
       "executable": false
     },
     "src/ui/quote-agent.tsx": {
-      "sha256": "aee10e83ba2f3e5abfdddff1ea4a9a4dea64248f1b5647138c1dda9085acd074",
+      "sha256": "5fc70b350fd061c58d65c06eeb1a11e0d2a31dfcb76c9ba174b3b3c5ab2c1a4b",
       "executable": false
     },
     "src/ui/quote-award.tsx": {
