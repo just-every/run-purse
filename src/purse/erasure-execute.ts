@@ -21,7 +21,7 @@ export async function executeErasure(env:Bindings,a:Actor,before:State,revision:
  receipt.sourceFacts=[];
  for(const row of plan.state.values()){
   if((['recurringScenario','recurringScenarioDraft','recurringDiscoveryNotice'].includes(row.kind)||row.kind==='agentRun'&&row.value.workflow==='recurring-discovery')&&row.value.sourceValuesErased===plan.id)receipt.sourceFacts.push({kind:row.kind,id:row.id,digest:erasureDigest(row.value)});
-  if(row.kind==='agentRun'&&row.value.agent==='AGENT-008'&&row.value.sourceValuesErased===plan.id)receipt.sourceFacts.push({kind:row.kind,id:row.id,digest:erasureDigest(row.value)});
+  if(row.kind==='agentRun'&&['AGENT-001','AGENT-008'].includes(row.value.agent)&&row.value.sourceValuesErased===plan.id)receipt.sourceFacts.push({kind:row.kind,id:row.id,digest:erasureDigest(row.value)});
   if(row.kind==='valueSeatImport'&&plan.state.get('attachment:'+row.value.attachment)?.value.erasure)receipt.sourceFacts.push({kind:row.kind,id:row.id,digest:erasureDigest(row.value)});
   const snapshots=(v:any):void=>{if(!v||typeof v!=='object')return;if(v.fingerprint&&v.sources&&v.assessment)receipt.sourceFacts.push({kind:'valueSnapshot',id:v.fingerprint,digest:erasureDigest(Object.fromEntries(['request','revision','requester','promise','sources','assessment','mode','model','provider'].map(k=>[k,v[k]])))});for(const child of Object.values(v))snapshots(child);};
   if(['agentRun','valueConfirmation','valueCheckin'].includes(row.kind))snapshots(row.value);
