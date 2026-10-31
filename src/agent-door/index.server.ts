@@ -13,7 +13,7 @@ function trust(env: Bindings): Trust | null {
 }
 export function purseAgentDoor(env: Bindings) {
   return createAgentDoor({ seed:'purse',name:'Purse',specialist:'procurement',db:env.DB,origin:env.AUTH_ORIGIN,trust:trust(env),
-    capabilities:['tools','policy','pause','audit','idempotency'],
+    capabilities:['tools','resources','policy','pause','audit','idempotency'],
     people:nativePeople(env),tools:purchasingTools(env),resources:purchasingResources(env),
     notTools:[
       {clauses:['PUR-013','IMPORT-001','IMPORT-002'],reason:'import-door'},

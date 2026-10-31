@@ -1,6 +1,6 @@
 import { ToolRefusal, type ResourceDefinition, type ClassAndFacts } from '../modules/agent-door/index.ts'
 import type { Bindings } from '../auth.server'
-import { snapshot } from './native.server'
+import { nativeRecord } from './native.server'
 
 export const recordKinds=['request','supplier','catalogue','order','receipt','invoice','agreement','policy','agentRun','revision','proposedAction'] as const
 export const recordUri=(kind:string,id:string)=>`purse://${kind}/${encodeURIComponent(id)}`
@@ -14,8 +14,7 @@ export function purchasingResources(env:Bindings):ResourceDefinition[] {
       const match=new RegExp(`^purse://${kind}/([^/?#]+)$`).exec(uri)
       if(!match)return null
       try {
-        const {projected}=await snapshot(env,ctx)
-        const record=(projected.data[kind] as Record<string,unknown>[]|undefined)?.find(row=>row.id===decodeURIComponent(match[1]))
+        const record=await nativeRecord(env,ctx,kind,decodeURIComponent(match[1]))
         return record?{json:record,untrusted:true}:null
       }catch(error){if(error instanceof ToolRefusal&&['not_found','permission_denied'].includes(error.code))return null;throw error}
     },
