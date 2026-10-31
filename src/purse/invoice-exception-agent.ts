@@ -122,8 +122,9 @@ export async function invoiceExceptionAgent(s: State, a: Actor, op: string, inpu
     });
     const citations = (line: string) => sources.filter(r => ['invoice', 'order', 'revision', 'invoiceReading', 'invoiceSource', 'attachment'].includes(r.kind)
         || r.kind === 'receipt' && r.value.line === line || r.kind === 'orderClosure').map(({ kind, id, version }) => ({ kind, id, version }));
+    const cash = (minor: number) => c.invoice.currency + ' ' + (minor / 100).toFixed(2);
     const explanations = facts.map(f => ({ sources: citations(f.line),
-        text: `Issued unit price is ${f.unitMinor} minor units. Invoice quantity ${qty(f.invoiceQ)} requires ${f.expectedMinor} minor units; the source bills ${f.invoiceMinor}, a difference of ${f.priceDifferenceMinor}. Cumulative invoiced quantity is ${qty(f.cumulativeInvoiceQ)} against ${qty(f.currentOrderedQ)} ordered and ${qty(f.acceptedQ)} accepted.`,
+        text: `The issued unit price is ${cash(f.unitMinor)}. For ${qty(f.invoiceQ)} units, the expected amount is ${cash(f.expectedMinor)}; the invoice bills ${cash(f.invoiceMinor)}, a difference of ${cash(f.priceDifferenceMinor)}. Cumulative invoiced quantity is ${qty(f.cumulativeInvoiceQ)} against ${qty(f.currentOrderedQ)} ordered and ${qty(f.acceptedQ)} accepted.`,
         ...f }));
     const proposals = facts.flatMap(f => [
         ...(f.receiptShortfall ? [{ type: 'receiver-review', line: f.line, sources: citations(f.line),
@@ -131,14 +132,14 @@ export async function invoiceExceptionAgent(s: State, a: Actor, op: string, inpu
             draft: `Ask an authorized receiver to check the count: ${qty(f.acceptedQ)} accepted against ${qty(f.cumulativeInvoiceQ)} invoiced. Confirm actual goods; append a reasoned receipt correction only if the original count is wrong. Do not assume delivery.` }] : []),
         ...(f.priceMismatch || f.quantityMismatch || f.closedBalance ? [{ type: 'corrected-invoice-or-credit-request', line: f.line, sources: citations(f.line),
             expectedMinor: f.expectedMinor, differenceMinor: f.priceDifferenceMinor,
-            draft: `AP review draft: compare the supplier original with the issued price of ${f.unitMinor} minor units and quantity ${qty(f.orderedQ)}. For this invoice quantity the issued-price amount is ${f.expectedMinor}; the billed difference is ${f.priceDifferenceMinor}. Request a corrected invoice or a credit only after human review. No variance is accepted and no message has been sent.` }] : [])]);
+            draft: `AP review draft: compare the supplier original with the issued unit price of ${cash(f.unitMinor)} and quantity ${qty(f.orderedQ)}. For this invoice quantity the issued-price amount is ${cash(f.expectedMinor)}; the billed difference is ${cash(f.priceDifferenceMinor)}. Cumulative invoices claim ${qty(f.cumulativeInvoiceQ)} against ${qty(f.currentOrderedQ)} currently ordered. Request a corrected invoice or a credit only after human review. No variance is accepted and no message has been sent.` }] : [])]);
     const holds = { riskCodes: openInvoiceFlags(c.invoice).map(f => f.code), disputed: Boolean(c.invoice.disputed),
         closedBalance: facts.some(f => f.closedBalance), paymentApproval: 'unchanged' };
     const inputs = { sources, governance: policies.map(p => ({ id: p.id, version: p.version, purchaseType: p.purchaseType })),
         rules: 'Typed source facts only; original text is data. Receiver confirms goods. AP retains variance and payment decisions. Supplier bank controls remain required.' };
     const outcomes = [{ status: 'drafts-only', receipt: 'unchanged', invoiceApproval: 'unchanged', matchingRule: 'unchanged', budget: 'unchanged', bankDetails: 'unchanged', outbound: 'none' }];
     const id = uid(), run = { id, agent, workflow: 'invoice-exception', version: 1, actor: a.id, operatorVersion: a.version,
-        request: c.order.request, order: c.order.id, revision: c.order.revision, invoice: c.invoice.id, exception: c.exception.id,
+        currency: c.invoice.currency, request: c.order.request, order: c.order.id, revision: c.order.revision, invoice: c.invoice.id, exception: c.exception.id,
         openedAt: c.exception.openedAt, at: new Date().toISOString(), mode: 'deterministic v1', model: 'none', provider: 'none',
         algorithm: 'native-invoice-exception-v1', sourceVersion: c.sourceVersion, references: c.references, sources, inputs,
         explanations, proposals, holds, messages: [], outcomes,

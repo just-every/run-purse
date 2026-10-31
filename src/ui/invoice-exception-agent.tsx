@@ -13,8 +13,8 @@ export function InvoiceExceptionAgent({ item, data, mutate }: { item: D; data: D
             <h4>Exception drafts · {when(run.at)}</h4>
             <p>Original exception recorded {when(run.openedAt)}. Purchasing and payment records are unchanged.</p>
             <Table heads={['Line', 'Invoice', 'Issued-price amount', 'Difference', 'Explanation']}>
-                {run.explanations.map((row: D) => <tr key={row.line}><td>{row.line}</td><td>{money(row.invoiceMinor, data.invoice.find((i: D) => i.id === run.invoice)?.currency ?? 'USD')}</td>
-                    <td>{row.expectedMinor} minor units</td><td>{row.priceDifferenceMinor} minor units</td><td>{row.text}</td></tr>)}
+                {run.explanations.map((row: D, index: number) => <tr key={row.line}><td>Line {index + 1}</td><td>{money(row.invoiceMinor, run.currency)}</td>
+                    <td>{money(row.expectedMinor, run.currency)}</td><td>{money(row.priceDifferenceMinor, run.currency)}</td><td>{row.text}</td></tr>)}
             </Table>
             <ul className="ruled-list">{run.proposals.map((proposal: D, index: number) => <li key={index}><h4>{proposal.type === 'receiver-review' ? 'Receiver review draft' : 'Corrected invoice or credit request draft'}</h4><p>{proposal.draft}</p></li>)}</ul>
             <p>Unresolved risk holds: {run.holds.riskCodes.join(', ') || 'None recorded'}. {run.holds.disputed && 'Invoice remains disputed.'}</p>
