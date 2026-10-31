@@ -1,3 +1,4 @@
+import { entityId } from './entities';
 import {purchaseTypes} from './agent-governance';
 import { currentDecision } from './approval';
 import { currentPrice } from './catalogue';
@@ -20,7 +21,8 @@ export function generationRule(s: State, request: Data): Data | undefined {
 export function generationReadiness(s: State, request: Data, policy = generationRule(s,request)): Data {
     requireThat(request.status === 'approved' && !request.imported,'Exact native approved request required',409);
     const existing = all(s,'order').find(o => o.request === request.id && o.revision === request.revision);
-    if (existing) return {status:'generated',order:existing.id,reason:'Buyer consent required to send this exact PO and supplier contact'};
+    if (existing) return {status:'generated',order:existing.id,reason:entityId(request)==='main'?'Buyer consent required to send this exact PO and supplier contact':'Native entity PO generated manually; supplier sending is unavailable'};
+    requireThat(entityId(request)==='main','Additional entities require manual conversion and issuance',409);
     if (!policy?.enabled) return {status:'manual-review',reason:'Automatic generation is not enabled for this purchase type, supplier and currency'};
     if (request.totalMinor > policy.maxMinor) return {status:'manual-review',reason:'Amount exceeds the owner’s automatic generation limit'};
     const supplier = get(s,'supplier',request.supplier);
@@ -46,7 +48,7 @@ export function poGenerationQueue(s: State): Data[] {
         catch(error) { if (!(error instanceof Fault)) throw error;status={status:'held',reason:error.message}; }
         const event=s.get('poGenerationEvent:'+request.id+':'+request.revision)?.value;
         if (status.status === 'ready' && event?.status === 'held' && event.policy === policy?.id && event.policyVersion === policy?.version) status={status:'held',reason:event.reason};
-        return {id:request.id+':'+request.revision,request:request.id,revision:request.revision,title:request.title,supplier:request.supplier,currency:request.currency,totalMinor:request.totalMinor,...status,policy:policy?.id??null,policyVersion:policy?.version??null};
+        return {id:request.id+':'+request.revision,request:request.id,entity:request.entity,revision:request.revision,title:request.title,supplier:request.supplier,currency:request.currency,totalMinor:request.totalMinor,...status,policy:policy?.id??null,policyVersion:policy?.version??null};
     });
 }
 export function poGeneration(s: State,a: Actor,op: string,b: Data): Data | undefined {
