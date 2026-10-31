@@ -8,20 +8,20 @@ const {chromium}=await import(process.env.PURSE_PLAYWRIGHT_MODULE||'@playwright/
 const widthArg=process.argv.find(a=>a.startsWith('--width=')),widths=widthArg?[Number(widthArg.split('=')[1])]:[1440,390];
 const evidence=resolve(process.env.PURSE_EVIDENCE||'.cache/po-generation');await mkdir(evidence,{recursive:true});
 const bundle=await build({stdin:{contents:"import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);",resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'esm',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
-const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic'],...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{})});
+const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic','--no-sandbox'],...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH}:{})});
 try { for(const width of widths) {
     const h=await harness();let context;
     try {
         const cmd=h.command;await cmd('business',{name:'Canyon Design Studio',currencies:['USD'],locations:['Denver'],costCentres:['IT'],projects:['Operations']});
         const requester=await h.member('synthetic-purse-811@example.test',['requester']),approver=await h.member('synthetic-purse-812@example.test',['approver']);
-        const supplier=await cmd('supplier',{name:'Canyon Studio Supplies',status:'preferred',reason:'Reviewed studio supplier'});
+        const supplier=await cmd('supplier',{name:'Canyon Studio Supplies',status:'preferred',reason:'Reviewed studio supplier',contacts:[{name:'Studio supplier',email:['synthetic-purse-813','example.test'].join('@')}]});
         await cmd('policy',{name:'Studio budget',currency:'USD',category:'*',project:'*',approver:'synthetic-purse-812@example.test',limitMinor:1000000,budgetMinor:5000000});
         const item=await cmd('catalogue',{supplier:supplier.id,currency:'USD',description:'Studio kit',unitMinor:10000,category:'Hardware',project:'Operations',approved:true});
         const approve=async(title,quantity)=>{const r=await cmd('request',{title,supplier:supplier.id,currency:'USD',needDate:'2026-12-01',location:'Denver',costCentre:'IT',terms:'Net 30',lines:[{catalogue:item.id,quantity,project:'Operations'}]},requester);await cmd('submit',{id:r.id,revision:1},requester);await cmd('decision',{id:r.id,revision:1,decision:'approved',reason:'Approved exact source'},approver);return r;};
         const ready=await approve('One studio kit','1'),manual=await approve('Manual review kit purchase','11');
         context=await nativeWebContext(browser,h,width,bundle.outputFiles[0].text);const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
         await page.goto(h.origin+'/app?tab=Settings');const settings=page.getByRole('region',{name:'PO generation rules',exact:true});await settings.getByText('Add a PO generation rule',{exact:true}).click();
-        await settings.getByLabel('Purchase type or category (* for all, catalogue for catalog purchases)',{exact:true}).fill('catalogue');await settings.getByLabel('Generation supplier',{exact:true}).selectOption('*');await settings.getByLabel('Generation currency',{exact:true}).selectOption('USD');await settings.getByLabel('Generation mode',{exact:true}).selectOption('automatic');await settings.getByLabel('Automatic generation limit',{exact:true}).fill('1,000.00');await settings.getByLabel('Generation authority reason',{exact:true}).fill('Authorize internal native generation; buyer sends exact PO separately');await settings.getByRole('checkbox').check();
+        await settings.getByLabel('Purchase type or category (* for all, catalogue for catalog purchases)',{exact:true}).fill('catalogue');await settings.getByLabel('Generation supplier',{exact:true}).selectOption('*');await settings.getByLabel('Generation currency',{exact:true}).selectOption('USD');await settings.getByLabel('Generation mode',{exact:true}).selectOption('automatic');await settings.getByLabel('Automatic generation limit',{exact:true}).fill('1,000.00');await settings.getByLabel('Generation authority reason',{exact:true}).fill('Authorize internal native generation; buyer sends exact PO separately');await settings.getByRole('checkbox',{name:/I authorize internal PO generation/}).check();
         const saved=page.waitForResponse(r=>r.url().endsWith('/po-generation-policy'));await settings.getByRole('button',{name:'Add generation rule',exact:true}).click();assert.equal((await saved).status(),200);await settings.getByText('catalogue · All suppliers · USD · Automatic internal generation',{exact:true}).waitFor();await settings.screenshot({path:join(evidence,`PO-008-owner-rule-${width}.png`)});
         await page.goto(h.origin+'/app?tab=Orders');let panel=page.getByRole('region',{name:'Procure',exact:true});await panel.getByText(/Amount exceeds the owner/).waitFor();
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await panel.screenshot({path:join(evidence,`PO-008-before-generation-${width}.png`)});
@@ -30,6 +30,35 @@ try { for(const width of widths) {
         await panel.getByRole('button',{name:'Review and issue Manual review kit purchase',exact:true}).focus();await panel.screenshot({path:join(evidence,`PO-008-manual-review-${width}.png`)});
         const reviewed=page.waitForResponse(r=>r.url().endsWith('/po-generation-review'));await panel.getByRole('button',{name:'Review and issue Manual review kit purchase',exact:true}).click();assert.equal((await reviewed).status(),200);await panel.getByRole('button',{name:'Review and issue Manual review kit purchase',exact:true}).waitFor({state:'detached'});
         assert.equal((await h.state()).data.order.filter(o=>o.request===manual.id).length,1);assert.equal(h.messages.length,n);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await panel.screenshot({path:join(evidence,`PO-008-generated-${width}.png`)});assert.deepEqual(errors,[]);
+        // The standing rule is a separate, explicit choice in Settings.
+        await page.goto(h.origin+'/app?tab=Settings');
+        const sending=page.getByRole('region',{name:'PO generation rules',exact:true});
+        await sending.getByText('Add a PO generation rule',{exact:true}).click();
+        const form=sending.locator('form').last();
+        await form.getByLabel('Purchase type or category (* for all, catalogue for catalog purchases)',{exact:true}).fill('catalogue');
+        await form.getByLabel('Generation supplier',{exact:true}).selectOption(supplier.id);
+        await form.getByLabel('Generation currency',{exact:true}).selectOption('USD');
+        await form.getByLabel('Generation mode',{exact:true}).selectOption('automatic');
+        await form.getByLabel('Automatic generation limit',{exact:true}).fill('1,000.00');
+        await form.getByLabel('Generation authority reason',{exact:true}).fill('One exact supplier and contact; current approvals and cap; no automatic retry');
+        assert.equal(await form.getByLabel('Supplier sending',{exact:true}).inputValue(),'manual');
+        await form.getByLabel('Supplier sending',{exact:true}).selectOption('automatic');
+        await form.getByLabel('Approved supplier contact email',{exact:true}).fill(supplier.contacts[0].email);
+        await form.getByRole('checkbox',{name:/I authorize one automatic attempt/}).check();
+        await form.getByRole('checkbox',{name:/I authorize internal PO generation/}).check();
+        await form.screenshot({path:join(evidence,`PO-008-standing-consent-${width}.png`)});
+        const consentSaved=page.waitForResponse(r=>r.url().endsWith('/po-generation-policy'));
+        await form.getByRole('button',{name:'Add generation rule',exact:true}).click();assert.equal((await consentSaved).status(),200);
+        const auto=await approve('Owner-consented automatic supplier send','1');await tick();await tick();
+        const autoData=(await h.state()).data,autoOrder=autoData.order.find(o=>o.request===auto.id);
+        const summary=await h.send('/api/purse/order-send/'+autoOrder.id,undefined,h.owner);
+        assert.equal(summary.value.event.status,'accepted');assert.equal(summary.value.event.standingConsent.version,1);
+        assert.equal(h.messages.filter(m=>m.subject.startsWith('Purchase order:')).length,1);
+        await page.goto(h.origin+'/app?tab=Orders');panel=page.getByRole('region',{name:'Procure',exact:true});
+        await panel.getByText(/Supplier send accepted; mailbox delivery unknown/).waitFor();
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+        await panel.screenshot({path:join(evidence,`PO-008-standing-outcome-${width}.png`)});
+        assert.deepEqual(errors,[]);
         console.log('PO-008 owner rule, automatic internal generation and explicit manual review passed at '+width);
     } finally { await context?.close();await h.close(); }
 } } finally { await browser.close(); }

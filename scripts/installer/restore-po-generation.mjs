@@ -9,12 +9,12 @@ export function validatePoGeneration(all,get,check) {
         if(policy.supplier!=='*')get('supplier',policy.supplier);
         check(get('business','main').currencies.includes(policy.currency),'po_generation_currency');
         check(Number.isSafeInteger(policy.version)&&policy.version>0&&Array.isArray(policy.history)&&policy.history.length===policy.version,'po_generation_history');
-        for(const [index,entry] of policy.history.entries()) check(entry.id===policy.id&&entry.purchaseType===policy.purchaseType&&entry.supplier===policy.supplier&&entry.currency===policy.currency&&entry.version===index+1&&typeof entry.enabled==='boolean'&&Number.isSafeInteger(entry.maxMinor)&&entry.maxMinor>=0&&entry.maxMinor<=1e12&&nonempty(entry.actor)&&nonempty(entry.email)&&Number.isSafeInteger(entry.operatorVersion)&&entry.operatorVersion>0&&nonempty(entry.reason)&&instant(entry.at)&&entry.outbound==='buyer-consent-required','po_generation_policy_entry');
+        for(const [index,entry] of policy.history.entries()) check(entry.id===policy.id&&entry.purchaseType===policy.purchaseType&&entry.supplier===policy.supplier&&entry.currency===policy.currency&&entry.version===index+1&&typeof entry.enabled==='boolean'&&Number.isSafeInteger(entry.maxMinor)&&entry.maxMinor>=0&&entry.maxMinor<=1e12&&nonempty(entry.actor)&&nonempty(entry.email)&&Number.isSafeInteger(entry.operatorVersion)&&entry.operatorVersion>0&&nonempty(entry.reason)&&instant(entry.at)&&(entry.sendEnabled===true?entry.outbound==='owner-standing-consent'&&entry.enabled&&entry.supplier!=='*'&&entry.purchaseType!=='*'&&nonempty(entry.sendRecipient)&&nonempty(entry.sendContext):entry.outbound==='buyer-consent-required'),'po_generation_policy_entry');
         const {history,...current}=policy;check(equal(current,history.at(-1)),'po_generation_current');
     }
     for(const event of all('poGenerationEvent')) {
         const source=get('revision',event.request+':'+event.revision),policy=get('poGenerationPolicy',event.policy),authority=policy.history[event.policyVersion-1];
-        check(event.id===event.request+':'+event.revision&&source.request===event.request&&!source.imported&&instant(event.at)&&authority?.enabled&&authority.currency===source.currency&&(authority.supplier==='*'||authority.supplier===source.supplier)&&event.outbound==='buyer-consent-required','po_generation_event_source');
+        check(event.id===event.request+':'+event.revision&&source.request===event.request&&!source.imported&&instant(event.at)&&authority?.enabled&&authority.currency===source.currency&&(authority.supplier==='*'||authority.supplier===source.supplier)&&event.outbound===(authority?.sendEnabled?'owner-standing-consent':'buyer-consent-required'),'po_generation_event_source');
         check(['held','generated'].includes(event.status),'po_generation_event_status');
         if(event.status==='held')check(nonempty(event.reason),'po_generation_hold');
         else {
