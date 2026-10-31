@@ -4,11 +4,12 @@ import type { Bindings } from '../auth.server'
 import { authorizeAccessCommand } from '../purse/access-commands'
 import { requirePermission } from '../purse/access'
 import { get } from '../purse/types'
+import { quoteRequest } from '../purse/requests'
 import { snapshot, nativeRefusal } from './native.server'
 
 // Policy classification and approval summaries must not disclose a record
 // before the same native grant checks that its command requires.
-export async function mutationAuthority(env:Bindings,op:string,args:Record<string,unknown>,ctx:ToolContext) {
+export async function mutationAuthority(env:Bindings,op:string,args:Record<string,unknown>,ctx:ToolContext,completed=false) {
   try {
     const native=await snapshot(env,ctx),{state,a}=native
     authorizeAccessCommand(state,a,op,args)
@@ -21,6 +22,7 @@ export async function mutationAuthority(env:Bindings,op:string,args:Record<strin
       if(op==='submit'&&!a.owner&&record.requester!==a.id&&record.requesterEmail!==a.email)throw new ToolRefusal('permission_denied')
       target={kind:'request',id:record.id}
     }
+    if(op==='quote') {const {r}=quoteRequest(state,a,args,completed);target={kind:'request',id:r.id}}
     if(op==='supplier'&&args.id)target={kind:'supplier',id:get(state,'supplier',args.id as string).id}
     if(op==='catalogue'&&args.id)target={kind:'catalogue',id:get(state,'catalogue',args.id as string).id}
     if(op==='edit-preparation'||op==='propose-action') {

@@ -13,7 +13,7 @@ apply to the ordinary application.
 
 The current declaration is deliberately bounded. It supports safe native
 record inspection, supplier and catalogue maintenance, request drafts and
-submission, independently authorized native decisions, PO conversion and issuance, physical receiving, invoice evidence capture, and editable source-bound preparations and proposed actions. It
+submission, independently authorized native decisions, PO conversion and issuance, physical receiving, supplied quotation recording and currency-separated comparison, invoice evidence capture, and editable source-bound preparations and proposed actions. It
 **does not cover all native purchasing actions**. Company approval of a
 proposal does not execute its proposed purchase. The sponsor must be the current designated approver or delegate for a native decision, and self approval is refused even when company policy is autonomous. Issuance is a separate explicit tool; conversion cannot smuggle an issue flag. There is no supplier send, payment, ledger post, protected-data reveal, erasure or grant administration in this registry. Those remain their existing native doors. Target-only card,
 provider and connector capabilities are not advertised.
@@ -24,6 +24,8 @@ provider and connector capabilities are not advertised.
 | `purse.catalogue.upsert` | standard | PUR-003, CATALOG-001 |
 | `purse.requests.create` | standard | PUR-004, INTAKE-001 |
 | `purse.requests.amend_draft` | standard | PUR-004 |
+| `purse.quotes.record` | standard | PUR-005 |
+| `purse.quotes.compare` | standard | PUR-005 |
 | `purse.requests.submit` | standard | PUR-006 |
 | `purse.requests.awaiting_decision` | standard, sensitive | PUR-007, PUR-017 |
 | `purse.requests.decide` | standard for return/reject; money and commitment for approval | PUR-007, PUR-006 |
@@ -49,9 +51,9 @@ a later policy cannot authorize a previously admitted write. A concurrent change
 Native audit retains the agent as preparer and the native person as sponsor;
 company approvers are recorded separately from native purchasing decisions.
 
-Public resources are undeclared. Eleven internal visibility readers remain for
+Public resources are undeclared. Twelve internal visibility readers remain for
 request, supplier, catalogue, order, receipt, invoice, agreement, policy (budget),
-agentRun, revision and proposedAction, using `purse://<kind>/{id}`. They support
+agentRun, revision, proposedAction and quote, using `purse://<kind>/{id}`. They support
 native visibility and internal audit; CORE does not expose resource links or
 `resources/read`. Use the argument-taking `purse.records.list` and
 `purse.records.read` tools for policy-controlled inspection instead. Their
@@ -99,8 +101,8 @@ conversion, issue, receipt and invoice tools require their current native
 authority. A draft never establishes payment, supplier sending or approval.
 There is no advertised MCP prompt family in this CORE declaration.
 
-The declaration contains 18 tools, no public resource templates, and the
-standard, sensitive, money and commitment classes. Its 23 journey steps retain
+The declaration contains 20 tools, no public resource templates, and the
+standard, sensitive, money and commitment classes. Its 26 journey steps retain
 every declared tool/class pair, autonomous and held policy, injection variants,
 read-only witnesses, replay/conflicts and native attribution. The pending-decision
 reader returns only requests the current sponsor can decide; its empty bounded
@@ -111,7 +113,7 @@ The separate ct proposal at
 `36f0d9c9f9984ebecc95a201462367df15fb2420` remains unjudged and is not merged.
 Its 116 proposed capability names, nine proposed resource URI shapes and wider
 seeded week remain outside this declared registry. No proposed tool name matches
-the current 18 names exactly; current tools cover bounded parts of the same
+the current 20 names exactly; current tools cover bounded parts of the same
 native purchasing clauses, rather than aliases for the broad proposed verbs.
 The ct classes external, accounts, gated, access, security and destructive are
 not claimed. Its supplier chase, invoice-exception resolution, approved-bill
@@ -135,3 +137,32 @@ remain mandatory. Existing native agent jobs retain their governance and human
 consent until their own company-door adapters and journeys exist. The omitted
 resource family does not claim the former resource admission/projection races
 proved. Provider spend caps are unenforced.
+
+Supplied quotations use `purse.quotes.record` and `purse.quotes.compare`.
+Recording calls the quotation form's native `quote` command and requires its
+current `request.edit` grant on both the request and the supplied lines. The
+request revision is required by the tool and carried by the native form; stale
+revisions refuse before a company approval can retain the proposed input.
+Freight, tax, delivery and conditions are explicit values or `null`. Zero is a
+supplied amount, while `null` remains missing. Lines retain native integer minor
+units and decimal quantities, with exact source evidence and request revision.
+The comparison uses the current native visible quotation projection, preserving
+all visible revisions and RFQ versions in separate currency groups. It performs
+no conversion, winner selection or purchasing action. Both tools mark source
+text untrusted. Recording is a standard internal write; comparison is a standard
+read. Neither is destructive or external, and no money or commitment is created.
+
+Native target attribution binds a recording to its request. The retained quote
+and native audit identify the agent and sponsoring person; a company approver
+is recorded separately. Completed replay rechecks current native authority and
+returns the original attributed quotation without a second write. Concurrent
+identical captures likewise produce one quotation. Native authority is checked
+before classification and pending approval, then again at actual execution.
+The transport journey in `tests/agent-door-quotes.mjs` exercises autonomous,
+review, approval and blocked policy, stale input and pending state, unauthorized
+reads and writes, revoked consent and membership, erasure and once-only replay.
+The production journey and browser proof in `tests/agent-door-journey.mjs` and
+`tests/agent-door-browser.mjs` independently compare native HTTP, web and MCP
+quotation state and native audit events. These tools do not submit a request,
+award a quotation, issue a PO or send to a supplier. Full Core-job coverage and
+delegation of the existing embedded or scheduled agents remain incomplete.

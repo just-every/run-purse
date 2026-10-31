@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
+import {quoteNativeJourney,quoteStepProof} from './agent-door-quotes.mjs'
 import {agentDoorBrowser,agentPendingBrowser} from './agent-door-browser.mjs'
 
-export async function afterStep({phase,step,tool,request,origin,cookie}) {
+export async function afterStep(context) {
+ await quoteStepProof(context)
+ const {phase,step,tool,request,origin,cookie}=context
  if(phase!=='held'||step.id!=='snapshot')return
  const pending=await tool('purse.records.list',{kind:'supplier'})
  const approval=pending.result?._meta?.['com.runeditrun/approval']
@@ -125,6 +128,7 @@ export default async function({tool,request,origin,cookie,email}) {
  assert.equal(admission.sponsor.id,effect.preparedBy.for.id)
  assert.equal(admission.agent.id,effect.preparedBy.agent.id)
  assert.ok(Number.isInteger(admission.revision))
- await agentDoorBrowser({request,origin,cookie,order,native})
+ const quotation=await quoteNativeJourney({tool,request,origin,cookie})
+ await agentDoorBrowser({request,origin,cookie,order,native,quotation,tool})
  console.log('Native agent journey: self-approval refused; receipt replay once; changed arguments and stale position refused; agent and sponsor attribution; zero policy differences')
 }

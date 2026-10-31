@@ -2,12 +2,12 @@
 
 Company-agent discovery and MCP use the shared door documented in
 [Company agents in Purse](docs/AGENT-DOOR.md). The current declaration covers
-18 CORE tools; events, resources, prompts and subscriptions are undeclared. Native session, SDK and supplier interfaces below keep their own
+20 CORE tools; events, resources, prompts and subscriptions are undeclared. Native session, SDK and supplier interfaces below keep their own
 credentials and purposes. The MCP declaration does not claim full native parity.
 
 Except INTAKE-007’s dedicated bearer create-request door and INTAKE-008’s read-only PO-data door below, `/api/purse/*` endpoints use the current native operator session and purchasing capabilities. Mutations require an exact same-origin `Origin` header and session cookie. The local dev key is not a purchasing grant. Sign in normally or use `rer dev --as PERSONA`, then configure that persona's membership as owner. Never persist a sign-in URL or session cookie in a task, log or source file.
 
-`GET /api/purse/state` returns only the actor's scoped workspace. Its `people` list carries active members' names, emails and capabilities to owners, approvers, buyers and receivers (a requester sees only their own), so the request thread can name requesters and deciders. `POST /api/purse/command/:action` accepts structured JSON; the server calculates totals, chooses policy, checks exact revisions and records the authenticated actor. Client actor, role, total and authority fields cannot confer authority. A 409 means state changed or authority is absent: inspect the error and fresh state; there is no automatic retry.
+`GET /api/purse/state` returns only the actor's scoped workspace. Its `people` list carries active members' names, emails and capabilities to owners, approvers, buyers and receivers (a requester sees only their own), so the request thread can name requesters and deciders. `POST /api/purse/command/:action` accepts structured JSON; the server calculates totals, chooses policy, checks exact revisions and records the authenticated actor. The quotation form and MCP quotation recording carry the current request revision; an explicitly stale quotation revision returns 409 without recording evidence. Client actor, role, total and authority fields cannot confer authority. A 409 means state changed or authority is absent: inspect the error and fresh state; there is no automatic retry.
 
 Actions: `business`, `member`, `supplier`, `catalogue`, `stockroom-item`, `stockroom-count`, `policy`, `delegation`, `revoke-delegation`, `request`, `amend`, `submit`, `decision`, `quote`, `attachment`, `convert`, `issue`, `close-order`, `reopen-order`, `receipt`, `invoice`, `prepare`, `edit-preparation`, `propose-action`, `execute-action`.
 

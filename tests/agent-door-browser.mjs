@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import {withAgentBrowser} from './agent-door-browser-session.mjs'
 
-export async function agentDoorBrowser({request,origin,cookie,order,native}) {
+export async function agentDoorBrowser({request,origin,cookie,order,native,quotation,tool}) {
  await withAgentBrowser({request,origin,cookie},async({page,capture})=>{
   const decision=native.decision.find(row=>row.request===order.request&&row.preparedBy?.agent.id)
   assert.ok(decision)
@@ -39,6 +39,7 @@ export async function agentDoorBrowser({request,origin,cookie,order,native}) {
   await page.getByRole('heading',{name:'Request not found',exact:true}).waitFor()
   await capture('agent-approval-unavailable')
  })
+ await agentQuotationBrowser({request,origin,cookie,quotation,tool})
  console.log('Native agent browser: thread, decision, audit, dashboard, pause, completed and unavailable approval at 1440 and 390; no horizontal overflow')
 }
 
@@ -58,4 +59,42 @@ export async function agentPendingBrowser({request,origin,cookie,approval}) {
   await capture('agent-approval-rejected')
  })
  console.log('Native agent browser: pending exact-summary approval rejected by the named person at 1440 and 390; touch controls at least 44px')
+}
+
+async function agentQuotationBrowser({request,origin,cookie,quotation,tool}) {
+ await withAgentBrowser({request,origin,cookie},async({page,capture})=>{
+  await page.goto(origin+'/app?tab=Requests&request='+quotation.request,{waitUntil:'networkidle'})
+  const card=page.locator('#request-'+quotation.request)
+  await card.getByRole('heading',{name:'Quote comparison',exact:true}).waitFor()
+  for(const quote of quotation.quotes) {
+   const row=card.locator('tr').filter({has:page.getByText(quote.source,{exact:true})}).first()
+   await row.waitFor()
+   assert.ok((await row.innerText()).includes(quote.currency==='USD'?'$30.85':'EUR 30.85'))
+   assert.ok((await row.innerText()).includes('Missing'))
+  }
+  await capture('agent-quotation-comparison')
+  await card.locator('summary').filter({hasText:'Add supplied quotation'}).click()
+  const form=card.locator('form').filter({has:page.getByRole('button',{name:'Save quote',exact:true})})
+  await form.getByLabel('Currency',{exact:true}).selectOption('EUR')
+  await form.getByLabel('Freight',{exact:true}).fill('0')
+  await form.getByLabel('Supplied tax',{exact:true}).fill('')
+  const source='Native browser supplied quotation page 5, part D'
+  await form.getByLabel('Source evidence reference',{exact:true}).fill(source)
+  await form.getByRole('button',{name:'Save quote',exact:true}).click()
+  await card.getByText(source,{exact:true}).waitFor()
+  const response=await request(origin+'/api/purse/state',{headers:{cookie}})
+  assert.equal(response.status,200)
+  const native=(await response.json()).data,quote=native.quote.find(row=>row.source===source)
+  assert.ok(quote);assert.equal(quote.revision,quotation.revision)
+  assert.equal(quote.freightMinor,0);assert.equal(quote.taxMinor,null);assert.equal(quote.lines[0].totalMinor,3085)
+  const compared=await tool('purse.quotes.compare',{request:quotation.request})
+  assert.equal(compared.result?.isError,false)
+  const quotes=compared.result.structuredContent.currencies.flatMap(group=>group.quotes)
+  assert.deepEqual(quotes.find(row=>row.id===quote.id),quote)
+  assert.ok(native.audit.some(row=>row.action==='quote'&&row.quote===quote.id&&!row.agent))
+  assert.ok(!native.order.some(row=>row.request===quotation.request))
+  assert.ok(!native.quoteAward.some(row=>row.request===quotation.request))
+  await capture('agent-quotation-recorded')
+ })
+ console.log('PROBE BASE-AGENT-002 native UI: supplied quotation form -> exact revision, EUR 3085, zero freight and missing tax; MCP reads the same quote; screens at 1440 and 390')
 }
