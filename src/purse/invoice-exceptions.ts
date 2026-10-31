@@ -1,3 +1,4 @@
+import { invoiceExceptionAgentContext } from './invoice-exception-agent';
 import { exceptionOrder, mayReadInvoiceException } from './invoice-exception-access';
 import { Hono } from 'hono';
 import { type Bindings } from '../auth.server';
@@ -47,6 +48,7 @@ export async function invoiceExceptionQueue(s: State, a: Actor, env: Bindings) {
         const assigned = candidates.find(member => member.id === record.assignee && member.version === record.assigneeVersion);
         return { ...record, reference: invoice.reference, number: order.number, currentOrder: order.id,
             status: open ? 'open' : 'clear', sourceVersion: sourceVersion(s, record),
+            agent: invoiceExceptionAgentContext(s, a, record.id),
             assigneeName: assigned?.name ?? (record.assignee ? 'Unavailable assignee; reassign' : 'Unassigned'),
             assigneeCurrent: Boolean(assigned), mayAssign: open && allowed(s, a, 'invoice.review', invoice) && allowed(s, a, 'invoice.review', order),
             candidates: allowed(s, a, 'invoice.review', invoice) && allowed(s, a, 'invoice.review', order) ? candidates.map(m => ({ id: m.id, name: m.name })) : [],

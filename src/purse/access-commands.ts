@@ -49,6 +49,10 @@ function preparationReferences(s: State, a: Actor, references: unknown) {
  */
 export function authorizeAccessCommand(s: State, a: Actor, op: string, b: Data): void {
     if (a.owner || op === 'execute-action') return;
+    if (op === 'invoice-exception-agent-run') {
+        const exception = get(s, 'invoiceException', b.id), invoice = get(s, 'invoice', exception.invoice);
+        requirePermission(s, a, 'invoice.read', invoice); requirePermission(s, a, 'invoice.review', invoice); return;
+    }
     if(quoteAgentCommands.has(op)){const rfq=get(s,'rfq',b.rfq);requirePermission(s,a,'rfq.manage',get(s,'request',rfq.request));return;}
     if (globalProcurement.has(op)) { unrestrictedProcurement(s, a); return; }
     if (nativeOwner.has(op)) { requireThat(false, 'Current native owner required', 403); }
