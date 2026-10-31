@@ -22,6 +22,7 @@ export function supplierInvoiceLines(state: State, order: Data) {
 export function requireSupplierInvoiceOrder(state: State, event: Data) {
     const order = get(state, 'order', event.order), request = get(state, 'request', order.request), supplier = get(state, 'supplier', order.supplier);
     requireThat(event.invoiceSubmission===true && event.invoiceConsent?.enabled===true && event.supplier === order.supplier && event.request === request.id && event.revision === order.revision && event.acknowledgment?.revision === order.revision && event.acknowledgment.pdfSha256 === event.pdf?.sha256 && !event.erasure && !event.revokedAt && Date.parse(event.expiresAt) > Date.now() && !supplier.erasure && !supplier.erased && !order.supplierSnapshot?.contactErased && !order.supplierSnapshot?.erasure && order.status === 'issued' && order.issuedAt && !order.imported && !order.adoption && request.status === 'approved' && request.revision === order.revision && request.currency === order.currency && get(state, 'revision', order.request + ':' + order.revision).currency === order.currency, 'Acknowledge the exact current issued native purchase order before submitting an invoice', 409);
+    requireThat(!order.poDetails?.deposit,'Supplier deposit invoice submission is not qualified; AP must classify and confirm the private original',409);
     requireThat(!order.poDetails?.blanket && !order.lines.some((line: Data) => line.service), 'Supplier invoice submission currently requires a quantity-based native purchase order', 409);
     return order;
 }

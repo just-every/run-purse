@@ -67,6 +67,7 @@ export function receiptPrompts(s: State, now = Date.now()): Data[] {
     });
 }
 export function receiptMatch(s: State, invoice: Data) {
+    if (invoice.depositKind === 'deposit') return 'Two-way deposit match; no goods receipt required';
     if (invoice.imported && !invoice.adoptedVia) return 'Imported historical evidence; PO not adopted';
     const rows = discrepancies(s).filter(d=>d.invoiceId===invoice.id);
     return rows.some(d=>d.receiptShortfall) ? 'Held for receipt' : rows.some(d=>d.priceMismatch||d.quantityMismatch||d.closedBalance||d.exception) ? 'Matching exception' : 'Ready for matching';

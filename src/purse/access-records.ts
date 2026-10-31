@@ -32,6 +32,8 @@ export function canReadRecord(s: State, a: Actor, kind: string, record: Data, vi
         const parent = s.get('request:' + record.request)?.value, source = s.get('revision:' + record.request + ':' + record.revision)?.value;
         return Boolean(parent && source && allowed(s,a,'request.read',parent) && allowed(s,a,'request.read',source));
     }
+    if (kind === 'depositRule') return a.owner;
+    if (kind === 'depositApplication') return allowed(s,a,'invoice.read',get(s,'invoice',record.invoice)) && allowed(s,a,'invoice.read',get(s,'invoice',record.depositInvoice));
     if (kind === 'invoiceException') return mayReadInvoiceException(s, a, record);
     if (kind === 'intakeDraft') return record.requester === a.id && record.requesterEmail === a.email && allowed(s,a,'request.create');
     if (kind === 'travelExpense') return a.owner && allowed(s,a,'request.read',get(s,'request',record.request));

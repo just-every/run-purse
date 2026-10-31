@@ -38,6 +38,7 @@ export function correctApprovalFields(s: State, a: Actor, request: Data, changes
             const {id,...fields}=patch; requireThat(Object.keys(fields).length,'Provide line coding changes'); correct(target,before,fields,before);
         }
     }
+    requireThat(!request.poDetails?.deposit || !differences.some(change=>change.field==='supplier' || change.field.endsWith('.supplier')), 'Return the deposit request for a supplier amendment and renewed approval', 409);
     requireThat(differences.length,'No fields changed');
     for(const line of next.lines) {
         requireThat(!line.supplier||line.supplier===next.supplier,'A line supplier must match the request supplier; return this request and create separate requests for different suppliers',409);

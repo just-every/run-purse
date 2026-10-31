@@ -20,6 +20,7 @@ export function SpendReport({ data }: { data: D }) {
     return <section><h1 className="page-title">Spend and commitments</h1>
         <p className="quiet">Current outstanding authority is reserved before PO issuance and committed after issuance. Actual is recorded invoice evidence, including exceptions; it is not a payment or matching confirmation. Currencies stay separate.</p>
         <p className="quiet">Inclusive period: need dates for outstanding authority; UTC entry dates for invoices. Policy budgets fund outstanding authority; actual is shown separately. Budget and available figures cover your visible records for the whole policy, while the three activity columns follow the filters.</p>
+        {data.order.some((order:D)=>order.poDetails?.deposit)&&<p>Native deposit actuals include the approved deposit and net final bill once. Unbilled goods liability remains committed after receiving. Approval and deposit application do not settle a payable.</p>}
         <SpendQuestions data={data}/>
         <PeriodBudgets data={data}/>
         {error && <p role="alert">{error}</p>}
@@ -58,7 +59,7 @@ export function SpendReport({ data }: { data: D }) {
 export function ReportSource({ data, row }: { data: D; row: D }) {
     const deposit = (data.deposit ?? []).find((deposit: D) => deposit.id === row.deposit);
     const request = data.request.find((r: D) => r.id === row.request), order = data.order.find((o: D) => o.id === row.order), invoice = data.invoice.find((i: D) => i.id === row.invoice);
-    return <>{deposit && <p>Imported prepaid deposit {deposit.reference} · {money(deposit.amountMinor, row.currency)} · {deposit.evidence}. Source payment evidence is unverified.</p>}<p>Request revision {request?.revision} · {request?.status}</p>{order && <p>{order.number} · revision {order.revision} · {order.status}</p>}{invoice && <p>Invoice {invoice.reference} · {invoice.source} · {money(invoice.totalMinor, invoice.currency)}</p>}
+    return <>{invoice?.depositKind && <p>{invoice.depositKind==='deposit'?'Approved prepaid obligation; no goods quantity consumed':'Gross final bill '+money(invoice.grossMinor,invoice.currency)+' less deposit application '+money(invoice.depositAppliedMinor,invoice.currency)} · <a href={'/app?tab=Orders&receipt='+invoice.order+'#invoice-'+invoice.id}>Open source invoice</a></p>}{deposit && <p>Imported prepaid deposit {deposit.reference} · {money(deposit.amountMinor, row.currency)} · {deposit.evidence}. Source payment evidence is unverified.</p>}<p>Request revision {request?.revision} · {request?.status}</p>{order && <p>{order.number} · revision {order.revision} · {order.status}</p>}{invoice && <p>Invoice {invoice.reference} · {invoice.source} · {money(invoice.totalMinor, invoice.currency)}</p>}
         {(invoice ? invoice.allocations.map((a: D) => ({ ...a, description: order.lines.find((l: D) => l.id === a.line)?.description })) : order?.lines || request?.lines || []).map((l: D, i: number) => <p key={i}>{l.description} · {l.quantity} · {money(l.amountMinor ?? l.totalMinor, row.currency)}</p>)}
         {data.attachment.filter((f: D) => [row.request, row.order, row.invoice].includes(f.record)).map((f: D) => <p key={f.id}><a href={`/api/purse/download/attachment/${f.id}`}>{f.name}</a></p>)}</>;
 }

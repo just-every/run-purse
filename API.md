@@ -1118,3 +1118,45 @@ service, blanket, recurring or adopted groups remain unavailable. Grouped date
 changes and amendments require a separately supported disposition; this door
 refuses them. Native group issuance sends no supplier message and records no
 payment or connected-ledger posting.
+
+
+## Native deposits
+
+An ordinary native goods request may include one `poDetails.deposit` object.
+Choose `basis: "amount"` with exact currency text `amount`, or
+`basis: "percentage"` with up to two decimal places in `percentage`.
+Choose `trigger: "issue"`, or `trigger: "date"` with `dueDate`.
+The server calculates exact minor units, caps the term at the full PO total,
+and freezes supplier, currency and amount on the approval revision and document.
+Evidence-free term changes require a new purchase approval. Once receiving or
+invoice evidence exists, this native slice refuses amendments and date-only
+revisions rather than opening a new deposit allowance.
+
+AP stages and reviews the private original using the existing invoice-reading
+commands. Confirmation additionally selects `invoiceKind: "deposit"` or
+`invoiceKind: "deposit-final"`. A deposit consumes no goods quantity.
+A final bill retains full gross goods quantities and charges and separately
+applies the currently eligible approved deposit obligation once.
+
+In Settings the current native owner can submit `deposit-rule` with the exact
+`order`, `revision`, current rule `version`, projected `termKey`,
+`enabled`, explicit `consent: true` and a reason. Consent defaults off.
+Only exact source-confirmed amounts without unresolved invoice holds qualify.
+After full receiving, AP can submit `deposit-evaluate` with `invoice`,
+`termKey`, `ruleVersion` and `documentSha256` to recheck a pending final bill.
+Direct cash-planning approval cannot bypass this rule. Changed or paused
+consent, revoked native owner authority, withdrawn sources and later risk
+holds suspend eligibility while retaining approval and application history.
+
+A final application never settles the separate deposit payable. Cash planning
+retains both outstanding net obligations and subtracts their approved amounts
+from expected liability once. Native prepaid obligations stay separate from
+received-not-billed goods. Source originals and both invoice records remain
+available only under current invoice scope. Archives retain financial history,
+but exclude the installation-local consent authority. A restored installation
+requires new explicit current-owner consent.
+
+Prepaid account mapping and all provider posting, payment, refund and
+settlement transports are unavailable. The UI and accounting export label
+these targets unmapped and unpostable. No cash movement or paid status follows
+from a native deposit approval or application.

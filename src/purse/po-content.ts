@@ -1,3 +1,4 @@
+import { depositTermText } from './deposit-terms';
 import { orderAdoption } from './adoption-position';
 import { all, get, requireThat, type Data, type State } from './types';
 import { poLabels } from './po-profiles';
@@ -15,7 +16,7 @@ export function poContent(s: State, order: Data): PoPdfContent {
         { heading: p?.billTo.label || 'Bill to', lines: address(p?.billTo) },
         { heading: p?.shipTo.label || 'Ship to', lines: address(p?.shipTo) },
         { heading: labels.supplier, lines: [value(supplier?.name), 'Supplier ID: ' + order.supplier, value(supplier?.address), labels.remitTo + ': ' + value(supplier?.remitTo)] },
-        { heading: 'Order terms', lines: [labels.paymentTerms + ': ' + value(order.terms), labels.shippingTerms + ': ' + value(p?.shippingTerms), 'Deposit / prepayment terms: ' + value(order.poDetails?.depositTerms), labels.needDate + ': ' + value(order.needDate), labels.promisedDate + ': ' + value(promised), 'Buyer contact: ' + value(p?.buyerContact), labels.notes + ': ' + value(p?.notes || order.poDetails?.notes)] },
+        { heading: 'Order terms', lines: [labels.paymentTerms + ': ' + value(order.terms), labels.shippingTerms + ': ' + value(p?.shippingTerms), 'Deposit / prepayment terms: ' + value(order.poDetails?.deposit ? depositTermText(order.poDetails.deposit,order.currency) + (order.poDetails.depositTerms ? ' · Supplier-supplied deposit notes: '+order.poDetails.depositTerms : '') : order.poDetails?.depositTerms), labels.needDate + ': ' + value(order.needDate), labels.promisedDate + ': ' + value(promised), 'Buyer contact: ' + value(p?.buyerContact), labels.notes + ': ' + value(p?.notes || order.poDetails?.notes)] },
         { heading: 'Order lines', lines: order.lines.map((l: Data, i: number) => `${i + 1}. ${labels.description}: ${l.description}\n${labels.partNumber}: ${value(l.partNumber)} · ${labels.quantity}: ${l.quantity} · ${labels.unit}: ${value(l.unit)} · ${labels.unitPrice}: ${money(l.unitMinor, order.currency)}\n${labels.lineTax}: ${l.lineTaxMinor == null ? unknown : money(l.lineTaxMinor, order.currency)} · ${labels.lineTotal}: ${money(l.totalMinor + (l.lineTaxMinor || 0), order.currency)}\n${p?.shipTo.label || 'Ship to'}: ${l.shipTo || address(p?.shipTo).join(', ')}${l.needDate?'\nNeed date: '+l.needDate:''}${l.notes?'\nNotes to supplier: '+l.notes:''}${l.supplierSnapshot?'\nLine supplier: '+l.supplierSnapshot.name:''}`) },
         { heading: 'Totals', lines: [labels.freight + ': ' + money(order.freightMinor, order.currency), labels.tax + ': ' + money(order.taxMinor, order.currency), ...(order.otherChargesMinor ? ['Other charges: '+money(order.otherChargesMinor,order.currency)] : []), labels.total + ': ' + money(order.totalMinor, order.currency)] },
         { heading: 'Purchase terms and conditions', lines: [value(p?.standardTerms)] },
@@ -38,10 +39,12 @@ export function poContent(s: State, order: Data): PoPdfContent {
             if (!previous) break;
             ancestor = get(s, 'order', previous); sequence++;
         }
-        const changes = order.lines.flatMap((l: Data) => {
+        const changes: string[] = [];
+        if(JSON.stringify(prior.poDetails?.deposit)!==JSON.stringify(order.poDetails?.deposit)) changes.push('Structured deposit: '+(prior.poDetails?.deposit ? depositTermText(prior.poDetails.deposit,prior.currency) : 'None')+' to '+(order.poDetails?.deposit ? depositTermText(order.poDetails.deposit,order.currency) : 'None'));
+        changes.push(...order.lines.flatMap((l: Data) => {
             const old = prior.lines.find((v: Data) => v.id === l.id);
             return !old ? ['Added: ' + l.description] : ['description', 'quantity', 'unitMinor', 'partNumber', 'unit', 'shipTo', 'lineTaxMinor', 'service', 'needDate'].filter(k => JSON.stringify(old[k]) !== JSON.stringify(l[k])).map(k => `${l.description} · ${k}: ${value(old[k])} to ${value(l[k])}`);
-        });
+        }));
         for (const k of ['supplier', 'currency', 'terms', 'needDate', 'freightMinor', 'taxMinor']) if (prior[k] !== order[k]) changes.push(`${k}: ${value(prior[k])} to ${value(order[k])}`);
         if(JSON.stringify(prior.charges??[])!==JSON.stringify(order.charges??[]))changes.push('Charge lines: '+JSON.stringify(prior.charges??[])+' to '+JSON.stringify(order.charges??[]));
         if(JSON.stringify(prior.poDetails?.blanket)!==JSON.stringify(order.poDetails?.blanket)) changes.push('Blanket validity: '+JSON.stringify(prior.poDetails?.blanket)+' to '+JSON.stringify(order.poDetails?.blanket));

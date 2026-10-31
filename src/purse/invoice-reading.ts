@@ -43,6 +43,7 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
             document = retained;
         }
         const metadata = documentMetadata(document), id=uid(), attachment=uid(), at=new Date().toISOString();
+        if(order.poDetails?.deposit) requireThat(!all(s,'attachment').some(file=>file.erasure && file.sha256===metadata.sha256),'Deposit original was withdrawn by erasure; capture replay is refused',409);
         put(s,'invoiceSource',id,{ order:order.id, orderRevision:order.revision, attachment, actor:a.id, at });
         put(s,'attachment',attachment,{ ...metadata, kind:'invoiceSource', record:id, base64:document.base64, actor:a.id, at });
         audit(s,a,'attachment',id,{attachment}); audit(s,a,op,order.id,{source:id}); return get(s,'invoiceSource',id);
@@ -97,7 +98,7 @@ export async function invoiceReading(s: State, a: Actor, op: string, b: Data): P
     // The current invoice door stores inclusive allocation amounts; retain the exact breakdown here.
     const allocations=allocateInvoiceCharges(mapped,amounts.freightMinor+amounts.taxMinor).map(line=>({line:line.line,quantity:line.quantity,amountMinor:line.amountMinor}));
     const result:Data=invoice(s,a,{order:order.id,reference:value('reference'),source:'Confirmed invoice reading '+reading.id,invoiceDate,
-        ...(source.apSender?{senderEmail:source.apSender}:reading.senderEmail.value?{senderEmail:reading.senderEmail.value}:{}),...(reading.remitTo.value?{remitTo:reading.remitTo.value}:{}),...(b.remit?{remit:b.remit}:{}),document:{name:attachment.name,mediaType:attachment.mediaType,base64:attachment.base64},allocations, ...(b.depositAppliedAmount !== undefined ? { depositAppliedAmount: b.depositAppliedAmount } : {})}, { reading: reading.id });
+        ...(source.apSender?{senderEmail:source.apSender}:reading.senderEmail.value?{senderEmail:reading.senderEmail.value}:{}),...(reading.remitTo.value?{remitTo:reading.remitTo.value}:{}),...(b.remit?{remit:b.remit}:{}),document:{name:attachment.name,mediaType:attachment.mediaType,base64:attachment.base64},allocations, ...(b.depositAppliedAmount !== undefined ? { depositAppliedAmount: b.depositAppliedAmount } : {}), ...(b.invoiceKind ? {invoiceKind:b.invoiceKind} : {})}, { reading: reading.id });
     reading.status='confirmed';reading.version++;reading.invoice=result.id;reading.confirmedBy=a.id;reading.confirmedAt=new Date().toISOString();reading.amounts=amounts;
     put(s,'invoiceReading',reading.id,reading);event(s,a,reading,op,{invoice:result.id,reason,snapshot:structuredClone(reading)});return reading;
 }

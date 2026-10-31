@@ -1,4 +1,5 @@
 import { shipmentHistory } from './shipment-references';
+import { nativeDepositInvoice, depositApprovalEligible, nativeDepositPosition } from './deposit-position';
 import { creditInvoiceVersion, invoiceCreditApplied } from './invoices';
 import { mayAmendTravel } from './travel';
 import { requestBudgetReview } from './budget-allocations';
@@ -48,7 +49,7 @@ export function purchasingProjection(s: State, a: Actor) {
             mayPrepareValue: ['request.edit', 'request.approve', 'receive', 'procurement.manage'].some(permission => allowed(s, a, permission, request)),
             mayConvert: request.purchaseType !== 'travel' && allowed(s, a, 'po.convert', request), mayChangeNeedDate: request.purchaseType !== 'travel' && request.status === 'approved' && (request.requester === a.id && allowed(s,a,'request.edit',request) || allowed(s,a,'request.approve',request)), mayManagePurchasing: allowed(s, a, 'procurement.manage', request), mayManageRfq: allowed(s, a, 'rfq.manage', request),
             buyerLimit: buyerLimit(s, a, request), buyerLimits: buyerLimits(s, a, request) })),
-        order: orders.map(order => ({ ...order, ...(orderAdoption(s, order) ? { adoptionBasis: 'Owner adopted imported obligation; source approval is historical', ...(allowed(s,a,'invoice.read',order) ? { depositPosition: adoptionDeposits(s, order) } : {}) } : {}), ...(order.poDetails?.blanket ? blanketView(s, a, order) : {}),
+        order: orders.map(order => ({ ...order, ...(order.poDetails?.deposit && allowed(s,a,'invoice.read',order) ? {nativeDepositPosition:nativeDepositPosition(s,order)} : {}), ...(orderAdoption(s, order) ? { adoptionBasis: 'Owner adopted imported obligation; source approval is historical', ...(allowed(s,a,'invoice.read',order) ? { depositPosition: adoptionDeposits(s, order) } : {}) } : {}), ...(order.poDetails?.blanket ? blanketView(s, a, order) : {}),
             shipmentReferences: shipmentHistory(s, order.id),
             receivingDate: receiptDay(s, Date.now()), receiverAssignment: receiptAssignment(s, order), mayReceive: mayReceive(s, a, order), receiptVersion: receiptVersion(s, order),
             ...(mayReceive(s, a, order) ? { receiptMatchingStatus: receiptMatchingStatus(s, order) } : {}),
@@ -56,8 +57,8 @@ export function purchasingProjection(s: State, a: Actor) {
             mayManageReceipt: allowed(s, a, 'procurement.manage', order), mayReassignReceipt: ['issued','adopted'].includes(order.status) && mayReceive(s, a, order) && allowed(s, a, 'receive', order),
             mayManagePurchasing: allowed(s, a, 'procurement.manage', order),
             mayAuthorizeSupplierInvoices:a.owner, mayReadSupplierThread: allowed(s,a,'procurement.manage',order) || (s.get('request:'+order.request)?.value.requester === a.id && allowed(s,a,'po.read',order)), mayIssue: allowed(s, a, 'po.issue', order), supplierInitial: Boolean(!order.imported && !order.adoption && order.issuedAt && !s.get('revision:'+order.request+':'+order.revision)?.value.amends && !order.cancellation), supplierChange: Boolean(!order.imported && !order.adoption && (s.get('revision:'+order.request+':'+order.revision)?.value.amends || order.cancellation)), positions: order.lines.map((line: Data) => ({ line: line.id, ...linePosition(s, order.id, line), ...(line.service ? servicePosition(s, order, line) : {}) })) })),
-        invoice: invoices.map(invoice => ({ ...publicEvidence(invoice), creditVersion: creditInvoiceVersion(s,invoice), creditAppliedMinor: invoiceCreditApplied(s,invoice.id), receiptMatch: receiptMatch(s, invoice), matchingException: discrepancies(s).find(d => d.invoiceId === invoice.id && d.exception === 'Invoice exceeds received service value')?.exception,
-            maySetTerms: allowed(s, a, 'payable.terms', invoice), mayApprove: allowed(s, a, 'payable.approve', invoice),
+        invoice: invoices.map(invoice => ({ ...publicEvidence(invoice), ...(nativeDepositInvoice(invoice)?{depositEligible:depositApprovalEligible(s,invoice),mayEvaluateDeposit:!invoice.paymentApproval && allowed(s,a,'payable.approve',invoice)}:{}), creditVersion: creditInvoiceVersion(s,invoice), creditAppliedMinor: invoiceCreditApplied(s,invoice.id), receiptMatch: receiptMatch(s, invoice), matchingException: discrepancies(s).find(d => d.invoiceId === invoice.id && d.exception === 'Invoice exceeds received service value')?.exception,
+            maySetTerms: !nativeDepositInvoice(invoice) && allowed(s, a, 'payable.terms', invoice), mayApprove: !nativeDepositInvoice(invoice) && allowed(s, a, 'payable.approve', invoice),
             mayReview: allowed(s, a, 'invoice.review', invoice), mayCapture: allowed(s, a, 'invoice.capture', invoice),
             flags: invoice.flags?.map((flag: Data) => !flag.relatedInvoice || invoiceIds.has(flag.relatedInvoice) ? flag : { ...flag, relatedInvoice: undefined }) })),
         receipt: all(s, 'receipt').filter(receipt => orderIds.has(receipt.order)),

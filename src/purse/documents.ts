@@ -51,6 +51,8 @@ export function visible(s: State, a: Actor, protectedViews?: Map<string, Data>) 
     const permissions = resolvedPermissions(s, a); requireThat(permissions.length, 'No active business membership', 403);
     const { data, requestIds, orderIds, invoiceIds } = purchasingProjection(s, a);
     data.request = data.request.map((r: Data) => ({...r, supplierReview: s.has('supplierProposal:'+r.supplier) ? ((p:Data)=>({status:p.status,at:p.review?s.get('supplierProposalReview:'+p.review)?.value.at:p.at,holder:p.status==='pending'?'Native owner review':'Review complete',reason:p.review?s.get('supplierProposalReview:'+p.review)?.value.reason:undefined}))(get(s,'supplierProposal',r.supplier)) : undefined, crossTeamReviews: reviewView(s,a,get(s,'request',r.id))}));
+    data.depositRule=a.owner?all(s,'depositRule'):[];
+    data.depositApplication=all(s,'depositApplication').filter(row=>canReadRecord(s,a,'depositApplication',row));
     data.poGenerationPolicy=a.owner?all(s,'poGenerationPolicy'):[];
     data.poGenerationEvent=all(s,'poGenerationEvent').filter(row=>requestIds.has(row.request));
     data.poGenerationQueue=poGenerationQueue(s).filter(row=>requestIds.has(row.request)).map(row=>({...row,mayConvert:allowed(s,a,'po.convert',get(s,'request',row.request))&&allowed(s,a,'po.issue',get(s,'request',row.request))}));
@@ -178,10 +180,10 @@ export function accounting(s: State, a: Actor) {
     requirePermission(s, a, 'invoice.read');
     const cell = (value: unknown) => '"' + String(value).replace(/"/g, '""').replace(/^[=+@-]/, "' $&") + '"';
     const byAllocation = new Map(discrepancies(s).map(discrepancy => [JSON.stringify([discrepancy.invoiceId, discrepancy.lineId]), discrepancy]));
-    const rows = [['invoice', 'po', 'line', 'currency', 'quantity', 'amount_minor', 'price_mismatch', 'quantity_mismatch', 'receipt_shortfall'],
+    const rows = [['invoice', 'po', 'line', 'currency', 'quantity', 'amount_minor', 'price_mismatch', 'quantity_mismatch', 'receipt_shortfall', 'invoice_kind', 'gross_minor', 'deposit_applied_minor', 'net_minor', 'prepaid_posting'],
         ...all(s, 'invoice').filter(invoice => allowed(s, a, 'invoice.read', invoice)).flatMap(invoice => invoice.allocations.map((line: Data) => {
             const order = get(s, 'order', invoice.order), discrepancy = byAllocation.get(JSON.stringify([invoice.id, line.line]))!;
-            return [invoice.reference, order.number, line.line, invoice.currency, line.quantity, line.amountMinor, discrepancy.priceMismatch, discrepancy.quantityMismatch, discrepancy.receiptShortfall];
+            return [invoice.reference, order.number, line.line, invoice.currency, line.quantity, line.amountMinor, discrepancy?.priceMismatch ?? false, discrepancy?.quantityMismatch ?? false, discrepancy?.receiptShortfall ?? false, invoice.depositKind ?? 'goods', invoice.grossMinor ?? invoice.totalMinor, invoice.depositAppliedMinor ?? 0, invoice.totalMinor, invoice.depositKind ? 'Unmapped; unpostable' : ''];
         }))];
     return new Response(rows.map(row => row.map(cell).join(',')).join('\r\n'), { headers: {
         'content-type': 'text/csv', 'content-disposition': 'attachment; filename="purse-accounting.csv"' } });
