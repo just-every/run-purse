@@ -67,5 +67,31 @@ export async function proposalPolicyProof({c,h,reader,readerToken}) {
  await c.adopt(automatic)
  const issued=await proof.execute(combined)
  assert.equal(issued.result.status,'issued')
+ // A buyer price correction in the stored action is the issued amount: a company cap of $100 refuses $110.
+ const owner=['owner','example.test'].join('@')
+ const corrected=async(category,project)=>{
+  const draft=await h.command('request',{title:'Priced '+project,supplier:supplier.id,currency:'USD',needDate:'2026-12-15',location:'Denver',costCentre:'Operations',lines:[{description:'Corrected item',quantity:'1',unitMinor:10000,category,project}],freightMinor:0,taxMinor:0,terms:'Native price correction'},reader)
+  await h.command('submit',{id:draft.id,revision:draft.revision},reader)
+  const approved=await h.command('decision',{id:draft.id,revision:draft.revision,decision:'approved',reason:'Independent approval of $100'})
+  return proof.propose('convert',{id:approved.id,revision:approved.revision,issue:true,conversionEdits:{lines:[{id:approved.lines[0].id,unitMinor:11000}],reason:'Supplier price correction to $110'}})
+ }
+ const cap=max=>({...automatic,rules:[{id:'standard',class:'standard',do:'autonomous'},{id:'money',class:'money',max:{amount:max,currency:'USD'},do:'autonomous'},{id:'commitment',class:'commitment',max:{amount:max,currency:'USD'},do:'autonomous'},{id:'other',class:'*',do:'blocked'}]})
+ const raise=await corrected('Safety','Workshop'),orders=(await h.state()).data.order.length
+ await c.adopt(cap(10000))
+ const refused=await c.tool('purse.preparations.execute',{id:raise.id,idempotency_key:randomUUID()})
+ assert.equal(code(refused),'policy_blocked');assert.deepEqual(refused.decision.classes.map(row=>[row.class,row.facts.measure]),[['money',11000],['commitment',11000]])
+ assert.equal((await h.state()).data.order.length,orders)
+ await c.adopt(cap(11000))
+ const paid=await proof.execute(raise)
+ assert.equal(paid.result.status,'issued');assert.equal(paid.result.totalMinor,11000)
+ // A correction that needs renewed approval commits the pending revision on both doors, never a server error.
+ await h.command('policy',{name:'Correction needs budget owner',currency:'USD',category:'Tooling',project:'Workshop',approver:owner,limitMinor:1000000,budgetMinor:10500,overBudget:'owner',budgetOwner:owner})
+ const routed=await corrected('Tooling','Workshop'),request=routed.input.id
+ await c.adopt(automatic)
+ const renewal=await proof.execute(routed)
+ assert.equal(renewal.result.conversionRouted,true);assert.equal(renewal.result.status,'pending');assert.equal(renewal.result.revision,routed.input.revision+1)
+ const after=(await h.state()).data
+ assert.equal(after.order.filter(row=>row.request===request).length,0)
+ assert.equal(after.request.find(row=>row.id===request).revision,renewal.result.revision)
  console.log('PROBE BASE-AGENT-002 proposal policy: stored combined conversion and issue -> money and commitment classes; blocked policy and wrong sponsor refuse without native effects')
 }

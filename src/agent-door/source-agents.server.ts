@@ -35,7 +35,7 @@ export function sourceAgentTools(env:Bindings):ToolDefinition[] {
       const target=job==='quotes'||job==='clarification'?{kind:'request',id:get(state,'rfq',String(args.rfq)).request}:job==='exception'?{kind:'invoice',id:get(state,'invoiceException',String(args.id)).invoice}:job==='late-order'?{kind:'order',id:String(args.order)}:job==='value'?{kind:'request',id:String(args.request)}:null
       await readFence(env.DB,native.a,native.revision)
       return {...native,job,result,target}
-    }catch(error){return nativeRefusal(error)}
+    }catch(error){return nativeRefusal(error,ctx)}
   }
   return [defineTool({
     name:'purse.agents.prepare',title:'Prepare a native source-bound assistant report',

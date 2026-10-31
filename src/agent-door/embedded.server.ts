@@ -31,7 +31,7 @@ export function embeddedTools(env:Bindings):ToolDefinition[] {
       if(!result)throw new ToolRefusal('not_found')
       await readFence(env.DB,native.a,native.revision)
       return {...native,result}
-    }catch(error){return nativeRefusal(error)}
+    }catch(error){return nativeRefusal(error,ctx)}
   }
   return specs.map(spec=>defineTool({
     name:embeddedJobs[spec.op].tool,title:embeddedJobs[spec.op].name,
@@ -45,13 +45,13 @@ export function embeddedTools(env:Bindings):ToolDefinition[] {
 }
 
 /** Native HTTP supplies the authenticated sponsor; no input may select it.
- * Existing unpaired installations retain their native governance. Once a
- * company or local policy is configured, removal or expiry cannot bypass it.
+ * Every assistant call is a call to the shared tool: with no company or local
+ * policy the registry answers policy_unset and changes nothing.
  */
 export async function invokeEmbedded(env:Bindings,a:Actor,op:string,input:Data):Promise<CallResult|null> {
   if(!Object.hasOwn(embeddedJobs,op)&&!Object.hasOwn(sourceByOperation,op))return null
-  const policy=await env.DB.prepare('SELECT envelope,local_revision FROM agent_door_state WHERE id=1').first<{envelope:string|null;local_revision:number}>()
-  if(!env.RER_OWNER_CLAIM_ISSUER&&!env.RER_BUSINESS_TRUST&&!policy?.envelope&&!policy?.local_revision)return null
+  // The registry drops undeclared fields, so the native command alone can refuse and audit protected structured input.
+  if(containsProtectedInput(input))return null
   const job=Object.hasOwn(embeddedJobs,op)?embeddedJobs[op as keyof typeof embeddedJobs]:sourceByOperation[op]
   const {purseAgentDoor}=await import('./index.server')
   const key=input.idempotency_key??crypto.randomUUID()

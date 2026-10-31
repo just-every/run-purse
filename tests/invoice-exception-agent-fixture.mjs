@@ -37,7 +37,7 @@ export async function invoiceExceptionAgentFixture(t,options={}) {
     const item = async id => (await f.queue()).find(e => e.invoice === id);
     const run = async (id, cookie = f.buyer, status = 200, extra = {}) => {
         const row = await item(id);
-        return h.command('invoice-exception-agent-run', { id, sourceVersion: row?.agent.sourceVersion, ...extra }, cookie, status);
+        return h.command('invoice-exception-agent-run', { id, sourceVersion: row?.agent.sourceVersion ?? 'no-source-version', ...extra }, cookie, status);
     };
     const raw = async () => (await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results;
     return { ...f, controls, create, item, run, raw };

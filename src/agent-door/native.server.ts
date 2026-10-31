@@ -9,8 +9,13 @@ import { nativePeople } from './people.server'
 import { importJobs } from '../purse/import-custody'
 import { nativeFaultCode } from '../purse/fault-code'
 
-export function nativeRefusal(error: unknown): never {
-  if(error instanceof Fault) throw new ToolRefusal(nativeFaultCode(error.status),error.message)
+// The shared door answers a refusal by code. Native HTTP shows its own message to
+// the signed-in person, so only the embedded door carries it back to that person.
+function refusal(code: string, message: string, ctx?: ResourceContext | ToolContext) {
+  return new ToolRefusal(code,message,ctx&&'door' in ctx&&ctx.door==='embedded'?{message}:{})
+}
+export function nativeRefusal(error: unknown, ctx?: ResourceContext | ToolContext): never {
+  if(error instanceof Fault) throw refusal(nativeFaultCode(error.status),error.message,ctx)
   throw error
 }
 
@@ -36,11 +41,11 @@ export async function snapshot(env:Bindings,ctx:ResourceContext|ToolContext) {
   await readFence(env.DB,a,revision)
   return {a,state,revision,projected}
  } catch(error) {
-  if(error instanceof Fault) throw new ToolRefusal(error.status===409?'native_conflict':error.status===403?'permission_denied':'not_found',error.message)
+  if(error instanceof Fault) throw refusal(error.status===409?'native_conflict':error.status===403?'permission_denied':'not_found',error.message,ctx)
   throw error
  }
 }
-export async function execute(env:Bindings,op:string,args:Record<string,unknown>,ctx:ToolContext,resultKind?:string) {
+export async function execute(env:Bindings,op:string,args:Record<string,unknown>,ctx:ToolContext,resultKind?:string|((result:Data)=>string)) {
   try {
     const a=await nativeActor(env,ctx), {state,revision}=await load(env.DB), before=structuredClone(state)
     if(a.agent)a.agent.admission=ctx.operationId
@@ -50,9 +55,10 @@ export async function execute(env:Bindings,op:string,args:Record<string,unknown>
       put(state,row.kind,row.id,{...row.value,preparedBy:{agent:{id:ctx.agent.id,name:ctx.agent.name},for:{id:a.id,name:ctx.person.name},label:ctx.actor.label},companyDecision:{id:ctx.operationId},...(ctx.approvers.length?{companyApprovers:ctx.approvers}:{})})
     }
     await save(env.DB,a,before,state,revision)
-    return JSON.parse(JSON.stringify(projectCommandResult(state,a,resultKind?{...result,...state.get(`${resultKind}:${result.id}`)!.value}:result))) as Data
+    const kind=typeof resultKind==='function'?resultKind(result):resultKind
+    return JSON.parse(JSON.stringify(projectCommandResult(state,a,kind?{...result,...state.get(`${kind}:${result.id}`)!.value}:result))) as Data
   } catch(error) {
-    if(error instanceof Fault) throw new ToolRefusal(nativeFaultCode(error.status),error.message)
+    if(error instanceof Fault) throw refusal(nativeFaultCode(error.status),error.message,ctx)
     throw error
   }
 }
