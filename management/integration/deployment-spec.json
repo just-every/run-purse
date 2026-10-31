@@ -286,6 +286,12 @@
       "name": "0046_saml.sql",
       "sha256": "e4531dcab36805a6376a07fb8d95fe5b2db961a600b5d89a287645877fc8205d",
       "sql": "-- Installation-local SAML correlation and immutable configuration pins.\nCREATE TABLE p_saml_pins (\n provider_id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, linked_at INTEGER NOT NULL\n);\nCREATE TABLE p_saml_transactions (\n relay_hash TEXT PRIMARY KEY, request_id TEXT NOT NULL UNIQUE, provider_id TEXT NOT NULL,\n binding_hash TEXT NOT NULL, generation INTEGER NOT NULL, fingerprint TEXT NOT NULL,\n expires_at INTEGER NOT NULL, consumed_at INTEGER\n);\nCREATE INDEX p_saml_transaction_expiry ON p_saml_transactions(expires_at);\nCREATE TABLE p_saml_limits (bucket TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0047_intake_agent_authority.sql",
+      "sha256": "440d267bc3b5929fd0bdcbb1c0e3a9d84fa0bb231730147363a31cd17217355e",
+      "sql": "-- Execution consent is installation-local; archives retain policy history only.\nCREATE TABLE p_intake_agent_authority (\n policy TEXT PRIMARY KEY,\n version INTEGER NOT NULL,\n actor TEXT NOT NULL,\n operator_version INTEGER NOT NULL\n);\n"
     }
   ],
   "compatibilityDate": "2026-09-08",
