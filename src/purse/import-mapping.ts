@@ -1,4 +1,6 @@
+import { erasureDigest, pathValue } from './erasure-journal.mjs';
 import type { TargetEffect } from '../modules/import-kit/src/types';
+import { historicalGroups, historicalLineId, historicalDefinition, historicalFields, mergeHistorical, historicalReport, historicalRowProof } from './procurify-lines';
 import { importedInvoice, importedDeposit } from './import-invoice';
 import { matchingInputs } from './supplier-identity';
 import { sensitiveSupplierColumns, redactSupplierCsv } from './supplier-csv-custody';
@@ -49,17 +51,24 @@ export function mappedSource(s: State, b: Data) {
     const records = inputRecords.map(row => Object.fromEntries(Object.entries(row).map(([name, value]) => [name, redactedColumns.includes(name) && value ? '[REDACTED]' : value])));
 
     requireThat(records.length <= 300, 'Import at most 300 rows per reviewed batch');
+    const col = (r: Data, k: string) => r[columns[k] ?? k] ?? '';
+    const groups = historicalGroups(records, col);
+    const definitions = new Map<string, Data>();
+    for (const row of records.filter(r => col(r, 'kind') === 'field')) {
+        const sourceId = col(row, 'sourceId');
+        requireThat(Object.values(sensitiveSupplierColumns([col(row, 'name'), sourceId], {})).every(names => names.length === 0), 'Protected historical field definitions are unsupported; retain only matching inputs through supplier columns');
+        definitions.set(sourceId, historicalDefinition(row, col, { id: id('field', sourceId), sourceId, imported: true, status: 'imported', name: col(row, 'name') }));
+    }
     const keys = new Set(records.map(r => id(r[columns.kind ?? 'kind'], r[columns.sourceId ?? 'sourceId'])));
     const warnings: string[] = [];
     const currencies = new Set<string>();
     const unresolved: string[] = [];
     const statusMappings: Data[] = [];
     const values = new Map<string, Data>();
-    const col = (r: Data, k: string) => r[columns[k] ?? k] ?? '';
-    for (const r of records) {
+    for (const [rowIndex, r] of records.entries()) {
         const kind = col(r, 'kind'), sourceId = col(r, 'sourceId');
         requireThat(typeof sourceId === 'string' && sourceId.length > 0 && sourceId.length <= 2000, 'Source key required (maximum 2000 characters)');
-        requireThat(['supplier', 'code', 'budget', 'request', 'order', 'receipt', 'invoice', 'deposit'].includes(kind), 'Import suppliers/codes/budgets, requests, orders, receipts, invoices or deposits');
+        requireThat(['supplier', 'code', 'budget', 'request', 'order', 'receipt', 'invoice', 'deposit', 'field'].includes(kind), 'Import suppliers/codes/budgets, requests, orders, receipts, invoices or deposits');
         const sourceStatus = col(r, 'status'), status = config.statuses?.[sourceStatus];
         requireThat(status, 'Map every source status explicitly');
         statusMappings.push({ source: sourceStatus, mapped: status });
@@ -70,6 +79,7 @@ export function mappedSource(s: State, b: Data) {
         const decimal = (v: string) => { requireThat(config.decimal === '.' || config.decimal === ',', 'Choose decimal convention'); return config.decimal === ',' ? v.replace(',', '.') : v; };
         const money = (v: string) => { const x = decimal(v); requireThat(/^\d+(\.\d{1,2})?$/.test(x), 'Money must have at most 2 decimal places'); const [whole, fraction = ''] = x.split('.'); return minor(Number(whole) * 100 + Number(fraction.padEnd(2, '0'))); };
         const sourceDate = (v: string) => { requireThat(['YYYY-MM-DD', 'DD/MM/YYYY'].includes(config.date), 'Choose date convention'); return date(config.date === 'DD/MM/YYYY' ? v.split('/').reverse().join('-') : v); };
+        if (kind === 'field') value = { ...value, ...definitions.get(sourceId) };
         if (kind === 'supplier')
             value = { ...value, name: text(col(r, 'name'), 'Supplier name'), matching: matchingBySource.get(sourceId) ?? {}, sourceRedaction: redaction ? { redactedColumns: redaction.custody.redactedColumns } : null, status: status === 'blocked' ? 'blocked' : 'pending_review', requestedStatus: status === 'blocked' ? 'blocked' : status === 'preferred' ? 'preferred' : 'active', reason: 'Imported historical supplier status: ' + sourceStatus, dba: col(r, 'dba'), address: col(r, 'address'), phone: col(r, 'phone'), contacts: col(r, 'email') ? [{ name: col(r, 'contactName') || col(r, 'name'), email: col(r, 'email') }] : [], contractRef: col(r, 'contractRef'), renewal: col(r, 'renewal') ? sourceDate(col(r, 'renewal')) : '', documents: [] };
         if (kind === 'code')
@@ -83,22 +93,42 @@ export function mappedSource(s: State, b: Data) {
             requireThat(/^[A-Z]{3}$/.test(c), 'Currency required');
             currencies.add(c);
             requireThat(get(s, 'business', 'main').currencies.includes(c), 'Enable all imported currencies first');
-            const q = quantity(decimal(col(r, 'quantity'))), unitMinor = money(col(r, 'unitPrice')), line = { id: id('line', sourceId), sourceLine: id('line', sourceId), description: text(col(r, 'description'), 'Description'), quantity: decimal(col(r, 'quantity')), q, unitMinor, totalMinor: extended(q, unitMinor), category: col(r, 'category'), project: col(r, 'project') };
+            const q = quantity(decimal(col(r, 'quantity'))), unitMinor = money(col(r, 'unitPrice')), line: Data = { id: historicalLineId(sourceId, col(r, 'lineId')), sourceLine: historicalLineId(sourceId, col(r, 'lineId')), ...(col(r, 'lineId') ? { sourceLineId: col(r, 'lineId'), historicalFields: historicalFields(s, definitions, col(r, 'lineFields'), kind, 'line') } : {}), description: text(col(r, 'description'), 'Description'), quantity: decimal(col(r, 'quantity')), q, unitMinor, totalMinor: extended(q, unitMinor), category: col(r, 'category'), project: col(r, 'project') };
             value = { ...value, title: col(r, 'name'), supplier: ref('supplierId', 'supplier'), currency: c, lines: [line], needDate: sourceDate(col(r, 'needDate')), revision: 1, freightMinor: money(col(r, 'freight') || '0'), taxMinor: money(col(r, 'tax') || '0'), terms: col(r, 'terms'), requester: 'historical', location: col(r, 'location'), costCentre: col(r, 'costCentre'), sourceBudget: col(r, 'budget'), sourceApproval: { status: sourceStatus, evidence: col(r, 'approvalEvidence') || null }, policy: null };
             value.totalMinor = line.totalMinor + value.freightMinor + value.taxMinor;
             if (kind === 'order')
                 value = { ...value, request: ref('requestId', 'request'), number: col(r, 'number') || sourceId, sequence: 0, issuedAt: null };
+            if (kind === 'order' && col(r, 'lineId')) line.sourceRequestLine = historicalLineId(col(r, 'requestId'), col(r, 'requestLineId'));
             if (!col(r, 'attachment'))
                 warnings.push(`${kind} ${sourceId}: attachment not supplied`);
         }
         if (kind === 'receipt')
-            value = { ...value, order: ref('orderId', 'order'), line: id('line', col(r, 'orderId')), quantity: decimal(col(r, 'quantity')), q: quantity(decimal(col(r, 'quantity'))), event: 'historical', at: sourceDate(col(r, 'date')), reason: 'Imported historical receipt, no native commitment effect' };
+            value = { ...value, order: ref('orderId', 'order'), line: historicalLineId(col(r, 'orderId'), col(r, 'orderLineId')), quantity: decimal(col(r, 'quantity')), q: quantity(decimal(col(r, 'quantity'))), event: 'historical', at: sourceDate(col(r, 'date')), reason: 'Imported historical receipt, no native commitment effect' };
         if (kind === 'invoice') value = importedInvoice(r, col, { quantity: v => quantity(decimal(v)), money, date: sourceDate }, ref, value);
         if (kind === 'deposit') value = importedDeposit(r, col, money, ref, value);
+        if (['request', 'order', 'invoice'].includes(kind) && col(r, 'lineId')) {
+            value.historicalFields = historicalFields(s, definitions, col(r, 'headerFields'), kind, 'header');
+            value.sourceRows = [historicalRowProof(r, rowIndex + 2, col)];
+            if (kind === 'invoice') Object.assign(value.allocations[0], { sourceLineId: col(r, 'lineId'), historicalFields: historicalFields(s, definitions, col(r, 'lineFields'), kind, 'line') });
+            value = mergeHistorical(values.get(`${kind}:${sourceId}`), value);
+        } else requireThat(!col(r, 'headerFields') && !col(r, 'lineFields'), 'Historical custom values require explicit lineId');
         values.set(`${kind}:${sourceId}`, value);
+    }
+    const erasedFields = all(s, 'erasureReceipt').flatMap(receipt => receipt.fields);
+    for (const [key, value] of values) {
+        const kind = key.slice(0, key.indexOf(':')) === 'field' ? 'importField' : key.slice(0, key.indexOf(':'));
+        requireThat(!erasedFields.some(field => field.kind === kind && field.id === value.id && pathValue(value, field.path) !== undefined && erasureDigest(pathValue(value, field.path)) === field.before), 'Import source contains erased personal data; supply corrected history', 409);
     }
     const extras = new Map<string, TargetEffect[]>();
     for (const value of values.values()) {
+        if (value.sourceRows && value.lines && value.request) {
+            const request = [...values.values()].find(v => v.id === value.request) ?? s.get('request:' + value.request)?.value;
+            if (request) requireThat(value.lines.every((line: Data) => request.lines.some((l: Data) => l.id === line.sourceRequestLine)), 'Historical PO line must reference an exact request line');
+        }
+        if (value.order && !value.allocations && value.line) {
+            const order = [...values.values()].find(v => v.id === value.order) ?? s.get('order:' + value.order)?.value;
+            if (order) requireThat(order.lines.some((line: Data) => line.id === value.line), 'Historical receipt must reference an exact PO line');
+        }
         if (value.lines) {
             const counterparty = [...values.values()].find(v => v.id === value.supplier) ?? s.get('supplier:' + value.supplier)?.value;
             if (counterparty) value.supplierSnapshot = { id: value.supplier, name: counterparty.name, dba: counterparty.dba || '', address: counterparty.address || '', remitTo: counterparty.remitTo || '', contacts: structuredClone(counterparty.contacts ?? []), contractRef: counterparty.contractRef || '' };
@@ -128,7 +158,11 @@ export function mappedSource(s: State, b: Data) {
         if (matches.length) supplierDuplicates.push({ sourceId: value.sourceId, supplier: value.id, matches });
     }
     const bytes = new TextEncoder().encode(raw), hash = sha256(bytes);
-    const source: SourceBundle = { diagnostics: unresolved.map(message => ({ severity: 'error', code: 'UNRESOLVED_REFERENCE', message })), artifacts: [{ name: b.filename || 'procurify-shape.csv', sha256: hash, size: bytes.length, original: { status: 'available', base64: Buffer.from(bytes).toString('base64') } }, ...(redaction ? [{ name: (b.filename || 'procurify-shape.csv') + '.custody.json', sha256: sha256(canonicalJson(redaction.custody)), size: new TextEncoder().encode(canonicalJson(redaction.custody)).length, original: { status: 'available' as const, base64: Buffer.from(canonicalJson(redaction.custody)).toString('base64') } }] : [])], records: records.map((r, i) => { const kind = col(r, 'kind'), sourceId = col(r, 'sourceId'); return { namespace: 'procurify', kind, sourceId, payload: r, payloadHash: sha256(canonicalJson(r)), artifactHash: hash, location: { artifact: b.filename || 'procurify-shape.csv', row: i + 2 } }; }).sort((a, b) => ['supplier', 'code', 'budget', 'request', 'order', 'receipt', 'invoice', 'deposit'].indexOf(a.kind) - ['supplier', 'code', 'budget', 'request', 'order', 'receipt', 'invoice', 'deposit'].indexOf(b.kind)) };
-    const mapping: ImportMapping = { version: sha256(canonicalJson(config)), map: r => ({ effects: unresolved.length ? [] : [{ targetKind: r.kind, targetId: id(r.kind, r.sourceId), value: values.get(`${r.kind}:${r.sourceId}`)! }, ...(r.kind === 'invoice' ? extras.get(r.sourceId) ?? [] : [])], ...(unresolved.length ? { rejection: 'Resolve references before commit' } : {}) }) };
-    return { source, mapping, report: { supplierRedaction: redaction?.custody ?? null, supplierDuplicates, currencies: [...currencies], unresolved, statusMappings, missingAttachments: warnings, fixtureOnly: true } };
+    const source: SourceBundle = { diagnostics: unresolved.map(message => ({ severity: 'error', code: 'UNRESOLVED_REFERENCE', message })), artifacts: [{ name: b.filename || 'procurify-shape.csv', sha256: hash, size: bytes.length, original: { status: 'available', base64: Buffer.from(bytes).toString('base64') } }, ...(redaction ? [{ name: (b.filename || 'procurify-shape.csv') + '.custody.json', sha256: sha256(canonicalJson(redaction.custody)), size: new TextEncoder().encode(canonicalJson(redaction.custody)).length, original: { status: 'available' as const, base64: Buffer.from(canonicalJson(redaction.custody)).toString('base64') } }] : [])], records: groups.flatMap(group => {
+        const explicitLines = ['request','order','invoice'].includes(group.kind) && col(group.rows[0], 'lineId');
+        const sources = explicitLines ? [{ payload: { rows: group.rows, positions: group.positions }, row: group.positions[0] }] : group.rows.map((payload, index) => ({ payload, row: group.positions[index] }));
+        return sources.map(({ payload, row }) => ({ namespace: 'procurify', kind: group.kind, sourceId: group.sourceId, payload, payloadHash: sha256(canonicalJson(payload)), artifactHash: hash, location: { artifact: b.filename || 'procurify-shape.csv', row } }));
+    }).sort((a, b) => ['supplier', 'code', 'budget', 'field', 'request', 'order', 'receipt', 'invoice', 'deposit'].indexOf(a.kind) - ['supplier', 'code', 'budget', 'field', 'request', 'order', 'receipt', 'invoice', 'deposit'].indexOf(b.kind)) };
+    const mapping: ImportMapping = { version: sha256(canonicalJson(config)), map: r => ({ effects: unresolved.length ? [] : [{ targetKind: r.kind === 'field' ? 'importField' : r.kind, targetId: id(r.kind, r.sourceId), value: values.get(`${r.kind}:${r.sourceId}`)! }, ...(r.kind === 'invoice' ? extras.get(r.sourceId) ?? [] : [])], ...(unresolved.length ? { rejection: 'Resolve references before commit' } : {}) }) };
+    return { source, mapping, report: { supplierRedaction: redaction?.custody ?? null, supplierDuplicates, currencies: [...currencies], unresolved, statusMappings, missingAttachments: warnings, fixtureOnly: true, inputRows: records.length, ...historicalReport([...values.values()]) } };
 }

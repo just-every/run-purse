@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {mkdir} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
+import {harness} from './purse-harness.mjs';
+import {nativeWebContext} from './native-web-fixture.mjs';
+import {input,configure,ids} from './procurify-lines-fixture.mjs';
+const {chromium}=await import(process.env.PURSE_PLAYWRIGHT_MODULE || '@playwright/test');
+const evidence=resolve(process.env.PURSE_EVIDENCE || '.cache/procurify-lines');await mkdir(evidence,{recursive:true});
+const bundle=await build({stdin:{contents:"import React from 'react';import{createRoot}from'react-dom/client';import{App}from'./src/ui/app';createRoot(document.getElementById('root')).render(<App/>);",resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'esm',platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
+const browser=await chromium.launch({headless:true,executablePath:process.env.PURSE_CHROMIUM_EXECUTABLE_PATH || undefined,args:['--use-mock-keychain','--password-store=basic',...(process.env.PURSE_CHROMIUM_EXECUTABLE_PATH?['--no-sandbox']:[])]});
+const h=await harness(),contexts=[];
+try {
+    await configure(h);const source=await input();
+    const open=async width=>{const context=await nativeWebContext(browser,h,width,bundle.outputFiles[0].text);contexts.push(context);const page=await context.newPage();await page.goto(h.origin+'/app?tab=Imports');await page.getByRole('heading',{name:'Move in from CSV',exact:true}).waitFor();return page;};
+    const page=await open(1440),before=(await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results;
+    const preview=async page=>{await page.getByLabel('CSV file',{exact:true}).setInputFiles({name:source.filename,mimeType:'text/csv',buffer:Buffer.from(source.csv)});const response=page.waitForResponse(r=>r.url().endsWith('/import/preview'));await page.getByRole('button',{name:'Preview without writes',exact:true}).click();assert.equal((await response).status(),200);await page.getByRole('heading',{name:'Review this exact batch',exact:true}).waitFor();};
+    await preview(page);assert.deepEqual((await h.db.prepare('SELECT * FROM p_records ORDER BY kind,id').all()).results,before);
+    const report=page.getByRole('region',{name:'Historical import reconciliation',exact:true});
+    assert.ok((await report.innerText()).includes('105000 minor units'));assert.ok((await report.innerText()).includes('EUR'));assert.ok((await report.innerText()).includes('40000 minor units'));
+    await report.getByText('Historical source identities and fields',{exact:true}).click();await report.locator('summary').filter({hasText:'synthetic-purse-order'}).click();await report.getByText('Header: Source header grant [order-header]: "Grant A"',{exact:true}).waitFor();assert.ok((await report.innerText()).includes('" line 2 "'));assert.ok((await report.innerText()).includes('Grant B'));assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    await report.screenshot({path:join(evidence,'IMPORT-001-preview-1440.png')});
+    // One phone smoke captures the same changed screen; flow assertions use 1440.
+    const phone=await open(390);await preview(phone);const mobile=phone.getByRole('region',{name:'Historical import reconciliation',exact:true});await mobile.getByText('Historical source identities and fields',{exact:true}).click();await mobile.locator('summary').filter({hasText:'synthetic-purse-order'}).click();assert.equal(await phone.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await mobile.screenshot({path:join(evidence,'IMPORT-001-preview-390.png')});
+    const commit=page.waitForResponse(r=>r.url().endsWith('/import/commit'));await page.getByRole('button',{name:'Commit reviewed batch',exact:true}).click();assert.equal((await commit).status(),200);await page.getByRole('button',{name:'Resume / refresh',exact:true}).waitFor();
+    const rows=(await h.state()).data,order=rows.order.find(r=>r.id===ids.order);assert.equal(order.totalMinor,105000);assert.equal(order.lines.length,2);assert.equal(rows.invoice.find(r=>r.id===ids.invoice).totalMinor,40000);assert.equal(rows.intakeForm.length,0);assert.equal(rows.commitment.length,0);assert.equal(rows.decision.length,0);
+    const resume=page.waitForResponse(r=>r.url().endsWith('/import/resume'));await page.getByRole('button',{name:'Resume / refresh',exact:true}).click();assert.equal((await resume).status(),200);assert.equal((await h.state()).data.order.length,2);
+    // Reopening a retained batch shows its current historical values and reconciliation.
+    await page.reload();await page.getByRole('button',{name:'Open batch',exact:true}).click();const retained=page.getByRole('region',{name:'Historical import reconciliation',exact:true});await retained.getByRole('heading',{name:'Historical reconciliation',exact:true}).waitFor();await retained.getByText('Historical source identities and fields',{exact:true}).click();await retained.locator('summary').filter({hasText:'synthetic-purse-order'}).click();await retained.screenshot({path:join(evidence,'IMPORT-001-retained-1440.png')});
+    await phone.reload();await phone.getByRole('button',{name:'Open batch',exact:true}).click();const mobileRetained=phone.getByRole('region',{name:'Historical import reconciliation',exact:true});await mobileRetained.getByRole('heading',{name:'Historical reconciliation',exact:true}).waitFor();await mobileRetained.getByText('Historical source identities and fields',{exact:true}).click();await mobileRetained.locator('summary').filter({hasText:'synthetic-purse-order'}).click();assert.equal(await phone.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await mobileRetained.screenshot({path:join(evidence,'IMPORT-001-retained-390.png')});
+    const undo=page.waitForResponse(r=>r.url().endsWith('/import/undo'));await page.getByRole('button',{name:'Undo untouched imported records',exact:true}).click();assert.equal((await undo).status(),200);await page.getByRole('heading',{name:'Undo disposition report',exact:true}).waitFor();assert.equal((await h.state()).data.order.length,0);assert.equal((await h.state()).data.importField.length,0);
+    console.log('IMPORT-001 historical import public web journey passed at 1440; changed screens and phone smoke passed at 390');
+} finally {for(const context of contexts)await context.close();await browser.close();await h.close();}

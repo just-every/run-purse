@@ -1,6 +1,6 @@
 import {defineTool,type ToolDefinition} from '../modules/agent-door/index.ts'
 import type {Bindings} from '../auth.server'
-import {load} from '../purse/store'
+import {load,readFence} from '../purse/store'
 import {get,requireThat,type Actor,type Data} from '../purse/types'
 import {requirePermission} from '../purse/access'
 import {requireAgentPolicies,purchaseTypes} from '../purse/agent-governance'
@@ -59,11 +59,13 @@ export async function nativeScheduleAction(env:Bindings,a:Actor,input:Data) {
 export function scheduledTools(env:Bindings):ToolDefinition[] {
  async function resolve(args:Record<string,unknown>,ctx:Parameters<typeof snapshot>[1],completed=false) {
   try {
-   const {a}=await snapshot(env,ctx)
+   const native=await snapshot(env,ctx),{a}=native
    // A transport caller cannot advance the native clock. Embedded calls come
    // only from the native scheduler's own ScheduledController timestamp.
    requireThat('door' in ctx&&ctx.door==='embedded'||Number(args.tick)<=Date.now(),'A caller cannot advance the native schedule clock',409)
-   return await scheduledPlan(env,a,args,completed)
+   const plan=await scheduledPlan(env,a,args,completed)
+   await readFence(env.DB,a,native.revision)
+   return plan
   }catch(error){return nativeRefusal(error)}
  }
  return [defineTool({

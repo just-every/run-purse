@@ -118,15 +118,16 @@ export async function runValueCheckinAttempt(env: Bindings, requestId: string, r
         insert('audit', audit.id, audit,auditVersion),
     ]);
     if (!claimed[0].meta.changes) {if(company)requireThat(false,'Native scheduled claim changed; reload',409);return;}
+    const claimedEvent=JSON.stringify(event),claimedAudit=JSON.stringify(audit);
     event.outcome = await send(env, event, now, company);
     audit.outcome = event.outcome.status;
-    const update = (kind: string, recordId: string, value: Data, expected:string) => env.DB.prepare("UPDATE p_records SET revision=?,value=? WHERE business='main' AND kind=? AND id=? AND revision=?")
-        .bind(uid(), JSON.stringify(value), kind, recordId,expected);
-    await env.DB.batch([update('valueCheckin', id, event,claimVersion),
+    const update = (kind: string, recordId: string, value: Data, expected:string,previous:string) => env.DB.prepare("UPDATE p_records SET revision=?,value=? WHERE business='main' AND kind=? AND id=? AND revision=? AND value=?")
+        .bind(uid(), JSON.stringify(value), kind, recordId,expected,previous);
+    await env.DB.batch([update('valueCheckin', id, event,claimVersion,claimedEvent),
         // A requester may confirm while the mail edge is pending; preserve appended confirmation outcomes.
         env.DB.prepare("UPDATE p_records SET revision=?,value=json_set(value,'$.outcomes[0]',json(?)) WHERE business='main' AND kind='agentRun' AND id=? AND json_extract(value,'$.actor')=? AND json_extract(value,'$.inputs.fingerprint')=? AND json_extract(value,'$.sourceValuesErased') IS NOT 1 AND json_extract(value,'$.protectedContextCleanup.authorityInvalidated') IS NOT 1")
             .bind(uid(), JSON.stringify(event.outcome), event.run,event.requester,inputs.fingerprint),
-        update('audit', audit.id, audit,auditVersion)]);
+        update('audit', audit.id, audit,auditVersion,claimedAudit)]);
     return (await load(env.DB)).state.get(key('valueCheckin',id))?.value;
 }
 

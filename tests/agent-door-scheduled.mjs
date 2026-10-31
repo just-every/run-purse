@@ -71,6 +71,7 @@ export async function scheduledNativeChaseJourney() {
  }finally{await f.close()}
 }
 
+const valueMail=(h,title)=>h.messages.filter(message=>message.subject===('Usefulness check-in: '+title))
 const day=86400000
 const tick=async(h,now)=>{const response=await h.mf.dispatchFetch(h.origin+'/cdn-cgi/local/scheduled?time='+now);assert.equal(response.status,200,await response.text())}
 const nativeCommercial=async h=>(await h.db.prepare("SELECT kind,id,revision,value FROM p_records WHERE business='main' AND kind IN ('request','decision','order','commitment','recurringScenario','recurringScenarioConsent','recurringScenarioDraft') ORDER BY kind,id").all()).results
@@ -88,15 +89,16 @@ export async function scheduledValueAndRecurringJourney() {
  try {
   const {h}=f;await localCompanyPolicy(h)
   const before=await nativeCommercial(h),data=(await h.state()).data,delivery=data.receipt.find(row=>row.order===f.orders[0].id)
-  const due=Date.parse(delivery.at)+30*day,mail=h.messages.length
+  const due=Date.parse(delivery.at)+30*day,mail=valueMail(h,f.requests[0].title).length
   await Promise.all([tick(h,due),tick(h,due)])
   const after=(await h.state()).data,event=after.valueCheckin.find(row=>row.request===f.requests[0].id&&row.intervalDays===30)
   assert.ok(event);assert.equal(event.outcome.status,'accepted');assert.equal(event.report.promisedSeats,50);assert.equal(event.report.activeSeats,31);assert.equal(event.report.shortfall,19)
   assert.equal(after.valueCheckin.filter(row=>row.request===f.requests[0].id&&row.intervalDays===30).length,1)
-  const sent=h.messages.length;assert.ok(sent>mail);await tick(h,due);assert.equal(h.messages.length,sent)
+  const sent=valueMail(h,f.requests[0].title).length;assert.ok(sent>mail);await tick(h,due);assert.equal(valueMail(h,f.requests[0].title).length,sent)
   await recordedAdmission(h,event);assert.deepEqual(await nativeCommercial(h),before)
   await localCompanyPolicy(h,'blocked');await tick(h,Date.parse(delivery.at)+90*day)
-  assert.equal(h.messages.length,sent);await localCompanyPolicy(h);await tick(h,Date.parse(delivery.at)+91*day);assert.equal(h.messages.length,sent,'A denied native interval cannot backfill later')
+  assert.equal(valueMail(h,f.requests[0].title).length,sent);await localCompanyPolicy(h);await tick(h,Date.parse(delivery.at)+91*day);assert.equal(valueMail(h,f.requests[0].title).length,sent,'A denied native interval cannot backfill later')
+  await tick(h,Date.parse(f.agreements[0].noticeDeadline+'T12:00:00Z')-6*day)
   const notices=(await h.state()).data.recurringDiscoveryNotice
   assert.ok(notices.length,'The recorded renewal window produces real in-app proposals')
   for(const notice of notices)await recordedAdmission(h,notice)
@@ -122,6 +124,7 @@ export async function scheduledErasureJourney() {
   const before=(await h.state()).data,request=before.request.find(row=>row.id===f.requests[0].id),delivery=before.receipt.find(row=>row.order===f.orders[0].id),due=Date.parse(delivery.at)+30*day
   work=tick(h,due)
   await Promise.race([entered,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Scheduled mail did not reach the network edge')),20000))])
+  await h.command('member',{email:request.requesterEmail,name:request.requesterEmail,roles:['requester'],active:false})
   await reauthenticateErasure(h)
   const meta=await h.send('/api/purse/erasure',undefined,h.owner)
   const preview=await h.send('/api/purse/erasure/preview',{kind:'member',id:request.requesterEmail,revision:meta.value.revision},h.owner)
@@ -129,7 +132,8 @@ export async function scheduledErasureJourney() {
   const erased=await h.send('/api/purse/erasure/execute',{...p.subject,revision:p.revision,review:p.review,fingerprint:p.fingerprint,consent:true},h.owner)
   assert.equal(erased.status,200,JSON.stringify(erased.value));release();await work
   const state=(await h.state()).data,audit=await h.send('/agents/api/audit',undefined,h.owner),serialized=JSON.stringify({state,audit:audit.value})
-  assert.ok(!serialized.includes(request.requesterEmail),'Late completion must not restore erased email')
+  const retained=[];const locate=(value,path)=>{if(typeof value==='string'&&value.includes(request.requesterEmail))retained.push(path);else if(Array.isArray(value))value.forEach((child,i)=>locate(child,path+'.'+i));else if(value&&typeof value==='object')for(const [key,child] of Object.entries(value))locate(child,path+'.'+key)};locate({state,audit:audit.value},'retained')
+  assert.ok(!serialized.includes(request.requesterEmail),'Late completion must not restore erased email: '+retained.join(', '))
   assert.ok(!serialized.includes(request.requester),'Late completion must not restore retired native identity')
   const sent=h.messages.length;await tick(h,due);assert.equal(h.messages.length,sent)
   assert.equal((await h.send('/api/purse/state',undefined,f.requester)).status,401)
