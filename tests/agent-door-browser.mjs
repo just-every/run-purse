@@ -1,6 +1,25 @@
 import assert from 'node:assert/strict'
 import {withAgentBrowser} from './agent-door-browser-session.mjs'
 
+export async function agentDocsBrowser({request,origin,cookie,docs}) {
+ await withAgentBrowser({request,origin,cookie},async({page,capture})=>{
+  await page.goto(origin+'/docs/agents',{waitUntil:'networkidle'})
+  await page.getByRole('heading',{name:'Agent documentation',exact:true}).waitFor()
+  assert.deepEqual(await page.locator('[data-tool]').evaluateAll(nodes=>nodes.map(node=>node.dataset.tool).sort()),docs.tools.map(tool=>tool.name).sort())
+  assert.deepEqual(await page.locator('[data-prompt]').evaluateAll(nodes=>nodes.map(node=>node.dataset.prompt).sort()),docs.prompts.map(prompt=>prompt.name).sort())
+  assert.equal(await page.locator('[data-limit="requestsPerMinute"]').innerText(),docs.limits.requestsPerMinute+' per agent')
+  assert.equal(await page.locator('[data-limit="maxBodyBytes"]').innerText(),String(docs.limits.maxBodyBytes))
+  assert.deepEqual(await page.locator('main *').evaluateAll(nodes=>nodes.filter(node=>node.getClientRects().length&&getComputedStyle(node).fontSize&&parseFloat(getComputedStyle(node).fontSize)<13).map(node=>node.tagName)),[])
+  const schema=page.locator('[data-tool]').first().getByText('Input and output schemas',{exact:true})
+  await schema.click()
+  await page.locator('[data-tool]').first().locator('pre').waitFor({state:'visible'})
+  await capture('agent-documentation')
+  await page.getByRole('link',{name:'Registry JSON',exact:true}).click()
+  assert.deepEqual(JSON.parse(await page.locator('body').innerText()),docs)
+ })
+ console.log('PROBE BASE-AGENT-013 browser: live registry, schemas and proof visible at 1440; page captured at 1440 and 390 without overflow; text at least 13px; all controls labelled')
+}
+
 export async function agentDoorBrowser({request,origin,cookie,order,native}) {
  await withAgentBrowser({request,origin,cookie},async({page,capture})=>{
   const decision=native.decision.find(row=>row.request===order.request&&row.preparedBy?.agent.id)
