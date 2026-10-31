@@ -26,7 +26,8 @@
   "6": [
     ["tests/browser.mjs", "--width=1440", "--journey=supplier-duplicates"],
     ["tests/browser-po-supplier-groups.mjs"],
-    ["tests/browser-notifications.mjs", "--width=1440"]
+    ["tests/browser-notifications.mjs", "--width=1440"],
+    ["tests/browser-intake-agent.mjs"]
   ],
   "7": [
     ["tests/browser.mjs", "--width=1440", "--journey=order-adoption"]
