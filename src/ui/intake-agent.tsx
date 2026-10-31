@@ -13,7 +13,7 @@ export function IntakeAgent({ data, mutate, onDraft }: { data: D; mutate: (op: s
     return <section aria-label="Requirements intake agent"><details><summary>Describe a need</summary>
         <p>Deterministic v1 · model none · provider none. Suggestions use current approved catalogue items and permitted purchase history. Nothing is submitted or sent.</p>
         <label className="field">Intake purchase form<select aria-label="Intake purchase form" disabled={Boolean(run)} value={form} onChange={event => setForm(event.target.value)}><option value="">Choose a form…</option>{data.intakeForm.filter((row: D) => row.active).map((row: D) => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
-        <label className="field">Describe your need<textarea value={need} disabled={Boolean(run)} onChange={event => setNeed(event.target.value)} maxLength={2000}/></label>
+        <label className="field">Describe your need<textarea aria-label="Describe your need" value={need} disabled={Boolean(run)} onChange={event => setNeed(event.target.value)} maxLength={2000}/></label>
         {run && <p role="status">{run.output.followUp}</p>}
         <label className="field">Explicit quantity<input inputMode="decimal" value={quantity} onChange={event => setQuantity(event.target.value)}/></label>
         <label className="field">Explicit need date<input type="date" value={needDate} onChange={event => setDate(event.target.value)}/></label>
@@ -25,7 +25,7 @@ export function IntakeAgent({ data, mutate, onDraft }: { data: D; mutate: (op: s
             <details><summary>Item sources</summary>{candidate.sources.map((source: D) => <p key={source.kind + source.id}>{source.kind} · {source.id} · version {source.version}</p>)}</details>
             {Object.keys(candidate.coding).length > 0 ? <><p>Suggested coding: {Object.entries(candidate.coding).map(([key, value]) => key + ': ' + value).join(' · ')}</p><details><summary>Coding sources</summary>{candidate.codingSources.map((source: D) => {
                 const snapshot = run.sources.find((row: D) => row.kind === source.kind && row.id === source.id);
-                return <p key={source.kind + source.id}>{source.kind === 'revision' ? `Purchase ${snapshot.value.request} · revision ${snapshot.value.revision} · line ${snapshot.value.line}` : source.kind + ' · ' + source.id} · version {source.version}</p>;
+                return <p key={source.kind + source.id}>{source.kind === 'revision' ? `Purchase ${snapshot.value.request} · revision ${snapshot.value.revision} · line ${candidate.codingLine ?? snapshot.value.line}` : source.kind + ' · ' + source.id} · version {source.version}</p>;
             })}</details></> : <p>No permitted purchase coding example. Review the configured defaults in your draft.</p>}
         </article>)}
             <section aria-label="Intake predicted route"><h4>Predicted approval route</h4><ol>{run.output.route.steps.map((step: D, index: number) => <li key={index}>{step.label} · {step.approver ?? step.authority}</li>)}</ol><p>{run.output.route.message}</p></section>
