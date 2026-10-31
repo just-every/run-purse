@@ -1,4 +1,5 @@
 import { supplierLineRemaining } from './po-supplier-groups';
+import { checkBudgetDisposition, dispositionOwnerSteps } from './budget-disposition';
 import { budgetPositionDimensions } from './budget-dimensions';
 import { budgetPortion, eventBudgetPortion, requestBudgetShares } from './budget-allocations';
 import { all, date, get, requireThat, type Data, type State } from './types';
@@ -52,8 +53,9 @@ export function budgetPeriod(input: Data, prior?: Data) {
  return {from,through};
 }
 export function budgetRoom(s: State, request: Data, policy: Data, delta: number) {
+ checkBudgetDisposition(s,request);
+ if(request.budgetDisposition)return true;
  if(delta<=0)return true;
- if(request.amends){const prior=get(s,'order',request.amends);if(policy.budgetPeriod||s.get('policy:'+prior.policy)?.value.budgetPeriod)requireThat(prior.policy===policy.id,'Cross-period budget amendments require an explicit remaining-balance disposition',409);}
  if(!policy.budgetPeriod)return undefined;
  const events=all(s,'commitment').filter(event=>event.request===request.id&&event.currency===request.currency);
  const balance=events.reduce((sum,event)=>sum+event.amountMinor,0);
@@ -66,6 +68,7 @@ export function budgetRoom(s: State, request: Data, policy: Data, delta: number)
  });
 }
 export function budgetOwnerSteps(s: State, request: Data, amount: number) {
+ if(request.budgetDisposition)return dispositionOwnerSteps(s,request);
  const events=all(s,'commitment').filter(event=>event.request===request.id&&event.currency===request.currency);
  return requestBudgetShares(s,request,amount).flatMap(share=>{
   const policy=get(s,'policy',share.policy);if(!policy.budgetPeriod)return [];

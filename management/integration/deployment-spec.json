@@ -280,6 +280,12 @@
       "name": "0045_deposit_rule_authority.sql",
       "sha256": "0dd944c862ad056999f10ea9c0ca89a4c2905843fcf57468f93d15dbf3052eaf",
       "sql": "-- Installation-local owner consent never travels with purchasing archives.\nCREATE TABLE IF NOT EXISTS p_deposit_rule_authority (\n    order_id TEXT PRIMARY KEY,\n    version INTEGER NOT NULL,\n    actor TEXT NOT NULL,\n    operator_version INTEGER NOT NULL\n);\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0046_budget_disposition.sql",
+      "sha256": "418fd4c8afc4800970ffaa2921ba1ae92ddc9f591035b22518bf0fbeda2de04f",
+      "sql": "CREATE TABLE p_budget_disposition_authority (\n disposition TEXT PRIMARY KEY,\n actor TEXT NOT NULL,\n operator_version INTEGER NOT NULL\n);\n"
     }
   ],
   "compatibilityDate": "2026-09-08",
