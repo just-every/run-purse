@@ -47,7 +47,14 @@ test('Native intake follow-up cites permitted history, creates only a reviewed e
  const meta=(await h.send('/api/purse/supplier-protected/'+f.supplier.id,undefined,h.owner)).value;
  const digits={tin:'987651234',bankRouting:'123456789',bankAccount:'9876543215678'};
  assert.equal((await h.send('/api/purse/supplier-protected/'+f.supplier.id+'/store',{revision:meta.revision,values:digits,reason:'Synthetic private source',evidence:'synthetic-purse-92'},h.owner)).status,200);
- const safe=await run();for(const value of [...Object.values(digits),...Object.values(digits).map(value=>value.slice(-4))])assert.ok(!JSON.stringify(safe).includes(value));assert.ok(!/Last4|matchingOnly|bankAccount|bankRouting/.test(JSON.stringify(safe)));
+ const safe=await run(),serializedSafe=JSON.stringify(safe);
+ // Full protected values must be absent even from opaque identifiers and digests.
+ for(const value of Object.values(digits))assert.ok(!serializedSafe.includes(value),'Full protected value is absent');
+ // Four decimal digits can occur by chance inside a public UUID or SHA-256.
+ // Exclude only complete opaque tokens; ordinary strings and masked suffixes remain checked.
+ const visibleSafe=serializedSafe.replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b|\b[0-9a-f]{64}\b/gi,'[opaque identifier]');
+ for(const value of [...Object.values(digits),...Object.values(digits).map(value=>value.slice(-4))])assert.ok(!visibleSafe.includes(value),'Protected value or masked suffix is absent from source data');
+ assert.ok(!/Last4|matchingOnly|bankAccount|bankRouting/.test(serializedSafe));
  const paused=await run();await enable(false);await cmd('intake-agent-draft',{id:paused.id,consent:true},requester,409);await cmd('intake-agent-run',input,requester,409);await enable();await cmd('intake-agent-draft',{id:paused.id,consent:true},requester,409);
  const oldRoute=await run();await cmd('policy',{...f.policy,name:'Current equipment approval'});await cmd('intake-agent-draft',{id:oldRoute.id,consent:true},requester,409);assert.equal((await run()).output.route.steps[0].label,'Current equipment approval');
  const stale=await run();await cmd('catalogue',{...item,unitMinor:26000},buyer);await cmd('intake-agent-draft',{id:stale.id,consent:true},requester,409);
