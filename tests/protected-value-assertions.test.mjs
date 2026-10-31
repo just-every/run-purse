@@ -9,7 +9,7 @@ const sha256 = 'abcd123456786789'.padEnd(64, 'a');
 
 test('Protected-content assertions distinguish native metadata collisions from leaked values and suffixes', () => {
     assert.doesNotThrow(() => assertNoProtectedValues({ id, references: [{ id: id + ':1', version: id }],
-        inputDigest: sha256, outputDigest: sha256, sources: [{ value: { sha256 } }] }, values, suffixes));
+        actor: id, requester: id, correctionOf: id, inputDigest: sha256, outputDigest: sha256, sources: [{ value: { sha256 } }] }, values, suffixes));
     for (const value of [...values, ...suffixes]) {
         for (const leaked of [value, Number(value), '••••' + value, 'Account ending ' + value, 'prefix' + value + 'postfix']) {
             assert.throws(() => assertNoProtectedValues({ sources: [{ value: { description: leaked } }] }, values, suffixes),
