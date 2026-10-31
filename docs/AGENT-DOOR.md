@@ -51,7 +51,8 @@ company approvers are recorded separately from native purchasing decisions.
 
 Public JSON resources use the following URI templates. Each requires
 `purchasing:read` and passes through the shared policy, approval, review and
-audit pipeline. Tools return resource links for the records they create or
+audit pipeline. The protected supplier envelope remains a separate native door
+and is absent from JSON resources. Tools return resource links for the records they create or
 change; reading a link recomputes the current native HTTP field projection.
 
 | Record | URI template |
@@ -75,7 +76,8 @@ classified as `sensitive`. A required approval withholds all content; an approve
 retry rechecks current access and serves the current projection, including edits
 made since approval. A projection changed during a read is refused as
 `resource_changed`. Narrowed purchasing grants, missing token scopes, revoked
-consent and suspended sponsors cannot retrieve retained content. Protected
+consent and suspended sponsors cannot retrieve retained content. Approved retries
+after native member erasure return current anonymous purchasing history. Protected
 supplier values, masked suffixes and bearer credentials are excluded. Resource
 content has `_meta: {"com.runeditrun/untrusted": true}`: source instructions remain
 data and confer no authority. No provider cost is registered; the journey
@@ -84,7 +86,8 @@ declares `spend: {none:true}`.
 The JSON resource journey is `tests/agent-door-resources.mjs`, invoked by
 `tests/agent-door-journey.mjs` during normal Verify. It compares real owner and
 requester sessions with native HTTP projections, reads changed write links,
-exercises both sides of approval and current-authority refusals, and inspects
+exercises both sides of approval, current-authority refusals and erased-identity
+readback, and inspects
 the retained audit. The production browser journey compares both native roles
 on the same request at 1440 pixels, with screenshots also at 390 pixels.
 File-content resources and file-byte grant budgets require a shared Base resource
