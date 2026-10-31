@@ -96,7 +96,7 @@
       "executable": false
     },
     "agent-surface.json": {
-      "sha256": "1bea3a53f4f429cc7dd34ea3f046fa0f783b7ae1f276f96296d8d55d4eb8d528",
+      "sha256": "25e7577dcae9c992e6ac64f7607f53023e917d8b1c34a20cc394f94ece662070",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "08926e5fb00b7ac3bcbec1f88991c239323ad715365c1c702ea9631ca8e3b3c3",
+      "sha256": "33194ab3b063e3760ec87323b6f72d97b6333533f3248b732aeacea60dc6dfd3",
       "executable": false
     },
     "DEMO.md": {
@@ -140,7 +140,7 @@
       "executable": false
     },
     "docs/AGENT-DOOR.md": {
-      "sha256": "7d8b8756b0cfc2c5141ffdc59085fc763e1a1fb82d14c31cc2d233b0c0313dfc",
+      "sha256": "7c542ddab7de8581f8fb0a4210e39a92820a04f67848c655d42c2f946f8a1c6d",
       "executable": false
     },
     "docs/backup-and-restore.md": {
@@ -1184,11 +1184,11 @@
       "executable": false
     },
     "src/agent-door/embedded.server.ts": {
-      "sha256": "867c5531421f93d0d64509e90af79aa957cb34f7c862424e368df0ada7c58705",
+      "sha256": "ef634e47bf18cb86246632e38396980abb787e2e96452d44b3359e544a7b9bab",
       "executable": false
     },
     "src/agent-door/index.server.ts": {
-      "sha256": "087de3bccc795930ba43d334a9efa4498da1e817f450ca29ecec59dc3a58682b",
+      "sha256": "a7196b41c709094607108cb4d0acab341e16994bb222e826a665469aa2850d16",
       "executable": false
     },
     "src/agent-door/mutation-authority.server.ts": {
@@ -1204,7 +1204,7 @@
       "executable": false
     },
     "src/agent-door/proposals.server.ts": {
-      "sha256": "bf512c304d0817149121d1741a820d88fbcf938fd3a5624f6acfeb18fec13ac1",
+      "sha256": "c21d61dc60a8d4f8431b2ec248a6d6cbf5d9152838f410d6714c57299bf4167f",
       "executable": false
     },
     "src/agent-door/purchase-flow.server.ts": {
@@ -1219,8 +1219,20 @@
       "sha256": "e7cdb75992432f374766ce44f60a0f8b56604618b05b90adeef0e553bc86c7d9",
       "executable": false
     },
+    "src/agent-door/scheduled-identity.server.ts": {
+      "sha256": "9c244383bd4d1d942e946cbb969ea0f54d03c9b3456366f9dec336cd3b8c0816",
+      "executable": false
+    },
+    "src/agent-door/scheduled.server.ts": {
+      "sha256": "7e446f8568e0e3359f7306737e29dabe8110c0d87c1dcf1374a8eb5c9f9f95f6",
+      "executable": false
+    },
     "src/agent-door/schemas.ts": {
       "sha256": "50cc9bbc0b20b9ca5836f37ba2eb7684c1d2b2ef9907155b53462b7abd34b293",
+      "executable": false
+    },
+    "src/agent-door/source-agents.server.ts": {
+      "sha256": "8e58e8d652374ac1a861b4483ce6595d3c8726defc2c95f052b1508d0770bf8b",
       "executable": false
     },
     "src/agent-door/tools.server.ts": {
@@ -3472,7 +3484,7 @@
       "executable": false
     },
     "src/purse/agent-value-checkins.ts": {
-      "sha256": "ea0ffc270741a59078217141f9992a84aff8c8679618bf28db4ff39876f418fd",
+      "sha256": "12fc9ccaf4fea856100a8a41b76d8ea31e563db07a749474bf8ad313eebdb4af",
       "executable": false
     },
     "src/purse/agent-value-evidence.ts": {
@@ -3512,7 +3524,7 @@
       "executable": false
     },
     "src/purse/api.ts": {
-      "sha256": "2b9950205f0c334e7ac8605b2009d2f4d6e1aacbb1de094e2cf147ee541902e0",
+      "sha256": "9d35f12f7f41a0d0fcbdb0ac8a7a5685929e7912620a49cd4b9fd0b0350af02a",
       "executable": false
     },
     "src/purse/approval-chain-authority.ts": {
@@ -3912,7 +3924,7 @@
       "executable": false
     },
     "src/purse/order-chasing.ts": {
-      "sha256": "e76bb4397875d6a23985d4eac4b7d1b55324175737c50f3b629bebc8e3e5c920",
+      "sha256": "94eb53c7816f08f43834f9b5c92dfc2c8a54cfa7bd4140ade8967f625a11769a",
       "executable": false
     },
     "src/purse/order-closure.ts": {
@@ -4140,7 +4152,7 @@
       "executable": false
     },
     "src/purse/recurring-discovery-schedule.ts": {
-      "sha256": "1b4bfff48e124fdec2f35a0fcfc1a0506c1a17849e1d9abdbeff84f791eb4779",
+      "sha256": "a6602779d6214c36f1d169dae7ede5ed56cca3968cbeebda688415137e2cba5a",
       "executable": false
     },
     "src/purse/recurring-forecast.d.mts": {
@@ -5244,7 +5256,7 @@
       "executable": false
     },
     "tests/agent-door-journey.mjs": {
-      "sha256": "397077c9fea8b5b9c374cbb5527f31fa6b18970a10082c449b591e1c190ba55e",
+      "sha256": "8438ae7f8f081911fea7ab129d2e21a2318de1c8c3f0c95de5e734d7f3a74cb9",
       "executable": false
     },
     "tests/agent-door-proposals.mjs": {
@@ -5256,7 +5268,19 @@
       "executable": false
     },
     "tests/agent-door-quotes.mjs": {
-      "sha256": "7b9d4ff04c5b03983451a500a347e56200ef839cb9873353ae5dfd0b5680ecff",
+      "sha256": "2fb91e12266022da5e33cba96b71f11f5cf567448283763ceff6d9f8be2875f4",
+      "executable": false
+    },
+    "tests/agent-door-schedule-fixtures.mjs": {
+      "sha256": "759528584a19fbdcd266329367493398858009b31147141132a49c30fe6da714",
+      "executable": false
+    },
+    "tests/agent-door-scheduled.mjs": {
+      "sha256": "fada070ea8fa38085aa154336766144339b89bf89edc7770650d048189ba6676",
+      "executable": false
+    },
+    "tests/agent-door-source-agents.mjs": {
+      "sha256": "1b562f985ee2fe337c98a09e6370f197d311badb3db8b9dcb070b203903ac9ee",
       "executable": false
     },
     "tests/agent-door-worker.ts": {

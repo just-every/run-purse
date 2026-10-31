@@ -26,6 +26,8 @@
       "clauses": [
         "PUR-014",
         "AGENT-003",
+        "AGENT-005",
+        "AGENT-006",
         "AGENT-010",
         "PO-003"
       ]

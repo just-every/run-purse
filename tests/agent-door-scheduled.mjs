@@ -70,3 +70,70 @@ export async function scheduledNativeChaseJourney() {
   console.log('PROBE BASE-AGENT-002 native Cron: due configured supplier follow-up -> embedded shared tool and attributed native audit; repeated tick sends once; blocked company policy sends nothing')
  }finally{await f.close()}
 }
+
+const day=86400000
+const tick=async(h,now)=>{const response=await h.mf.dispatchFetch(h.origin+'/cdn-cgi/local/scheduled?time='+now);assert.equal(response.status,200,await response.text())}
+const nativeCommercial=async h=>(await h.db.prepare("SELECT kind,id,revision,value FROM p_records WHERE business='main' AND kind IN ('request','decision','order','commitment','recurringScenario','recurringScenarioConsent','recurringScenarioDraft') ORDER BY kind,id").all()).results
+async function recordedAdmission(h,event) {
+ const prepared=event.companyPreparedBy??event.preparedBy
+ assert.ok(prepared.agent.id);assert.ok(event.companyDecision.id)
+ const audit=await h.send('/agents/api/audit?agent='+encodeURIComponent(prepared.agent.id),undefined,h.owner)
+ assert.equal(audit.status,200)
+ assert.ok(audit.value.rows.some(row=>row.id===event.companyDecision.id&&row.tool==='purse.agents.advance'&&row.door==='embedded'&&row.outcome==='done'))
+}
+
+export async function scheduledValueAndRecurringJourney() {
+ const {recurringScenarioFixture}=await import('./recurring-scenario-fixture.mjs')
+ const f=await recurringScenarioFixture({worker:'tests/agent-door-worker.ts'})
+ try {
+  const {h}=f;await localCompanyPolicy(h)
+  const before=await nativeCommercial(h),data=(await h.state()).data,delivery=data.receipt.find(row=>row.order===f.orders[0].id)
+  const due=Date.parse(delivery.at)+30*day,mail=h.messages.length
+  await Promise.all([tick(h,due),tick(h,due)])
+  const after=(await h.state()).data,event=after.valueCheckin.find(row=>row.request===f.requests[0].id&&row.intervalDays===30)
+  assert.ok(event);assert.equal(event.outcome.status,'accepted');assert.equal(event.report.promisedSeats,50);assert.equal(event.report.activeSeats,31);assert.equal(event.report.shortfall,19)
+  assert.equal(after.valueCheckin.filter(row=>row.request===f.requests[0].id&&row.intervalDays===30).length,1)
+  const sent=h.messages.length;assert.ok(sent>mail);await tick(h,due);assert.equal(h.messages.length,sent)
+  await recordedAdmission(h,event);assert.deepEqual(await nativeCommercial(h),before)
+  await localCompanyPolicy(h,'blocked');await tick(h,Date.parse(delivery.at)+90*day)
+  assert.equal(h.messages.length,sent);await localCompanyPolicy(h);await tick(h,Date.parse(delivery.at)+91*day);assert.equal(h.messages.length,sent,'A denied native interval cannot backfill later')
+  const notices=(await h.state()).data.recurringDiscoveryNotice
+  assert.ok(notices.length,'The recorded renewal window produces real in-app proposals')
+  for(const notice of notices)await recordedAdmission(h,notice)
+  const ids=notices.map(row=>row.id).sort();await tick(h,due)
+  assert.deepEqual((await h.state()).data.recurringDiscoveryNotice.map(row=>row.id).sort(),ids)
+  assert.deepEqual(await nativeCommercial(h),before)
+  console.log('PROBE BASE-AGENT-002 scheduled value and recurring: native Cron -> attributed shared admissions, 50 promised, 31 active, 19 shortfall, nonempty source-bound in-app proposals; concurrent and repeated ticks claim once; blocked intervals do not backfill; purchasing unchanged')
+ }finally{await f.close()}
+}
+
+export async function scheduledErasureJourney() {
+ const {recurringScenarioFixture}=await import('./recurring-scenario-fixture.mjs')
+ const {reauthenticateErasure}=await import('./erasure-flow.mjs')
+ let enter,release
+ const entered=new Promise(resolve=>{enter=resolve}),blocked=new Promise(resolve=>{release=resolve})
+ let held=false,work
+ const f=await recurringScenarioFixture({worker:'tests/agent-door-worker.ts',mail:async message=>{
+  if(!held&&message.subject.startsWith('Usefulness check-in')){held=true;enter();await blocked}
+  return Response.json({id:randomUUID()})
+ }})
+ try {
+  const {h}=f;await localCompanyPolicy(h)
+  const before=(await h.state()).data,request=before.request.find(row=>row.id===f.requests[0].id),delivery=before.receipt.find(row=>row.order===f.orders[0].id),due=Date.parse(delivery.at)+30*day
+  work=tick(h,due)
+  await Promise.race([entered,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Scheduled mail did not reach the network edge')),20000))])
+  await reauthenticateErasure(h)
+  const meta=await h.send('/api/purse/erasure',undefined,h.owner)
+  const preview=await h.send('/api/purse/erasure/preview',{kind:'member',id:request.requesterEmail,revision:meta.value.revision},h.owner)
+  assert.equal(preview.status,200,JSON.stringify(preview.value));const p=preview.value
+  const erased=await h.send('/api/purse/erasure/execute',{...p.subject,revision:p.revision,review:p.review,fingerprint:p.fingerprint,consent:true},h.owner)
+  assert.equal(erased.status,200,JSON.stringify(erased.value));release();await work
+  const state=(await h.state()).data,audit=await h.send('/agents/api/audit',undefined,h.owner),serialized=JSON.stringify({state,audit:audit.value})
+  assert.ok(!serialized.includes(request.requesterEmail),'Late completion must not restore erased email')
+  assert.ok(!serialized.includes(request.requester),'Late completion must not restore retired native identity')
+  const sent=h.messages.length;await tick(h,due);assert.equal(h.messages.length,sent)
+  assert.equal((await h.send('/api/purse/state',undefined,f.requester)).status,401)
+  assert.ok(state.valueCheckin.some(row=>row.request===request.id),'Erasure preserves the non-authorizing once-only claim')
+  console.log('PROBE BASE-AGENT-002 in-flight erasure: native Cron mail held at network edge, then native erasure -> late completion restores no person or authority; old session refuses; repeated tick sends nothing')
+ }finally{release();if(work)await work;await f.close()}
+}

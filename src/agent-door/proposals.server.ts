@@ -1,6 +1,7 @@
 import { defineTool, ToolRefusal, type ToolContext, type ToolDefinition } from '../modules/agent-door/index.ts'
 import type { Bindings } from '../auth.server'
 import { command } from '../purse/api'
+import {readFence} from '../purse/store'
 import { actionInput } from '../purse/agents'
 import { requirePermission } from '../purse/access'
 import { authorizedApproval, approvalAmount } from '../purse/requests'
@@ -29,6 +30,7 @@ export function proposalTools(env:Bindings):ToolDefinition[] {
       if(!completed) {
         actionInput(state,a,args)
         await command(structuredClone(state),a,'execute-action',args,env)
+        await readFence(env.DB,a,native.revision)
       }
       return {...native,p,record,kind,affected}
     }catch(error){return nativeRefusal(error)}

@@ -6,6 +6,8 @@ import { assignedAgreementOwner } from './recurring-scenario-authority';
 import { buildRecurringDiscovery, canReadRecurringDiscoveryProposal, recurringAgreementOrders } from './recurring-opportunities';
 import { load } from './store';
 import { accessGrants, all, allowed, uid, type Actor, type Data, type State } from './types';
+import {companyConfigured,scheduledInvocation,type CompanyEffect} from '../agent-door/scheduled-identity.server';
+import {requireThat} from './types';
 
 const day = 86400000;
 type Native = { id: string; email: string; role: string; version: number };
@@ -19,11 +21,15 @@ function window(s: State, agreement: Data, now: number) {
     return { agreement: agreement.id, from, to: agreement.noticeDeadline };
 }
 
-function governed(s: State, agreement: Data, preparer: Native) {
+function controls(s: State, agreement: Data) {
     const orders = recurringAgreementOrders(s, agreement), types = [...new Set(orders.flatMap(purchaseTypes))];
-    const policies = agentPolicies(s, 'AGENT-006', types.length ? types : ['*']);
+    return agentPolicies(s, 'AGENT-006', types.length ? types : ['*']);
+}
+export function recurringDiscoveryAuthority(s: State, agreement: Data, preparer: Native) {
+    const policies=controls(s,agreement);
     return policies?.every(policy => !policy.imported && policy.actor === preparer.id && policy.operatorVersion === preparer.version);
 }
+const governed=recurringDiscoveryAuthority;
 
 function recipients(s: State, natives: Native[], proposal: Data) {
     const agreements = proposal.agreementIds.map((id: string) => s.get('agreement:' + id)!.value);
@@ -39,7 +45,7 @@ function recipients(s: State, natives: Native[], proposal: Data) {
     return result;
 }
 
-async function claim(env: Bindings, preparer: Native, anchor: Data, proposal: Data, from: string, to: string, now: number) {
+async function claim(env: Bindings, preparer: Native, anchor: Data, proposal: Data, from: string, to: string, now: number, company?:CompanyEffect) {
     const { state, revision } = await load(env.DB), agreement = state.get('agreement:' + anchor.id)?.value;
     const noticeWindow = agreement && window(state, { ...agreement, id: anchor.id }, now);
     if (!noticeWindow || !proposal.agreementIds.every((id: string) => {
@@ -73,7 +79,7 @@ async function claim(env: Bindings, preparer: Native, anchor: Data, proposal: Da
     const insert = (kind: string, recordId: string, value: Data, update = false) => env.DB.prepare(`INSERT INTO p_records(business,kind,id,revision,value)
         SELECT 'main',?,?,?,? WHERE EXISTS(SELECT 1 FROM p_records WHERE business='main' AND kind='recurringDiscoveryNotice' AND id=? AND revision=?)
         ON CONFLICT(business,kind,id) DO ${update ? 'UPDATE SET revision=excluded.revision,value=excluded.value' : 'NOTHING'}`)
-        .bind(kind, recordId, uid(), JSON.stringify({id:recordId,...value}), pending[0].id, claimVersion);
+        .bind(kind, recordId, uid(), JSON.stringify(company?(kind==='audit'?company.audit({id:recordId,...value}):company.record({id:recordId,...value})):{id:recordId,...value}), pending[0].id, claimVersion);
     // A recipient claim fences domain grants and native identities atomically.
     // New eligible recipients can join an existing run without repeating notices.
     const saved = await env.DB.batch([
@@ -82,8 +88,8 @@ async function claim(env: Bindings, preparer: Native, anchor: Data, proposal: Da
             AND NOT EXISTS(SELECT 1 FROM json_each(?) proof WHERE NOT EXISTS(
                 SELECT 1 FROM oa_operators native WHERE native.id=json_extract(proof.value,'$.id')
                 AND lower(native.email)=json_extract(proof.value,'$.email') AND native.version=json_extract(proof.value,'$.version')
-                AND native.role=json_extract(proof.value,'$.role') AND native.status='active'))`)
-            .bind(pending[0].id, claimVersion, JSON.stringify(pending[0]), revision, JSON.stringify(proofs)),
+                AND native.role=json_extract(proof.value,'$.role') AND native.status='active'))${company?' AND '+company.sql:''}`)
+            .bind(pending[0].id, claimVersion, JSON.stringify(company?company.record(pending[0]):pending[0]), revision, JSON.stringify(proofs),...(company?.params??[])),
         insert('agentRun', id, run, true),
         ...pending.slice(1).map(notice => insert('recurringDiscoveryNotice', notice.id, notice)),
         insert('audit', id, { id, actor: preparer.id, email: preparer.email, action: 'recurring-scenario-discover', record: 'recurring-opportunities',
@@ -92,7 +98,45 @@ async function claim(env: Bindings, preparer: Native, anchor: Data, proposal: Da
         ...pending.map(notice => insert('audit', 'recurring-discovery-notice:' + notice.id, { actor: preparer.id, email: preparer.email,
             action: 'recurring-discovery-notice', record: notice.id, run: id, recipient: notice.recipient, at, status: 'proposed' })),
     ]);
-    return saved[0].meta.changes ? { run: id, notices: pending } : undefined;
+    if(company)requireThat(saved[0].meta.changes,'Recurring notice sources changed before their claim',409);
+    return saved[0].meta.changes ? { run: id, notices: pending.map(notice=>company?company.record(notice):notice) } : undefined;
+}
+
+export async function recurringDiscoveryPlan(env:Bindings,sponsor:string,agreementId:string,now:number) {
+ const {state}=await load(env.DB),anchor=state.get('agreement:'+agreementId)?.value;
+ const preparer=await env.DB.prepare("SELECT id,email,role,version FROM oa_operators WHERE id=? AND role='owner' AND status='active'").bind(sponsor).first<Native>();
+ if(!preparer||!anchor||!window(state,anchor,now)||!governed(state,anchor,preparer))return;
+ const eligible=all(state,'agreement').filter(agreement=>!agreement.imported&&governed(state,agreement,preparer));
+ const discovery=await buildRecurringDiscovery(state,actor(preparer),{from:anchor.startDate,to:anchor.endDate,limit:200},eligible.map(row=>row.id));
+ const natives=(await env.DB.prepare("SELECT id,email,role,version FROM oa_operators WHERE status='active'").all<Native>()).results;
+ const proposals:Data[]=[],identities:Data[]=[];
+ for(const proposal of discovery.proposals.filter(row=>row.agreementIds.includes(anchor.id))) {
+  const noticeWindow=window(state,anchor,now)!;
+  const anchors=proposal.agreementIds.filter((id:string)=>{const row=state.get('agreement:'+id)?.value,w=row&&window(state,row,now);return w&&w.from===noticeWindow.from&&w.to===noticeWindow.to}).sort();
+  if(anchors[0]!==anchor.id)continue;
+  const targets=recipients(state,natives,proposal),pending:string[]=[];
+  for(const target of targets) {
+   const id=await valueDigest(canonicalValue({window:noticeWindow,sourceHash:proposal.id,recipient:target.native.id,role:target.role}));
+   if(!state.has('recurringDiscoveryNotice:'+id))pending.push(id);
+  }
+  if(!pending.length)continue;
+  proposals.push(proposal);identities.push({proposal:proposal.id,pending,targets:targets.map(target=>({id:target.native.id,version:target.native.version,role:target.role,agreements:target.agreements}))});
+ }
+ if(!proposals.length)return;
+ const sourceVersion=await valueDigest(canonicalValue({references:discovery.references,identities,policies:eligible.flatMap(agreement=>controls(state,agreement)??[])}));
+ return {state,anchor,preparer,proposals,from:anchor.startDate,to:anchor.endDate,sourceVersion,sponsor,identity:anchor.id+':'+sourceVersion};
+}
+
+export async function runRecurringDiscoveryAttempt(env:Bindings,sponsor:string,agreementId:string,now:number,company?:CompanyEffect,expectedSourceVersion?:string) {
+ const plan=await recurringDiscoveryPlan(env,sponsor,agreementId,now);
+ if(company&&expectedSourceVersion)requireThat(plan&&plan.sourceVersion===expectedSourceVersion,'Recurring research sources changed before their claim',409);
+ if(!plan)return {events:[]};
+ const events:Data[]=[];
+ for(const proposal of plan.proposals) {
+  const event=await claim(env,plan.preparer,plan.anchor,proposal,plan.from,plan.to,now,company);
+  if(event)events.push(event);
+ }
+ return {events};
 }
 
 /** The recorded reminder lead days define one business-local notice window.
@@ -106,6 +150,13 @@ export async function runRecurringDiscoverySchedule(original: Bindings, now = Da
         const eligible = all(state, 'agreement').filter(agreement => !agreement.imported && governed(state, agreement, preparer));
         const periods = new Map<string, Awaited<ReturnType<typeof buildRecurringDiscovery>>>();
         for (const agreement of eligible.filter(agreement => window(state, agreement, now))) {
+            if(await companyConfigured(env)) {
+                const plan=await recurringDiscoveryPlan(env,preparer.id,agreement.id,now);
+                if(!plan)continue;
+                const answer=await scheduledInvocation(env,'purse.agents.advance',{job:'recurring',id:agreement.id,version:agreement.version,tick:now,sourceVersion:plan.sourceVersion},preparer.id,'AGENT-006','Purse scheduled recurring research','recurring-discovery:'+plan.identity);
+                if(answer.outcome==='done')events.push(...((answer.result as Data).events??[]));
+                continue;
+            }
             const from = agreement.startDate, to = agreement.endDate;
             const period = canonicalValue([from, to]);
             let discovery = periods.get(period);

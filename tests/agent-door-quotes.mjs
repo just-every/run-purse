@@ -6,7 +6,7 @@ import {corePolicyProof} from './agent-door-core.mjs'
 import {embeddedPolicyProof} from './agent-door-embedded.mjs'
 import {proposalPolicyProof} from './agent-door-proposals.mjs'
 import {sourceQuoteProof,sourceAgentNativeJourneys} from './agent-door-source-agents.mjs'
-import {scheduledChasePolicyProof,scheduledNativeChaseJourney} from './agent-door-scheduled.mjs'
+import {scheduledChasePolicyProof,scheduledNativeChaseJourney,scheduledValueAndRecurringJourney,scheduledErasureJourney} from './agent-door-scheduled.mjs'
 
 const code=answer=>answer.result?._meta?.['com.runeditrun/error']?.code
 const value=answer=>{assert.equal(answer.result?.isError,false,code(answer));return answer.result.structuredContent}
@@ -254,6 +254,8 @@ async function policyJourney() {
   await sourceAgentNativeJourneys()
   await scheduledChasePolicyProof({c,h,reader,readerToken})
   await scheduledNativeChaseJourney()
+  await scheduledValueAndRecurringJourney()
+  await scheduledErasureJourney()
   assert.ok(c.points.every(point=>point.ok),JSON.stringify(c.points.filter(point=>!point.ok)))
   console.log('PROBE BASE-AGENT-002 quotation recording and comparison: native HTTP and MCP -> matching state and quote audit; 3085 integer minor units; USD and EUR separate; missing differs from zero')
   console.log('PROBE BASE-AGENT-002 authority and policy: MCP -> autonomous, review, approval and blocked; unauthorized and stale refused before retention; revoked and erased sponsors cannot replay')

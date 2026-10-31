@@ -50,7 +50,7 @@ provider and connector capabilities are not advertised.
 | `purse.spend.answer` | sensitive | AGENT-011, PUR-014 |
 | `purse.coding.prepare` | sensitive | AGENT-008, PUR-014 |
 | `purse.agents.prepare` | sensitive | PUR-014, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006 |
-| `purse.agents.advance` | sensitive, external for supplier follow-up | PUR-014, AGENT-003, AGENT-010, PO-003 |
+| `purse.agents.advance` | sensitive, external when native mail is due | PUR-014, AGENT-003, AGENT-005, AGENT-006, AGENT-010, PO-003 |
 | `purse.workspace.snapshot` | standard | PUR-017, AUDIT-001 |
 | `purse.records.list`, `purse.records.read` | standard, sensitive | PUR-017, SECURITY-001 |
 
@@ -92,9 +92,9 @@ The owner lifecycle remains the manifest's setup-token mode: native
 `POST /auth/bootstrap`. The disposable verifier calls that exact lifecycle and
 native purchasing HTTP services. Its only additional provider edge is the
 public Commerce CSL CSV download at `https://data.trade.gov`; it validates the
-exact method/path and supplies synthetic CSL rows to the real native screening
-parser. No payments, OAuth, models, ledger or supplier-mail edge is reachable
-from the declared tools. Existing native mail adapters remain unchanged.
+exact method and path and supplies synthetic CSL rows to the real native screening
+parser. Scheduled mail uses the existing native adapter with a synthetic network edge
+in conformance. No payment, external model or ledger edge is reachable.
 
 Structured protected fields are refused during classification, before a pending
 approval or review can retain them. The native conformance fixture additionally proves one-effect preparation, order issue, receipt and invoice replay, changed-argument conflicts, stale native versions and receiving positions, unchanged witnesses on self approval refusal, ignored caller authority flags, current native target identity, and matching native activity and door audit. Its independent requester joins through the real membership, invitation, accepted mail and confirmation lifecycle. The decision history and request thread show the agent for its sponsor; company approvers remain separately named.
@@ -116,7 +116,7 @@ authority. A draft never establishes payment, supplier sending or approval.
 There is no advertised MCP prompt family in this CORE declaration.
 
 The declaration contains 35 tools, no public resource templates, and the
-standard, sensitive, access, money and commitment classes. Its 48 journey steps retain
+standard, sensitive, access, money, commitment and external classes. Its 48 journey steps retain
 every declared tool/class pair, autonomous and held policy, injection variants,
 read-only witnesses, replay/conflicts and native attribution. The pending-decision
 reader returns only requests the current sponsor can decide; its empty bounded
@@ -129,9 +129,9 @@ Its 116 proposed capability names, nine proposed resource URI shapes and wider
 seeded week remain outside this declared registry. No proposed tool name matches
 the current 35 names exactly; current tools cover bounded parts of the same
 native purchasing clauses, rather than aliases for the broad proposed verbs.
-The ct classes external, accounts, gated, access, security and destructive are
-not claimed. Its supplier chase, invoice-exception resolution, approved-bill
-posting and returned-payment journey remain unproved through this door.
+The wider ct classes accounts, gated, security and destructive are not claimed.
+Native supplier follow-up and exception reports are bounded adapters; approved-bill
+posting, returned payments and live provider qualification remain unproved.
 SURFACE-001–013 are absent from current main and are not invented here;
 The Base-delivered clauses remain partial with the explicit family and registry gaps; main's existing native AGENT-010 judgment is preserved. The ct head
 defines AGENT-001–011, with no AGENT-012 or AGENT-013 to cite. Its split
@@ -143,12 +143,12 @@ reveal semantics; those values are excluded from this registry.
 
 Events/handoffs, resources, prompts and subscriptions are explicitly undeclared.
 Multiple Business sponsors, resource refresh, timed/dual-host lifecycle,
-delegation of existing scheduled agents, queued continuation, owner-native
-administration and provider spend remain unscoped by Base's first subset. CORE
+queued continuation, broader administration and provider spend remain outside
+this Core registry. CORE
 does not prove or refuse those families as a whole. Native bootstrap, named
 approvals, owner-bound credentials, current authority and consent revocation
-remain mandatory. Existing native agent jobs retain their governance and human
-consent until their own company-door adapters and journeys exist. The omitted
+remain mandatory. Existing native agents retain their governance and human consent in addition
+to company admission. Their manual and scheduled adapters use the same registry. The omitted
 resource family does not claim the former resource admission/projection races
 proved. Provider spend caps are unenforced.
 
@@ -178,8 +178,8 @@ reads and writes, revoked consent and membership, erasure and once-only replay.
 The production journey and browser proof in `tests/agent-door-journey.mjs` and
 `tests/agent-door-browser.mjs` independently compare native HTTP, web and MCP
 quotation state and native audit events. These tools do not submit a request,
-award a quotation, issue a PO or send to a supplier. Full Core-job coverage and
-delegation of the existing embedded or scheduled agents remain incomplete.
+award a quotation, issue a PO or send to a supplier. The declared tool metadata and supported non-tool reasons cover all published
+Core jobs; both the harness and first-party check reject a missing Core id.
 
 The added Core tools call the existing native handlers. Setup, policy, member
 and delegation input is validated on an isolated native state before a company
@@ -220,4 +220,10 @@ schedule and source versions bind the pending action, and caller-supplied future
 time is refused by the transport. The native once-only event claim includes the
 company admission fence in its D1 predicate; the mail edge rechecks it before
 sending. Native limits, consent and honest provider outcomes remain required.
-Value check-ins and recurring discovery still need their scheduled adapters.
+Requester value check-ins and owner-sponsored recurring discovery use that
+same tool. Value mail preserves the native 30-day and 90-day once-only claims;
+blocked intervals do not backfill after policy resumes. Recurring research
+creates only native in-app proposals for currently authorized recipients. It
+changes no purchase, consent or commitment. Every scheduled result retains its
+company admission and native agent attribution. Late provider responses cannot
+restore erased identity data, and replay cannot restore execution authority.

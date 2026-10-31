@@ -8,6 +8,7 @@ import { nativeRefusal, snapshot, execute } from './native.server'
 import { object, id, text } from './schemas'
 import { recordUri } from './resources.server'
 import { sourceJobs } from './source-agents.server'
+import {readFence} from '../purse/store'
 
 export const embeddedJobs={
   'spend-question':{tool:'purse.spend.answer',agent:'AGENT-011',name:'Purse spend questions'},
@@ -28,6 +29,7 @@ export function embeddedTools(env:Bindings):ToolDefinition[] {
       // and source visibility. It writes only the discarded in-memory preview.
       const result=spec.op==='spend-question'?spendQuestion(preview,native.a,spec.op,args):await codingAgent(preview,native.a,spec.op,args)
       if(!result)throw new ToolRefusal('not_found')
+      await readFence(env.DB,native.a,native.revision)
       return {...native,result}
     }catch(error){return nativeRefusal(error)}
   }

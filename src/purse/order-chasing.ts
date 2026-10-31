@@ -164,8 +164,9 @@ export async function orderChasePlan(env: Bindings, policyId: string, escalation
     return {state,revision,policyRow,policy,orderRow,order,controls,principal,current,sequence,kind,recipient,id,sourceVersion,sponsor:policy.actor};
 }
 
-export async function runOrderChaseAttempt(env: Bindings, policyId: string, escalation: boolean, now: number, company?:CompanyEffect): Promise<Data | undefined> {
+export async function runOrderChaseAttempt(env: Bindings, policyId: string, escalation: boolean, now: number, company?:CompanyEffect,expectedSourceVersion?:string): Promise<Data | undefined> {
     const plan=await orderChasePlan(env,policyId,escalation,now);
+    if(company&&expectedSourceVersion)requireThat(plan&&plan.sourceVersion===expectedSourceVersion,'Scheduled sources changed before their claim',409);
     if(!plan)return;
     const {state,revision,policyRow,policy,orderRow,order,controls,principal,current,sequence,kind,recipient,id}=plan;
     const event: Data = { id, order: order.id, policyVersion: policy.version, sequence, kind, reason: current.reason,
@@ -197,7 +198,7 @@ export async function runOrderChaseAttempt(env: Bindings, policyId: string, esca
             action: 'order-chase-claimed', record: order.id, revision: order.revision, chase: id, agent: policy.agent ?? null,
             policyVersion: policy.version, kind, sequence, at: event.startedAt })),
     ]);
-    if (!claimed[0].meta.changes) return;
+    if (!claimed[0].meta.changes) {if(company)requireThat(false,'Native scheduled claim changed; reload',409);return;}
     event.outcome = await send(env, event, order, policy, now, company);
     // An erasure/cleanup while mail is in flight changes these row revisions.
     // Never replace that newer source record with a pre-erasure snapshot.
@@ -213,7 +214,7 @@ export async function runOrderChaseAttempt(env: Bindings, policyId: string, esca
                 record: order.id, revision: order.revision, chase: id, claim: 'chase-claim:'+id, status: event.outcome.status, at: new Date().toISOString() })),
         ...notificationRows,
     ]);
-    return event;
+    return (await load(env.DB)).state.get(key('orderChaseEvent',id))?.value;
 }
 
 /** Called by the hourly scheduler; no event ID is sent twice and policy versions have independent limits. */

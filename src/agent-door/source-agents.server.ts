@@ -7,6 +7,7 @@ import { agentValue } from '../purse/agent-value'
 import { recurringOpportunities } from '../purse/recurring-opportunities'
 import { containsProtectedInput } from '../purse/protected-context-fields.mjs'
 import { get } from '../purse/types'
+import {readFence} from '../purse/store'
 import { snapshot, execute, nativeRefusal } from './native.server'
 import { recordUri } from './resources.server'
 import { object, id, text, integer } from './schemas'
@@ -32,6 +33,7 @@ export function sourceAgentTools(env:Bindings):ToolDefinition[] {
       const result=job==='quotes'||job==='clarification'?await quoteAgent(state,native.a,op,args,env):job==='exception'?await invoiceExceptionAgent(state,native.a,op,args,env):job==='late-order'?lateOrderResolution(state,native.a,op,args):job==='value'?await agentValue(state,native.a,op,args):await recurringOpportunities(state,native.a,op,args)
       if(!result)throw new ToolRefusal('not_found')
       const target=job==='quotes'||job==='clarification'?{kind:'request',id:get(state,'rfq',String(args.rfq)).request}:job==='exception'?{kind:'invoice',id:get(state,'invoiceException',String(args.id)).invoice}:job==='late-order'?{kind:'order',id:String(args.order)}:job==='value'?{kind:'request',id:String(args.request)}:null
+      await readFence(env.DB,native.a,native.revision)
       return {...native,job,result,target}
     }catch(error){return nativeRefusal(error)}
   }

@@ -5,7 +5,7 @@ import {coreNativeJourney,coreStepProof,coreCoverageProof} from './agent-door-co
 import {embeddedNativeJourney} from './agent-door-embedded.mjs'
 import {proposalNativeJourney} from './agent-door-proposals.mjs'
 import {sourceAgentNativeJourneys} from './agent-door-source-agents.mjs'
-import {scheduledNativeChaseJourney} from './agent-door-scheduled.mjs'
+import {scheduledNativeChaseJourney,scheduledValueAndRecurringJourney,scheduledErasureJourney} from './agent-door-scheduled.mjs'
 import {agentDoorBrowser,agentPendingBrowser} from './agent-door-browser.mjs'
 
 export async function afterStep(context) {
@@ -136,12 +136,14 @@ async function nativeJourney({tool,request,origin,cookie,email}) {
  assert.equal(admission.agent.id,effect.preparedBy.agent.id)
  assert.ok(Number.isInteger(admission.revision))
  const quotation=await quoteNativeJourney({tool,request,origin,cookie})
+ await agentDoorBrowser({request,origin,cookie,order,native,quotation,tool})
  await coreNativeJourney({tool,request,origin,cookie,order})
  await embeddedNativeJourney({tool,request,origin,cookie})
  await proposalNativeJourney({tool,request,origin,cookie})
- await agentDoorBrowser({request,origin,cookie,order,native,quotation,tool})
  await sourceAgentNativeJourneys()
  await scheduledNativeChaseJourney()
+  await scheduledValueAndRecurringJourney()
+  await scheduledErasureJourney()
  console.log('Native agent journey: self-approval refused; receipt replay once; changed arguments and stale position refused; agent and sponsor attribution; zero policy differences')
 }
 export default async function(context) {
