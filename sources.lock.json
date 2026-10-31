@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "e71edc4e24c42bb5d87723ee5cdd984a9262ce5973db0974a417e12b619af3bb",
+      "sha256": "14b34e6a372ec8c3c2d8811d0c07896780d9f4e0ff914d11e28528d9f7eb9c21",
       "executable": false
     },
     "DEMO.md": {
@@ -140,7 +140,7 @@
       "executable": false
     },
     "docs/AGENT-DOOR.md": {
-      "sha256": "8d3a03aa14c42f1a007ee89c1d6cd57a2ff98646f3c1211e51b432994d8d203e",
+      "sha256": "b9c57532d4c683f170c63c4a89611ab28e3738550035b0c7fb87a59aae2e9a37",
       "executable": false
     },
     "docs/backup-and-restore.md": {
@@ -5224,7 +5224,7 @@
       "executable": false
     },
     "tests/agent-door-resources.mjs": {
-      "sha256": "2166824e296310677144ee26e530fa58ba21b8eb0f1074bf84fbab2fc2adb909",
+      "sha256": "7d053cf2a61d212be8be1874a27c903fee44ca8b2a75d0bf9e803700cc16f884",
       "executable": false
     },
     "tests/agent-governance-fixture.mjs": {

@@ -240,5 +240,5 @@ administration and provider spend remain unscoped by Base's first subset. CORE
 does not prove or refuse those families as a whole. Native bootstrap, named
 approvals, owner-bound credentials, current authority and consent revocation
 remain mandatory. Existing native agent jobs retain their governance and human
-consent until their own company-door adapters and journeys exist. File-byte budgets and file-content resources are unqualified.
+consent until their own company-door adapters and journeys exist. File-byte budgets, file-content resources and the shared Base resource-refresh lifecycle beyond ordinary fresh JSON readback are unqualified.
 Provider spend caps are unenforced.

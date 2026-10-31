@@ -167,7 +167,7 @@ export async function agentResourceJourney() {
    return answer.result.structuredContent
   }
   const flow=await linked(b,'purse.requests.create',{...draft,title:'synthetic-purse-4324'},['request','revision'])
-  await linked(b,'purse.requests.submit',{id:flow.id,revision:flow.revision},['request','commitment'])
+  await linked(b,'purse.requests.submit',{id:flow.id,revision:flow.revision},['request','revision'])
   const notifications=(await h.send('/api/purse/notifications',undefined,h.owner)).value.items
   const notice=notifications.find(row=>row.record===flow.id)
   assert.ok(notice,'Submission creates a real approval notification')
@@ -176,10 +176,11 @@ export async function agentResourceJourney() {
   assert.equal(errorCode(otherNotice),'resource_unavailable');noContent(otherNotice)
   await linked(a,'purse.requests.decide',{id:flow.id,revision:flow.revision,decision:'approved',reason:'Independent native purchasing decision'},['request','decision','commitment'])
   const converted=await linked(a,'purse.orders.convert',{id:flow.id,revision:flow.revision},['order'])
-  const issued=await linked(a,'purse.orders.issue',{id:converted.id,revision:converted.revision,reason:'Reviewed native issue'},['order','commitment'])
+  const issued=await linked(a,'purse.orders.issue',{id:converted.id,revision:converted.revision,reason:'Reviewed native issue'},['order'])
+  assert.equal((await h.state()).data.commitment.filter(row=>row.request===flow.id).reduce((sum,row)=>sum+row.amountMinor,0),3000,'Issuance retains one exact approved commitment')
   const position=(await a.tool('purse.orders.position',{id:issued.id})).result.structuredContent
   await linked(a,'purse.receipts.record',{order:issued.id,line:issued.lines[0].id,quantity:'1',event:'receive',reason:'Actual native receiving evidence',receiptVersion:position.receiptVersion},['receipt'])
-  await linked(a,'purse.invoices.capture',{order:issued.id,reference:'synthetic-purse-4325',source:'synthetic-purse-4326',allocations:[{line:issued.lines[0].id,quantity:'1',amountMinor:1500}]},['invoice'])
+  await linked(a,'purse.invoices.capture',{order:issued.id,reference:'synthetic-purse-4325',source:'synthetic-purse-4326',allocations:[{line:issued.lines[0].id,quantity:'2',amountMinor:3000}]},['invoice'])
   const exceptionQueue=(await h.send('/api/purse/invoice-exceptions',undefined,h.owner)).value.queue
   assert.ok(exceptionQueue.length,'Captured unconfirmed invoice remains in the native exception queue')
   for(const record of exceptionQueue)assert.deepEqual(content(await a.mcp('resources/read',{uri:uri('invoiceException',record.id)})),record)
@@ -254,6 +255,15 @@ export async function agentResourceJourney() {
   assert.equal((await ownerDecision.json()).approval.state,'executed')
   const ownerRetry={uri:link.uri,requestState:ownerPending.body.error.data.requestState}
   assert.equal(content(await a.mcp('resources/read',ownerRetry)).requesterEmail,requesterEmail)
+  const commentPending=await a.mcp('resources/read',{uri:uri('comment',comment.id)})
+  assert.equal(errorCode(commentPending),'approval_required');noContent(commentPending)
+  const commentHandle=commentPending.body.error.data.approval
+  const commentApproval=(await a.personJson('/agents/api/approvals/'+commentHandle.id)).approval
+  const commentDecision=await a.personRequest('/agents/api/approvals/'+commentHandle.id+'/approve',{method:'POST',body:JSON.stringify({revision:commentApproval.revision,summary_sha256:commentApproval.summary_sha256})})
+  assert.equal(commentDecision.status,200)
+  assert.equal((await commentDecision.json()).approval.state,'executed')
+  const commentRetry={uri:uri('comment',comment.id),requestState:commentPending.body.error.data.requestState}
+  assert.equal(content(await a.mcp('resources/read',commentRetry)).authorEmail,requesterEmail)
   assert.equal((await h.send('/auth/step-up',{action:'export'},h.owner)).status,202)
   await h.confirm(ownerEmail,h.owner)
   const inventory=await h.send('/api/purse/erasure',undefined,h.owner)
@@ -268,7 +278,7 @@ export async function agentResourceJourney() {
   assert.deepEqual(anonymous,(await h.state()).data.request.find(row=>row.id===own.id))
   assert.equal((await b.mcp('resources/read',retry,retained)).status,401)
   console.log('PROBE BASE-AGENT-003 erasure: approved request read after native owner-reviewed member erasure -> current anonymous history; erased sponsor refused')
-  const anonymousComment=content(await a.mcp('resources/read',{uri:uri('comment',comment.id)}))
+  const anonymousComment=content(await a.mcp('resources/read',commentRetry))
   assert.ok(!JSON.stringify(anonymousComment).includes(requesterEmail),'Comment refresh cannot restore an erased author')
   const expired=await a.mcp('resources/read',{uri:link.uri},{token:await accessToken(a,{iat:seconds()-301,exp:seconds()-1})})
   assert.equal(expired.status,401);noContent(expired)
