@@ -96,7 +96,7 @@
       "executable": false
     },
     "agent-surface.json": {
-      "sha256": "7a807fc6b159b6a6918dc9b5b3b52e032d3e397b9c4769bd83d931f0a1ed67a4",
+      "sha256": "15cd67ca2cf1a3fe199ab360ecf589be46310a3e00b896f4ea154bba182599ab",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "6865eb56dc00d9a3eda6a621eb5b9de584c85a083ea4c5ab08ff495306626b85",
+      "sha256": "d4b82765a0ada25a4dc822faf3fb48201bf9e0a2ac7f0dac3c138bd945cae5fd",
       "executable": false
     },
     "DEMO.md": {
@@ -508,7 +508,7 @@
       "executable": false
     },
     "public/purse.css": {
-      "sha256": "d6c657476784400c7e21d64816511a8ef020bccf3a41774b23c2d1e1dffe9e6b",
+      "sha256": "43365f7210a19ebb3e5edc26854766f825760a2fbb6f5095a185e3f537374fe9",
       "executable": false
     },
     "public/rer-theme.css": {
@@ -5220,15 +5220,19 @@
       "executable": false
     },
     "tests/agent-door-browser.mjs": {
-      "sha256": "ad30777cc9d17e251c2d833e5a17ef9b7bdd1a8eba623b7c7ccfbc8813c53497",
+      "sha256": "9e5b6a19f20557af7f84dee547e0abe050870d7629deb599f28ed5ae2d5aec1e",
       "executable": false
     },
     "tests/agent-door-journey.mjs": {
-      "sha256": "a8ac918474412899ba82bc64a4024626f0172bb5f64e47ea94099d4b908df00f",
+      "sha256": "0d33f940bf2b0277c85737b8c35f848766a174d8c28c7d2d554125d751602b30",
       "executable": false
     },
     "tests/agent-door-provider-edge.mjs": {
       "sha256": "cf6d472cdac44eceddaae286d2574ffed241a13cd58d5172c6cf8a8c20f56123",
+      "executable": false
+    },
+    "tests/agent-door-sponsor-fixtures.mjs": {
+      "sha256": "3321969994c1212c8450fa569f0c23192dc07cd5fd827e0c4c72215ca92dc700",
       "executable": false
     },
     "tests/agent-governance-fixture.mjs": {
@@ -5700,11 +5704,15 @@
       "executable": false
     },
     "tests/initialize-agent-door-owner.mjs": {
-      "sha256": "3b0ae3a2c7c2295053e1f1edde832259629e1ad7808eccd2af9d5cc2260acd4e",
+      "sha256": "52c371f1b4b45bbea712ff89f4cc8ae905dd2b8dbdaa02c57910a031e0a567ed",
       "executable": false
     },
     "tests/initialize-agent-door-requester.mjs": {
       "sha256": "b40e139f8884d2e575c418432d138d0a86c1ec1cbf5c9b63d0c9b32c6931b08d",
+      "executable": false
+    },
+    "tests/initialize-agent-door-sponsor.mjs": {
+      "sha256": "0a0135e4817ab5a1291b0f5a1e64818caf86bd9342b3df06f99c15e03ee73c5d",
       "executable": false
     },
     "tests/intake-flow.mjs": {
