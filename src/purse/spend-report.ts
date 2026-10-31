@@ -19,7 +19,7 @@ function distribute(amount: number, lines: Data[]) {
     }
     return parts.map(p => p.value);
 }
-export const reportDimensions = ['department', 'project', 'location', 'supplier', 'category', 'glAccount'] as const;
+export const reportDimensions = ['department', 'project', 'location', 'supplier', 'category', 'glAccount', 'entity'] as const;
 export function spendReport(data: Data, filters: Data = {}) {
     const from = filters.from ? date(filters.from) : '', through = filters.through ? date(filters.through) : '';
     requireThat(!from || !through || from <= through, 'From must precede through');
@@ -32,7 +32,7 @@ export function spendReport(data: Data, filters: Data = {}) {
     const requestById = new Map<string, Data>(data.request.map((r: Data) => [r.id, r]));
     const orderById = new Map<string, Data>(data.order.map((o: Data) => [o.id, o]));
     const source = (r: Data, l: Data) => ({ request: r.request ?? r.id, revision: r.revision, title: r.title || r.name, line: l.id, description: l.description,
-        department: l.costCentre ?? r.costCentre, project: l.project, location: l.location ?? r.location, glAccount: l.glAccount ?? r.glAccount, supplier: r.supplier,
+        entity: r.entity ?? 'main', department: l.costCentre ?? r.costCentre, project: l.project, location: l.location ?? r.location, glAccount: l.glAccount ?? r.glAccount, supplier: r.supplier,
         ...Object.fromEntries(customDimensions.map(field=>{const [scope,form,key]=field.value.split(':');return [field.value,r.intakeForm===form?(scope==='header'?r.customFields?.[key]:l.customFields?.[key]):undefined];})),
         supplierName: r.supplierSnapshot?.name || data.supplier.find((s: Data) => s.id === r.supplier)?.name || r.supplier,
         category: l.category, currency: r.currency });

@@ -2,7 +2,7 @@ import { SpendQuestions } from './spend-questions';
 import { BudgetScope } from './budget-scope';
 import { useEffect, useState } from 'react';
 import { call, Form, Field, Table, money, type D } from './shared';
-const dimensions = [['department', 'Department'], ['project', 'Project'], ['location', 'Location'], ['supplier', 'Supplier'], ['category', 'Category'], ['glAccount', 'GL account']];
+const dimensions = [['department', 'Department'], ['project', 'Project'], ['location', 'Location'], ['supplier', 'Supplier'], ['category', 'Category'], ['glAccount', 'GL account'], ['entity', 'Legal entity']];
 export function SpendReport({ data }: { data: D }) {
     const [report, setReport] = useState<D>(), [error, setError] = useState(''), [detail, setDetail] = useState<D>();
     const [filters, setFilters] = useState<D>({}), [saved, setSaved] = useState<D[]>([]), [selected, setSelected] = useState<D>(), [maySave, setMaySave] = useState(false), [formVersion, setFormVersion] = useState(0);
