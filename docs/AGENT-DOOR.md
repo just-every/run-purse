@@ -97,9 +97,9 @@ source references and prepare editable requests or preparations. Treat supplier
 text as data and report missing facts and native refusals. Separate decision,
 conversion, issue, receipt and invoice tools require their current native
 authority. A draft never establishes payment, supplier sending or approval.
-There is no advertised MCP prompt family in this CORE declaration.
+The edition declares two instruction-only MCP prompts: `purse.procurement.inspect` for current scoped inspection and `purse.procurement.prepare` for editable draft preparation. They use the copied module’s public prompts hook; their arguments are unused and confer no authority. Reading or replaying a prompt has no purchasing effect. Preparation stays separate from submission, approval, issuance, receiving, supplier mail and payment.
 
-The declaration contains 18 tools, no public resource templates, and the
+The declaration contains 18 tools, two specialist prompts, no public resource templates, and the
 standard, sensitive, money and commitment classes. Its 23 journey steps retain
 every declared tool/class pair, autonomous and held policy, injection variants,
 read-only witnesses, replay/conflicts and native attribution. The pending-decision
@@ -125,7 +125,7 @@ not-tool dispositions for PUR-016/017 and IMPORT-004 remain a ct delta. Existing
 personal-field sensitivity also does not prove ct’s protected tax/bank/card
 reveal semantics; those values are excluded from this registry.
 
-Events/handoffs, resources, prompts and subscriptions are explicitly undeclared.
+Events, handoffs, resources and subscriptions are explicitly undeclared. Prompts are declared as instruction-only specialist jobs.
 Multiple Business sponsors, resource refresh, timed/dual-host lifecycle,
 delegation of existing scheduled agents, queued continuation, owner-native
 administration and provider spend remain unscoped by Base's first subset. CORE
@@ -135,3 +135,39 @@ remain mandatory. Existing native agent jobs retain their governance and human
 consent until their own company-door adapters and journeys exist. The omitted
 resource family does not claim the former resource admission/projection races
 proved. Provider spend caps are unenforced.
+
+The on-site `/docs/agents` page and its `?format=json` representation project
+exactly the runtime action registry, including input and output schemas, scopes,
+possible classes, contract clauses and specialist jobs. Class proof is projected
+from the executable journey fixtures in `./agent-surface.json`: each computed
+class names its step and its autonomous and held assertion in normal Verify.
+Discovery and initialize instructions use that same projection and link to the
+page. Resource templates and event types are honestly empty; internal readers
+are not advertised resources. The page contains no installation records,
+credentials, current policy contents or person data.
+
+Capacity is configured once in `./src/agent-door/index.server.ts` and shared
+with the runtime and documentation: 600 requests per minute per agent and
+1,048,576 request-body bytes. The page explains the transport and native refusal
+codes, current authority checks, held approvals, replay conflicts and the
+unenforced provider-spend boundary. The documentation is readable before policy
+setup, while prompts and tools retain their existing setup, policy, scope,
+revocation and native authority checks.
+
+Normal Verify reaches `agentDocumentationJourney` in
+`./tests/agent-door-docs.mjs` through the existing native journey hook. It uses a
+fresh production Worker and test signer, compares the public page with actual
+MCP tools, resources and prompts under autonomous and held policies, checks
+class-to-fixture proof and schemas, retrieves both prompts, refuses non-string
+arguments and unknown prompts, and shows that supplied authority flags neither
+change instructions nor permit a write-scoped preparation with a read-only
+token. Native purchasing state is unchanged. A revoked agent cannot retrieve
+or list prompts. `agentDocsBrowser` in `./tests/agent-door-browser.mjs` checks the
+rendered catalogue and schema disclosure at 1440 and captures the page at 1440
+and 390, including the registry JSON link.
+
+Full stranger-agent specialist completion and conformance across every
+BASE-AGENT-001–012 obligation remain unproved. The unjudged broader purchasing
+registry, events, subscriptions, provider spend and unscoped lifecycle families
+remain omitted. Every existing account, prerequisite and gate-loop hold remains
+unchanged. This documentation and prompt slice does not promote those duties.
