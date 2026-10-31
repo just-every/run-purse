@@ -39,7 +39,7 @@ export async function agentResourceJourney() {
   return screening.fetch(request)
  }})
  const request=(url,init={})=>hosted.fetch(new URL(url).href.slice(HOSTED_ORIGIN.length+1),init)
- const h={origin:hosted.origin,owner:'',mf:{dispatchFetch:request},close:()=>hosted.close(),
+ const h={origin:hosted.origin,owner:'',close:()=>hosted.close(),
   async send(path,body,cookie='') {
    const response=await request(new URL(path,hosted.origin),{method:body===undefined?'GET':'POST',redirect:'manual',headers:{origin:hosted.origin,cookie,'content-type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)})})
    const text=await response.text();let value
@@ -54,21 +54,19 @@ export async function agentResourceJourney() {
    const result=await this.send('/api/purse/state',undefined,cookie)
    assert.equal(result.status,200);return result.value
   },
-  async confirm(email) {
+  async confirm(email,session='') {
    const message=messages.findLast(message=>message.to.includes(email))
    assert.ok(message)
    const url=new URL(message.text.match(/https:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0])
-   const result=await this.send('/auth/confirm',{token:url.searchParams.get('token')})
-   assert.equal(result.status,303);assert.ok(result.cookie);return result.cookie
+   const result=await this.send('/auth/confirm',{token:url.searchParams.get('token')},session)
+   assert.equal(result.status,303);assert.ok(result.cookie||session);return result.cookie||session
   },
  }
  try {
   const bootstrap=await h.send('/auth/bootstrap',{token:bootstrapToken,displayName:'synthetic-purse-4301'})
   assert.equal(bootstrap.status,303,JSON.stringify(bootstrap.value));h.owner=bootstrap.cookie
-  console.log('Resource journey: native bootstrap complete')
   const cmd=h.command.bind(h),origin=h.origin
   await cmd('business',{name:'synthetic-purse-4302',currencies:['USD'],locations:['Denver','Boston'],costCentres:['Operations','Research'],projects:['Workshop']})
-  console.log('Resource journey: business configured')
   const requesterEmail=mailbox(4303)
   await cmd('member',{email:requesterEmail,name:'synthetic-purse-4305',roles:['requester'],active:true})
   const owner=(await h.send('/auth/session',undefined,h.owner)).value.operator
@@ -81,12 +79,10 @@ export async function agentResourceJourney() {
   assert.equal((await h.send('/api/rer/business-settings',{settings})).status,200)
   const cookie=await h.confirm(requesterEmail)
   const requester=(await h.send('/auth/session',undefined,cookie)).value.operator
-  console.log('Resource journey: Business bindings complete')
   const surface=JSON.parse(await readFile(new URL('../agent-surface.json',import.meta.url),'utf8'))
-  const points=[],context=person=>createProtocol({fetch:(url,init)=>h.mf.dispatchFetch(url,init),origin,surface,signer:{privateKey:pair.privateKey,kid,issuer,installationId},person,business,consent:randomUUID(),points,agentId:'synthetic-purse-'+randomUUID(),seq:0,revision:0,listed:new Map()})
+  const points=[],context=person=>createProtocol({fetch:request,origin,surface,signer:{privateKey:pair.privateKey,kid,issuer,installationId},person,business,consent:randomUUID(),points,agentId:'synthetic-purse-'+randomUUID(),seq:0,revision:0,listed:new Map()})
   const a=context({email:owner.email,cookie:h.owner,sub:ownerSub}),b=context({email:requesterEmail,cookie,sub:requesterSub})
   await a.adopt(autonomousPolicy())
-  console.log('Resource journey: policy adopted')
   const supplier=await cmd('supplier',{name:'synthetic-purse-4306',status:'preferred',reason:'Reviewed native source',contacts:[{name:'synthetic-purse-4307',email:mailbox(4307)}]})
   const masked=await h.send('/api/purse/supplier-protected/'+supplier.id,undefined,h.owner)
   const protectedValues={tin:'628194735',bankRouting:'384729165',bankAccount:'836291047562'}
@@ -162,6 +158,31 @@ export async function agentResourceJourney() {
   assert.equal((await h.send('/auth/operator/status',{operatorId:requester.id,status:'inactive'},h.owner)).status,200)
   const suspended=await b.mcp('resources/read',retry)
   assert.equal(suspended.status,401);noContent(suspended)
+  await cmd('member',{email:requesterEmail,name:'synthetic-purse-4305',roles:['requester'],active:false})
+  await a.adopt(heldPolicy())
+  const ownerPending=await a.mcp('resources/read',{uri:link.uri})
+  assert.equal(errorCode(ownerPending),'approval_required');noContent(ownerPending)
+  const ownerHandle=ownerPending.body.error.data.approval
+  const ownerApproval=(await a.personJson('/agents/api/approvals/'+ownerHandle.id)).approval
+  const ownerDecision=await a.personRequest('/agents/api/approvals/'+ownerHandle.id+'/approve',{method:'POST',body:JSON.stringify({revision:ownerApproval.revision,summary_sha256:ownerApproval.summary_sha256})})
+  assert.equal(ownerDecision.status,200)
+  assert.equal((await ownerDecision.json()).approval.state,'executed')
+  const ownerRetry={uri:link.uri,requestState:ownerPending.body.error.data.requestState}
+  assert.equal(content(await a.mcp('resources/read',ownerRetry)).requesterEmail,requesterEmail)
+  assert.equal((await h.send('/auth/step-up',{action:'export'},h.owner)).status,202)
+  await h.confirm(ownerEmail,h.owner)
+  const inventory=await h.send('/api/purse/erasure',undefined,h.owner)
+  assert.equal(inventory.status,200)
+  const preview=await h.send('/api/purse/erasure/preview',{kind:'member',id:requesterEmail,revision:inventory.value.revision},h.owner)
+  assert.equal(preview.status,200,JSON.stringify(preview.value))
+  const erased=await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner)
+  assert.equal(erased.status,200,JSON.stringify(erased.value))
+  const anonymous=content(await a.mcp('resources/read',ownerRetry))
+  assert.ok(!JSON.stringify(anonymous).includes(requesterEmail),'Approved retry cannot resurrect erased identity')
+  assert.notEqual(anonymous.requester,requester.id)
+  assert.deepEqual(anonymous,(await h.state()).data.request.find(row=>row.id===own.id))
+  assert.equal((await b.mcp('resources/read',retry)).status,401)
+  console.log('PROBE BASE-AGENT-003 erasure: approved request read after native owner-reviewed member erasure -> current anonymous history; erased sponsor refused')
   const audit=await a.personJson('/agents/api/audit')
   assert.ok(audit.rows.some(row=>row.tool==='resources/read'&&row.outcome==='refused'&&row.code==='insufficient_scope'))
   assert.ok(audit.rows.some(row=>row.tool==='resources/read'&&row.outcome==='done'&&row.sponsor.id===requester.id&&row.agent.id===b.agentId))
