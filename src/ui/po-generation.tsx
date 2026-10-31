@@ -2,17 +2,20 @@ import { Form, Field, Table, Details, amountText, money, options, type D } from 
 type Props={data:D;actor:D;mutate:(op:string,input:D)=>Promise<any>};
 export function PoGeneration({data,mutate}:Props) {
     const queue=data.poGenerationQueue??[];
-    return <section aria-label="Procure"><h3>Procure</h3><p>Approved purchases awaiting internal PO generation or buyer review. Sending requires a buyer’s consent to the exact PO and contact in Orders.</p>
+    return <section aria-label="Procure"><h3>Procure</h3><p>Approved purchases awaiting internal PO generation or buyer review. Sending uses an explicit buyer action or a current owner standing rule for one supplier and purchase type.</p>
         <Table heads={['Request','Amount','Generation','Action']} figures={['Amount']}>{queue.map((row:D)=><tr key={row.id}><td>{row.title} · revision {row.revision}</td><td>{money(row.totalMinor,row.currency)}</td><td>{row.status} · {row.reason}</td><td>{row.order ? <a href={'/app?receipt='+encodeURIComponent(row.order)}>Open purchase order</a> : row.mayConvert && <Form label={'Review and issue '+row.title} initial={{id:row.request,revision:row.revision}} onSubmit={b=>mutate('po-generation-review',b)}><p>Issue this approved revision internally after the current purchasing checks. Send separately in Orders.</p></Form>}</td></tr>)}</Table>
     </section>;
 }
 function PolicyForm({policy,data,mutate}:{policy?:D;data:D;mutate:Props['mutate']}) {
     return <Form key={policy ? policy.id+':'+policy.version : 'new'} label={policy ? 'Save generation rule' : 'Add generation rule'} tooltip="Generation rule" initial={{version:policy?.version??0,...(policy?{purchaseType:policy.purchaseType,supplier:policy.supplier,currency:policy.currency}:{})}}
-        onSubmit={input=>{const {mode,consent,...body}=input;return mutate('po-generation-policy',{...body,enabled:mode==='automatic',consent:consent==='on'});}}>
+        onSubmit={input=>{const {mode,consent,sendMode,sendConsent,...body}=input;return mutate('po-generation-policy',{...body,enabled:mode==='automatic',consent:consent==='on',sendEnabled:mode==='automatic'&&sendMode==='automatic',sendConsent:sendConsent==='on'});}}>
         {!policy && <><Field label="Purchase type or category (* for all, catalogue for catalog purchases)" name="purchaseType" defaultValue="*"/><Field label="Generation supplier" name="supplier" defaultValue="*" options={[{value:'*',label:'All suppliers'},...options(data.supplier??[])]}/><Field label="Generation currency" name="currency" options={(data.business?.[0]?.currencies??[]).map((c:string)=>({value:c,label:c}))}/></>}
         <Field label="Generation mode" name="mode" defaultValue={policy?.enabled?'automatic':'manual'} options={[{value:'manual',label:'Manual buyer review'},{value:'automatic',label:'Automatic internal PO generation'}]}/>
         <Field label="Automatic generation limit" name="maxAmount" defaultValue={amountText(policy?.maxMinor??0)}/><Field label="Generation authority reason" name="reason"/>
-        <label className="field field-wide"><input type="checkbox" name="consent"/>I authorize internal PO generation under my current native owner authority. Supplier sending still requires separate exact-document buyer consent.</label>
+        <Field label="Supplier sending" name="sendMode" defaultValue={policy?.sendEnabled?'automatic':'manual'} options={[{value:'manual',label:'Buyer sends separately'},{value:'automatic',label:'Owner-consented automatic send'}]}/>
+        <Field label="Approved supplier contact email" name="sendRecipient" defaultValue={policy?.sendRecipient??''} required={false}/>
+        <label className="field field-wide"><input type="checkbox" name="sendConsent"/>I authorize one automatic attempt per approved ordinary-goods request, for this exact supplier, contact, purchase type, currency and amount cap. Changed rules, authority, contacts or terms require renewed consent. Mailbox delivery remains unknown.</label>
+        <label className="field field-wide"><input type="checkbox" name="consent"/>I authorize internal PO generation under my current native owner authority. The separate sending choice above controls supplier mail.</label>
     </Form>;
 }
 export function PoGenerationSettings({data,actor,mutate}:Props) {
