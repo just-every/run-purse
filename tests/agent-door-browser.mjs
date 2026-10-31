@@ -59,3 +59,18 @@ export async function agentPendingBrowser({request,origin,cookie,approval}) {
  })
  console.log('Native agent browser: pending exact-summary approval rejected by the named person at 1440 and 390; touch controls at least 44px')
 }
+
+export async function agentSponsorBrowser({request,origin,cookie,own,hidden}) {
+ await withAgentBrowser({request,origin,cookie},async({page,capture})=>{
+  await page.goto(origin+'/app?tab=Preparation',{waitUntil:'networkidle'})
+  await page.getByRole('heading',{name:'Prepare the next action',exact:true}).waitFor()
+  const download=id=>page.locator(`a[href="/api/purse/download/agentRun/${id}"]`)
+  await download(own.id).waitFor()
+  for(const run of hidden)assert.equal(await download(run.id).count(),0)
+  const drafts=await page.locator('main[data-tab] textarea').evaluateAll(fields=>fields.map(field=>field.value))
+  assert.ok(drafts.includes(own.draft))
+  assert.ok(hidden.every(run=>!drafts.includes(run.draft)))
+  await capture('agent-sponsor-preparation')
+ })
+ console.log('Native sponsor browser: the second sponsor sees only its own preparation at 1440 and 390; no horizontal overflow')
+}

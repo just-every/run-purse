@@ -499,6 +499,22 @@
       }
     },
     {
+      "id": "preparation-read",
+      "tool": "purse.records.read",
+      "args": {
+        "kind": "agentRun",
+        "id": {
+          "$from": "preparation",
+          "pointer": "/id"
+        }
+      },
+      "expect": [
+        {
+          "class": "standard"
+        }
+      ]
+    },
+    {
       "id": "edit",
       "tool": "purse.preparations.edit",
       "args": {
@@ -831,13 +847,74 @@
       ]
     },
     "journey": "tests/agent-door-journey.mjs",
+    "fixtures": {
+      "module": "tests/agent-door-sponsor-fixtures.mjs"
+    },
     "reviewers": [
       {
         "label": "requester",
         "email": "synthetic-requester@example.invalid",
         "initializer": "tests/initialize-agent-door-requester.mjs"
+      },
+      {
+        "label": "colleague",
+        "email": "synthetic-purse-sponsor-2@example.invalid",
+        "initializer": "tests/initialize-agent-door-sponsor.mjs"
+      },
+      {
+        "label": "inactive",
+        "email": "synthetic-purse-sponsor-3@example.invalid",
+        "initializer": "tests/initialize-agent-door-sponsor.mjs"
       }
     ],
+    "sponsors": [
+      {
+        "label": "owner"
+      },
+      {
+        "label": "colleague",
+        "email": "synthetic-purse-sponsor-2@example.invalid",
+        "role": "member",
+        "initializer": "tests/initialize-agent-door-sponsor.mjs"
+      },
+      {
+        "label": "inactive",
+        "email": "synthetic-purse-sponsor-3@example.invalid",
+        "role": "member",
+        "negativeOnly": true,
+        "initializer": "tests/initialize-agent-door-sponsor.mjs"
+      }
+    ],
+    "crossSponsor": {
+      "prepare": [
+        "preparation",
+        "preparation-read"
+      ],
+      "read": {
+        "tool": "purse.records.read",
+        "args": {
+          "kind": "agentRun",
+          "id": {
+            "$from": "preparation",
+            "pointer": "/id"
+          }
+        }
+      },
+      "change": {
+        "tool": "purse.preparations.edit",
+        "args": {
+          "id": {
+            "$from": "preparation",
+            "pointer": "/id"
+          },
+          "version": {
+            "$from": "preparation",
+            "pointer": "/version"
+          },
+          "draft": "Another sponsor cannot change this private preparation."
+        }
+      }
+    },
     "replayAdmission": {
       "prepare": [
         "preparation"

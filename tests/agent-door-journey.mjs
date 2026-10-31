@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
-import {agentDoorBrowser,agentPendingBrowser} from './agent-door-browser.mjs'
+import {agentDoorBrowser,agentPendingBrowser,agentSponsorBrowser} from './agent-door-browser.mjs'
+import {sponsorIdentity} from './initialize-agent-door-sponsor.mjs'
 
 export async function afterStep({phase,step,tool,request,origin,cookie}) {
  if(phase!=='held'||step.id!=='snapshot')return
@@ -125,6 +126,25 @@ export default async function({tool,request,origin,cookie,email}) {
  assert.equal(admission.sponsor.id,effect.preparedBy.for.id)
  assert.equal(admission.agent.id,effect.preparedBy.agent.id)
  assert.ok(Number.isInteger(admission.revision))
+ // The second active sponsor's native view matches the agent door's sponsor
+ // boundary: only its own preparation, while the owner's native authority sees both.
+ const colleague=sponsorIdentity(origin,'colleague')
+ const prepared=await request(new URL('/api/purse/command/prepare',origin).href,{method:'POST',headers:{origin,cookie:colleague.cookie,'content-type':'application/json'},body:JSON.stringify({workflow:'intake',draft:'Second sponsor preparation '+randomUUID(),fields:{need:'Safety glasses'},references:[]})})
+ assert.equal(prepared.status,200)
+ const preparation=await prepared.json()
+ const agentRuns=async session=>{
+  const response=await request(new URL('/api/purse/state',origin).href,{headers:{cookie:session}})
+  assert.equal(response.status,200)
+  return (await response.json()).data.agentRun.filter(run=>run.mode==='human-preparation').map(run=>run.id).sort()
+ }
+ const listed=(await tool('purse.records.list',{kind:'agentRun'})).result.structuredContent.records.filter(run=>run.mode==='human-preparation')
+ assert.deepEqual(listed.map(run=>run.id).sort(),await agentRuns(cookie))
+ const hidden=listed.filter(run=>run.actor!==colleague.id)
+ assert.ok(hidden.length>0&&listed.some(run=>run.id===preparation.id))
+ assert.deepEqual(await agentRuns(colleague.cookie),[preparation.id])
+ const download=await request(new URL('/api/purse/download/agentRun/'+encodeURIComponent(hidden[0].id),origin).href,{headers:{cookie:colleague.cookie}})
+ assert.ok([403,404].includes(download.status))
+ await agentSponsorBrowser({request,origin,cookie:colleague.cookie,own:preparation,hidden})
  await agentDoorBrowser({request,origin,cookie,order,native})
- console.log('Native agent journey: self-approval refused; receipt replay once; changed arguments and stale position refused; agent and sponsor attribution; zero policy differences')
+ console.log('Native agent journey: self-approval refused; receipt replay once; changed arguments and stale position refused; agent and sponsor attribution; second sponsor sees only its own preparation; zero policy differences')
 }
