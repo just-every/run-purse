@@ -31,11 +31,7 @@ function ownDefinition(state: State, a: Actor, id: string) {
 export const savedReportsApi = new Hono<{ Bindings: Bindings }>();
 savedReportsApi.get('/api/purse/saved-reports', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB);
-    requirePermission(state, a, 'report.read');
-    const data = visible(state, a).data;
-    const definitions = all(state, 'savedReport').filter(row => row.actor === a.id).flatMap(row => {
-        try { filtersFor(data, row.filters); return [row]; } catch { return []; }
-    });
+    const definitions = savedReportDefinitions(state, a);
     await readFence(c.env.DB, a, revision);
     return c.json({ definitions, maySave: accessGrants(state, a).some(grant => grant.role !== 'auditor' && grant.permissions.includes('report.read')) });
 });
@@ -73,3 +69,12 @@ savedReportsApi.get('/api/purse/saved-reports/:id/:format', async c => {
     await readFence(c.env.DB, a, revision);
     return result;
 });
+
+export function savedReportDefinitions(state: State, a: Actor) {
+    requirePermission(state, a, 'report.read');
+    const data = visible(state, a).data;
+    const definitions = all(state, 'savedReport').filter(row => row.actor === a.id).flatMap(row => {
+        try { filtersFor(data, row.filters); return [row]; } catch { return []; }
+    });
+    return definitions;
+}

@@ -100,12 +100,17 @@ commentsApi.get('/api/purse/comments/notices', async c => {
 });
 commentsApi.get('/api/purse/comments/:kind/:record', async c => {
     const a = await actor(c.req.raw, c.env), { state, revision } = await load(c.env.DB);
-    const kind = c.req.param('kind'), record = parent(state, kind, c.req.param('record'));
+    const result = await commentThread(state, a, c.req.param('kind'), c.req.param('record'), runtimeBindings(c.env));
+    await readFence(c.env.DB, a, revision);
+    return c.json(result);
+});
+
+export async function commentThread(state: State, a: Actor, kind: string, id: string, env: Bindings) {
+    const record = parent(state, kind, id);
     requireThat(canReadCommentParent(state, a, kind, record), 'Record outside your scope', 403);
-    const directory = await members(runtimeBindings(c.env), state);
+    const directory = await members(env, state);
     const thread = all(state, 'comment').filter(comment => comment.kind === kind && comment.record === record.id)
         .sort((x, y) => x.at.localeCompare(y.at) || x.id.localeCompare(y.id))
         .map(comment => ({ ...comment, mayEdit: comment.author === a.id && comment.authorEmail === a.email && !comment.erasure && comment.status !== 'deleted', warnings: warnings(state, record, kind, comment.versions.at(-1).mentions, directory), versions: comment.versions.map((v: Data) => ({ ...v, files: v.files.map((id: string) => { const f = get(state, 'attachment', id); return { id, name: f.name, size: f.size, erased: Boolean(f.erasure) }; }) })) }));
-    await readFence(c.env.DB, a, revision);
-    return c.json({ comments: thread, members: directory.map(m => ({ id: m.id, name: m.name })) });
-});
+    return { comments: thread, members: directory.map(m => ({ id: m.id, name: m.name })) };
+}

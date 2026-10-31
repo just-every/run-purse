@@ -52,25 +52,95 @@ company approvers are recorded separately from native purchasing decisions.
 Public JSON resources use the following URI templates. Each requires
 `purchasing:read` and passes through the shared policy, approval, review and
 audit pipeline. The protected supplier envelope remains a separate native door
-and is absent from JSON resources. Tools return resource links for the records they create or
-change; reading a link recomputes the current native HTTP field projection.
+and is absent from JSON resources. Tools return resource links for the visible purchasing records they create or
+change, including immutable decision and commitment events; reading a link recomputes the current native HTTP field projection.
 
 | Record | URI template |
 | --- | --- |
 | Request | `purse://request/{id}` |
 | Supplier | `purse://supplier/{id}` |
-| Catalogue item | `purse://catalogue/{id}` |
-| Purchase order | `purse://order/{id}` |
+| Catalogue | `purse://catalogue/{id}` |
+| Order | `purse://order/{id}` |
 | Receipt | `purse://receipt/{id}` |
 | Invoice | `purse://invoice/{id}` |
 | Agreement | `purse://agreement/{id}` |
-| Budget policy | `purse://policy/{id}` |
-| Agent preparation | `purse://agentRun/{id}` |
-| Request revision | `purse://revision/{id}` |
+| Policy | `purse://policy/{id}` |
+| Agent run | `purse://agentRun/{id}` |
+| Revision | `purse://revision/{id}` |
 | Proposed action | `purse://proposedAction/{id}` |
+| Decision | `purse://decision/{id}` |
+| Commitment | `purse://commitment/{id}` |
+| Quote | `purse://quote/{id}` |
+| Quote award | `purse://quoteAward/{id}` |
+| Order closure | `purse://orderClosure/{id}` |
+| Catalogue bundle | `purse://catalogueBundle/{id}` |
+| Stockroom | `purse://stockroom/{id}` |
+| Supplier proposal | `purse://supplierProposal/{id}` |
+| Supplier document | `purse://supplierDocument/{id}` |
+| Supplier document reminder | `purse://supplierDocumentReminder/{id}` |
+| Supplier document submission | `purse://supplierDocumentSubmission/{id}` |
+| Attachment | `purse://attachment/{id}` |
+| Supplier merge | `purse://supplierMerge/{id}` |
+| Supplier issue | `purse://supplierIssue/{id}` |
+| Supplier order evidence | `purse://supplierOrderEvidence/{id}` |
+| Supplier rma | `purse://supplierRma/{id}` |
+| Supplier credit | `purse://supplierCredit/{id}` |
+| Supplier credit application | `purse://supplierCreditApplication/{id}` |
+| Rfq | `purse://rfq/{id}` |
+| Rfq response | `purse://rfqResponse/{id}` |
+| Rfq mail event | `purse://rfqMailEvent/{id}` |
+| Quote reading | `purse://quoteReading/{id}` |
+| Quote reading event | `purse://quoteReadingEvent/{id}` |
+| Invoice source | `purse://invoiceSource/{id}` |
+| Invoice reading | `purse://invoiceReading/{id}` |
+| Invoice reading event | `purse://invoiceReadingEvent/{id}` |
+| Ap invoice email | `purse://apInvoiceEmail/{id}` |
+| Supplier invoice submission | `purse://supplierInvoiceSubmission/{id}` |
+| Agreement invoice | `purse://agreementInvoice/{id}` |
+| Agreement award | `purse://agreementAward/{id}` |
+| Agreement reminder | `purse://agreementReminder/{id}` |
+| Agreement reading | `purse://agreementReading/{id}` |
+| Agreement reading event | `purse://agreementReadingEvent/{id}` |
+| Payable | `purse://payable/{id}` |
+| Cash expectation | `purse://cashExpectation/{id}` |
+| Deposit | `purse://deposit/{id}` |
+| Deposit application | `purse://depositApplication/{id}` |
+| Order adoption | `purse://orderAdoption/{id}` |
+| Intake draft | `purse://intakeDraft/{id}` |
+| Travel reference | `purse://travelReference/{id}` |
+| Travel release | `purse://travelRelease/{id}` |
+| Travel expense | `purse://travelExpense/{id}` |
+| Value checkin | `purse://valueCheckin/{id}` |
+| Value seat import | `purse://valueSeatImport/{id}` |
+| Value confirmation | `purse://valueConfirmation/{id}` |
+| Recurring series | `purse://recurringSeries/{id}` |
+| Recurring event | `purse://recurringEvent/{id}` |
+| Recurring scenario | `purse://recurringScenario/{id}` |
+| Recurring notice send | `purse://recurringNoticeSend/{id}` |
+| Agreement disposition | `purse://agreementDisposition/{id}` |
+| Recurring discovery notice | `purse://recurringDiscoveryNotice/{id}` |
+| Recurring scenario consent | `purse://recurringScenarioConsent/{id}` |
+| Recurring scenario draft | `purse://recurringScenarioDraft/{id}` |
+| Coding example | `purse://codingExample/{id}` |
+| Coding review | `purse://codingReview/{id}` |
+| Invoice coding | `purse://invoiceCoding/{id}` |
+| Comment | `purse://comment/{id}` |
+| Notification | `purse://notification/{id}` |
+| Invoice exception | `purse://invoiceException/{id}` |
+| Saved report | `purse://savedReport/{id}` |
+| Order thread message | `purse://orderThreadMessage/{id}` |
+| Late order notice | `purse://lateOrderNotice/{id}` |
+| Order chase event | `purse://orderChaseEvent/{id}` |
+| Po generation event | `purse://poGenerationEvent/{id}` |
+| Receipt prompt event | `purse://receiptPromptEvent/{id}` |
 
 The native resource and record-tool readers share the same projection and final
-read fence. Missing and inaccessible records return the same
+read fence. Collections already on the native state response reuse that projection.
+Comments, notifications, invoice exceptions, saved report definitions and supplier
+thread messages reuse their dedicated native HTTP view functions. Preferences and
+notices remain private to their current owner or recipient. Attachment resources
+serve metadata only, with no original file bytes. Newly exposed record families
+are conservatively classified as sensitive under the existing company policy. Missing and inaccessible records return the same
 `resource_unavailable` error without content. Personal purchasing fields are
 classified as `sensitive`. A required approval withholds all content; an approved
 retry rechecks current access and serves the current projection, including edits
@@ -92,8 +162,11 @@ the retained audit. The production browser journey compares both native roles
 on the same request at 1440 pixels, with screenshots also at 390 pixels.
 File-content resources and file-byte grant budgets require a shared Base resource
 interface beyond the retained JSON and text interface; they remain unqualified.
-Additional record families and resource-refresh lifecycle qualification remain
-open. Events and subscriptions are not introduced.
+Fresh reads and approved retries are qualified across native edits, old and
+renewed bearer tokens, current native grants, policy changes, pause and resume,
+consent revocation, sponsor suspension and native erasure. Other primary record
+families outside these native purchasing projections remain unqualified. Events
+and subscriptions are not introduced.
 
 Business `owner_id` resolves to the native bootstrap owner. Team `id` resolves
 only through Business's durable native operator binding; email in a token never
@@ -134,7 +207,7 @@ conversion, issue, receipt and invoice tools require their current native
 authority. A draft never establishes payment, supplier sending or approval.
 There is no advertised MCP prompt family in this CORE declaration.
 
-The declaration contains 18 tools, eleven public JSON resource templates, and the
+The declaration contains 18 tools, 76 public JSON resource templates, and the
 standard, sensitive, money and commitment classes. Its 23 journey steps retain
 every declared tool/class pair, autonomous and held policy, injection variants,
 read-only witnesses, replay/conflicts and native attribution. The pending-decision
@@ -161,11 +234,11 @@ personal-field sensitivity also does not prove ct’s protected tax/bank/card
 reveal semantics; those values are excluded from this registry.
 
 Events, handoffs, prompts and subscriptions are explicitly undeclared.
-Multiple Business sponsors, resource refresh, timed/dual-host lifecycle,
+Multiple Business sponsors, timed and dual-host lifecycle,
 delegation of existing scheduled agents, queued continuation, owner-native
 administration and provider spend remain unscoped by Base's first subset. CORE
 does not prove or refuse those families as a whole. Native bootstrap, named
 approvals, owner-bound credentials, current authority and consent revocation
 remain mandatory. Existing native agent jobs retain their governance and human
-consent until their own company-door adapters and journeys exist. File-byte budgets and the remaining resource-refresh lifecycle are unqualified.
+consent until their own company-door adapters and journeys exist. File-byte budgets and file-content resources are unqualified.
 Provider spend caps are unenforced.

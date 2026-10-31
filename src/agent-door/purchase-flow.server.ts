@@ -72,10 +72,12 @@ export function purchaseFlowTools(env: Bindings): ToolDefinition[] {
     },
     async run(args,ctx){
       await resolve(spec,args,ctx)
-      const result=await execute(env,spec.op,args,ctx),kind=spec.op==='convert'?'order':spec.op==='receipt'?'receipt':spec.op==='invoice'?'invoice':spec.kind
-      const changed=kind==='order'&&Array.isArray(result.supplierOrders)?result.supplierOrders:[result]
-      const resources=changed.map((record:Data)=>({uri:recordUri(kind,String(record.id)),name:`Purse ${kind}`}))
-      for(const link of resources)ctx.emit(`${kind}.changed`,link.uri)
+      const resources:{uri:string;name:string}[]=[]
+      const result=await execute(env,spec.op,args,ctx,(kind,id)=>{
+        const uri=recordUri(kind,id)
+        resources.push({uri,name:`Purse ${kind}`})
+        ctx.emit(`${kind}.changed`,uri)
+      })
       return {result,resources}
     },
   }))

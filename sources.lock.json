@@ -96,7 +96,7 @@
       "executable": false
     },
     "agent-surface.json": {
-      "sha256": "173b9dbfb0a2b6c44b5d8e0c28ce8c705a6e4a5ac30a4420b5ded95195100298",
+      "sha256": "2cb3a691255735b8145752ef9cd96ce309325bf26b2add57a861737ebe34e59c",
       "executable": false
     },
     "AGENTS.consumer.md": {
@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "72f6ebfe68f196db5d320f135ef6a1315a79587f72d7f7c909ac0aafd737d9d5",
+      "sha256": "e71edc4e24c42bb5d87723ee5cdd984a9262ce5973db0974a417e12b619af3bb",
       "executable": false
     },
     "DEMO.md": {
@@ -140,7 +140,7 @@
       "executable": false
     },
     "docs/AGENT-DOOR.md": {
-      "sha256": "e7cdc4ec273525b51155852ce477f9467771ea517c5beb9aecbc7ab35b74bd40",
+      "sha256": "8d3a03aa14c42f1a007ee89c1d6cd57a2ff98646f3c1211e51b432994d8d203e",
       "executable": false
     },
     "docs/backup-and-restore.md": {
@@ -1184,7 +1184,7 @@
       "executable": false
     },
     "src/agent-door/native.server.ts": {
-      "sha256": "c2b9611f63ac0459316aa08c5e629a0c7b377a72ebad7eba0827ea1ff001c93a",
+      "sha256": "2a04397966787756b98af68cdcfdaa34c2cf2251f35df1905f41acf7726f3ae4",
       "executable": false
     },
     "src/agent-door/people.server.ts": {
@@ -1192,11 +1192,15 @@
       "executable": false
     },
     "src/agent-door/purchase-flow.server.ts": {
-      "sha256": "023d3efe9b7f6bc9d54aaf86d3c5c293d403092b7ef5a1737f5d0e32eca5c476",
+      "sha256": "4e08ab9dc65c2c9defcd6247f14a305aefb040a09007d15d17f2daa9339447a1",
+      "executable": false
+    },
+    "src/agent-door/record-types.ts": {
+      "sha256": "37acdbaf582f3398333669545ed8712a4cc084f10f387bff2088d67fbcaf7004",
       "executable": false
     },
     "src/agent-door/resources.server.ts": {
-      "sha256": "5a9f5c3b9862eaa68c3119024d51e0949497a95453f8b320aec2bf1e2a85fb0a",
+      "sha256": "4f94e9ba2df577d6280b6e7fbbb689443e01a86abfcb4a0a2b2294b9901ffcd0",
       "executable": false
     },
     "src/agent-door/schemas.ts": {
@@ -1204,7 +1208,7 @@
       "executable": false
     },
     "src/agent-door/tools.server.ts": {
-      "sha256": "dcd25e4348c3b26173bddda92606c3ef4aac8e38a26d61529112d9dd00c1cb8c",
+      "sha256": "f42fa48c41e9bbf256ab2e8b2496eb013d7fd0452532cc1e36b7a20e50d10c30",
       "executable": false
     },
     "src/assets/po-outfit.ttf": {
@@ -3580,7 +3584,7 @@
       "executable": false
     },
     "src/purse/comments.ts": {
-      "sha256": "fe80f24375805e89b8e90fd7216b940659f5c768f9b115784e13df5a5e80bee2",
+      "sha256": "7b4ef68f2859105fb901981577955bd3929086b5ebab130a229cfe17c54a72ce",
       "executable": false
     },
     "src/purse/conversion-revision.ts": {
@@ -4232,7 +4236,7 @@
       "executable": false
     },
     "src/purse/saved-reports.ts": {
-      "sha256": "c32c2b242efa0ad1339b810cbdbe8123670d664fe93525578f611bc9f92561c9",
+      "sha256": "ad36fd9f96dd500daeb1f3b26e2b1e83d88187684d099161e2867c0120e53351",
       "executable": false
     },
     "src/purse/savings-report.ts": {
@@ -5220,7 +5224,7 @@
       "executable": false
     },
     "tests/agent-door-resources.mjs": {
-      "sha256": "d7911bc47905a62638c88e3fd5f6334321baac908004079cfbe610b04b287b2c",
+      "sha256": "2166824e296310677144ee26e530fa58ba21b8eb0f1074bf84fbab2fc2adb909",
       "executable": false
     },
     "tests/agent-governance-fixture.mjs": {

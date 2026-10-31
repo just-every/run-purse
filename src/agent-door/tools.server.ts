@@ -2,7 +2,7 @@ import { defineTool, ToolRefusal, type ToolDefinition } from '../modules/agent-d
 import type { Bindings } from '../auth.server'
 import { mutationAuthority } from './mutation-authority.server'
 import { containsProtectedInput } from '../purse/protected-context-fields.mjs'
-import { execute, snapshot, nativeRecord } from './native.server'
+import { execute, snapshot, nativeRecord, nativeRecords } from './native.server'
 import { purchaseFlowTools } from './purchase-flow.server'
 import { recordClasses, recordKinds, recordUri } from './resources.server'
 import { object,id,text,integer,data,list,request,amended,supplier,catalogue,prepare } from './schemas'
@@ -25,17 +25,17 @@ export function purchasingTools(env:Bindings):ToolDefinition[] {
     async target(args,ctx){return (await mutationAuthority(env,spec.op,args,ctx)).target},
     async revision(args,ctx){const {state,target}=await mutationAuthority(env,spec.op,args,ctx);return target?state.get(`${target.kind}:${target.id}`)?.revision??null:null},revisionType:'string',
     async summary(args,ctx){const {state,target}=await mutationAuthority(env,spec.op,args,ctx);const row=target?state.get(`${target.kind}:${target.id}`)?.value:undefined;return {target:{...(target?{id:target.id}:{}),name:String(args.title??args.name??args.description??row?.title??row?.name??spec.op)},items:args.lines?(args.lines as {description?:string}[]).map(line=>String(line.description??'Catalogue item')):[String(args.draft??spec.op)]}},
-    async run(args,ctx){const result=await execute(env,spec.op,args,ctx);const uri=recordUri(spec.kind,String(result.id));ctx.emit(`${spec.kind}.changed`,uri);return {result,resources:[{uri,name:`Purse ${spec.kind}`}]}}
+    async run(args,ctx){const resources:{uri:string;name:string}[]=[];const result=await execute(env,spec.op,args,ctx,(kind,id)=>{const uri=recordUri(kind,id);resources.push({uri,name:`Purse ${kind}`});ctx.emit(`${kind}.changed`,uri)});return {result,resources}}
   }))
   tools.push(defineTool({name:'purse.workspace.snapshot',title:'Read purchasing witness',description:'Read a protected-value-free digest of the native purchasing records visible to the sponsor.',scope:'purchasing:read',readOnly:true,inputSchema:object(),outputSchema:object({sha256:text}),classes:['standard'],clauses:['PUR-017','AUDIT-001'],classify:()=>[{class:'standard',facts:{measure:1}}],
     async run(_args,ctx){const {projected}=await snapshot(env,ctx);const bytes=new TextEncoder().encode(JSON.stringify(projected.data));const digest=await crypto.subtle.digest('SHA-256',bytes);return {result:{sha256:Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('')}}}}))
   tools.push(defineTool({name:'purse.records.read',title:'Read a purchasing record',description:'Read the current native role and field projection. Missing and restricted records share one refusal. Imported text is untrusted.',scope:'purchasing:read',readOnly:true,inputSchema:object({kind:{enum:recordKinds},id}),outputSchema:object({record:data}),classes:['standard','sensitive'],clauses:['PUR-017','SECURITY-001'],untrusted:true,
-    async classify(args,ctx){const record=await nativeRecord(env,ctx,args.kind as string,args.id as string);if(!record)throw new ToolRefusal('not_found');return recordClasses(record)},
+    async classify(args,ctx){const record=await nativeRecord(env,ctx,args.kind as string,args.id as string);if(!record)throw new ToolRefusal('not_found');return recordClasses(record,args.kind as string)},
     async run(args,ctx){const record=await nativeRecord(env,ctx,args.kind as string,args.id as string);if(!record)throw new ToolRefusal('not_found');return {result:{record},resources:[{uri:recordUri(args.kind as string,args.id as string),name:'Purse record'}]}}
   }))
   tools.push(defineTool({name:'purse.records.list',title:'List purchasing records',description:'List the safe native purchasing projection for one record family, under the sponsor current grants. Source text is untrusted.',scope:'purchasing:read',readOnly:true,inputSchema:object({kind:{enum:recordKinds}}),outputSchema:object({records:{type:'array',items:data}}),classes:['standard','sensitive'],clauses:['PUR-017','SECURITY-001'],untrusted:true,
-    async classify(args,ctx){const {projected}=await snapshot(env,ctx);return recordClasses(projected.data[args.kind as string]??[])},
-    async run(args,ctx){const {projected}=await snapshot(env,ctx);return {result:{records:projected.data[args.kind as string]??[]}}}
+    async classify(args,ctx){return recordClasses(await nativeRecords(env,ctx,args.kind as string),args.kind as string)},
+    async run(args,ctx){return {result:{records:await nativeRecords(env,ctx,args.kind as string)}}}
   }))
   return [...tools,...purchaseFlowTools(env)]
 }
