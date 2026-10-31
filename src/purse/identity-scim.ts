@@ -1,6 +1,6 @@
 import { AuthError, type OperatorAuth } from '../modules/operator-auth/index.mjs';
 
-/** SCIM-created native accounts use the provider's immutable identity. A second
+/** OIDC and SAML use the SCIM-created account's immutable provider identity. A second
  * subject carrying the same email must never establish an alias or a session.
  * The public admission seam still delegates protocol, pin, generation and
  * account-version settlement to Base's unchanged atomic adapter.

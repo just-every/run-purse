@@ -150,3 +150,6 @@ try {
     }
 } finally { await browser.close(); }
 console.log('Native OIDC owner and requester web journeys passed at ' + widths.join('/'));
+
+// The same Verify entry point also qualifies the edition-owned SAML transport.
+await import('./browser-saml.mjs');
