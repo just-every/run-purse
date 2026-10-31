@@ -140,7 +140,7 @@
       "executable": false
     },
     "docs/AGENT-DOOR.md": {
-      "sha256": "7c542ddab7de8581f8fb0a4210e39a92820a04f67848c655d42c2f946f8a1c6d",
+      "sha256": "1d26f9daae3fae2c21114d01b845a03e1be915da5408a341712e19390a99c2b9",
       "executable": false
     },
     "docs/backup-and-restore.md": {
@@ -1232,7 +1232,7 @@
       "executable": false
     },
     "src/agent-door/scheduled.server.ts": {
-      "sha256": "497443f544773b84c9353d517296528b77ef364cdd99b192f950c5508916dad1",
+      "sha256": "c38575ac60ef8ecf56967e2512ef6a387e49e6322f3248655dc6135057f4e8ff",
       "executable": false
     },
     "src/agent-door/schemas.ts": {
@@ -5292,7 +5292,7 @@
       "executable": false
     },
     "tests/agent-door-scheduled.mjs": {
-      "sha256": "d114192c408e4813f731f362bf0c72b371ab83799bc14e9a2240bcd39679fec5",
+      "sha256": "9bb948e7b2fefa85afdabc9e613efd7ede5ac84c6284a95483312081bc33b603",
       "executable": false
     },
     "tests/agent-door-source-agents.mjs": {

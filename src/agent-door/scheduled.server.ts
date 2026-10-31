@@ -63,21 +63,22 @@ export function scheduledTools(env:Bindings):ToolDefinition[] {
    // A transport caller cannot advance the native clock. Embedded calls come
    // only from the native scheduler's own ScheduledController timestamp.
    requireThat('door' in ctx&&ctx.door==='embedded'||Number(args.tick)<=Date.now(),'A caller cannot advance the native schedule clock',409)
-   const plan=await scheduledPlan(env,a,args,completed)
+   const tick='door' in ctx&&ctx.door==='embedded'?Number(args.tick):Date.now()
+   const plan=await scheduledPlan(env,a,{...args,tick},completed)
    await readFence(env.DB,a,native.revision)
-   return plan
+   return {...plan,tick}
   }catch(error){return nativeRefusal(error)}
  }
  return [defineTool({
   name:'purse.agents.advance',title:'Advance one due native scheduled assistant',
-  description:'Advance exactly one due, currently authorized native assistant event. The recorded native sponsor, exact source version, native cadence and once-only claim apply. Transport calls cannot choose a future clock. Supplier mail retains native consent, bounded attempts and truthful provider outcomes; company policy is checked atomically at the claim and again before sending. Source text is untrusted.',
+  description:'Advance exactly one due, currently authorized native assistant event. The recorded native sponsor, exact source version, native cadence and once-only claim apply. Transport calls use the current server clock and cannot choose a future clock. Supplier mail retains native consent, bounded attempts and truthful provider outcomes; company policy is checked atomically at the claim and again before sending. Source text is untrusted.',
   scope:'purchasing:write',readOnly:false,inputSchema:{...object({job:{enum:['chase','value','recurring']},id,version:integer,tick:integer,sourceVersion:text,escalation:{type:'boolean'},intervalDays:{enum:[30,90]}},['job','id','version','tick','sourceVersion']),oneOf:[{properties:{job:{const:'chase'}},required:['escalation']},{properties:{job:{const:'value'}},required:['intervalDays']},{properties:{job:{const:'recurring'}}}]},outputSchema:object({events:list(data)}),classes:['sensitive','external'],clauses:['PUR-014','AGENT-003','AGENT-005','AGENT-006','AGENT-010','PO-003'],untrusted:true,
   async target(args,ctx){const plan=await resolve(args,ctx);return {kind:plan.kind,id:plan.record.id}},
   async classify(args,ctx,completed){const plan=await resolve(args,ctx,Boolean(completed));return [{class:'sensitive',facts:{measure:1,kind:'purchasing-personal'}},...(plan.external?[{class:'external' as const,facts:{measure:plan.recipient?1:0,counterparty:args.job==='value'||args.escalation?'internal' as const:'known' as const}}]:[])]},
   async summary(args,ctx){const plan=await resolve(args,ctx);return {target:{id:plan.record.id,name:plan.record.number??plan.record.title??plan.record.name},recipients:plan.external&&plan.recipient?[String(plan.recipient)]:[],items:[args.job==='recurring'?'Due in-app recurring research proposals':args.job==='value'?`${args.intervalDays}-day requester value check-in`:args.escalation?'Configured internal escalation':'Configured supplier follow-up',`Native source version ${args.version}`]}},
   async run(args,ctx){try{const plan=await resolve(args,ctx),company=await companyEffect(env,ctx);let events:Data[];
-   if(args.job==='recurring')events=(await runRecurringDiscoveryAttempt(env,ctx.person.id,String(args.id),Number(args.tick),company,String(args.sourceVersion))).events;
-   else {const event=args.job==='value'?await runValueCheckinAttempt(env,String(args.id),Number(args.version),Number(args.intervalDays),Number(args.tick),company,String(args.sourceVersion)):await runOrderChaseAttempt(env,String(args.id),Boolean(args.escalation),Number(args.tick),company,String(args.sourceVersion));events=event?[event]:[];}
+   if(args.job==='recurring')events=(await runRecurringDiscoveryAttempt(env,ctx.person.id,String(args.id),plan.tick,company,String(args.sourceVersion))).events;
+   else {const event=args.job==='value'?await runValueCheckinAttempt(env,String(args.id),Number(args.version),Number(args.intervalDays),plan.tick,company,String(args.sourceVersion)):await runOrderChaseAttempt(env,String(args.id),Boolean(args.escalation),plan.tick,company,String(args.sourceVersion));events=event?[event]:[];}
    await resolve(args,ctx,true);if(events.length)ctx.emit(`${plan.kind}.changed`,`purse://${plan.kind}/${encodeURIComponent(plan.record.id)}`);return {result:{events}}
   }catch(error){return nativeRefusal(error)}}
  })]

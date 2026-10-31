@@ -217,7 +217,8 @@ checks, per-type controls, human review actions and model and provider none.
 Scheduled supplier follow-up uses the same advance tool from MCP, the native
 HTTP action and Cron. The recorded buyer or owner remains its sponsor. Exact
 schedule and source versions bind the pending action, and caller-supplied future
-time is refused by the transport. The native once-only event claim includes the
+time is refused by the transport; transport execution uses the current server
+clock, so historical inputs cannot backdate native evidence. The native once-only event claim includes the
 company admission fence in its D1 predicate; the mail edge rechecks it before
 sending. Native limits, consent and honest provider outcomes remain required.
 Requester value check-ins and owner-sponsored recurring discovery use that

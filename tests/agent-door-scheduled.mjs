@@ -25,14 +25,16 @@ export async function scheduledChasePolicyProof({c,h,reader,readerToken}) {
  const future=await c.tool('purse.agents.advance',{...args,tick:Date.now()+86400000})
  assert.equal(code(future),'native_conflict');assert.deepEqual((await h.state()).data,before)
  assert.equal(code(await c.tool('purse.agents.advance',args,{token:readerToken})),'permission_denied')
- const result=await c.tool('purse.agents.advance',args),event=value(result).events[0]
+ const started=Date.now(),backdated={...args,tick:args.tick-365*86400000}
+ const result=await c.tool('purse.agents.advance',backdated),event=value(result).events[0]
+ assert.ok(Date.parse(event.at)>=started&&Date.parse(event.at)<=Date.now(),'Transport input cannot backdate native mail or audit evidence')
  assert.deepEqual(result.decision.classes.map(row=>row.class),['sensitive','external'])
  assert.equal(event.order,source.order.id);assert.equal(event.sequence,1);assert.equal(event.kind,'chase')
  assert.equal(event.reason,'overdue-delivery');assert.ok(event.preparedBy.agent.id);assert.equal(event.companyDecision.id,result.decision.id)
  const normalize=row=>({kind:row.kind,reason:row.reason,sequence:row.sequence,policyVersion:row.policyVersion,outcome:row.outcome.status})
  assert.deepEqual(normalize(event),normalize(nativeRun.value.events[0]))
  const replayState=(await h.state()).data,mail=h.messages.length
- assert.deepEqual(value(await c.tool('purse.agents.advance',args)).events,[event])
+ assert.deepEqual(value(await c.tool('purse.agents.advance',backdated)).events,[event])
  assert.deepEqual((await h.state()).data,replayState);assert.equal(h.messages.length,mail)
  const pendingSource=await create()
  await c.adopt({...automatic,rules:[{id:'all',class:'*',do:'approval',approver:['sponsor'],wait:'PT1H'}]})
@@ -123,7 +125,8 @@ export async function scheduledErasureJourney() {
   const {h}=f;await localCompanyPolicy(h)
   const before=(await h.state()).data,request=before.request.find(row=>row.id===f.requests[0].id),delivery=before.receipt.find(row=>row.order===f.orders[0].id),due=Date.parse(delivery.at)+30*day
   work=tick(h,due)
-  await Promise.race([entered,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Scheduled mail did not reach the network edge')),20000))])
+  let timer
+  try {await Promise.race([entered,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Scheduled mail did not reach the network edge')),20000)})])}finally{clearTimeout(timer)}
   await h.command('member',{email:request.requesterEmail,name:request.requesterEmail,roles:['requester'],active:false})
   await reauthenticateErasure(h)
   const meta=await h.send('/api/purse/erasure',undefined,h.owner)
