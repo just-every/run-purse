@@ -5,7 +5,7 @@ const stores: { store: string; covers: (field: Data) => boolean }[] = [
  { store: 'Deposit consent and application history', covers: f => ['depositRule','depositApplication'].includes(f.kind) },
  { store: 'Supplier tax review actors, reasons and private W-9 bindings', covers: f => f.kind === 'supplierTaxReview' },
  { store: 'Cross-team review assignments, questions, decisions and files', covers: f => f.kind === 'crossTeamReview' },
- { store: 'Internal comment authors, mentions, versions and notices', covers: f => ['comment','commentNotice'].includes(f.kind) },
+ { store: 'Internal comment authors, mentions, versions and notices', covers: f => ['comment','commentNotice','notificationRequestHead','notificationMailEvent','notificationPreference','notificationDelivery','notification'].includes(f.kind) },
  { store: 'Order-send recipients, stated acknowledgment names and responses', covers: f => orderKinds.includes(f.kind) || (f.kind === 'order' && f.path.some((p: unknown) => /acknowledg/i.test(String(p)))) },
  { store: 'Traveler and assistant identities', covers: f => f.kind.startsWith('travel') || f.path.some((p: unknown) => /travel|assistant/i.test(String(p))) },
  { store: 'Pantry-held contact fields', covers: f => f.kind === 'pantrySync' || f.path.some((p: unknown) => /pantry/i.test(String(p))) },
