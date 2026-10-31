@@ -93,5 +93,16 @@ export async function proposalPolicyProof({c,h,reader,readerToken}) {
  const after=(await h.state()).data
  assert.equal(after.order.filter(row=>row.request===request).length,0)
  assert.equal(after.request.find(row=>row.id===request).revision,renewal.result.revision)
+ // The approver reads the amount in currency units: $110.00 for 11000 stored hundredths, on the proposal and on a purchase-flow summary.
+ const held=await corrected('Safety','Workshop')
+ const draft=await h.command('request',{title:'Issued at $110',supplier:supplier.id,currency:'USD',needDate:'2026-12-15',location:'Denver',costCentre:'Operations',lines:[{description:'Issued item',quantity:'1',unitMinor:11000,category:'Safety',project:'Workshop'}],freightMinor:0,taxMinor:0,terms:'Native issue approval'},reader)
+ await h.command('submit',{id:draft.id,revision:draft.revision},reader)
+ await h.command('decision',{id:draft.id,revision:draft.revision,decision:'approved',reason:'Independent approval of $110'})
+ const order=await h.command('convert',{id:draft.id,revision:draft.revision})
+ await c.adopt({...automatic,rules:[{id:'standard',class:'standard',do:'autonomous'},{id:'money',class:'money',do:'approval',approver:['role:owner'],wait:'P1D'},{id:'commitment',class:'commitment',do:'approval',approver:['role:owner'],wait:'P1D'},{id:'other',class:'*',do:'blocked'}]})
+ const shown=async answer=>{const approval=answer.result?._meta?.['com.runeditrun/approval'];assert.ok(approval?.id,JSON.stringify(answer.result));const page=await h.send('/agents/approvals/'+encodeURIComponent(approval.id),undefined,h.owner);assert.equal(page.status,200);return page.value}
+ assert.match(await shown(await c.tool('purse.preparations.execute',{id:held.id,idempotency_key:randomUUID()})),/<p>Amount \$110\.00<\/p>/)
+ assert.match(await shown(await c.tool('purse.orders.issue',{id:order.id,revision:order.revision,reason:'Issue the approved $110 order',idempotency_key:randomUUID()})),/<p>Amount \$110\.00<\/p>/)
+ await c.adopt(automatic)
  console.log('PROBE BASE-AGENT-002 proposal policy: stored combined conversion and issue -> money and commitment classes; blocked policy and wrong sponsor refuse without native effects')
 }

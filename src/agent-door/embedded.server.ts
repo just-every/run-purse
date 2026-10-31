@@ -9,6 +9,7 @@ import { object, id, text } from './schemas'
 import { recordUri } from './resources.server'
 import { sourceJobs } from './source-agents.server'
 import {readFence} from '../purse/store'
+import { adoptStandalonePolicy } from './standalone-policy.server'
 
 export const embeddedJobs={
   'spend-question':{tool:'purse.spend.answer',agent:'AGENT-011',name:'Purse spend questions'},
@@ -45,13 +46,14 @@ export function embeddedTools(env:Bindings):ToolDefinition[] {
 }
 
 /** Native HTTP supplies the authenticated sponsor; no input may select it.
- * Every assistant call is a call to the shared tool: with no company or local
- * policy the registry answers policy_unset and changes nothing.
+ * Every assistant call is a call to the shared tool. An installation with no
+ * company pairing and no saved owner policy answers with the standalone default.
  */
 export async function invokeEmbedded(env:Bindings,a:Actor,op:string,input:Data):Promise<CallResult|null> {
   if(!Object.hasOwn(embeddedJobs,op)&&!Object.hasOwn(sourceByOperation,op))return null
   // The registry drops undeclared fields, so the native command alone can refuse and audit protected structured input.
   if(containsProtectedInput(input))return null
+  await adoptStandalonePolicy(env)
   const job=Object.hasOwn(embeddedJobs,op)?embeddedJobs[op as keyof typeof embeddedJobs]:sourceByOperation[op]
   const {purseAgentDoor}=await import('./index.server')
   const key=input.idempotency_key??crypto.randomUUID()

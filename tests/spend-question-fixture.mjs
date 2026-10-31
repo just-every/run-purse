@@ -1,6 +1,6 @@
 import {harness} from './purse-harness.mjs';
 export async function spendQuestionFixture(){
- const h=await harness(),cmd=h.command;
+ const h=await harness({worker:'tests/agent-door-worker.ts'}),cmd=h.command;
  try{
  await cmd('business',{name:'Front Range Operations',currencies:['USD','CAD'],locations:['Denver'],costCentres:['Operations','Research'],projects:['Network']});
  const requester=await h.member('synthetic-purse-3101@example.test',['requester']),colleague=await h.member('synthetic-purse-3102@example.test',['requester']),approver=await h.member('synthetic-purse-3103@example.test',['approver']),finance=await h.member('synthetic-purse-3104@example.test',['finance-viewer']);

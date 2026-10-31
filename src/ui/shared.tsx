@@ -2,8 +2,12 @@ import { TooltipButton } from './tooltip-button';
 import { separated } from './separated';
 import { Children, cloneElement, isValidElement, useState, type ReactElement, type ReactNode } from 'react';
 export type D = Record<string, any>;
+export type CommandFailure = Error & { code?: string; approval?: { url: string } };
 export async function call(path: string, input?: D) { const response = await fetch('/api/purse/' + path, input ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) } : undefined); const body: any = await response.json(); if (!response.ok)
-    throw new Error(body.error || 'Request failed'); return body; }
+    throw Object.assign(new Error(body.error || 'Request failed'), { code: body.code, approval: body.approval }); return body; }
+/** Agent policy answers live in Agents, so a policy hold links there. */
+const agentPolicyCodes = ['policy_unset', 'policy_blocked', 'policy_unavailable', 'agents_paused', 'approval_required', 'review_required'];
+export function CommandError({ error }: { error: CommandFailure }) { return <p role="alert">{error.message}{agentPolicyCodes.includes(error.code ?? '') && <> <a href={error.approval?.url ?? '/agents'}>{error.approval ? 'Review in Agents' : 'Open Agents'}</a></>}</p>; }
 export function Field({ label, name = label, defaultValue = '', type = 'text', required = true, options }: {
     label: string;
     name?: string;
@@ -23,15 +27,15 @@ export function Form({ children, onSubmit, label = 'Save', initial = {}, classNa
     tooltip?: string;
     initial?: D;
     className?: string;
-}) { const [busy, setBusy] = useState(false), [error, setError] = useState(''); return <form className={`record-form ${className}`.trim()} onSubmit={async (e) => { e.preventDefault(); const form = e.currentTarget; setBusy(true); setError(''); try {
+}) { const [busy, setBusy] = useState(false), [error, setError] = useState<CommandFailure | null>(null); return <form className={`record-form ${className}`.trim()} onSubmit={async (e) => { e.preventDefault(); const form = e.currentTarget; setBusy(true); setError(null); try {
     await onSubmit({ ...initial, ...Object.fromEntries(new FormData(form)) });
 }
 catch (error) {
-    setError((error as Error).message);
+    setError(error as CommandFailure);
 }
 finally {
     setBusy(false);
-} }}>{children}<div className="form-end">{tooltip ? <TooltipButton label={tooltip} aria-label={label} className="btn-primary" disabled={busy}>{busy ? 'Saving…' : label}</TooltipButton> : <button className="btn-primary" disabled={busy}>{busy ? 'Saving…' : label}</button>}{error && <p role="alert">{error}</p>}</div></form>; }
+} }}>{children}<div className="form-end">{tooltip ? <TooltipButton label={tooltip} aria-label={label} className="btn-primary" disabled={busy}>{busy ? 'Saving…' : label}</TooltipButton> : <button className="btn-primary" disabled={busy}>{busy ? 'Saving…' : label}</button>}{error && <CommandError error={error}/>}</div></form>; }
 export const options = (rows: D[], label = 'name') => rows.map(r => ({ value: r.id, label: r[label] || r.id }));
 const grouped = (whole: string) => whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 /** Exact minor units: "$5,148.00" in US dollars, "AUD 5,148.00" in any other currency; unlike currencies are never added together. */

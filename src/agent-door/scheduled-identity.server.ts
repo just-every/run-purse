@@ -4,11 +4,13 @@ import type { ToolContext } from '../modules/agent-door/index.ts'
 import { authority } from '../purse/store'
 import type { Data } from '../purse/types'
 import { nativeActor } from './native.server'
+import { standaloneDocument } from './standalone-policy.server'
 
 export type CompanyEffect={sql:string;params:(string|number|null)[];record:(value:Data)=>Data;audit:(value:Data)=>Data;live:()=>Promise<boolean>}
 export async function companyConfigured(env:Bindings) {
- const row=await env.DB.prepare('SELECT envelope,local_revision FROM agent_door_state WHERE id=1').first<{envelope:string|null;local_revision:number}>()
- return Boolean(env.RER_OWNER_CLAIM_ISSUER||env.RER_BUSINESS_TRUST||row?.envelope||row?.local_revision)
+ const row=await env.DB.prepare('SELECT envelope,local_revision,local_document FROM agent_door_state WHERE id=1').first<{envelope:string|null;local_revision:number;local_document:string|null}>()
+ // The standalone default is not an owner answer.
+ return Boolean(env.RER_OWNER_CLAIM_ISSUER||env.RER_BUSINESS_TRUST||row?.envelope||row?.local_revision&&row.local_document!==standaloneDocument)
 }
 export async function companyEffect(env:Bindings,ctx:ToolContext):Promise<CompanyEffect> {
  const a=await nativeActor(env,ctx)

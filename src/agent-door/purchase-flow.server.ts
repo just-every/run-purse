@@ -6,7 +6,7 @@ import { authorizedApproval, approvalAmount } from '../purse/requests'
 import { requireGroupFace } from '../purse/po-supplier-groups'
 import { linePosition } from '../purse/orders'
 import { mayReceive, receiptVersion } from '../purse/receipt-routing'
-import { snapshot, execute, nativeRefusal } from './native.server'
+import { snapshot, execute, nativeRefusal, summaryAmount } from './native.server'
 import { recordClasses, recordUri } from './resources.server'
 import { object, id, text, integer, data, list } from './schemas'
 
@@ -68,7 +68,7 @@ export function purchaseFlowTools(env: Bindings): ToolDefinition[] {
         })
         items.unshift(`Invoice ${args.reference}`)
       }
-      return {target:{id:record.id,name:record.title??record.number},amount:{value,currency:record.currency},payee:[...new Set(affected.map(row=>row.supplierSnapshot?.name??row.supplier))].join(', '),items:[String(args.decision??spec.op),...items,...(args.reason?[String(args.reason)]:[])]}
+      return {target:{id:record.id,name:record.title??record.number},amount:summaryAmount(value,record.currency),payee:[...new Set(affected.map(row=>row.supplierSnapshot?.name??row.supplier))].join(', '),items:[String(args.decision??spec.op),...items,...(args.reason?[String(args.reason)]:[])]}
     },
     async run(args,ctx){
       await resolve(spec,args,ctx)

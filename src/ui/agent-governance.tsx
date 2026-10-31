@@ -7,6 +7,7 @@ export function AgentGovernance({ data, mutate }: { data: D; mutate: (op: string
     const value = data.valuePolicy?.[0];
     return <section className="panel" aria-label="Agent controls"><h2>Agent controls</h2>
         <p>Owners enable each native agent for the approved form’s purchase type, or each line category when no form type is recorded. An exact type overrides the all-types setting. Pausing stops subsequent effects; an email already submitted retains its actual outcome.</p>
+        <p>The agent policy, its approvals and the audit of every assistant call are in <a href="/agents">Agents</a>.</p>
         <Table heads={['Agent', 'Purchase type', 'State', 'Supplier chase limits', 'Changed']}>
             {policies.map((row: D) => <tr key={row.id}><td>{row.agent === 'AGENT-004' ? 'Invoice exceptions' : row.agent === 'AGENT-003' ? 'Late-order follow-up' : row.agent === 'AGENT-002' ? 'Quote collection' : row.agent === 'AGENT-011' ? 'Spend questions' : row.agent === 'AGENT-008' ? 'Coding and policy' : 'Recurring spend'}</td><td>{row.purchaseType}</td><td>{row.enabled ? 'Enabled' : 'Paused'}</td><td>{row.agent === 'AGENT-003' ? `${row.maxChases} attempts · ${row.cadenceDays} days apart` : 'No supplier sends'}</td><td>{when(row.at)}</td></tr>)}
         </Table>

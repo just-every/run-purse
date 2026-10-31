@@ -14,6 +14,8 @@ import { nativeFaultCode } from '../purse/fault-code'
 function refusal(code: string, message: string, ctx?: ResourceContext | ToolContext) {
   return new ToolRefusal(code,message,ctx&&'door' in ctx&&ctx.door==='embedded'?{message}:{})
 }
+// The door's approval page formats summary amounts in currency units; Purse stores hundredths.
+export const summaryAmount = (minor: number, currency: string) => ({ value: minor / 100, currency })
 export function nativeRefusal(error: unknown, ctx?: ResourceContext | ToolContext): never {
   if(error instanceof Fault) throw refusal(nativeFaultCode(error.status),error.message,ctx)
   throw error
