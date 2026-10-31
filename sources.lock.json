@@ -5928,7 +5928,7 @@
       "executable": false
     },
     "tests/po-generation.test.mjs": {
-      "sha256": "b72d0326da890b77792543b9b5d78840ea3ba81074e335a09311c8c2b15266f5",
+      "sha256": "17a7077244e949b9104438b6bef578215d4eb15df04ca7a0987e9b7a6ffbee63",
       "executable": false
     },
     "tests/po-supplier-groups-fixture.mjs": {
