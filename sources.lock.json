@@ -104,7 +104,7 @@
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "f65ce88eda3e17b17dacb16892faa6f2693c1298c4cceac13926eb26abdd6dc2",
+      "sha256": "80bba4d9b649830019c491e5103eb402a148e81fc2c9860db24d5362a0e4f80a",
       "executable": false
     },
     "API.md": {
@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "5598f56d723d4fe8b1e69e7db1910d5533831c48172a554e8034a7fb6ba512fe",
+      "sha256": "6865eb56dc00d9a3eda6a621eb5b9de584c85a083ea4c5ab08ff495306626b85",
       "executable": false
     },
     "DEMO.md": {
@@ -196,7 +196,7 @@
       "executable": false
     },
     "IMPORTING.md": {
-      "sha256": "bb82fac121666aef5e9562faa1e4a9df1c9460e5a208ed73b29fe166789f1d10",
+      "sha256": "ca5617732218722215ff8d8c16de382cac1ebf0b8cfa87b980c2e25b65d10879",
       "executable": false
     },
     "LICENSE": {
@@ -404,7 +404,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "590e42f631e815f37e36bd5d986dd575322e8e854ded3511a0b35c21136fd278",
+      "sha256": "51f6764e852c2a11cc920e295d5b951aad4eeed376cd77cfab9edda77d1e753c",
       "executable": false
     },
     "packaging.json": {
@@ -453,6 +453,10 @@
     },
     "public/brand/mark.svg": {
       "sha256": "a70c855069a38590b7256bf79487765401b95610b14a7c1f2ccc20c197721c55",
+      "executable": false
+    },
+    "public/fixtures/procurify-multiline.csv": {
+      "sha256": "fbd949bb6c4e73b1fed2014dc278064e164177a29ef94211acaad6222904016c",
       "executable": false
     },
     "public/fixtures/procurify-shape.csv": {
@@ -740,7 +744,7 @@
       "executable": false
     },
     "scripts/ci/shards.json": {
-      "sha256": "232fd02d8b9a9b5a175d112fdee2fe5bb4ee8f16f827cf994d33694671bd8458",
+      "sha256": "995d3f570dc8696b1980105e0945bfc3b0bc7d1cca3e873b57457f6c82019643",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
@@ -1144,7 +1148,7 @@
       "executable": false
     },
     "scripts/installer/restore-validation.mjs": {
-      "sha256": "10eb1913b2218dc21d9e7ed0bf74ec1f0ababb80d8bd3dd1964a2b57d79c0efc",
+      "sha256": "c2ceb5bb9157ca7905d46344e699bc53902baeb29d0dfb47528a79b4f158f86e",
       "executable": false
     },
     "scripts/installer/seed.mjs": {
@@ -3616,7 +3620,7 @@
       "executable": false
     },
     "src/purse/documents.ts": {
-      "sha256": "ae87e14cbfa3875f926ebd3f1971518de9d77cf1b4513a0569d39a6376776627",
+      "sha256": "639f3563f61bdc3e6d5aad41f3af4f968e599555e64a87573271ebf488e3e08b",
       "executable": false
     },
     "src/purse/email-intake-api.ts": {
@@ -3728,11 +3732,11 @@
       "executable": false
     },
     "src/purse/import-invoice.ts": {
-      "sha256": "e211eeb321affbc01de5f0f64343b8353749ffc687f07ae655f71460ea686eef",
+      "sha256": "9790bf25bfae32a0d7d7294675ea7765d37890d4f438b624fd49b3aba972a30e",
       "executable": false
     },
     "src/purse/import-mapping.ts": {
-      "sha256": "a4aebdf13fc47a8bd9149a6b59d20a17806cd994010c08e1e7dfdf9573fcf23e",
+      "sha256": "df8035bebac1e6a00dd9915b672923d2228a515863073fd61b2c0c803dd234a7",
       "executable": false
     },
     "src/purse/import-target.ts": {
@@ -3740,7 +3744,7 @@
       "executable": false
     },
     "src/purse/imports.ts": {
-      "sha256": "bba0cf925238e278c5d95cc8720bbdbdcd1f765f31246bd921056d2a86edf5d5",
+      "sha256": "7b6cdfa05c1bc803bc1000134435a9c894c93e464ab2ed944833c0a0b9e131dc",
       "executable": false
     },
     "src/purse/intake-fields.ts": {
@@ -4023,6 +4027,10 @@
       "sha256": "ecb8da3052f73fbb9c5adf540427b5c50446d5c4a850c1d26f0ef61cdf09138a",
       "executable": false
     },
+    "src/purse/procurify-lines.ts": {
+      "sha256": "b89cd3f8eaca7b7dd99d28145fcb8b59fab2bdbc2e8647744f0d5d95f394388e",
+      "executable": false
+    },
     "src/purse/protected-archive-codec.ts": {
       "sha256": "f985c9ddcf9fc0069920f28833523bab87a608122565e101398b3691c7b0e9c3",
       "executable": false
@@ -4168,11 +4176,11 @@
       "executable": false
     },
     "src/purse/restored-imports.d.mts": {
-      "sha256": "d4fac7fe1d29a02774713f165002edbe2be7a0935ee77c47063178e202829c47",
+      "sha256": "4c8a703129f519d9af050c8e48fee5b24b3c91e278f68f5bde552c136926fa0a",
       "executable": false
     },
     "src/purse/restored-imports.mjs": {
-      "sha256": "896788ebb1862ff1d34d0177d8bc215596b2e12dfde7d258233a00c83e3cbbb2",
+      "sha256": "74971ecf7f9e4fb82e43d152bbabf81c784c041cbbdcc54c7678b0e287cb2f7b",
       "executable": false
     },
     "src/purse/rfq-api.ts": {
@@ -4847,8 +4855,12 @@
       "sha256": "e51bf70adb24121031de287c7f04e8657cda23bfafce7e6f36710f78eb7e2976",
       "executable": false
     },
+    "src/ui/import-history.tsx": {
+      "sha256": "035c909388ea1724b0ab26e31865f6cfc08f567676dfc766d7101978da3acd43",
+      "executable": false
+    },
     "src/ui/imports.tsx": {
-      "sha256": "dd10a0a173420a5171447c0e268ff262e22cd6bcd8b2fc5afcee83dee8048474",
+      "sha256": "3a06e7a17c9f62805ea2812caaa85982554f0d0e9c7f629a90f5567c3b245e6b",
       "executable": false
     },
     "src/ui/intake-settings.tsx": {
@@ -5459,6 +5471,10 @@
       "sha256": "3e37584fc73d81a051cd0e4a07ad063a122b8e005459c3e7c31e6f4594350621",
       "executable": false
     },
+    "tests/browser-procurify-lines.mjs": {
+      "sha256": "0643c06534d31b1825009df116b6c59cc0c0783636d52d2a4f318e3f176fd2d7",
+      "executable": false
+    },
     "tests/browser-protected-web.mjs": {
       "sha256": "8addbd1ca2ba5d988a82bcfdd6c8c5063fab2432d8f2c006142eb372af28bbd8",
       "executable": false
@@ -5829,6 +5845,14 @@
     },
     "tests/private-schedule.mjs": {
       "sha256": "1d5ac73047fef69e0aac4833b0dad87a167d05c731c4a50af132e5a794bce658",
+      "executable": false
+    },
+    "tests/procurify-lines-fixture.mjs": {
+      "sha256": "0d18a268026466298047e7e50d694c7f20068c1c41b8e90eda427aa0a1685ef4",
+      "executable": false
+    },
+    "tests/procurify-lines.test.mjs": {
+      "sha256": "bfd876f8ff8a9414edd04258b35f15ecf1e3e6e8320a7d59785256b4492ad00f",
       "executable": false
     },
     "tests/protected-value-assertions.mjs": {
