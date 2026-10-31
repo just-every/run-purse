@@ -280,6 +280,12 @@
       "name": "0045_deposit_rule_authority.sql",
       "sha256": "0dd944c862ad056999f10ea9c0ca89a4c2905843fcf57468f93d15dbf3052eaf",
       "sql": "-- Installation-local owner consent never travels with purchasing archives.\nCREATE TABLE IF NOT EXISTS p_deposit_rule_authority (\n    order_id TEXT PRIMARY KEY,\n    version INTEGER NOT NULL,\n    actor TEXT NOT NULL,\n    operator_version INTEGER NOT NULL\n);\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0046_intake_agent_authority.sql",
+      "sha256": "440d267bc3b5929fd0bdcbb1c0e3a9d84fa0bb231730147363a31cd17217355e",
+      "sql": "-- Execution consent is installation-local; archives retain policy history only.\nCREATE TABLE p_intake_agent_authority (\n policy TEXT PRIMARY KEY,\n version INTEGER NOT NULL,\n actor TEXT NOT NULL,\n operator_version INTEGER NOT NULL\n);\n"
     }
   ],
   "compatibilityDate": "2026-09-08",
