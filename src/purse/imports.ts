@@ -1,6 +1,7 @@
 import { planD1Import, createD1ImportJob, applyD1ImportBatches, resumeD1Import, undoD1Import, readD1ImportJob, readD1ImportOriginals, readD1ImportUndoReport, type D1ImportContext } from '../modules/import-kit/src/d1/index';
 import { supplierPublicValue } from './supplier-identity';
 import { targets } from './import-target';
+import { historicalReport } from './procurify-lines';
 import { mappedSource } from './import-mapping';
 import { authority } from './store';
 import { ensureSearchStorage } from './search-storage';
@@ -27,7 +28,11 @@ export async function imports(db: D1Database, s: State, a: Actor, op: string, b:
         return resumeD1Import(b.id, ctx);
     if (op === 'undo')
         return undoD1Import(b.id, ctx);
-    if (op === 'status')
-        return { job: await readD1ImportJob(b.id, ctx), originals: await readD1ImportOriginals(b.id, ctx), undo: await readD1ImportUndoReport(b.id, ctx) };
+    if (op === 'status') {
+        const job = await readD1ImportJob(b.id, ctx), originals = await readD1ImportOriginals(b.id, ctx), undo = await readD1ImportUndoReport(b.id, ctx);
+        const { results } = await db.prepare('SELECT target_kind,target_id FROM ik_provenance WHERE job_id=? AND reversed=0').bind(b.id).all<{ target_kind: string; target_id: string }>();
+        const values = results.map(row => s.get(row.target_kind + ':' + row.target_id)?.value).filter((value): value is Data => !!value);
+        return { job, originals, undo, report: historicalReport(values) };
+    }
     throw new Error('Unknown import action');
 }
