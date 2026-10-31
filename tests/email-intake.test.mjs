@@ -138,3 +138,44 @@ test('INTAKE-004 signed provider intake preserves private sources, requester com
     assert.deepEqual(afterReceipts, beforeReceipts, 'INTAKE-004 durable replay ledger survives restore');
 
 });
+
+test('Concurrent distinct signed emails retain each source once across intake revision conflicts', async t => {
+    const edge = await createEmailIntakeEdge();
+    const h = await harness({ mailRequest: edge.mailRequest, worker: 'tests/email-intake-race-worker.ts' });
+    t.after(() => h.close());
+    await h.command('email-intake-config', { address: 'requests@example.test' });
+    const ids = ['synthetic_racing_first', 'synthetic_racing_second'];
+    for (const id of ids) edge.addMail(id, 'owner@example.test');
+    const mailBefore = h.messages.length;
+    const responses = await Promise.all(ids.map(id => {
+        const options = signedInbound(id);
+        options.headers['x-purse-test-intake-pair'] = 'distinct';
+        return h.mf.dispatchFetch(h.origin + '/api/purse/email-intake/inbound', options);
+    }));
+    assert.deepEqual(responses.map(response => response.status), [202, 202]);
+    const attempts = responses.map(response => Number(response.headers.get('x-purse-test-capture-attempts')));
+    assert.ok(attempts.reduce((sum, count) => sum + count, 0) > 2, 'At least one real revision conflict was retried');
+    assert.ok(attempts.every(count => count >= 1 && count <= 5), 'Capture retries remain bounded');
+    const data = (await h.state()).data;
+    assert.equal(data.emailIntake.length, 2);
+    assert.equal(data.emailIntakeMailEvent.length, 2);
+    assert.equal(h.messages.length, mailBefore + 2, 'Each distinct intake queues and sends one draft link');
+    assert.equal(data.audit.filter(row => row.action === 'email-intake-received').length, 2);
+    const receipts = (await h.send('/api/purse/email-intake-receipts', undefined, h.owner)).value.receipts;
+    assert.equal(receipts.length, 2);
+    assert.ok(receipts.every(receipt => receipt.status === 'stored'));
+    for (const intake of data.emailIntake) {
+        assert.equal(intake.status, 'draft');
+        const original = await h.send(`/api/purse/email-intake/${intake.id}/files/original`, undefined, h.owner);
+        assert.equal(original.status, 200);
+        assert.equal(original.value.id, intake.providerEmailId);
+        const file = await h.mf.dispatchFetch(h.origin + `/api/purse/email-intake/${intake.id}/files/${intake.files[0].id}`, { headers: { cookie: h.owner } });
+        assert.equal(file.status, 200);
+        assert.deepEqual(Buffer.from(await file.arrayBuffer()), edge.pdf);
+    }
+    assert.equal(edge.fetched.length, 6, 'One provider hydration and attachment fetch per distinct signed email');
+    const fetched = edge.fetched.length, sent = h.messages.length;
+    for (const id of ids) assert.equal((await h.mf.dispatchFetch(h.origin + '/api/purse/email-intake/inbound', signedInbound(id))).status, 202);
+    assert.equal(edge.fetched.length, fetched, 'Redelivery never rehydrates provider bytes');
+    assert.equal(h.messages.length, sent, 'Redelivery never retries mail');
+});
