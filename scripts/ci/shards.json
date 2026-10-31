@@ -29,7 +29,8 @@
     ["tests/browser-notifications.mjs", "--width=1440"]
   ],
   "7": [
-    ["tests/browser.mjs", "--width=1440", "--journey=order-adoption"]
+    ["tests/browser.mjs", "--width=1440", "--journey=order-adoption"],
+    ["tests/browser-procurify-lines.mjs"]
   ],
   "8": [
     ["tests/browser.mjs", "--width=1440", "--journey=supplier-documents"]
