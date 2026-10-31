@@ -13,6 +13,7 @@ export function receiptAssignment(s: State, order: Data): { email: string; expli
     return selected ? { email: selected.receiver, explicit: true } : { email: get(s, 'request', order.request).requesterEmail, explicit: false };
 }
 export function mayReceive(s: State, a: Actor, o: Data): boolean {
+    if ((o.entity ?? 'main') !== 'main') return false;
     if (a.owner) return true;
     const assigned = receiptAssignment(s, o);
     return assigned.explicit ? assigned.email?.toLowerCase() === a.email.toLowerCase() && allowed(s, a, 'receive', o)
@@ -22,7 +23,7 @@ export function mayReceive(s: State, a: Actor, o: Data): boolean {
  * Every member recipient must still hold current permission on this PO.
  */
 export function receiptRecipient(s: State, email: string, order: Data) {
-    if (!email) return false;
+    if (!email || (order.entity ?? 'main') !== 'main') return false;
     const assigned = receiptAssignment(s, order), a = memberActor(email);
     if (assigned.email?.toLowerCase() !== email.toLowerCase()) return false;
     if (assigned.explicit) return activeReceiver(s, email, order);
