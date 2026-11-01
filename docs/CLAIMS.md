@@ -1,6 +1,6 @@
 # Purse clause status
 
-Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write <clause IDs>`. Current candidate counts: 54 done, 46 partial, 27 missing; 127 total.
+Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write <clause IDs>`. Current candidate counts: 54 done, 51 partial, 22 missing; 127 total.
 
 | Clause | Title | Status |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write <clause ID
 | `PUR-017` | Current-session authorization on every door | done |
 | `ACCESS-001` | Full procurement role model | done |
 | `ACCESS-002` | Single sign-on and provisioning | partial |
-| `ACCESS-003` | Multiple entities and subsidiaries | missing |
+| `ACCESS-003` | Multiple entities and subsidiaries | partial |
 | `INTAKE-001` | Guided intake by category | done |
 | `INTAKE-002` | Slack intake, approvals and updates | missing |
 | `INTAKE-003` | Microsoft Teams intake, approvals and updates | missing |
@@ -48,10 +48,10 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write <clause ID
 | `PUNCHOUT-001` | Amazon Business PunchOut | missing |
 | `PUNCHOUT-002` | Other PunchOut and hosted catalogs | partial |
 | `STOCK-001` | Stockroom consumables | done |
-| `CODING-001` | Split allocations across codings | missing |
+| `CODING-001` | Split allocations across codings | partial |
 | `CODING-002` | Custom header and line fields | partial |
 | `APPROVAL-001` | Multi-step conditional approval chains | partial |
-| `APPROVAL-002` | Approval reminders, escalation and out-of-office | missing |
+| `APPROVAL-002` | Approval reminders, escalation and out-of-office | partial |
 | `APPROVAL-003` | Approve from any channel | partial |
 | `APPROVAL-004` | Approver edits on a pending request | partial |
 | `COMMENT-001` | Internal comments and @mentions | partial |
@@ -68,7 +68,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write <clause ID
 | `PO-008` | Automatic PO creation and sending after approval | partial |
 | `PO-009` | PO document content, labels and terms | done |
 | `PO-010` | Manual PO close and reopen | done |
-| `PO-011` | Deposits and prepayments | missing |
+| `PO-011` | Deposits and prepayments | partial |
 | `PO-012` | Buyer edits at conversion within a price variance limit | partial |
 | `RECEIVE-001` | Receiver prompts and invoice holds | done |
 | `RECEIVE-002` | Credit memos, RMAs and supplier balances | partial |
@@ -97,7 +97,7 @@ Generated from `CONTRACT.md` by `node scripts/contract-docs.mjs write <clause ID
 | `REPORT-003` | Procurement performance measures | done |
 | `REPORT-004` | Month-end received-not-billed accruals | partial |
 | `CONTRACT-001` | Agreements, renewals and contract spend | done |
-| `NOTIFY-001` | Notifications and preferences | missing |
+| `NOTIFY-001` | Notifications and preferences | partial |
 | `API-001` | Public API, webhooks and automation | partial |
 | `SEARCH-001` | Search across purchasing records | done |
 | `IMPORT-001` | Procurify migration | partial |
