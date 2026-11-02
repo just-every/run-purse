@@ -1,4 +1,5 @@
 import { runNotificationDeliveries } from './notification-delivery';
+import { runApprovalAbsences } from './approval-absence-schedule';
 import {runPoGeneration} from './po-generation-schedule';
 import { runRecurringOrders } from './recurring-schedule';
 import { runValueCheckins } from './agent-value-checkins';
@@ -13,6 +14,7 @@ import { runReceiptPrompts } from './receipt-prompts';
 import { runTravelReleases } from './travel-release-schedule';
 
 export async function runPurchasingSchedule(env: Bindings, now: number) {
+    const absences=await runApprovalAbsences(env,now);
     await sendEmailIntakeLinks(env);
     const generation=await runPoGeneration(env,now);
     const recurring = await runRecurringOrders(env, now);
@@ -25,5 +27,5 @@ export async function runPurchasingSchedule(env: Bindings, now: number) {
     const agreements = await runAgreementReminders(env, now);
     const notifications = await runNotificationDeliveries(env, now);
     const travelReleases = await runTravelReleases(env, now);
-    return { notifications, generation, recurring, documents, orders, receipts, rfqs, agreements, values, travelReleases, discovery };
+    return { absences, notifications, generation, recurring, documents, orders, receipts, rfqs, agreements, values, travelReleases, discovery };
 }

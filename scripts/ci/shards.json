@@ -32,7 +32,8 @@
   ],
   "7": [
     ["tests/browser.mjs", "--width=1440", "--journey=order-adoption"],
-    ["tests/browser-procurify-lines.mjs"]
+    ["tests/browser-procurify-lines.mjs"],
+    ["tests/browser-approval-absence.mjs", "--width=1440"]
   ],
   "8": [
     ["tests/browser.mjs", "--width=1440", "--journey=supplier-documents"]
