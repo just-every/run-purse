@@ -1,7 +1,7 @@
 import { entityId } from './entities';
 import { shipmentHistory } from './shipment-references';
 import { nativeDepositInvoice, depositApprovalEligible, nativeDepositPosition } from './deposit-position';
-import { absenceAllows, absenceRoute, absenceView } from './approval-absence';
+import { absenceAllows, absenceView } from './approval-absence';
 import { creditInvoiceVersion, invoiceCreditApplied } from './invoices';
 import { mayAmendTravel } from './travel';
 import { requestBudgetReview } from './budget-allocations';
