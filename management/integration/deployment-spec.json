@@ -292,6 +292,12 @@
       "name": "0047_budget_disposition.sql",
       "sha256": "418fd4c8afc4800970ffaa2921ba1ae92ddc9f591035b22518bf0fbeda2de04f",
       "sql": "CREATE TABLE p_budget_disposition_authority (\n disposition TEXT PRIMARY KEY,\n actor TEXT NOT NULL,\n operator_version INTEGER NOT NULL\n);\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0048_price_benchmark.sql",
+      "sha256": "71e558676c72cce82e18e7eb96b32b6e530a912001d390251935aa9c512d7a66",
+      "sql": "-- Benchmark enablement is installation authority, excluded from portable history.\nCREATE TABLE p_benchmark_policy_authority (\n    policy TEXT PRIMARY KEY,\n    version INTEGER NOT NULL,\n    actor TEXT NOT NULL,\n    operator_version INTEGER NOT NULL\n);\n"
     }
   ],
   "compatibilityDate": "2026-09-08",
