@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
+import {agentResourceJourney} from './agent-door-resources.mjs'
 import {randomUUID} from 'node:crypto'
 import {quoteNativeJourney,quoteStepProof} from './agent-door-quotes.mjs'
-import {agentDoorBrowser,agentPendingBrowser} from './agent-door-browser.mjs'
+import {agentDoorBrowser,agentPendingBrowser,agentResourceBrowser} from './agent-door-browser.mjs'
 
 export async function afterStep(context) {
  await quoteStepProof(context)
@@ -15,6 +16,7 @@ export async function afterStep(context) {
 
 // Real native persistence, policy and audit; no application or auth stand-ins.
 export default async function({tool,request,origin,cookie,email}) {
+ await agentResourceJourney()
  const marker='synthetic-structured-protected-value-'+randomUUID()
  const before=await tool('purse.workspace.snapshot',{})
  for(const name of ['tin','bank_account','BANK-ROUTING','client_secret','apiKey','access_token','refreshToken','supplierMatchingKey']) {
@@ -26,6 +28,7 @@ export default async function({tool,request,origin,cookie,email}) {
  const key=randomUUID(),args={workflow:'intake',draft:'Source-bound native replay witness',fields:{},references:[],idempotency_key:key}
  const created=await tool('purse.preparations.create',args)
  assert.equal(created.result?.isError,false)
+ assert.ok(created.result.content.some(item=>item.type==='resource_link'&&item.uri===`purse://agentRun/${created.result.structuredContent.id}`))
  const beforeReplay=await tool('purse.workspace.snapshot',{})
  const replay=await tool('purse.preparations.create',args)
  assert.deepEqual(replay.result.structuredContent,created.result.structuredContent)
@@ -128,6 +131,7 @@ export default async function({tool,request,origin,cookie,email}) {
  assert.equal(admission.sponsor.id,effect.preparedBy.for.id)
  assert.equal(admission.agent.id,effect.preparedBy.agent.id)
  assert.ok(Number.isInteger(admission.revision))
+ await agentResourceBrowser({request,origin,cookie,order})
  const quotation=await quoteNativeJourney({tool,request,origin,cookie})
  await agentDoorBrowser({request,origin,cookie,order,native,quotation,tool})
  console.log('Native agent journey: self-approval refused; receipt replay once; changed arguments and stale position refused; agent and sponsor attribution; zero policy differences')

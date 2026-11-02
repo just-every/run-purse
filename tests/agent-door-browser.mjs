@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import {requesterSession} from './initialize-agent-door-requester.mjs'
 import {withAgentBrowser} from './agent-door-browser-session.mjs'
 
 export async function agentDoorBrowser({request,origin,cookie,order,native,quotation,tool}) {
@@ -97,4 +98,26 @@ async function agentQuotationBrowser({request,origin,cookie,quotation,tool}) {
   await capture('agent-quotation-recorded')
  })
  console.log('PROBE BASE-AGENT-002 native UI: supplied quotation form -> exact revision, EUR 3085, zero freight and missing tax; MCP reads the same quote; screens at 1440 and 390')
+}
+
+export async function agentResourceBrowser({request,origin,cookie,order}) {
+ for(const [role,session,mayConvert] of [['owner',cookie,true],['requester',requesterSession().cookie,false]]) {
+  const response=await request(new URL('/api/purse/state',origin).href,{headers:{cookie:session}})
+  assert.equal(response.status,200)
+  const native=await response.json(),record=native.data.request.find(row=>row.id===order.request)
+  assert.ok(record)
+  assert.ok(native.actor.roles.includes(role))
+  assert.equal(record.mayConvert,mayConvert)
+  await withAgentBrowser({request,origin,cookie:session},async({page,capture})=>{
+   await page.goto(origin+'/app?tab=Requests',{waitUntil:'networkidle'})
+   const card=page.locator('#request-'+record.id)
+   await card.waitFor()
+   assert.ok((await card.innerText()).includes(record.title))
+   await card.getByRole('button',{name:'Open request',exact:true}).click()
+   for(const line of record.lines)assert.ok((await card.innerText()).includes(line.description))
+   assert.equal(await card.getByRole('button',{name:'Generate purchase order',exact:true}).count(),mayConvert?1:0)
+   await capture('agent-resource-'+role)
+  })
+ }
+ console.log('PROBE BASE-AGENT-003 2 UI: owner and requester open the same native request -> matching title and lines, current buyer control only for owner; screens at 1440 and 390')
 }
