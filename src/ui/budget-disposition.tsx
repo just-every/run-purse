@@ -4,7 +4,7 @@ import { call, Details, Field, Form, Table, money, type D } from './shared';
 /** Uses the order's existing review disclosure and record forms. */
 export function BudgetDisposition({order,data,actor,mutate}:{order:D;data:D;actor:D;mutate:(op:string,input:D)=>Promise<any>}) {
  const [review,setReview]=useState<D|null>(null);
- if(!actor.roles.includes('owner') || !['issued','amendment-pending'].includes(order.status) || order.adoptionBasis || order.lines.some((line:D)=>line.service))return null;
+ if(!actor.roles.includes('owner') || !['issued','amendment-pending'].includes(order.status) || order.adoptionBasis || order.supplierGroup || order.lines.some((line:D)=>line.service))return null;
  const request=data.request.find((row:D)=>row.id===order.request);
  if(!request)return null;
  const name=(id:string)=>data.periodBudgets.find((row:D)=>row.id===id)?.name ?? id;

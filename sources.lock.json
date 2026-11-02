@@ -108,7 +108,7 @@
       "executable": false
     },
     "API.md": {
-      "sha256": "e0176ff31fe1afa896dedc11a8c9043caaf4059537d610fbd5adc1c7f25ecca2",
+      "sha256": "47a9971188271f79076c9f668d46a6cd3c908d5f1a1f13ca19dc8fed9e637f53",
       "executable": false
     },
     "base-copies.json": {
@@ -408,7 +408,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "d6140096fad3eda9c938eed13d87d3f94c756673757e80b16d378e11387c8464",
+      "sha256": "0d99f11cd92de25723b667a44e7c34c59b30c39af2ef1e9c66d326071a9b717d",
       "executable": false
     },
     "packaging.json": {
@@ -3560,7 +3560,7 @@
       "executable": false
     },
     "src/purse/budget-disposition.ts": {
-      "sha256": "f7e881b4edb6378a54bd58d40eb2c837d8d45cd50030b496bcad28fc9a2c7397",
+      "sha256": "c88fbba96c61ac98b143a0394919eb12f8d173209b26e307d0c41c75dedbdabc",
       "executable": false
     },
     "src/purse/budget-import.ts": {
@@ -4816,7 +4816,7 @@
       "executable": false
     },
     "src/ui/budget-disposition.tsx": {
-      "sha256": "29b8f29afd8607d8fbbff6672216fc7a766fc703511b391e1822d67743fce4f6",
+      "sha256": "9fe6042c1c42e97e3c961953149e6693edff4a6db2dc83586803ac11ed01b025",
       "executable": false
     },
     "src/ui/budget-import.tsx": {
@@ -5352,7 +5352,11 @@
       "executable": false
     },
     "tests/browser-archive.mjs": {
-      "sha256": "12947f3ad35feda5b83fa56353e04769110bda3d03e1b9953c217473652ab1d1",
+      "sha256": "d1074ed7eff33a7caa0fa7b2e1969569cecfbac6110b7fbd92c3734ec1b6f4b5",
+      "executable": false
+    },
+    "tests/browser-archive.test.mjs": {
+      "sha256": "0707d52f64a98581155bbbd1aa0feab7bbcf8152cb1e0e4e4d38cbb61ddd9d85",
       "executable": false
     },
     "tests/browser-audit-log.mjs": {
@@ -5632,7 +5636,7 @@
       "executable": false
     },
     "tests/browser.mjs": {
-      "sha256": "2dadf4002df8587ab8836a372a5e0aca3fae1201f7418819a980b12624646e49",
+      "sha256": "33c90af19539eebb6650580b3bc94fffa5ad9cbdb2a8d9734f749aa824edc721",
       "executable": false
     },
     "tests/budget-disposition-fixture.mjs": {

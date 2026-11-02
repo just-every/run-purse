@@ -7,6 +7,7 @@ import { requests, policies } from './requests';
 const same = (a: unknown, b: unknown) => canonicalJson(a) === canonicalJson(b);
 function eligible(s: State, order: Data) {
  const lineage = all(s,'order').filter(row=>row.request===order.request), ids=new Set(lineage.map(row=>row.id));
+ requireThat(!lineage.some(row=>row.supplierGroup),'Supplier groups require a separate supported budget disposition',409);
  requireThat(order.issuedAt && ['issued','amendment-pending'].includes(order.status) && !order.supplierGroup && !order.imported && !order.adoption && !order.poDetails?.blanket && !order.poDetails?.deposit
   && lineage.every(row=>!row.adoption && !row.imported && !row.poDetails?.deposit && row.lines.every((line:Data)=>!line.service && !(line.carriedAccepted||line.carriedCancelled)))
   && !all(s,'receipt').some(row=>ids.has(row.order)) && !all(s,'orderClosure').some(row=>ids.has(row.order))
