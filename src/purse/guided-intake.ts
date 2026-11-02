@@ -1,3 +1,4 @@
+import { approvalRouteView } from './approval-chain';
 import { containsProtectedInput } from './protected-context-fields.mjs';
 import { emailIntake, intakeScope } from './email-intake';
 import { proposedSupplier } from './supplier-proposals';
@@ -53,7 +54,10 @@ export async function guidedIntake(s: State, a: Actor, op: string, b: Data, env?
             const policy = policies(trial, request)[0];
             if (policy) steps.push({ kind: 'approval', label: policy.name, approver: policy.approver, policy: policy.id });
             for (const file of all(trial,'attachment').filter(file=>file.kind==='intakeDraft'&&file.record===old.id)) put(trial,'attachment',file.id,{...file,kind:'request',record:request.id});
-            requests(trial,a,'submit',{id:request.id,revision:request.revision});
+            const submitted = requests(trial,a,'submit',{id:request.id,revision:request.revision})!;
+            const predicted = approvalRouteView(trial,a,submitted).approvalPreview;
+            const primary = steps.findIndex(step=>step.kind==='approval');
+            if (primary >= 0) steps.splice(primary,1,...predicted.map((step:Data)=>({kind:'approval',label:step.id==='primary'?policy.name:step.reason,approver:step.emails.join(', '),policy:policy.id,step:step.id,mode:step.mode})));
             return { steps, ready: true, message: 'Predicted from current policy; submission checks it again.' };
         } catch (error) { return { steps, ready: false, message: (error as Error).message }; }
     }
