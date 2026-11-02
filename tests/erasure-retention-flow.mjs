@@ -96,7 +96,7 @@ export async function restoreHoldFlow(t){
  // Held: no later journal and no acknowledgment, so nothing is restored.
  await assert.rejects(importArchive(target,archive,[]),/erasure_history_unacknowledged/);assert.equal(await rows(),0);
  // The current native owner acknowledges the exact limit with fresh proof; a buyer-grade or unproven attempt cannot.
- let meta=(await fresh.send('/api/purse/erasure',undefined,owner)).value;assert.equal(meta.history.state,'native');
+ let meta=(await fresh.send('/api/purse/erasure',undefined,owner)).value;assert.equal(meta.history.state,'native');assert.equal(meta.empty,true,'A bootstrapped native owner does not populate the purchasing installation');
  const ack=(body,cookie=owner)=>fresh.send('/api/purse/erasure/history',{revision:meta.revision,...body},cookie);
  assert.equal((await ack({acknowledgment:unverified})).status,403,'Fresh native proof required');
  await reauthenticateErasure(fresh,owner);
@@ -105,7 +105,7 @@ export async function restoreHoldFlow(t){
  assert.equal(await rows(),0,'The acknowledgment is not a business record, so the destination stays empty');
  await importArchive(target,archive,[]);assert.ok(await rows()>0);
  meta=(await fresh.send('/api/purse/erasure',undefined,owner)).value;
- assert.equal(meta.history.state,'unverified');assert.equal(meta.history.label,unverified);assert.equal(meta.history.journalSupplied,false);assert.equal(meta.history.acknowledgedBy,'owner@example.test');assert.ok(Date.parse(meta.history.archiveAt)<=Date.parse(meta.history.restoredAt));
+ assert.equal(meta.empty,false,'Restored purchasing history is not an empty installation');assert.equal(meta.history.state,'unverified');assert.equal(meta.history.label,unverified);assert.equal(meta.history.journalSupplied,false);assert.equal(meta.history.acknowledgedBy,'owner@example.test');assert.ok(Date.parse(meta.history.archiveAt)<=Date.parse(meta.history.restoredAt));
  // A restore that supplies the latest archive as its journal needs no acknowledgment and says so.
  const journalled=await harness({empty:true});t.after(()=>journalled.close());process.env.PURSE_RESTORE_JOURNAL='supplied';
  await importArchive(await createPortability({db:journalled.db,buckets:{ORIGINALS:journalled.originals},policy:portability}),archive,[],archive);

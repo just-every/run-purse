@@ -18,8 +18,11 @@ erasureApi.get('/api/purse/erasure',async c=>{
  const env=runtimeBindings(c.env);let a:Actor|undefined;
  try {
   a=await actor(c.req.raw,env);requireThat(a.owner,'Current native owner required',403);
-  const {state,revision}=await load(env.DB);await readFence(env.DB,a,revision);
-  return c.json({revision,choices:erasureChoices(state),receipts:all(state,'erasureReceipt'),retained:erasureRetention,retention:await retentionStatus(env,state),history:await erasureHistory(env.DB),empty:state.size===0});
+  const {state,revision}=await load(env.DB);
+  // Native identity projections are not purchasing history; match the restore acknowledgment guard.
+  const empty=!(await env.DB.prepare('SELECT 1 AS x FROM p_records LIMIT 1').first());
+  await readFence(env.DB,a,revision);
+  return c.json({revision,choices:erasureChoices(state),receipts:all(state,'erasureReceipt'),retained:erasureRetention,retention:await retentionStatus(env,state),history:await erasureHistory(env.DB),empty});
  }catch(error) {return erasureRefusal(env,'read',error,a);}
 });
 erasureApi.post('/api/purse/erasure/:operation',async c=>{
