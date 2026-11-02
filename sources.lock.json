@@ -5308,7 +5308,7 @@
       "executable": false
     },
     "tests/blanket-orders.test.mjs": {
-      "sha256": "6efe4fc6afa8aa6c2db6e01b2ddf4ab6081bcb08c682694745efcafd9ebcd21a",
+      "sha256": "08bd7bf8ca262b0f17a6531883bea9dd25767562218ef49bc03662984c26b9f3",
       "executable": false
     },
     "tests/browser-access-flows.mjs": {
@@ -5860,11 +5860,11 @@
       "executable": false
     },
     "tests/order-send-fixture.mjs": {
-      "sha256": "19691fc3a93ee1e46d91dcde32525fe4fe0fdcad058c021a7af0a759fc0d2321",
+      "sha256": "e1f461b0edad43b36c22da7eb03e2589cc6294d5b8571c5643be3c8e7e01726f",
       "executable": false
     },
     "tests/order-send.test.mjs": {
-      "sha256": "8641c9aef188545febbfeec643c52a81cd3cc0bbfb7370a6493f6cc194e199de",
+      "sha256": "8c8fcf59894df54ca0289f1df40ac6096f53d4855ee6499e9a1289b97fcc54dd",
       "executable": false
     },
     "tests/order-thread.test.mjs": {

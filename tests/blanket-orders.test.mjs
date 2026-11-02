@@ -5,7 +5,8 @@ import {pdfContent} from './pdf-content.mjs';
 import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
 
 test('PO-005 blanket invoice draw-down preserves approved caps, validity, commitments, current amendments and source-exact archives',async t=>{
- const h=await harness();t.after(()=>h.close());const cmd=h.command;
+ // Pin issuance inside the calendar fixtures' validity; reuse the existing test-only clock.
+ const h=await harness({worker:'tests/accrual-worker.ts',clock:'2026-11-02T12:00:00.000Z'});t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Canyon Field Services',currencies:['USD','CAD'],locations:['Denver'],costCentres:['Operations'],projects:['Maintenance']});
  const requester=await h.member('requester@example.test',['requester']),approver=await h.member('approver@example.test',['approver']),buyer=await h.member('buyer@example.test',['buyer']);
  const supplier=await cmd('supplier',{name:'Front Range Maintenance',status:'preferred',reason:'Annual supply agreement',contacts:[{name:'Jordan',email:'sales@example.test'}]});
@@ -52,7 +53,8 @@ test('PO-005 blanket invoice draw-down preserves approved caps, validity, commit
 });
 
 test('blanket orders show billed balances only to readers of every invoice they sum',async t=>{
- const h=await harness();t.after(()=>h.close());const cmd=h.command;
+ // Pin issuance inside the calendar fixtures' validity; reuse the existing test-only clock.
+ const h=await harness({worker:'tests/accrual-worker.ts',clock:'2026-11-02T12:00:00.000Z'});t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'synthetic-purse-3200',currencies:['USD'],locations:['Denver'],costCentres:['Operations','Engineering'],projects:['Maintenance']});
  const requester=await h.member('synthetic-purse-3201@example.test',['requester']),approver=await h.member('synthetic-purse-3202@example.test',['approver']),buyer=await h.member('synthetic-purse-3203@example.test',['buyer']),receiver=await h.member('synthetic-purse-3204@example.test',['receiver']),clerk=await h.member('synthetic-purse-3205@example.test',['ap-clerk']);
  await cmd('member',{email:'synthetic-purse-3205@example.test',name:'Engineering AP clerk',grants:[{role:'ap-clerk',scope:{departments:['Engineering']}}]});
@@ -74,7 +76,8 @@ test('blanket orders show billed balances only to readers of every invoice they 
 });
 
 test('PO-005 real release authority, structured service value matching and consented recurring Cron pause at agreement boundaries',async t=>{
- const h=await harness();t.after(()=>h.close());const cmd=h.command;
+ // Pin issuance inside the calendar fixtures' validity; reuse the existing test-only clock.
+ const h=await harness({worker:'tests/accrual-worker.ts',clock:'2026-11-02T12:00:00.000Z'});t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'synthetic-purse-1',currencies:['USD'],locations:['synthetic-purse-2'],costCentres:['synthetic-purse-3'],projects:['synthetic-purse-4']});
  const requester=await h.member('synthetic-purse-5@example.test',['requester']),approver=await h.member('synthetic-purse-6@example.test',['approver']),buyer=await h.member('synthetic-purse-7@example.test',['buyer']),receiver=await h.member('synthetic-purse-8@example.test',['receiver']);
  const supplier=await cmd('supplier',{name:'synthetic-purse-9',status:'preferred',reason:'synthetic-purse-10',contacts:[{name:'synthetic-purse-11',email:'synthetic-purse-12@example.test'}]});

@@ -4,10 +4,15 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { PDFName, decodePDFRawStream } from 'pdf-lib';
 import { harness } from './purse-harness.mjs';
 import { pdfContent } from './pdf-content.mjs';
-import { orderSendFixture, orderMessage, orderLink } from './order-send-fixture.mjs';
+import { orderSendFixture as fixture, orderMessage, orderLink } from './order-send-fixture.mjs';
 import { adoptionFixture, importInput } from './order-adoption-fixture.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
 import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
+
+// One captured clock keeps source dates, rendered expectations and scheduled ticks aligned.
+const now = Date.now();
+const day = offset => new Date(now + offset * 86400000).toISOString().slice(0, 10);
+const orderSendFixture = (h, options = {}) => fixture(h, { ...options, now });
 
 const publicGet = (h, path) => fetch(new URL(path,h.origin));
 const ack = (h, link, revision, extra={}) => fetch(link,{method:'POST',headers:{origin:h.origin,'content-type':'application/json'},body:JSON.stringify({decision:'acknowledge',revision,consent:true,name:'synthetic-purse-2821',...extra})});
@@ -19,7 +24,7 @@ test('Explicit native buyer change send freezes exact numbered PDF and originals
     const sent=await f.send();assert.equal(sent.status,200,JSON.stringify(sent.value));assert.equal(sent.value.status,'accepted');assert.equal(sent.value.changeLabel,'Change order 1');assert.ok(!JSON.stringify(sent.value).includes('/order-link/'));
     const link=orderLink(h),message=orderMessage(h);assert.equal(message.attachments.length,3);
     const supplier=await publicGet(h,link);assert.equal(supplier.status,200);const html=await supplier.text();
-    for(const field of ['Change order 1','approved revision 2','synthetic-purse-2812','synthetic-purse-2806','synthetic-purse-2808','Vendor SKU','synthetic-purse-2818','synthetic-purse-2819','2026-11-08','2026-11-01 to 2026-11-08','Text-only prepayment terms','USD 210.50'])assert.ok(html.includes(field),field);
+    for(const field of ['Change order 1','approved revision 2','synthetic-purse-2812','synthetic-purse-2806','synthetic-purse-2808','Vendor SKU','synthetic-purse-2818','synthetic-purse-2819',day(21),day(14)+' to '+day(21),'Text-only prepayment terms','USD 210.50'])assert.ok(html.includes(field),field);
     const pdfResponse=await publicGet(h,link.href+'/pdf');assert.equal(pdfResponse.status,200);const bytes=Buffer.from(await pdfResponse.arrayBuffer());assert.deepEqual(bytes,Buffer.from(message.attachments[0].content,'base64'));
     const printed=await pdfContent(new Uint8Array(bytes));assert.ok(printed.text.includes('Change order 1'));assert.ok(printed.text.includes('synthetic-purse-2810'));assert.ok(printed.text.includes('synthetic-purse-2811'));
     const embedded=printed.pdf.catalog.lookup(PDFName.of('Names')).lookup(PDFName.of('EmbeddedFiles')).lookup(PDFName.of('Names'));assert.equal(embedded.size(),4);
@@ -36,7 +41,7 @@ test('Explicit native buyer change send freezes exact numbered PDF and originals
     assert.equal((await f.send()).status,409);assert.equal(h.messages.filter(mail=>mail.subject.startsWith('Change order ')).length,1);
     await h.command('supplier',{...f.supplier,name:'synthetic-purse-2823',address:'synthetic-purse-2824'});
     await h.command('po-profile',{...f.profile,legalName:'synthetic-purse-2825',version:f.profile.version});
-    await h.command('supplier-order-evidence',{order:f.order.id,version:0,promisedDate:'2026-11-07',source:'Later promise'});
+    await h.command('supplier-order-evidence',{order:f.order.id,version:0,promisedDate:day(20),source:'Later promise'});
     assert.deepEqual(Buffer.from(await(await publicGet(h,link.href+'/pdf')).arrayBuffer()),bytes,'Later mutable evidence cannot rewrite frozen sent bytes');
     assert.deepEqual((await h.state()).data.revision.find(row=>row.request===f.request.id&&row.revision===2),immutable,'Send and acknowledgment never rewrite approved revisions');
     const history=await h.send('/api/purse/audit.csv?subject='+f.order.id,undefined,h.owner);for(const event of ['order-change-send-claimed','order-change-send-outcome','order-change-acknowledged',sent.value.pdfSha256])assert.ok(history.value.includes(event),event);
@@ -78,7 +83,7 @@ test('Native current buyer scope, exact approval and claim-before-send prevent s
     const sends=await Promise.all([f.send(),f.send()]);assert.deepEqual(sends.map(result=>result.status).sort(),[200,409]);assert.equal(sends.find(result=>result.status===200).value.status,'uncertain');assert.equal(claimed,true);
     assert.equal((await f.send()).status,409);assert.equal(h.messages.filter(message=>message.subject.startsWith('Change order ')).length,1);
     const link=orderLink(h);assert.equal((await publicGet(h,link)).status,200);
-    const next=await h.command('need-date-edit',{id:f.request.id,revision:2,needDate:'2026-11-09',reason:'New exact correction'},f.requester);assert.equal(next.revision,3);assert.equal((await publicGet(h,link)).status,410);assert.equal((await ack(h,link,2)).status,410);
+    const next=await h.command('need-date-edit',{id:f.request.id,revision:2,needDate:day(22),reason:'New exact correction'},f.requester);assert.equal(next.revision,3);assert.equal((await publicGet(h,link)).status,410);assert.equal((await ack(h,link,2)).status,410);
     await h.command('member',{email:'synthetic-purse-2804@example.test',name:'synthetic-purse-2804',active:false,roles:['buyer']});assert.equal((await f.send()).status,403,'Deactivated purchasing membership refuses its retained native session');
     assert.equal((await h.send('/auth/signout',{},f.buyer)).status,204);assert.equal((await f.send()).status,401,'Revoked native session refuses the send door');
 });
@@ -95,7 +100,8 @@ test('Real supplier-link expiry and explicit withdrawal fence read, original and
 
 async function initialOrderFixture(h) {
     const base = await orderSendFixture(h);
-    const request = await h.command('request', { ...base.request, id: undefined, revision: undefined, title: 'synthetic-purse-2830', needDate: '2026-11-01', lines: base.request.lines.map(line => ({ ...line, id: undefined })) }, base.requester);
+    // Two UTC days ago is overdue in the business calendar even just after UTC midnight.
+    const request = await h.command('request', { ...base.request, id: undefined, revision: undefined, title: 'synthetic-purse-2830', needDate: day(-2), lines: base.request.lines.map(line => ({ ...line, id: undefined })) }, base.requester);
     await h.command('submit', { id: request.id, revision: 1 }, base.requester);
     await h.command('decision', { id: request.id, revision: 1, decision: 'approved', reason: 'synthetic-purse-2831' }, base.approver);
     const order = await h.command('convert', { id: request.id, revision: 1, issue: true }, base.buyer);
@@ -103,7 +109,7 @@ async function initialOrderFixture(h) {
 }
 const initialMessage = h => h.messages.find(message => message.subject.startsWith('Purchase order:'));
 const initialLink = h => new URL(initialMessage(h).text.match(/http:\/\/[^\s]+\/api\/purse\/order-link\/[^\s]+/)[0]);
-const respond = (h, link, input = {}) => fetch(link, { method: 'POST', headers: { origin: h.origin, 'content-type': 'application/json' }, body: JSON.stringify({ revision: 1, version: 0, decision: 'accept', promisedDate: '2026-11-08', name: 'synthetic-purse-2834', consent: true, ...input }) });
+const respond = (h, link, input = {}) => fetch(link, { method: 'POST', headers: { origin: h.origin, 'content-type': 'application/json' }, body: JSON.stringify({ revision: 1, version: 0, decision: 'accept', promisedDate: day(21), name: 'synthetic-purse-2834', consent: true, ...input }) });
 
 test('Initial supplier responses retain exact frozen PO and promises, and only buyer adoption creates an unapproved amendment', async t => {
     const h = await harness(); t.after(() => h.close()); const f = await initialOrderFixture(h);
@@ -117,8 +123,8 @@ test('Initial supplier responses retain exact frozen PO and promises, and only b
     const printed = await pdfContent(new Uint8Array(pdf)); for (const field of ['synthetic-purse-2812', 'synthetic-purse-2810', 'synthetic-purse-2811', 'Vendor SKU']) assert.ok(printed.text.includes(field), field);
     for (let index = 0; index < 2; index++) assert.deepEqual(Buffer.from(await (await publicGet(h, link.href + '/original/' + index)).arrayBuffer()), Buffer.from(index ? f.certificate : f.terms, 'base64'));
     assert.equal((await respond(h, link)).status, 200);
-    const seen = await h.send('/api/purse/order-send/' + f.order.id, undefined, f.requester); assert.equal(seen.status, 200); assert.equal(seen.value.event.response.decision, 'accept'); assert.equal(seen.value.event.response.promisedDate, '2026-11-08'); assert.equal(seen.value.event.acknowledgment.revision, 1);
-    const state = await h.state(); assert.equal(state.data.supplierOrderEvidence.find(row => row.order === f.order.id).promisedDate, '2026-11-08');
+    const seen = await h.send('/api/purse/order-send/' + f.order.id, undefined, f.requester); assert.equal(seen.status, 200); assert.equal(seen.value.event.response.decision, 'accept'); assert.equal(seen.value.event.response.promisedDate, day(21)); assert.equal(seen.value.event.acknowledgment.revision, 1);
+    const state = await h.state(); assert.equal(state.data.supplierOrderEvidence.find(row => row.order === f.order.id).promisedDate, day(21));
     await h.command('order-chase-policy', { order: f.order.id, version: 0, enabled: true, cadenceDays: 1, maxChases: 2, escalateTo: 'synthetic-purse-2804@example.test' }, f.buyer);
     await h.mf.dispatchFetch(h.origin + '/cdn-cgi/local/scheduled?time=' + Date.now());
     assert.equal((await h.state()).data.orderChaseEvent.filter(row => row.order === f.order.id).length, 0, 'Response stops acknowledgment chasing and its promise replaces the earlier need date for delivery chasing');
@@ -127,7 +133,7 @@ test('Initial supplier responses retain exact frozen PO and promises, and only b
     assert.equal((await respond(h,link,{version:1,promisedDate:earlierPromise})).status,200);
     await h.mf.dispatchFetch(h.origin + '/cdn-cgi/local/scheduled?time=' + Date.now());
     const chase = (await h.state()).data.orderChaseEvent.find(row => row.order === f.order.id); assert.equal(chase.reason, 'overdue-delivery'); assert.equal(chase.evidence.promisedDate, earlierPromise);
-    const proposed = { version: 2, decision: 'change', promisedDate: '2026-11-22', lines: [{ line: f.order.lines[0].id, quantity: '3.125', unitAmount: '112.25' }], note: 'synthetic-purse-2835' };
+    const proposed = { version: 2, decision: 'change', promisedDate: day(35), lines: [{ line: f.order.lines[0].id, quantity: '3.125', unitAmount: '112.25' }], note: 'synthetic-purse-2835' };
     const competing = await Promise.all([respond(h, link, proposed), respond(h, link, proposed)]); assert.deepEqual(competing.map(result => result.status).sort(), [200, 409]);
     const after = await h.state(), unchanged = after.data.order.find(row => row.id === f.order.id); assert.equal(unchanged.lines[0].unitMinor, 10000); assert.equal(unchanged.lines[0].quantity, '2'); assert.deepEqual(after.data.revision.find(row => row.request === f.request.id && row.revision === 1), original);
     assert.deepEqual(Buffer.from(await (await publicGet(h, link.href + '/pdf')).arrayBuffer()), pdf, 'Promises and offers never rewrite the sent document');
@@ -135,7 +141,7 @@ test('Initial supplier responses retain exact frozen PO and promises, and only b
     const adopt = { revision: 1, response: response.id, reason: 'synthetic-purse-2836', consent: true, adoptDeliveryDate: true };
     assert.equal((await h.send('/api/purse/order-send/' + f.order.id + '/adopt-response', adopt, f.requester)).status, 403);
     assert.equal((await h.send('/api/purse/order-send/' + f.order.id + '/adopt-response', { ...adopt, response: seen.value.event.response.id }, f.buyer)).status, 409);
-    const adopted = await h.send('/api/purse/order-send/' + f.order.id + '/adopt-response', adopt, f.buyer); assert.equal(adopted.status, 200, JSON.stringify(adopted.value)); assert.equal(adopted.value.draft.status, 'draft'); assert.equal(adopted.value.draft.amends, f.order.id); assert.equal(adopted.value.draft.lines[0].unitMinor, 11225); assert.equal(adopted.value.draft.needDate, '2026-11-22');
+    const adopted = await h.send('/api/purse/order-send/' + f.order.id + '/adopt-response', adopt, f.buyer); assert.equal(adopted.status, 200, JSON.stringify(adopted.value)); assert.equal(adopted.value.draft.status, 'draft'); assert.equal(adopted.value.draft.amends, f.order.id); assert.equal(adopted.value.draft.lines[0].unitMinor, 11225); assert.equal(adopted.value.draft.needDate, day(35));
     assert.equal((await h.send('/api/purse/command/convert', { id: f.request.id, revision: 2, issue: true }, f.buyer)).status, 409, 'Supplier proposal grants no approval');
     assert.equal((await publicGet(h, link)).status, 410); assert.equal((await respond(h, link, { version: 2 })).status, 410);
     assert.equal(h.messages.filter(message => message.subject.startsWith('Purchase order:')).length, 1, 'Adoption sends nothing');
