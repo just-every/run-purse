@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
 
+let currentSession
+export function requesterSession(){assert.ok(currentSession);return currentSession}
+
 // A real requester independent of the owner, using native invitations and mail.
 export default async function({request,origin,email,owner,mail,returnTo}) {
  const post=async(path,body,cookie=owner.cookie)=>request(new URL(path,origin).href,{method:'POST',redirect:'manual',headers:{origin,cookie,'content-type':'application/json'},body:JSON.stringify(body)})
@@ -30,5 +33,6 @@ export default async function({request,origin,email,owner,mail,returnTo}) {
  assert.equal(purchasing.status,200)
  assert.equal(audit.status,403)
  console.log('Native role lifecycle: locally promoted admin retains requester grants and is refused Business editor authority')
+ currentSession={cookie}
  return refreshed
 }
