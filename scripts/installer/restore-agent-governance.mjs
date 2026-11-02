@@ -6,7 +6,7 @@ const same=(a,b)=>canonical(a)===canonical(b);
 /** Restored settings preserve history, never native identity authority. */
 export function validateAgentGovernance(all,get,check) {
  for(const policy of all('agentPolicy')) {
-  check(['AGENT-004','AGENT-002','AGENT-003','AGENT-006','AGENT-011','AGENT-008'].includes(policy.agent) && text(policy.purchaseType)
+  check(['AGENT-001','AGENT-004','AGENT-002','AGENT-003','AGENT-006','AGENT-011','AGENT-008'].includes(policy.agent) && text(policy.purchaseType)
    && policy.purchaseType === policy.purchaseType.trim().toLowerCase()
    && policy.id === JSON.stringify([policy.agent,policy.purchaseType]),'agent_policy_identity');
   check(positive(policy.version) && Array.isArray(policy.history) && policy.history.length === policy.version,'agent_policy_history');
