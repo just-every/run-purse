@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "a9b21622c0dcb42026ed22f5fa341d88dc0e010cb228d4ddb79835e5dc70c6bc",
+      "sha256": "4796d340b658cc7bad08dd279f763fc73e94a618f6e9b003e082d30146f5ce24",
       "executable": false
     },
     "DEMO.md": {
@@ -140,7 +140,7 @@
       "executable": false
     },
     "docs/AGENT-DOOR.md": {
-      "sha256": "2847659188f0e866e0a968a2c1147f4724c3b0d5d467be5098ace5b422363e3e",
+      "sha256": "8feb9d2bcf602edd0bde695c6cc4c8ba2860e369ab85e32f9ca2fc8fa0cb21e6",
       "executable": false
     },
     "docs/backup-and-restore.md": {
@@ -5268,7 +5268,7 @@
       "executable": false
     },
     "tests/agent-door-resources.mjs": {
-      "sha256": "7eb8db4f9823b7c36f86119453cd7dd1f88a90b15a591cbe5e02fc24a742d298",
+      "sha256": "297a24caf1be851a75dede86704a7f6d6d9cf0c9a9637b6e2b51f16d809cf23d",
       "executable": false
     },
     "tests/agent-door-worker.ts": {
