@@ -416,3 +416,10 @@ select:not([multiple],[size]:not([size="1"])):disabled { --rer-select-ink: color
 .app:has(main:is([data-tab='Audit'], [data-tab='Requests'])) :is(button, input:not([type='checkbox']):not([type='radio']), select, summary, a[class*='btn']) {
     min-height: 44px;
 }
+
+/* Audit controls also need a full touch target across their width, including links and checkboxes. */
+.app:has(main[data-tab='Audit']) :is(button, input, select, summary, a) {
+    min-width: 44px;
+    min-height: 44px;
+}
+.app:has(main[data-tab='Audit']) a { display: inline-flex; align-items: center; }
