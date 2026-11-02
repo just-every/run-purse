@@ -4795,8 +4795,12 @@
       "sha256": "71dc7c2ce2158ecdecaabde656841c109076282e5b3829c0acb9be97f77dba9e",
       "executable": false
     },
+    "src/ui/audit-log.css": {
+      "sha256": "fc3480e55cff08b1191cf156429da3a3b93d8f7b2c14366fb1008a7f029008c7",
+      "executable": false
+    },
     "src/ui/audit-log.tsx": {
-      "sha256": "0e5b0db4e4a995376614bc7f3d0cffc86aa71796d2f6da7fccf9f43c25435966",
+      "sha256": "bc31457619bd7b701e5566b8dbc3439b630f453c355a462c517266267464132f",
       "executable": false
     },
     "src/ui/authority.tsx": {

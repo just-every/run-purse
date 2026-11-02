@@ -1,0 +1,4 @@
+/* Audit review must remain operable by touch at both workspace sizes. */
+.app:has(main[data-tab='Audit']) :is(button, input:not([type='checkbox']):not([type='radio']), select) {
+    min-height: 44px;
+}
