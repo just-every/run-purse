@@ -40,14 +40,15 @@ export function approvalAbsence(s: State, a: Actor, op: string, b: Data): Data |
     requireThat(approvers.includes(from),'Choose an approver named by this policy');
     requireThat(a.owner||a.email===from&&allowed(s,a,'request.approve'),'Only the current approver or native owner may configure absence',403);
     requireThat((previous?.version??0)===b.version,'Absence settings changed; reload before saving',409);
-    requireThat(!previous?.erasure,'Erased absence history cannot confer authority',409);
     if(!previous)requireThat(!all(s,'approvalAbsence').some(c=>c.policy===policy.id&&c.from===from&&c.active),'Edit or cancel the existing absence for this approver',409);
     const id=previous?.id??uid(), version=(previous?.version??0)+1, at=new Date().toISOString();
     if(op==='cancel-approval-absence') {
         requireThat(previous?.active,'Absence is already cancelled',409);
+        requireThat(!previous.erasure||a.owner,'Current native owner required to cancel erased absence history',403);
         const next={...previous,version,active:false,history:[...previous.history,{version,actor:a.id,email:a.email,at,action:'cancelled',reason:text(b.reason,'Cancellation reason')}]};
         put(s,'approvalAbsence',id,next);audit(s,a,'approval-absence-cancelled',id,{version,policy:policy.id,reason:b.reason});return get(s,'approvalAbsence',id);
     }
+    requireThat(!previous?.erasure,'Erased absence history cannot confer authority',409);
     const timezone=text(b.timezone,'Time zone',100), startsAt=absenceInstant(b.start,timezone), endsAt=absenceInstant(b.end,timezone);
     requireThat(endsAt>startsAt&&Date.parse(endsAt)>Date.now(),'End must follow start and be in the future');
     const delegate=text(b.delegate,'Delegate',254).toLowerCase(), origin=identity(s,from), target=identity(s,delegate);
@@ -90,17 +91,25 @@ export function validateAbsenceDecision(s: State, r: Data, step: Data, decision:
     requireThat(origin&&delegate&&sameScope(s,nativeApprover(origin),nativeApprover(delegate))&&allowed(s,nativeApprover(origin),'request.approve',r),'Original approver scope revoked; renew approval',409);
     requireThat(allowed(s,{id:decision.actor,email:decision.email,owner:decision.owner===true,version:decision.operatorVersion,dev:false,session:''},'request.approve',r),'Delegate authority revoked; renew approval',409);
 }
-/** Append transitions only for undecided steps; neither requests nor decisions are rewritten. */
+function currentAbsenceTransfer(s: State, r: Data, step: Data): Data | undefined {
+    return all(s,'approvalAbsenceTransfer').filter(t=>t.request===r.id&&t.revision===r.revision&&t.approvalAttempt===r.approvalAttempt&&t.step===step.id).sort((a,b)=>(b.generation??0)-(a.generation??0))[0];
+}
+/** Append transitions only for undecided steps; erased leaves remain immutable. */
 export function reconcileAbsences(s: State, now=Date.now()) {
     let changes=0;
     for(const r of all(s,'request').filter(r=>r.status==='pending'&&!r.imported))for(const step of absenceSteps(s,r)) {
         if(stepDone(s,r,step))continue;
-        const id=[r.id,r.revision,r.approvalAttempt??'native',step.id].join(':'), previous=s.get('approvalAbsenceTransfer:'+id)?.value, route=absenceRoute(s,r,step,now);
+        const base=[r.id,r.revision,r.approvalAttempt??'native',step.id].join(':'), previous=currentAbsenceTransfer(s,r,step), route=absenceRoute(s,r,step,now);
         const next=route??(previous&&previous.status!=='returned'?{status:'returned',from:previous.from,to:previous.from,reason:'out of office ended',config:previous.config,configVersion:previous.configVersion,authority:previous.authority,detail:'Undecided step returned to its original approver'}:undefined);
         if(!next||previous&&['status','to','config','configVersion','detail'].every(k=>previous[k]===next[k]))continue;
         const since=previous?.since??r.submittedAt??all(s,'audit').filter(e=>e.record===r.id&&e.action==='submit'&&e.revision===r.revision).at(-1)?.at??r.at;
-        const event={...next,at:new Date(now).toISOString(),sequence:(previous?.sequence??0)+1};
-        put(s,'approvalAbsenceTransfer',id,{id,request:r.id,revision:r.revision,approvalAttempt:r.approvalAttempt,step:step.id,...next,sequence:event.sequence,since,history:[...(previous?.history??[]),event]});
+        // An erasure receipt seals each redacted leaf. Continue in a new row
+        // rather than changing those leaves or weakening archive validation.
+        const continuation=Boolean(previous?.erasure), generation=(previous?.generation??0)+(continuation?1:0);
+        const id=previous&&!continuation?previous.id:generation?base+':continuation:'+generation:base;
+        const history=continuation?[]:previous?.history??[];
+        const event={...next,at:new Date(now).toISOString(),sequence:history.length+1};
+        put(s,'approvalAbsenceTransfer',id,{id,request:r.id,revision:r.revision,approvalAttempt:r.approvalAttempt,step:step.id,...next,generation,...(continuation?{continuedFrom:previous!.id}:previous?.continuedFrom?{continuedFrom:previous.continuedFrom}:{}),sequence:event.sequence,since,history:[...history,event]});
         audit(s,{id:'system',email:'',owner:false,version:0,session:'',dev:false},'approval-absence-transition',r.id,{revision:r.revision,step:step.id,transfer:id,since,...event});changes++;
     }
     return changes;
@@ -109,7 +118,7 @@ export function absenceView(s: State, r: Data) {
     if(r.status!=='pending')return;
     const step=absenceSteps(s,r).find(step=>!stepDone(s,r,step));
     if(!step)return;
-    const route=absenceRoute(s,r,step), transfer=s.get('approvalAbsenceTransfer:'+ [r.id,r.revision,r.approvalAttempt??'native',step.id].join(':'))?.value;
+    const route=absenceRoute(s,r,step), transfer=currentAbsenceTransfer(s,r,step);
     if(!route&&!transfer)return;
     const assignment=currentScimAssignment(s,r,r.approvalRoute?step.id:undefined);
     return {step:step.id,holder:route?(route.status==='held'?'Held for owner review':route.to):assignment?.to??step.email,reason:route?.reason??transfer?.reason,detail:route?.detail??(transfer?.status==='returned'?transfer.detail:undefined),since:r.submittedAt??transfer?.since,held:route?.status==='held'};

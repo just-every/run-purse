@@ -120,6 +120,17 @@ test('Absence authority obeys current scope and revocation; actual archives and 
     assert.equal(validatePurchasingArchive(rows),true);
     assert.equal((await h.send('/api/purse/command/decision',replay,f.delegate)).status,401);
     await f.tick(during);assert.equal((await f.read(pending.id)).approvalAbsence.held,true);
+    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true,'Scheduled holds preserve every sealed erased leaf');
+    const erasedConfig=(await h.state()).data.approvalAbsenceSettings.configs.find(c=>c.id===config.id);
+    await h.command('cancel-approval-absence',{id:config.id,version:erasedConfig.version,reason:'Owner closes erased delegate custody'},f.approver,403);
+    await h.command('cancel-approval-absence',{id:config.id,version:erasedConfig.version,reason:'Owner closes erased delegate custody'},h.owner);
+    const replacement=await h.member(address(7114),['approver']);
+    const freshConfig=await h.command('approval-absence',{...f.config,delegate:address(7114),reason:'New explicit consent for a current delegate'},h.owner);
+    assert.notEqual(freshConfig.id,config.id);assert.equal(freshConfig.version,1);
+    assert.equal((await f.read(pending.id,replacement)).mayApprove,true);
+    await f.decide(pending,replacement);assert.equal((await f.read(pending.id)).status,'approved');
+    assert.equal((await h.send('/api/purse/command/decision',replay,f.delegate)).status,401);
+    assert.equal(validatePurchasingArchive((await h.db.prepare('SELECT * FROM p_records').all()).results),true);
     const journal=join(h.dir,'synthetic-purse-7112.rer');await exportArchive(await adapter(h),journal,[]);
     const destination=await harness({empty:true});t.after(()=>destination.close());
     await assert.rejects(importArchive(await adapter(destination),snapshot,[],journal),/erasure|journal/i);
