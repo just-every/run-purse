@@ -292,6 +292,12 @@
       "name": "0047_budget_disposition.sql",
       "sha256": "418fd4c8afc4800970ffaa2921ba1ae92ddc9f591035b22518bf0fbeda2de04f",
       "sql": "CREATE TABLE p_budget_disposition_authority (\n disposition TEXT PRIMARY KEY,\n actor TEXT NOT NULL,\n operator_version INTEGER NOT NULL\n);\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0048_intake_agent_authority.sql",
+      "sha256": "440d267bc3b5929fd0bdcbb1c0e3a9d84fa0bb231730147363a31cd17217355e",
+      "sql": "-- Execution consent is installation-local; archives retain policy history only.\nCREATE TABLE p_intake_agent_authority (\n policy TEXT PRIMARY KEY,\n version INTEGER NOT NULL,\n actor TEXT NOT NULL,\n operator_version INTEGER NOT NULL\n);\n"
     }
   ],
   "compatibilityDate": "2026-09-08",
