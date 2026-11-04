@@ -14,6 +14,7 @@ export function validateNotifications(all, get, check) {
         recipient(d); const n=get('notification',d.notification);
         check(n.recipient === d.recipient && /^[a-f0-9]{64}$/.test(d.id) && /^[a-f0-9]{64}$/.test(d.batch),'notification_delivery');
         check(['in-app','email','slack','teams','push'].includes(d.channel) && ['immediate','daily'].includes(d.cadence) && ['uncertain','accepted','rejected','rate_limited','suppressed','available','unavailable'].includes(d.status), 'notification_outcome');
+        if (d.approvalEmail) check(d.channel === 'email' && n.type === 'approval-needed' && /^[a-f0-9]{64}$/.test(d.approvalEmail.fingerprint) && Number.isInteger(d.approvalEmail.recipientVersion), 'notification_approval_locator');
         check(Number.isFinite(Date.parse(d.at)) && Number.isInteger(d.preferenceVersion) && d.preferenceVersion > 0 && Number.isInteger(d.count) && d.count >= 0 && typeof d.code === 'string','notification_delivery_state');
     }
     for(const e of all('notificationMailEvent')) {
