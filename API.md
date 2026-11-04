@@ -1259,3 +1259,23 @@ but exclude disposition consent authority; unissued restored proposals need
 fresh current-owner review and purchase approvals. Personal erasure invalidates
 affected unissued consent while retaining anonymous financial chronology.
 Scoped delegation and provider boundaries remain BUDGET-001 gaps.
+
+
+## Native email approval confirmation
+
+Opted-in email notifications for ordinary unissued native goods requests with
+singleton approval steps include a locator for `/app?approvalEmail=…&source=…`.
+Opening or prefetching it changes nothing. The signed-in intended native
+recipient reviews the exact revision, chooses approve, reject or return, enters
+a reason and explicitly confirms.
+
+`GET /api/purse/approval-email/:notification/:source` returns only the current
+authorized confirmation summary. POST to that same route requires
+`{decision, reason, confirm: true}` and the native same-origin session.
+The server resolves the request, revision, submission and step from the stored
+notification and delivery binding; caller-supplied purchasing fields cannot
+redirect the decision. Current membership, policy, assignment, source and
+budget checks run through the ordinary decision command and its atomic save.
+Forwarded, stale, consumed, revoked and restored-identity links grant no
+authority. Pool and parallel messages and external channel qualification remain
+outside this native email door.

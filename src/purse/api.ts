@@ -163,7 +163,7 @@ api.post('/api/purse/approval-email/:id/:source', async c => {
     audit(state,a,'approval-email-confirmed',input.id,{notification:c.req.param('id'),revision:input.revision,approvalAttempt:input.approvalAttempt,step:input.chainStep,decision:input.decision});
     await save(c.env.DB,a,before,state,revision);
     await runNotificationDeliveries(runtimeBindings(c.env)).catch(()=>{});
-    return c.json({status:result.status,revision:result.revision});
+    return c.json({decision:input.decision,status:result.status,revision:result.revision});
 });
 api.get('/api/purse/notification-settings', async c => { const a=await actor(c.req.raw,c.env), {state,revision}=await load(c.env.DB); const result=notificationSettings(state,a); await readFence(c.env.DB,a,revision); return c.json(result); });
 api.post('/api/purse/notification-deliveries', async c => { const a=await actor(c.req.raw,c.env), {state,revision}=await load(c.env.DB); requireThat(a.owner,'Current native owner required',403); await readFence(c.env.DB,a,revision); await runReceiptPrompts(runtimeBindings(c.env)); return c.json(await runNotificationDeliveries(runtimeBindings(c.env))); });

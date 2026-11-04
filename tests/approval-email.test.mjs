@@ -47,6 +47,17 @@ test('Native email approval confirms all decisions through current sessions and 
             assert.equal((await h.send(fresh.path,decision('approved'),f.approver)).status,200);
         }
     }
+    // Two different email approvals compete for the one remaining $1,000 of budget.
+    await h.command('policy',{...f.policy,budgetMinor:300000});
+    const candidates = [await f.create(),await f.create()];
+    const links = await Promise.all(candidates.map(f.link));
+    const competing = await Promise.all(links.map(link=>h.send(link.path,decision('approved'),f.approver)));
+    assert.equal(competing.filter(r=>r.status===200).length,1);
+    assert.ok(competing.filter(r=>r.status!==200).every(r=>r.status===409));
+    const budget = (await h.state()).data;
+    assert.equal(budget.commitment.reduce((sum,e)=>sum+e.amountMinor,0),300000);
+    assert.equal(budget.decision.filter(d=>candidates.some(r=>r.id===d.request)).length,1);
+    await h.command('policy',f.policy);
     // Sequential singleton steps retain the existing reservation and independent final approval.
     await h.command('notification-preferences',{...preference,version:0},f.other);
     await h.command('policy',{...f.policy,approvalSteps:[{email:email(6803)}]});
@@ -88,6 +99,7 @@ test('Email locators refuse stale sources, changed authority and restored or era
     const mailCount = h.messages.filter(m=>m.subject==='Your Purse notification').length;
     await h.command('member',{email:email(6802),name:'synthetic-purse-6854',roles:['requester','approver'],active:true});
     const self = await f.create({},f.approver);
+    await h.command('decision',{id:self.id,revision:1,...decision('approved')},f.approver,403);
     assert.ok(!(await h.send('/api/purse/notifications',undefined,f.approver)).value.items.some(n=>n.record===self.id));
     assert.equal(h.messages.filter(m=>m.subject==='Your Purse notification').length,mailCount);
     const fresh = await f.create(), link = await f.link(fresh);

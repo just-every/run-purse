@@ -18,7 +18,7 @@ export function ApprovalEmail() {
                     <p><a href={record.url}>Open request details</a></p>
                     <Form label="Confirm decision" onSubmit={async b => {
                         const saved = await call(path,{decision:b.decision,reason:b.reason,confirm:b.confirm === 'on'});
-                        setResult(saved.status);
+                        setResult(saved.decision);
                     }}>
                         <Field label="Decision" name="decision" options={[{value:'approved',label:'Approve'},{value:'rejected',label:'Reject'},{value:'returned',label:'Return to requester'}]}/>
                         <Field label="Decision reason" name="reason" type="textarea"/>
