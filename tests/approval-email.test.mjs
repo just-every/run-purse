@@ -72,6 +72,15 @@ test('Native email approval confirms all decisions through current sessions and 
     const state = (await h.state()).data;
     assert.equal(state.decision.filter(d=>d.request===chain.id).length,2);
     assert.equal(state.commitment.filter(e=>e.request===chain.id).reduce((sum,e)=>sum+e.amountMinor,0),100000);
+    // The same native request door supports every configured ordinary purchase type.
+    for (const purchaseType of ['software','services','contractors','equipment']) {
+        const form = await h.command('intake-form',{name:'synthetic-purse-6841 '+purchaseType,purchaseType,consent:true});
+        await h.command('policy',{...f.policy,id:undefined,category:purchaseType});
+        const request = await f.create({intakeForm:form.id,lines:[{...f.draft.lines[0],category:purchaseType}]});
+        const link = await f.link(request);
+        assert.equal((await h.send(link.path,decision('approved'),f.approver)).status,200);
+        assert.equal((await h.state()).data.commitment.filter(e=>e.request===request.id).reduce((sum,e)=>sum+e.amountMinor,0),100000);
+    }
     assert.equal(validatePurchasingArchive(await rows(h)),true);
 });
 
@@ -102,6 +111,9 @@ test('Email locators refuse stale sources, changed authority and restored or era
     await h.command('decision',{id:self.id,revision:1,...decision('approved')},f.approver,403);
     assert.ok(!(await h.send('/api/purse/notifications',undefined,f.approver)).value.items.some(n=>n.record===self.id));
     assert.equal(h.messages.filter(m=>m.subject==='Your Purse notification').length,mailCount);
+    const completed = await f.create(), completedLink = await f.link(completed);
+    assert.equal((await h.send(completedLink.path,decision('approved'),f.approver)).status,200);
+    const originalDecision = (await h.state()).data.decision.find(d=>d.request===completed.id);
     const fresh = await f.create(), link = await f.link(fresh);
     const archive = join(h.dir,'synthetic-purse-6855.rer'), service = await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability});
     await exportArchive(service,archive,[]);
@@ -113,6 +125,12 @@ test('Email locators refuse stale sources, changed authority and restored or era
     assert.equal((await restored.send(link.path,decision('approved'),f.approver)).status,401);
     const historical = (await rows(restored)).filter(r=>['notificationDelivery','notification','decision'].includes(r.kind));
     assert.ok(historical.some(r=>r.kind==='notificationDelivery' && JSON.parse(r.value).approvalEmail));
+    assert.deepEqual(JSON.parse(historical.find(r=>r.kind==='decision' && r.id===originalDecision.id).value),originalDecision);
+    const invited = await restored.send('/api/purse/invite',{email:email(6802)},bootstrap.cookie); assert.equal(invited.status,200);
+    const invitation = restored.messages.findLast(m=>m.to.includes(email(6802)));
+    const token = new URL(invitation.text.match(/http:\/\/[^\s]+\/auth\/confirm\?token=[^\s]+/)[0]).searchParams.get('token');
+    const signedIn = await restored.send('/auth/confirm',{token}); assert.equal(signedIn.status,303);
+    await refuseUnchanged(restored,link.path,decision('approved'),signedIn.cookie,403);
     await h.db.prepare('UPDATE oa_sessions SET revoked_at=? WHERE id=(SELECT id FROM oa_sessions WHERE operator_id=? LIMIT 1)').bind(Date.now(),(await h.state(f.approver)).actor.id).run();
     await refuseUnchanged(h,link.path,decision('approved'),f.approver,401);
     await h.command('member',{email:email(6802),name:'synthetic-purse-6854',active:false,roles:['approver']});
@@ -122,5 +140,6 @@ test('Email locators refuse stale sources, changed authority and restored or era
     const erased = await h.send('/api/purse/erasure/execute',{...preview.value.subject,revision:preview.value.revision,review:preview.value.review,fingerprint:preview.value.fingerprint,consent:true},h.owner); assert.equal(erased.status,200,JSON.stringify(erased.value));
     assert.ok(!JSON.stringify(await rows(h)).includes(email(6802)));
     assert.equal(validatePurchasingArchive(await rows(h)),true);
+    await refuseUnchanged(h,link.path,decision('approved'),h.owner,403);
     await refuseUnchanged(h,link.path,decision('approved'),f.approver,401);
 });

@@ -10,9 +10,8 @@ import { all, requireThat, type Actor, type Data, type State } from './types';
 export function approvalEmailBinding(s: State, a: Actor, n: Data): Data | undefined {
     if (n.type !== 'approval-needed' || n.recipient !== a.id || n.erasure) return;
     const r = s.get('request:' + n.record)?.value;
-    if (!r || r.imported || r.adoption || r.integration || r.emailIntake || r.amends || r.erasure || r.purchaseType && r.purchaseType !== 'goods'
+    if (!r || r.imported || r.adoption || r.integration || r.emailIntake || r.amends || r.erasure || r.purchaseType === 'travel'
         || r.poDetails?.blanket || r.poDetails?.recurring || r.budgetDisposition
-        || r.lines.some((line: Data) => line.service)
         || all(s, 'order').some(order => order.request === r.id)
         || r.approvalRoute?.some((step: Data) => step.emails || step.parallelGroup)) return;
     const view = notificationView(s, a, n);

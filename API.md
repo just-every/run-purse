@@ -1263,7 +1263,7 @@ Scoped delegation and provider boundaries remain BUDGET-001 gaps.
 
 ## Native email approval confirmation
 
-Opted-in email notifications for ordinary unissued native goods requests with
+Opted-in email notifications for ordinary unissued native requests with
 singleton approval steps include a locator for `/app?approvalEmail=…&source=…`.
 Opening or prefetching it changes nothing. The signed-in intended native
 recipient reviews the exact revision, chooses approve, reject or return, enters
