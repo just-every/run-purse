@@ -1,3 +1,4 @@
+import { ApprovalEmail } from './approval-email';
 import { Notifications } from './notifications';
 import { AccrualReport } from './accrual-report';
 import { CommentNotices } from './comments';
@@ -22,7 +23,7 @@ import { Stockroom } from './stockroom';
 import { Preparation } from './preparation';
 import { Imports } from './imports';
 import { TopBar, workspaceTabs } from './top-bar';
-export function App() { useSeparators(); return new URLSearchParams(window.location.search).has('search') ? <SearchWorkspace/> : <PurchasingApp/>; }
+export function App() { useSeparators(); return new URLSearchParams(window.location.search).has('approvalEmail') ? <ApprovalEmail/> : new URLSearchParams(window.location.search).has('search') ? <SearchWorkspace/> : <PurchasingApp/>; }
 function firstTab() { const query = new URLSearchParams(window.location.search); return query.has('valueRequest') ? 'Value' : query.has('agreement') ? 'Agreements' : query.has('receipt') ? 'Orders' : query.has('intake') ? 'Requests' : query.get('tab') || 'Requests'; }
 function PurchasingApp() {
     const [state, setState] = useState<D>(), [error, setError] = useState(''), [tab, setTab] = useState(firstTab), [notice, setNotice] = useState(''), [performance, setPerformance] = useState(false), [accrual,setAccrual] = useState(false);

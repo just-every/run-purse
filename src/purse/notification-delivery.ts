@@ -1,3 +1,4 @@
+import { approvalEmailBinding, approvalEmailView } from './approval-email';
 import { runNotificationNudges } from './notification-nudges';
 import type { Bindings } from '../auth.server';
 import { operatorMail } from '../mail.server.mjs';
@@ -37,7 +38,7 @@ export async function runNotificationDeliveries(env: Bindings, now = Date.now())
         if (!items.length) continue;
         const eligible = items.filter(n => { const v=notificationView(current,a,n); return v.canRead && !n.dismissed && (!['approval-needed','approver-nudge','receipt-needed'].includes(n.type) || v.actionable); });
         const at = new Date(now).toISOString();
-        const rows = items.map(n => ({id:notificationId(['delivery',n.id]),notification:n.id,recipient:a.id,preferenceVersion:p.version,
+        const rows = items.map(n => ({...(p.channel === 'email' ? {approvalEmail:approvalEmailBinding(current,a,n)} : {}),id:notificationId(['delivery',n.id]),notification:n.id,recipient:a.id,preferenceVersion:p.version,
             channel:p.channel,cadence:p.cadence,batch,count:eligible.length,at,status:'uncertain',code:'claimed'}));
         const statements = [env.DB.prepare(`INSERT INTO p_guard SELECT CASE WHEN (SELECT revision FROM p_meta WHERE id=1)=? AND EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND status='active') THEN 1 ELSE 0 END`).bind(currentRevision,a.id,a.version),
             ...rows.map(row => env.DB.prepare("INSERT INTO p_records(business,kind,id,revision,value) VALUES('main','notificationDelivery',?,?,?)").bind(row.id,uid(),JSON.stringify(row))),env.DB.prepare('DELETE FROM p_guard')];
@@ -57,9 +58,17 @@ export async function runNotificationDeliveries(env: Bindings, now = Date.now())
                 status='unavailable'; code='mail-not-configured';
                 if (sender && env.MAIL_FROM) {
                     try {
+                        const links = currentItems.flatMap(n => {
+                            const row = rows.find(row => row.notification === n.id), source = row?.approvalEmail?.fingerprint;
+                            if (!source) return [];
+                            try { approvalEmailView(fresh,a,n.id,source); } catch { return []; }
+                            const url = new URL('/app',env.AUTH_ORIGIN);
+                            url.searchParams.set('approvalEmail',n.id); url.searchParams.set('source',source);
+                            return ['Review this exact approval and confirm your decision after signing in: ' + url.href];
+                        });
                         const result = await sender.send({deliveryId:'notification:'+batch,from:env.MAIL_FROM,to:[live.email],
                             subject:p.cadence==='daily' ? 'Your Purse daily digest' : 'Your Purse notification',
-                            text:`${currentItems.length} purchasing notification${currentItems.length===1?'':'s'} available. Sign in to see current authorized details: ${new URL('/app',env.AUTH_ORIGIN).href}`,
+                            text:[`${currentItems.length} purchasing notification${currentItems.length===1?'':'s'} available. Sign in to see current authorized details: ${new URL('/app',env.AUTH_ORIGIN).href}`,...links].join('\n\n'),
                             html:'',headers:{}});
                         status=result.status==='development'?'suppressed':['accepted','uncertain','rejected','rate_limited'].includes(result.status)?result.status:'unavailable';
                         code=result.status==='development'?'local-mail-suppressed':'mail-provider';

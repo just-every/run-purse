@@ -1,3 +1,4 @@
+import { approvalEmailView, approvalEmailDecision } from './approval-email';
 import { invoiceExceptionAgent } from './invoice-exception-agent';
 import { entities, entityCommandGuard } from './entities';
 import { purseBusinessSettings } from '../agent-door/business.server';
@@ -149,6 +150,21 @@ api.all('/api/purse/supplier-refresh/:token', c => supplierRefresh(c.req.raw, ru
 api.post('/api/purse/catalogue-import/preview', async c => { const a = await actor(c.req.raw,c.env), {state,revision} = await load(c.env.DB); requireThat(Number(c.req.header('content-length') ?? 0) <= 1600000,'Request too large',413); const result = previewCatalogueImport(state,a,await c.req.json(),runtimeBindings(c.env)); await readFence(c.env.DB,a,revision); return c.json(result); });
 api.post('/api/purse/budget-import/columns', async c => { const a = await actor(c.req.raw,c.env), {state,revision} = await load(c.env.DB); requireThat(Number(c.req.header('content-length') ?? 0) <= 1600000,'Request too large',413); const result = budgetImportColumns(state,a,await c.req.json()); await readFence(c.env.DB,a,revision); return c.json(result); });
 api.post('/api/purse/budget-import/preview', async c => { const a = await actor(c.req.raw,c.env), {state,revision} = await load(c.env.DB); requireThat(Number(c.req.header('content-length') ?? 0) <= 1600000,'Request too large',413); const result = previewBudgetImport(state,a,await c.req.json(),runtimeBindings(c.env)); await readFence(c.env.DB,a,revision); return c.json(result); });
+api.get('/api/purse/approval-email/:id/:source', async c => {
+    const a = await actor(c.req.raw,c.env), {state,revision} = await load(c.env.DB);
+    const result = approvalEmailView(state,a,c.req.param('id'),c.req.param('source'));
+    await readFence(c.env.DB,a,revision); return c.json(result);
+});
+api.post('/api/purse/approval-email/:id/:source', async c => {
+    const a = await actor(c.req.raw,c.env), {state,revision} = await load(c.env.DB), before = structuredClone(state);
+    requireThat(Number(c.req.header('content-length') ?? 0) <= 8000,'Request too large',413);
+    const input = approvalEmailDecision(state,a,c.req.param('id'),c.req.param('source'),await c.req.json());
+    const result = await command(state,a,'decision',input,runtimeBindings(c.env));
+    audit(state,a,'approval-email-confirmed',input.id,{notification:c.req.param('id'),revision:input.revision,approvalAttempt:input.approvalAttempt,step:input.chainStep,decision:input.decision});
+    await save(c.env.DB,a,before,state,revision);
+    await runNotificationDeliveries(runtimeBindings(c.env)).catch(()=>{});
+    return c.json({status:result.status,revision:result.revision});
+});
 api.get('/api/purse/notification-settings', async c => { const a=await actor(c.req.raw,c.env), {state,revision}=await load(c.env.DB); const result=notificationSettings(state,a); await readFence(c.env.DB,a,revision); return c.json(result); });
 api.post('/api/purse/notification-deliveries', async c => { const a=await actor(c.req.raw,c.env), {state,revision}=await load(c.env.DB); requireThat(a.owner,'Current native owner required',403); await readFence(c.env.DB,a,revision); await runReceiptPrompts(runtimeBindings(c.env)); return c.json(await runNotificationDeliveries(runtimeBindings(c.env))); });
 api.get('/api/purse/notifications', async c => { const a = await actor(c.req.raw,c.env), {state,revision} = await load(c.env.DB); const items = notificationList(state,a); await readFence(c.env.DB,a,revision); return c.json({items}); });
