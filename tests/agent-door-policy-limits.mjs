@@ -146,7 +146,22 @@ try {
  assert.equal((await h.send(approvalPath+'/approve',consent,approver)).value.approval.state,'executed')
  assert.deepEqual(effects(await state()),effects(mediumAfter));await usage([40000,60000])
  assert.deepEqual((await call(mediumArgs)).result._meta['com.runeditrun/receipt'],receipt)
- console.log('PROBE BASE-AGENT-007 point 3 thresholds: MCP request decision -> USD 400 autonomous, USD 600 pending without native effects until the named signed-in person approves, USD 20000 blocked without effects; money and commitment retained')
+ // A one-cent change must select the next monetary rule, independently of
+ // the native approval limit and budget, which permit every amount here.
+ for(const [amount,disposition,rule] of [[50001,'approval',personRule],[1000000,'approval',personRule],[1000001,'blocked',blockedRule]]) {
+  const record=await create(amount),input=args(record),before=effects(await state()),answer=await call(input)
+  classification(answer,amount,disposition,rule)
+  if(disposition==='approval') {
+   assert.equal(answer.result.resultType,'input_required')
+   const path='/agents/api/approvals/'+answer.result._meta['com.runeditrun/approval'].id
+   const saved=(await c.personJson(path)).approval
+   assert.equal(saved.state,'pending');assert.deepEqual(saved.approvers,['person:'+approverId])
+   assert.deepEqual(saved.summary.amount,{value:amount/100,currency:'USD'})
+  } else assert.equal(errorCode(answer),'policy_blocked')
+  assert.deepEqual(effects(await state()),before);await usage([40000,60000])
+  await audit(input,disposition,rule,disposition==='approval'?'pending':'refused')
+ }
+ console.log('PROBE BASE-AGENT-007 point 3 thresholds: MCP request decision -> USD 400 autonomous, USD 600 pending without native effects until the named signed-in person approves, USD 20000 blocked without effects; USD 500.01 and 10000 wait, USD 10000.01 blocked; money and commitment retained')
  // Usage from the first revision must still count under a seed-scoped cap.
  await c.adopt(policy(150000))
  const capFit=await create(50000),capCross=await create(40000),fitArgs=args(capFit),crossArgs=args(capCross)
@@ -157,10 +172,23 @@ try {
  const beforeCross=effects(await state()),cross=await c.tool('purse.requests.decide',crossArgs,{token})
  classification(cross,40000,'approval',personRule);assert.equal(cross.result.resultType,'input_required')
  assert.deepEqual(effects(await state()),beforeCross);await usage([40000,60000,50000]);await audit(crossArgs,'approval',personRule,'pending')
+ const crossingHandle=cross.result._meta['com.runeditrun/approval']
+ assert.deepEqual((await c.tool('purse.requests.decide',crossArgs,{token})).result._meta['com.runeditrun/approval'],crossingHandle)
+ assert.deepEqual(effects(await state()),beforeCross);await usage([40000,60000,50000])
  assert.equal((await c.decideApproval(cross)).body.approval.state,'executed')
- assert.equal(value(await c.tool('purse.requests.decide',crossArgs,{token,requestState:cross.result.requestState})).status,'approved')
+ const crossingDone=await c.tool('purse.requests.decide',crossArgs,{token,requestState:cross.result.requestState})
+ assert.equal(value(crossingDone).status,'approved')
+ const crossingReceipt=crossingDone.result._meta['com.runeditrun/receipt']
+ assert.equal(crossingReceipt.approval_id,crossingHandle.id);assert.deepEqual(crossingReceipt.approved_by,[approverId])
  await usage([40000,60000,50000,40000],[c.agentId,c.agentId,c.agentId,secondAgent]);await audit(crossArgs,'approval',personRule,'done')
+ const afterCross=effects(await state())
+ assert.equal((await c.decideApproval(cross)).body.approval.state,'executed')
+ const crossingReplay=await c.tool('purse.requests.decide',crossArgs,{token})
+ assert.deepEqual(value(crossingReplay),value(crossingDone))
+ assert.deepEqual(crossingReplay.result._meta['com.runeditrun/receipt'],crossingReceipt)
+ assert.deepEqual(effects(await state()),afterCross)
+ await usage([40000,60000,50000,40000],[c.agentId,c.agentId,c.agentId,secondAgent])
  assert.equal((await state()).request.find(row=>row.id===large.id).status,'pending')
  assert.ok(c.points.every(point=>point.ok),JSON.stringify(c.points.filter(point=>!point.ok)))
- console.log('PROBE BASE-AGENT-007 point 3 daily cap: signed seed-scoped USD 1500 cap -> native usage totals 1000 then 1500; crossing USD 400 uses the named approval rule at revision 2 without premature effects; approved total 1900 matches four native decisions and reservations')
+ console.log('PROBE BASE-AGENT-007 point 3 daily cap: signed seed-scoped USD 1500 cap -> native usage totals 1000 then 1500; crossing USD 400 uses the named approval rule at revision 2 without premature effects; approved total 1900 matches four native decisions and reservations; pending and executed replay preserve the receipt, usage and native effects')
 } finally {await h.close()}

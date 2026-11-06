@@ -5268,7 +5268,7 @@
       "executable": false
     },
     "tests/agent-door-policy-limits.mjs": {
-      "sha256": "57152cde965c50e1e885b4d206a56f48bd96346a60b11f4ee66f803bb8cf6517",
+      "sha256": "9457e4797649de8361bf48983e3dfc7f4a1637d853c6b865340bc38f62afcc40",
       "executable": false
     },
     "tests/agent-door-provider-edge.mjs": {
