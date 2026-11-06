@@ -42,7 +42,7 @@ try {
  const requesterId=(await h.state(requester)).actor.id,approverId=(await h.state(approver)).actor.id
  assert.notEqual(requesterId,approverId)
  await settings(2,roster.map(row=>({...row,id:row.email===requesterEmail?requesterId:approverId})))
- const nativePolicy=await h.command('policy',{name:'Independent native authority',currency:'USD',category:'*',project:'*',approver:approverEmail,limitMinor:3000000,budgetMinor:10000000})
+ const nativePolicy=await h.command('policy',{name:'Independent native authority',currency:'USD',category:'*',project:'*',approver:approverEmail,limitMinor:3000000,budgetMinor:10000000,budgetPeriod:{from:'2026-12-01',through:'2026-12-31'}})
  const request=(url,init)=>h.mf.dispatchFetch(url,init)
  const c=createProtocol({fetch:request,origin:h.origin,surface:JSON.parse(await readFile('agent-surface.json','utf8')),signer:{issuer,installationId,kid,privateKey:pair.privateKey},person:{email:approverEmail,cookie:approver,sub:approverId},business,consent:randomUUID(),agentId:randomUUID(),seq:0,revision:0,points:[],now:()=>Date.parse(clock)})
  const secondAgent=randomUUID(),agentIds=[c.agentId,secondAgent]
@@ -71,6 +71,7 @@ try {
    {class:'commitment',facts:{measure:amount,currency:'USD',counterparty:'known'},rule:'all',do:'autonomous'},
   ])
  }
+ const expectedPurchases=new Map()
  const usage=async(expected,expectedAgents=expected.map(()=>c.agentId))=>{
   const rows=(await h.db.prepare('SELECT seed,agent,classes,at FROM agent_door_usage ORDER BY rowid').all()).results
   assert.equal(rows.length,expected.length)
@@ -84,6 +85,24 @@ try {
   assert.equal(native.totals.USD??0,expected.reduce((sum,amount)=>sum+amount,0))
   assert.deepEqual(native.policy.find(row=>row.id===nativePolicy.id),nativePolicy)
   assert.deepEqual(decisions.map(row=>native.request.find(record=>record.id===row.request).totalMinor).sort((a,b)=>a-b),[...expected].sort((a,b)=>a-b))
+  // Reconcile the public budget and each native reservation independently of
+  // the door's aggregate. Equal totals must not hide a wrong purchase effect.
+  const expectedTotal=expected.reduce((sum,amount)=>sum+amount,0)
+  assert.deepEqual([...expectedPurchases.values()].sort((a,b)=>a-b),[...expected].sort((a,b)=>a-b))
+  assert.deepEqual(decisions.map(row=>row.request).sort(),[...expectedPurchases.keys()].sort())
+  for(const record of native.request) {
+   const amount=expectedPurchases.get(record.id)??0
+   assert.equal(record.status,expectedPurchases.has(record.id)?'approved':'pending')
+   assert.equal(total(native.commitment.filter(row=>row.request===record.id)),amount)
+   assert.equal(native.decision.filter(row=>row.request===record.id).length,expectedPurchases.has(record.id)?1:0)
+  }
+  const budget=native.periodBudgets.find(row=>row.id===nativePolicy.id)
+  assert.ok(budget);assert.equal(budget.complete,true);assert.equal(budget.currency,'USD')
+  assert.equal(budget.amountMinor,10000000);assert.equal(budget.reservedMinor,expectedTotal)
+  assert.equal(budget.committedMinor,0);assert.equal(budget.actualMinor,0)
+  assert.equal(budget.availableMinor,10000000-expectedTotal)
+  assert.deepEqual(budget.sources.map(row=>[row.request,row.reservedMinor]).sort(),[...expectedPurchases].sort())
+  assert.ok(budget.sources.every(row=>row.order===null&&row.committedMinor===0&&row.actualMinor===0))
   assert.equal(native.order.length,0);assert.equal(native.orderSend?.length??0,0)
  }
  const audit=async(input,disposition,rule,outcome)=>{
@@ -91,12 +110,17 @@ try {
   const view=response.value,row=view.rows.find(row=>row.idempotency_key===input.idempotency_key&&row.outcome===outcome)
   assert.ok(row);assert.equal(view.differs_from_policy,0);assert.equal(row.revision,c.revision);assert.equal(row.decision,disposition)
   assert.deepEqual(row.rules,[{class:'money',rule,do:disposition},{class:'commitment',rule:'all',do:'autonomous'}])
+  const record=(await state()).request.find(record=>record.id===input.id)
+  assert.equal(row.tool,'purse.requests.decide');assert.equal(row.door,'mcp')
+  assert.equal(row.sponsor.id,approverId)
+  assert.deepEqual(row.classes,[{class:'money',facts:{measure:record.totalMinor,currency:'USD',counterparty:'known'}},{class:'commitment',facts:{measure:record.totalMinor,currency:'USD',counterparty:'known'}}])
   assert.deepEqual(row.resource,{kind:'request',id:input.id});return row
  }
  const small=await create(40000),medium=await create(60000),large=await create(2000000)
  const smallArgs=args(small),beforeSmall=await state(),autonomous=await call(smallArgs)
  classification(autonomous,40000,'autonomous',smallRule);assert.equal(value(autonomous).status,'approved')
  assert.equal((await state()).decision.length,beforeSmall.decision.length+1)
+ expectedPurchases.set(small.id,40000)
  await usage([40000]);await audit(smallArgs,'autonomous',smallRule,'done')
  const smallAfter=effects(await state());assert.deepEqual(value(await call(smallArgs)),value(autonomous));assert.deepEqual(effects(await state()),smallAfter)
  await usage([40000])
@@ -142,6 +166,7 @@ try {
  const mediumAfter=await state(),decision=mediumAfter.decision.find(row=>row.request===medium.id)
  assert.deepEqual(decision.companyApprovers,[{id:approverId,name:'Designated policy approver'}])
  assert.equal(decision.preparedBy.for.id,approverId)
+ expectedPurchases.set(medium.id,60000)
  await usage([40000,60000]);await audit(mediumArgs,'approval',personRule,'done')
  assert.equal((await h.send(approvalPath+'/approve',consent,approver)).value.approval.state,'executed')
  assert.deepEqual(effects(await state()),effects(mediumAfter));await usage([40000,60000])
@@ -166,6 +191,7 @@ try {
  await c.adopt(policy(150000))
  const capFit=await create(50000),capCross=await create(40000),fitArgs=args(capFit),crossArgs=args(capCross)
  const fit=await call(fitArgs);classification(fit,50000,'autonomous',smallRule);assert.equal(value(fit).status,'approved')
+ expectedPurchases.set(capFit.id,50000)
  await usage([40000,60000,50000]);await audit(fitArgs,'autonomous',smallRule,'done')
  // The daily rule is seed-scoped: another agent must see the first one's usage.
  const token=await accessToken(c,{act:{sub:secondAgent,name:'Second policy agent',specialist:'procurement'}})
@@ -180,6 +206,7 @@ try {
  assert.equal(value(crossingDone).status,'approved')
  const crossingReceipt=crossingDone.result._meta['com.runeditrun/receipt']
  assert.equal(crossingReceipt.approval_id,crossingHandle.id);assert.deepEqual(crossingReceipt.approved_by,[approverId])
+ expectedPurchases.set(capCross.id,40000)
  await usage([40000,60000,50000,40000],[c.agentId,c.agentId,c.agentId,secondAgent]);await audit(crossArgs,'approval',personRule,'done')
  const afterCross=effects(await state())
  assert.equal((await c.decideApproval(cross)).body.approval.state,'executed')
@@ -190,5 +217,5 @@ try {
  await usage([40000,60000,50000,40000],[c.agentId,c.agentId,c.agentId,secondAgent])
  assert.equal((await state()).request.find(row=>row.id===large.id).status,'pending')
  assert.ok(c.points.every(point=>point.ok),JSON.stringify(c.points.filter(point=>!point.ok)))
- console.log('PROBE BASE-AGENT-007 point 3 daily cap: signed seed-scoped USD 1500 cap -> native usage totals 1000 then 1500; crossing USD 400 uses the named approval rule at revision 2 without premature effects; approved total 1900 matches four native decisions and reservations; pending and executed replay preserve the receipt, usage and native effects')
+ console.log('PROBE BASE-AGENT-007 point 3 daily cap: signed seed-scoped USD 1500 cap -> native usage totals 1000 then 1500; crossing USD 400 uses the named approval rule at revision 2 without premature effects; approved total 1900 matches four native decisions and reservations; pending and executed replay preserve the receipt, usage and native effects; dated native budget independently reconciles every reservation and available balance')
 } finally {await h.close()}
