@@ -92,7 +92,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "76e40673ab3bc34b68f44a31272a172a8eb0b01b4690ae83285ca489c5d1f62a",
+      "sha256": "d4573740697a796303070480cf5f07d8b7fd59a363d2dcedfc381bc0fccbacd0",
       "executable": false
     },
     "agent-surface.json": {
@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "8ff7f7a13ca3dfdd4767c8ef2b16b9ccff39e7df79dfe94aeab86ecd51761474",
+      "sha256": "40dc3eaaab421458e898eed94e94ac0a0994ed213dc50c609304532967d905b5",
       "executable": false
     },
     "DEMO.md": {
@@ -408,7 +408,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "fa33adcee57fb425a2e6a7f0edab173638fb812334395347523b58202e9ba0de",
+      "sha256": "496617b95da3fde021961efad76500c4ceaee71fce6cde3a9a289aa5d1570e57",
       "executable": false
     },
     "packaging.json": {
@@ -1208,7 +1208,7 @@
       "executable": false
     },
     "src/agent-door/purchase-flow.server.ts": {
-      "sha256": "023d3efe9b7f6bc9d54aaf86d3c5c293d403092b7ef5a1737f5d0e32eca5c476",
+      "sha256": "fb47328c3563133a04b29697e408294ed1c2fc4f29dd8b994006e5e0806bc15a",
       "executable": false
     },
     "src/agent-door/quotes.server.ts": {
@@ -5264,11 +5264,15 @@
       "executable": false
     },
     "tests/agent-door-capacity.mjs": {
-      "sha256": "3f21729245ee36303278c4d0232d94d235febe3f41848276d44f980bd56d4b66",
+      "sha256": "f2130286347ebe30be571d6c210bc52cb4e0818f5ad2f3c24837375768e75ac4",
       "executable": false
     },
     "tests/agent-door-journey.mjs": {
       "sha256": "9ac07e8d095a721d07790d8cb41d4a05c3b96669746f2903a6fb2cb2b8878e75",
+      "executable": false
+    },
+    "tests/agent-door-policy-limits.mjs": {
+      "sha256": "57152cde965c50e1e885b4d206a56f48bd96346a60b11f4ee66f803bb8cf6517",
       "executable": false
     },
     "tests/agent-door-provider-edge.mjs": {
@@ -5280,7 +5284,7 @@
       "executable": false
     },
     "tests/agent-door-worker.ts": {
-      "sha256": "617cb0c1bf01e60b4b8a664187bf81fe7addc1ea4645603f76c2ad7be5d2b181",
+      "sha256": "ee7a13ada06f6de40edb6e8d26168c9fed3f5fc26a577f8d99545c2868848f94",
       "executable": false
     },
     "tests/agent-governance-fixture.mjs": {

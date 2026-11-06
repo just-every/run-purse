@@ -60,12 +60,14 @@ try {
   }
   for(const answer of limited) {
    assert.equal(answer.body.error.data.code,'rate_limited')
+   assert.equal(answer.body.result,undefined,'A capacity refusal must not expose a listing result')
    assert.ok(answer.retryAfter!==null&&/^\d+(?:\.\d+)?$/.test(answer.retryAfter)&&Number(answer.retryAfter)>0,'HTTP 429 must carry a positive numeric Retry-After')
   }
   // A replacement credential for the same agent cannot reset capacity.
   const replacement=await raw(method,await accessToken(principal))
   assert.equal(replacement.status,429)
   assert.equal(replacement.body.error.data.code,'rate_limited')
+  assert.equal(replacement.body.result,undefined)
   assert.ok(replacement.retryAfter!==null&&/^\d+(?:\.\d+)?$/.test(replacement.retryAfter)&&Number(replacement.retryAfter)>0)
   // Invalid credentials must still be refused before any private listing.
   const unauthenticated=await raw(method,'synthetic-purse-invalid')
@@ -92,6 +94,7 @@ try {
   assert.equal(Math.floor(Date.now()/windowMs),Math.floor(start/windowMs),'Person proof must remain within the exhausted agent window')
   assert.equal(stillLimited.status,429)
   assert.equal(stillLimited.body.error.data.code,'rate_limited')
+  assert.equal(stillLimited.body.result,undefined)
   assert.ok(stillLimited.retryAfter!==null&&/^\d+(?:\.\d+)?$/.test(stillLimited.retryAfter)&&Number(stillLimited.retryAfter)>0)
   assert.equal(h.messages.length,0,'Capacity and native person actions must not send mail')
   assert.ok(c.points.every(point=>point.ok),JSON.stringify(c.points.filter(point=>!point.ok)))
