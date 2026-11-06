@@ -1,0 +1,10 @@
+{
+  "conclusion": "success",
+  "head_sha": "23195faf3e0f1784ff3abfd40c4365467c5444df",
+  "html_url": "https://github.com/just-every/run-purse/actions/runs/42228990893",
+  "status": "completed",
+  "run_id": 42228990893,
+  "event": "push",
+  "observed_at": "2026-11-06T14:17:46.950538+00:00",
+  "api_call": 7
+}

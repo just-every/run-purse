@@ -1,0 +1,158 @@
+{
+  "tag": "sx-purse-c-f93",
+  "repository": "just-every/run-purse",
+  "branch": "cloud/sx-purse-c-f93",
+  "head": "23195faf3e0f1784ff3abfd40c4365467c5444df",
+  "base": "60134d0d91def75bb0a9fd2e67d2e9dae714c68b",
+  "recorded_at": "2026-11-06T13:53:26.169035+00:00",
+  "checks": [
+    {
+      "command": "PURSE_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium node tests/agent-door-policy-limits.mjs",
+      "exit": 0,
+      "head": "23195faf3e0f1784ff3abfd40c4365467c5444df",
+      "log": "policy-limits.log",
+      "proof": "Native signed policy money journey, thresholds, browser approval and cross-agent cap replay"
+    },
+    {
+      "command": "node tests/agent-door-quotes.mjs",
+      "exit": 0,
+      "log": "quotes.log",
+      "tree_equivalence": "The candidate changes only the policy-limits journey and source lock; quotation journey and application code are unchanged from its tested tree."
+    },
+    {
+      "command": "pnpm typecheck",
+      "exit": 0,
+      "log": "typecheck.log",
+      "tree_equivalence": "Source and types are unchanged from the checked tree."
+    },
+    {
+      "command": "npx -y @runeditrun/rer check --profile first-party",
+      "exit": 0,
+      "log": "first-party.log",
+      "tree_equivalence": "Contract, manifests and source paths are unchanged from the checked tree."
+    },
+    {
+      "command": "node scripts/contract-docs.mjs write <AGENTS documented clause list>; node scripts/contract-docs.mjs check <same list>",
+      "exit": 0,
+      "log": "views.log",
+      "generated_views_restored": true
+    },
+    {
+      "command": "node scripts/edition-authoring/cli.mjs lock; node scripts/edition-authoring/cli.mjs check",
+      "exit": 0,
+      "logs": [
+        "lock.log",
+        "lock-check.log"
+      ]
+    },
+    {
+      "command": "node scripts/edition-authoring/cli.mjs verify-base --offline",
+      "exit": 0,
+      "log": "base-check.log"
+    },
+    {
+      "command": "git diff --cached --check",
+      "exit": 0
+    },
+    {
+      "command": "PURSE_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium /home/agent/.rer/node/node-v22.20.0-linux-x64/bin/node tests/agent-door-policy-limits.mjs",
+      "exit": 0,
+      "head": "23195faf3e0f1784ff3abfd40c4365467c5444df",
+      "runtime": "22.20.0",
+      "log": "policy-limits-node22.log",
+      "reason": "Match the pinned CI runtime after initial local execution under VM Node 24."
+    }
+  ],
+  "test_registrations": {
+    "added": 0,
+    "removed": 0,
+    "script_already_in": "package.json test:purse"
+  },
+  "views_committed": false,
+  "contract_changed": false,
+  "base_bytes_changed": false,
+  "homepage_changed": false,
+  "screenshots": [
+    "browser/policy-limits-pending-1440.png",
+    "browser/policy-limits-pending-390.png",
+    "browser/policy-limits-confirmed-1440.png",
+    "browser/policy-limits-confirmed-390.png"
+  ],
+  "browser_inspection": {
+    "horizontal_overflow": false,
+    "pending_amount": "USD 600.00",
+    "approver": "Designated policy approver",
+    "confirmed_state": "Approved and done",
+    "icon_only_controls": "none on these pages; Details has a text label",
+    "ui_source_changed": false
+  },
+  "publication_scan": {
+    "commit": "23195faf3e0f1784ff3abfd40c4365467c5444df",
+    "complete": null,
+    "historyScanned": null,
+    "findings": null,
+    "status": "Unestablished in cloud; required fleet lander gate before landing"
+  },
+  "landing": {
+    "main_equals_candidate": false,
+    "run_site": null,
+    "status": "Branch only; no landing performed"
+  },
+  "ci_run": 42228990893,
+  "ci_event": "push",
+  "ci_conclusion": "success",
+  "counts_before": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22
+  },
+  "counts_after": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22
+  },
+  "claim": {
+    "clause": "BASE-AGENT-007",
+    "status": "PARTIAL",
+    "points": [
+      3
+    ]
+  },
+  "local_iteration_failures": [
+    {
+      "error": "Snapshot differed because newly created boundary fixtures preceded the existing pending-browser assertion.",
+      "resolution": "Moved boundary fixture creation after the existing browser and receipt assertions; preserved the original assertion."
+    },
+    {
+      "error": "usage assertion expected one row after the earlier browser approval had executed; actual was two.",
+      "resolution": "Corrected only the added boundary loop expectation to include the completed USD 600 action."
+    }
+  ],
+  "verify_repairs": 0,
+  "candidate_tree": "2fff1fec912863e539620d61f5a0e2cf14db848c",
+  "tracked_tree_clean": true,
+  "file_sha256": {
+    "base-check.log": "8fae90820bc5652797647f9bcfc488f47cd3e9ce28d3e9a55606dda1a2acd70b",
+    "base-ci.json": "8435b070be867ddb5efc633eba3851c8f9d35af90a5d8bc96b9becbafb9f8da3",
+    "browser/policy-limits-confirmed-1440.png": "35dc9d632c1f893f1704b0cd48e49f5d0adb452326261cd1f5f42df3c0e9d3fc",
+    "browser/policy-limits-confirmed-390.png": "ae65bacb5fbda3be5504f81ea16252e3fa9b30630f606884e725e670cb7e72c7",
+    "browser/policy-limits-pending-1440.png": "cd01e588961bcae43dfaacc5cccc1749a2473d781a6d050c0935406f3fb57742",
+    "browser/policy-limits-pending-390.png": "4a74f0ec66193d45b34bc7ba206bba328a6bc3cc14ed37116e5d58a26cc3745c",
+    "ci-discovery.json": "dfe5beddf4911d7827c22943c49074c091f9185628d53584957bcd3d9417765d",
+    "ci-status.json": "40a845ee90377b67c19e6038ac7f7773b0c95e721e8b2e56d7a205da0c189883",
+    "first-party.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lock-check.log": "e98d2386f2b01f37c37b9b6dfdd02f883a41386ed9b3f4b5c05771bc0ce328bf",
+    "lock.log": "253cf0a777441aa50943a59633f3301da17470f34b752fa2cf10135a242a76e9",
+    "policy-limits-node22.log": "e6934d7b4059970716334914c868027b538d0c2be1e4d0a442b165e61dbafeb3",
+    "policy-limits.log": "e6934d7b4059970716334914c868027b538d0c2be1e4d0a442b165e61dbafeb3",
+    "product-push.log": "7f9a1a2c8e1404e1c6445ebf8e3265dc8a40cec9540ef64ce7593260eea185b6",
+    "quotes.log": "f7f360dd4e73ec84fbb26b7272d667fec53edb5d5b5432b32a27c71d3984a115",
+    "remote-refs.txt": "d4c356efe2e93fc2e79cb6c0a34514bdf812a2cae1581d89fbfa726108dc57fa",
+    "typecheck.log": "051fd799e7f84a260f9b098209a4083069226304a14946a5d3cd5eea684bb458",
+    "views.log": "9bd35ecb8c086d8e565ee92647faee81f477aaade1024cd36c2d77124763ea3d"
+  },
+  "ci_status": "completed",
+  "ci_observed_at": "2026-11-06T14:17:46.950538+00:00",
+  "explicit_github_ci_api_calls": 7,
+  "watcher_finished": true
+}
