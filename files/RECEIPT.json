@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "repository": "just-every/run-purse",
+  "branch": "cloud/sx-purse-c-f91",
+  "head": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+  "local_checks": [
+    {
+      "name": "Native monetary policy journey",
+      "command": "timeout 1200 node tests/agent-door-policy-limits.mjs",
+      "exit": 0,
+      "candidate_head": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+      "log": "native-monetary-policy-journey.log",
+      "sha256": "0e581df7fedd1016b9c2d7a56b6c240318ea35c53f66caba29c98e64499fbefe",
+      "binding": "clean exact committed candidate head"
+    },
+    {
+      "name": "Existing signed quotation regression",
+      "command": "timeout 1200 node tests/agent-door-quotes.mjs",
+      "exit": 0,
+      "candidate_head": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+      "log": "existing-signed-quotation-regression.log",
+      "sha256": "41b4080f5cd6b6a45b7e5055ef5f5af12eee049d430ad84d877ae2615f64b083",
+      "binding": "candidate source bytes; unchanged relevant source after check"
+    },
+    {
+      "name": "TypeScript check",
+      "command": "pnpm typecheck",
+      "exit": 0,
+      "candidate_head": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+      "log": "typescript-check.log",
+      "sha256": "283e86b7a676060e0b6e170c34b1a11ab3a2a24c0bf1c706bfa37a8a73c750cc",
+      "binding": "candidate source bytes; unchanged relevant source after check"
+    },
+    {
+      "name": "First-party check",
+      "command": "pnpm exec rer check --profile first-party",
+      "exit": 0,
+      "candidate_head": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+      "log": "first-party-check.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "binding": "candidate source bytes; unchanged relevant source after check"
+    },
+    {
+      "name": "Application build",
+      "command": "npx -y @runeditrun/rer build",
+      "exit": 0,
+      "candidate_head": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+      "log": "application-build.log",
+      "sha256": "89bbbe0d6142c90c946280c9555823df9b1a2908361eb2211636dcfd09dd84cb",
+      "binding": "candidate source bytes; unchanged relevant source after check"
+    },
+    {
+      "name": "Contract projection write",
+      "command": "node scripts/contract-docs.mjs write BASE-AGENT-007",
+      "exit": 0,
+      "candidate_head": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+      "log": "contract-projection-write.log",
+      "sha256": "70b4f68d81fb33c86328d0ba57f7f6302beedeb61a8828600776c5d4e85f0888",
+      "binding": "final candidate source tree before commit; generated views restored before source lock"
+    },
+    {
+      "name": "Contract projection check before restoring generated views",
+      "command": "node scripts/contract-docs.mjs check BASE-AGENT-007",
+      "exit": 0,
+      "candidate_head": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+      "log": "contract-projection-check-generated.log",
+      "sha256": "78d46e6b841b2fbb5a41a2ca435dcc2f7ce681588f411fd09dfa9201d90b48c9",
+      "binding": "final candidate source tree before commit; generated views restored before source lock"
+    },
+    {
+      "name": "Source lock regeneration",
+      "command": "node scripts/edition-authoring/cli.mjs lock",
+      "exit": 0,
+      "candidate_head": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+      "binding": "final candidate source tree before commit; generated views restored before source lock"
+    },
+    {
+      "name": "Source lock check on exact committed head",
+      "command": "node scripts/edition-authoring/cli.mjs check",
+      "exit": 0,
+      "candidate_head": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+      "log": "source-lock-check-on-exact-committed-head.log",
+      "sha256": "30fbf4938b8d32cbbfa948b4c217383cc582fe953e40ea43c66b26d22e5b1cfe",
+      "binding": "clean exact committed candidate head"
+    },
+    {
+      "name": "Copied Base integrity",
+      "command": "node scripts/edition-authoring/cli.mjs verify-base --offline",
+      "exit": 0,
+      "candidate_head": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+      "log": "copied-base-integrity.log",
+      "sha256": "8fae90820bc5652797647f9bcfc488f47cd3e9ce28d3e9a55606dda1a2acd70b",
+      "binding": "clean exact committed candidate head"
+    }
+  ],
+  "counts_before": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22
+  },
+  "counts_after": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22
+  },
+  "clause": {
+    "id": "BASE-AGENT-007",
+    "before": "PARTIAL",
+    "after": "PARTIAL",
+    "qualified": "acceptance point 3 through the declared request decision tool"
+  },
+  "generated_views_committed": false,
+  "migration_changes": false,
+  "publication_scan": "deferred to fleet lander",
+  "product_pushed": true,
+  "evidence_transport": "pending",
+  "ci": {
+    "observed_at": "2026-11-06T12:17:38.049866+00:00",
+    "github_call": 4,
+    "run_id": 42215750746,
+    "conclusion": null,
+    "head_sha": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+    "html_url": "https://github.com/just-every/run-purse/actions/runs/42215750746",
+    "status": "in_progress"
+  }
+}

@@ -1,0 +1,5 @@
+ WARN  Unsupported engine: wanted: {"node":"22.20.0"} (current: {"node":"v24.19.0","pnpm":"10.12.4"})
+
+> @procurement/purse@0.1.1 typecheck /workspace/run-purse-sx-purse-c-f91
+> tsc --build --incremental
+

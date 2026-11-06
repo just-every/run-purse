@@ -1,0 +1,5 @@
+▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+
+
+PROBE BASE-AGENT-007 point 3 thresholds: MCP request decision -> USD 400 autonomous, USD 600 pending without native effects until the named signed-in person approves, USD 20000 blocked without effects; money and commitment retained
+PROBE BASE-AGENT-007 point 3 daily cap: signed seed-scoped USD 1500 cap -> native usage totals 1000 then 1500; crossing USD 400 uses the named approval rule at revision 2 without premature effects; approved total 1900 matches four native decisions and reservations

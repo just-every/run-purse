@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "head": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+  "parent_row_checks": [
+    {
+      "commit": "15aff83ef8b39287c14bb2044c8261135cd34ade",
+      "parent": "0ed797ae6afe100f4663956427ebcc2a58319d40",
+      "parent_status_rows": 127,
+      "candidate_status_rows": 127,
+      "lost_rows": []
+    },
+    {
+      "commit": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+      "parent": "15aff83ef8b39287c14bb2044c8261135cd34ade",
+      "parent_status_rows": 127,
+      "candidate_status_rows": 127,
+      "lost_rows": []
+    }
+  ],
+  "product_files": [
+    "CONTRACT.md",
+    "package.json",
+    "sources.lock.json",
+    "src/agent-door/purchase-flow.server.ts",
+    "tests/agent-door-policy-limits.mjs",
+    "tests/agent-door-worker.ts"
+  ],
+  "all_candidate_identities": "fleet identity; no trailers",
+  "published_history_rewritten": false,
+  "working_tree": "clean"
+}

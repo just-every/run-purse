@@ -1,0 +1,6 @@
+{"conclusion":"success","event":"schedule","head_sha":"0ed797ae6afe100f4663956427ebcc2a58319d40","html_url":"https://github.com/just-every/run-purse/actions/runs/42084031285","id":42084031285,"name":"Installer","status":"completed"}
+{"conclusion":"success","event":"schedule","head_sha":"0ed797ae6afe100f4663956427ebcc2a58319d40","html_url":"https://github.com/just-every/run-purse/actions/runs/41886625240","id":41886625240,"name":"Installer","status":"completed"}
+{"conclusion":"skipped","event":"push","head_sha":"0ed797ae6afe100f4663956427ebcc2a58319d40","html_url":"https://github.com/just-every/run-purse/actions/runs/41873986392","id":41873986392,"name":"Run demo","status":"completed"}
+{"conclusion":"success","event":"push","head_sha":"0ed797ae6afe100f4663956427ebcc2a58319d40","html_url":"https://github.com/just-every/run-purse/actions/runs/41873986625","id":41873986625,"name":"Run site","status":"completed"}
+{"conclusion":"success","event":"push","head_sha":"0ed797ae6afe100f4663956427ebcc2a58319d40","html_url":"https://github.com/just-every/run-purse/actions/runs/41873986198","id":41873986198,"name":"Verify","status":"completed"}
+{"conclusion":"success","event":"push","head_sha":"0ed797ae6afe100f4663956427ebcc2a58319d40","html_url":"https://github.com/just-every/run-purse/actions/runs/41865514229","id":41865514229,"name":"Verify","status":"completed"}

@@ -1,0 +1,9 @@
+{
+  "observed_at": "2026-11-06T12:17:38.049866+00:00",
+  "github_call": 4,
+  "run_id": 42215750746,
+  "conclusion": null,
+  "head_sha": "5a410fe2e885bdf52d6ce5cc71c747e006f9a767",
+  "html_url": "https://github.com/just-every/run-purse/actions/runs/42215750746",
+  "status": "in_progress"
+}
