@@ -1,16 +1,19 @@
 {
   "head": "9611051ea75d48a116d4bafa98c2a505a1a83f17",
-  "calls": 1,
-  "last_poll": 1793976738.3224137,
+  "calls": 4,
+  "last_poll": 1793977639.7928467,
   "runs": [
     {
       "id": 42237749527,
       "name": "Verify",
       "event": "push",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
       "head_sha": "9611051ea75d48a116d4bafa98c2a505a1a83f17",
       "html_url": "https://github.com/just-every/run-purse/actions/runs/42237749527"
     }
-  ]
+  ],
+  "watcher": "stopped after a bounded 15-minute observation window; no completed result was observed",
+  "dispatches": 0,
+  "reruns": 0
 }

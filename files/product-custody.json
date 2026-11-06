@@ -1,0 +1,38 @@
+{
+  "productHead": "9611051ea75d48a116d4bafa98c2a505a1a83f17",
+  "remoteRef": "refs/heads/cloud/sx-purse-c-f94",
+  "pushGuard": "cloud-push.py origin cloud/sx-purse-c-f94",
+  "pushExit": 0,
+  "pushAttempts": 1,
+  "candidateIdentities": [
+    {
+      "head": "9611051ea75d48a116d4bafa98c2a505a1a83f17",
+      "author": {
+        "name": "Run Edit Run fleet",
+        "email": "fleet@runeditrun.com"
+      },
+      "committer": {
+        "name": "Run Edit Run fleet",
+        "email": "fleet@runeditrun.com"
+      },
+      "trailers": "",
+      "allowed": true
+    },
+    {
+      "head": "23195faf3e0f1784ff3abfd40c4365467c5444df",
+      "author": {
+        "name": "Run Edit Run fleet",
+        "email": "fleet@runeditrun.com"
+      },
+      "committer": {
+        "name": "Run Edit Run fleet",
+        "email": "fleet@runeditrun.com"
+      },
+      "trailers": "",
+      "allowed": true
+    }
+  ],
+  "generatedViewsCommitted": false,
+  "contractDiffFromMain": "",
+  "productWorktreeClean": true
+}

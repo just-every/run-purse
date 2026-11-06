@@ -1,0 +1,8 @@
+{
+  "status": "restored",
+  "evidenceHead": "4fb978210d8a8c119390e3625a2cdf73577c2421",
+  "productHead": "9611051ea75d48a116d4bafa98c2a505a1a83f17",
+  "manifestSha256": "492c89ee3da8ca656934019e9061ea63656e778f3647a6c1f40cc0c6e68c8e8b",
+  "filesVerified": 10,
+  "note": "This verifies the first report transfer; the terminal report may publish a later evidence head."
+}

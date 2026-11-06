@@ -26,8 +26,8 @@ Frozen scope rubric:
 | Row | Requested outcome | Proof on candidate | Local result |
 |---|---|---|---|
 | R1 | Signed test-local company policy with USD native minor-unit thresholds and sufficient independent native authority | `tests/agent-door-policy-limits.mjs` native money policy journey, lines 24–60 | PASS |
-| R2 | USD 400 autonomous, USD 600 pending with unchanged decision and budget until the named person's explicit signed-in approval, USD 20000 blocked unchanged | Same journey, lines 119–177; snapshots, wrong-person refusals, browser action and exact receipt | PASS |
-| R3 | Seed-scoped same-day cap diverts crossing call to the next rule across two agents | Same journey, lines 188–220; revision 2, exact cap fit, crossing approval and replay | PASS |
+| R2 | USD 400 autonomous, USD 600 pending with unchanged decision and budget until the named person's explicit signed-in approval, USD 20000 blocked unchanged | Same journey, lines 119–188; snapshots, wrong-person refusals, browser action and exact receipt | PASS |
+| R3 | Seed-scoped same-day cap diverts crossing call to the next rule across two agents | Same journey, lines 190–220; revision 2, exact cap fit, crossing approval and replay | PASS |
 | R4 | Usage and native outcomes reconcile independently, retaining money and commitment | Same journey, lines 67–118 and 191–217; per-request reservations, public dated budget, native decisions, usage and audit facts | PASS |
 | R5 | Pending and confirmed screens shown at both widths without editing copied Base bytes | Same journey lines 143–158 and browser artifacts; existing browser helper | PASS |
 
@@ -54,3 +54,9 @@ MECHANICAL lock=node scripts/edition-authoring/cli.mjs lock then check exit=0; v
 
 CLAIM BASE-AGENT-007 PARTIAL points=3 tests=tests/agent-door-policy-limits.mjs#native money policy journey
 GAP BASE-AGENT-007: Point 3 is qualified only for the declared request decision tool. Wider registry, complete setup and class variants, broader approval lifecycle, alternate doors, policy propagation and invalid-signature qualification remain open; all account, prerequisite, provider and gate-loop holds remain unchanged.
+
+Browser review: all four final exact-commit captures were inspected. Both widths show the USD 600 server-computed amount and named approver in pending and completed states, with no horizontal overflow. The focused journey asserts behavior at 1440; the existing capture helper supplies the two-width proof. CI discovery used one API call; the first permitted follow-up five minutes later shows the exact-head push Verify in progress. No CI dispatch or rerun was requested.
+
+Evidence transport check: the first report-only ref was fetched into isolated temporary storage; its manifest, all ten file identities, content lengths, hashes and blob identities verified. Product checkout, HEAD and index were unchanged. The final publication will include the separate product-custody and transport receipts.
+
+Terminal CI observation: exact-head push Verify 42237749527 remains in_progress with no conclusion after four API calls spanning fifteen minutes. The single watcher has stopped. No successful result is claimed and no dispatch, rerun or PR was opened. The terminal custody line is PUSHED, with Verify, full-history publication scan and landing left for the maintained fleet. There is no known local check failure or product push blocker.
