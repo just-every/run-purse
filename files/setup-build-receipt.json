@@ -1,0 +1,11 @@
+{
+  "setup": {
+    "command": "npx -y @runeditrun/rer setup --owner-email [fleet address] --non-interactive",
+    "exit": 0
+  },
+  "build": {
+    "command": "npx -y @runeditrun/rer build",
+    "exit": 0
+  },
+  "notes": "Both commands ran through cloud_run. Raw local setup output stays outside the packet because local signed-in URLs are credentials."
+}

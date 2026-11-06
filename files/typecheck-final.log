@@ -1,0 +1,4 @@
+
+> @procurement/purse@0.1.1 typecheck /home/agent/rer-consolidation/work/sx-purse-c-f92/run-purse
+> tsc --build --incremental
+

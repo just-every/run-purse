@@ -1,0 +1,56 @@
+{
+  "repository": "just-every/run-purse",
+  "branch": "cloud/sx-purse-c-f92",
+  "head": "9bc9d51a9db7d36a63e23bb69d7b9042a1fee49e",
+  "main": "60134d0d91def75bb0a9fd2e67d2e9dae714c68b",
+  "parents": [
+    "e5bbadbfe2b59023af8bc98dd0fd64a6eefd9a70",
+    "60134d0d91def75bb0a9fd2e67d2e9dae714c68b"
+  ],
+  "changed": [
+    "package.json",
+    "sources.lock.json",
+    "tests/agent-door-capacity.mjs",
+    "tests/agent-door-worker.ts",
+    "tests/purse-harness.mjs"
+  ],
+  "counts_before": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22
+  },
+  "counts_after": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22
+  },
+  "product_pushed": true,
+  "remote_verified": true,
+  "protected_contract_diff": "",
+  "copied_base_diff": "",
+  "published_save": "e5bbadbfe2b59023af8bc98dd0fd64a6eefd9a70",
+  "scan": {
+    "commit": "9bc9d51a9db7d36a63e23bb69d7b9042a1fee49e",
+    "complete": false,
+    "historyScanned": null,
+    "findings": null,
+    "reason": "Cloud does not run the publication scanner; fleet lander required"
+  },
+  "ui_changes": false,
+  "new_policy_default": false,
+  "ci": {
+    "conclusion": null,
+    "head_sha": "9bc9d51a9db7d36a63e23bb69d7b9042a1fee49e",
+    "html_url": "https://github.com/just-every/run-purse/actions/runs/42225935643",
+    "status": "in_progress",
+    "id": 42225935643,
+    "event": "push",
+    "name": "Verify",
+    "observed": "2026-11-06T13:50:39.563269+00:00",
+    "operation": "poll"
+  },
+  "github_api_calls_used": 8,
+  "handoff": "PUSHED",
+  "landing_claimed": false,
+  "publication_scan_complete": false
+}

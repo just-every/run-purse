@@ -1,0 +1,10 @@
+*   9bc9d51 Merge current main and retain focused native capacity proof
+|\  
+| * 60134d0 Regenerate contract views from CONTRACT.md
+| * 5a410fe Complete native money policy proof and budget reconciliation
+| * 15aff83 Qualify native company money limits and approval amounts [skip ci]
+* | e5bbadb Qualify native agent capacity under both policies [skip ci]
+|/  
+* 0ed797a Regenerate contract views from CONTRACT.md
+* 09e4d53 Replay native email approval candidate preserving main clause judgment
+* 866f443 Replay Audit 44 px touch targets on current main

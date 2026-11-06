@@ -1,0 +1,211 @@
+diff --git a/package.json b/package.json
+index 5b511c2..fb66537 100644
+--- a/package.json
++++ b/package.json
+@@ -30,13 +30,14 @@
+     "check": "rer check",
+     "deps": "rer install",
+     "rer": "rer",
+-    "test:purse": "node --test --test-concurrency=2 tests/purse.test.mjs tests/access.test.mjs tests/entities.test.mjs tests/identity.test.mjs tests/saml.test.mjs tests/scim.test.mjs tests/stockroom.test.mjs tests/order-closure.test.mjs tests/blanket-orders.test.mjs tests/order-adoption.test.mjs tests/supplier-screening.test.mjs tests/supplier-performance.test.mjs tests/catalogue.test.mjs tests/catalogue-import.test.mjs tests/supplier-duplicates.test.mjs tests/supplier-documents.test.mjs tests/supplier-tax.test.mjs tests/order-chasing.test.mjs tests/agent-governance.test.mjs tests/late-order-resolution.test.mjs tests/quote-agent.test.mjs tests/po-generation.test.mjs tests/supplier-invoice.test.mjs tests/order-thread.test.mjs tests/payables.test.mjs tests/audit-log.test.mjs tests/spend-report.test.mjs tests/saved-reports.test.mjs tests/coding-agent.test.mjs tests/po-documents.test.mjs tests/po-supplier-groups.test.mjs tests/performance-report.test.mjs tests/invoice-risk.test.mjs tests/receipt-routing.test.mjs tests/quote-reading.test.mjs tests/invoice-reading.test.mjs tests/rfq.test.mjs tests/email-intake.test.mjs tests/invoice-inbox.test.mjs tests/integration-tokens.test.mjs tests/search.test.mjs tests/agreements.test.mjs tests/agreement-reading.test.mjs tests/agreement-savings.test.mjs tests/agent-value.test.mjs tests/agent-value-checkins.test.mjs tests/travel.test.mjs tests/travel-routing.test.mjs tests/order-send.test.mjs tests/comments.test.mjs tests/budget-disposition.test.mjs tests/browser-archive.test.mjs tests/budget-import.test.mjs tests/cross-team-reviews.test.mjs tests/accrual-report.test.mjs tests/custom-fields.test.mjs tests/invoice-exceptions.test.mjs tests/invoice-exception-agent.test.mjs tests/protected-value-assertions.test.mjs tests/supplier-proposals.test.mjs tests/shipment-references.test.mjs tests/notifications.test.mjs tests/approval-email.test.mjs tests/procurify-lines.test.mjs && node tests/agent-door-quotes.mjs && node tests/agent-door-policy-limits.mjs",
++    "test:purse": "node --test --test-concurrency=2 tests/purse.test.mjs tests/access.test.mjs tests/entities.test.mjs tests/identity.test.mjs tests/saml.test.mjs tests/scim.test.mjs tests/stockroom.test.mjs tests/order-closure.test.mjs tests/blanket-orders.test.mjs tests/order-adoption.test.mjs tests/supplier-screening.test.mjs tests/supplier-performance.test.mjs tests/catalogue.test.mjs tests/catalogue-import.test.mjs tests/supplier-duplicates.test.mjs tests/supplier-documents.test.mjs tests/supplier-tax.test.mjs tests/order-chasing.test.mjs tests/agent-governance.test.mjs tests/late-order-resolution.test.mjs tests/quote-agent.test.mjs tests/po-generation.test.mjs tests/supplier-invoice.test.mjs tests/order-thread.test.mjs tests/payables.test.mjs tests/audit-log.test.mjs tests/spend-report.test.mjs tests/saved-reports.test.mjs tests/coding-agent.test.mjs tests/po-documents.test.mjs tests/po-supplier-groups.test.mjs tests/performance-report.test.mjs tests/invoice-risk.test.mjs tests/receipt-routing.test.mjs tests/quote-reading.test.mjs tests/invoice-reading.test.mjs tests/rfq.test.mjs tests/email-intake.test.mjs tests/invoice-inbox.test.mjs tests/integration-tokens.test.mjs tests/search.test.mjs tests/agreements.test.mjs tests/agreement-reading.test.mjs tests/agreement-savings.test.mjs tests/agent-value.test.mjs tests/agent-value-checkins.test.mjs tests/travel.test.mjs tests/travel-routing.test.mjs tests/order-send.test.mjs tests/comments.test.mjs tests/budget-disposition.test.mjs tests/browser-archive.test.mjs tests/budget-import.test.mjs tests/cross-team-reviews.test.mjs tests/accrual-report.test.mjs tests/custom-fields.test.mjs tests/invoice-exceptions.test.mjs tests/invoice-exception-agent.test.mjs tests/protected-value-assertions.test.mjs tests/supplier-proposals.test.mjs tests/shipment-references.test.mjs tests/notifications.test.mjs tests/approval-email.test.mjs tests/procurify-lines.test.mjs && node tests/agent-door-quotes.mjs && node tests/agent-door-policy-limits.mjs && pnpm run test:agent-capacity",
+     "test:site": "node tests/run-site.mjs",
+     "test:browser": "node tests/browser.mjs",
+     "delivery:spec": "node scripts/build-deployment-spec.mjs",
+     "check:deployment-spec": "node scripts/build-deployment-spec.mjs --check",
+     "sources:check": "node scripts/contract-docs.mjs check BUDGET-001 IMPORT-001 INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 SUPPLIER-008 PO-012 PO-006 NOTIFY-001 PO-011 AGENT-010 BASE-AGENT-001 BASE-AGENT-002 BASE-AGENT-003 BASE-AGENT-004 BASE-AGENT-005 BASE-AGENT-006 BASE-AGENT-007 BASE-AGENT-008 BASE-AGENT-009 BASE-AGENT-010 BASE-AGENT-011 BASE-AGENT-012 BASE-AGENT-013 ACCESS-003 APPROVAL-003 && node scripts/edition-authoring/cli.mjs check && node scripts/edition-authoring/cli.mjs verify-base --offline",
+-    "test:mail": "node --test tests/mail.test.mjs"
++    "test:mail": "node --test tests/mail.test.mjs",
++    "test:agent-capacity": "node tests/agent-door-capacity.mjs"
+   },
+   "dependencies": {
+     "@pdf-lib/fontkit": "1.1.1",
+diff --git a/sources.lock.json b/sources.lock.json
+index 59c0dee..2b9caca 100644
+--- a/sources.lock.json
++++ b/sources.lock.json
+@@ -408,7 +408,7 @@
+       "executable": false
+     },
+     "package.json": {
+-      "sha256": "f7e2ee8001b8b89b02fdcc718681b61384d2dc7261876fc091730b470b911b4d",
++      "sha256": "496617b95da3fde021961efad76500c4ceaee71fce6cde3a9a289aa5d1570e57",
+       "executable": false
+     },
+     "packaging.json": {
+@@ -5263,6 +5263,10 @@
+       "sha256": "274ed66699fb637d574a7a757326025f60bc7aeec2f2c35f69651613f1765c1e",
+       "executable": false
+     },
++    "tests/agent-door-capacity.mjs": {
++      "sha256": "f2130286347ebe30be571d6c210bc52cb4e0818f5ad2f3c24837375768e75ac4",
++      "executable": false
++    },
+     "tests/agent-door-journey.mjs": {
+       "sha256": "9ac07e8d095a721d07790d8cb41d4a05c3b96669746f2903a6fb2cb2b8878e75",
+       "executable": false
+@@ -5280,7 +5284,7 @@
+       "executable": false
+     },
+     "tests/agent-door-worker.ts": {
+-      "sha256": "97072a8b5255ccda9c72a0ea424f44ea32e80a43fea55f3fbb72481cc7a2e439",
++      "sha256": "ee7a13ada06f6de40edb6e8d26168c9fed3f5fc26a577f8d99545c2868848f94",
+       "executable": false
+     },
+     "tests/agent-governance-fixture.mjs": {
+@@ -5960,7 +5964,7 @@
+       "executable": false
+     },
+     "tests/purse-harness.mjs": {
+-      "sha256": "a4d517055151f1d477867615cb45363469d1091f8122feff29c6ac80342e242d",
++      "sha256": "bc957548651d5199bebb7c78931f344ead48de05d54970c7af0498e115c2d8b1",
+       "executable": false
+     },
+     "tests/purse-worker.ts": {
+diff --git a/tests/agent-door-capacity.mjs b/tests/agent-door-capacity.mjs
+new file mode 100644
+index 0000000..30d590d
+--- /dev/null
++++ b/tests/agent-door-capacity.mjs
+@@ -0,0 +1,105 @@
++import test from 'node:test'
++import assert from 'node:assert/strict'
++import {randomUUID} from 'node:crypto'
++import {setTimeout as delay} from 'node:timers/promises'
++import {agentDoorHarness} from './purse-harness.mjs'
++import {VERSION} from '../src/modules/agent-door/conformance/protocol.mjs'
++import {accessToken,autonomousPolicy,heldPolicy} from '../src/modules/agent-door/conformance/crypto.mjs'
++
++// One native transport journey: no protocol-client request wrapper or retry,
++// admission mock, clock override, lowered capacity or database counter writes.
++test('native MCP capacity and signed-in purchasing continuity',{timeout:180_000},async()=>{
++const {h,c}=await agentDoorHarness()
++try {
++ await h.command('business',{name:'Synthetic capacity workshop',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Workshop']})
++ const supplier=await h.command('supplier',{name:'Synthetic capacity supplier',status:'active',reason:'Reviewed native source',contacts:[]})
++ const draft=await h.command('request',{title:'Synthetic capacity purchase',supplier:supplier.id,currency:'USD',needDate:'2026-12-15',location:'Denver',costCentre:'Operations',lines:[{description:'Safety gloves',quantity:'2',unitMinor:1500,category:'Safety',project:'Workshop'}],freightMinor:0,taxMinor:0,terms:'Native purchasing witness'})
++ for(const [phase,policy]of [['autonomous',autonomousPolicy()],['held',heldPolicy()]]) {
++  await c.adopt(policy)
++  const current=(await h.state()).data.request.find(row=>row.id===draft.id)
++  const witness=await c.witness()
++  assert.ok((await h.state()).data.request.some(row=>row.id===draft.id&&row.totalMinor===3000))
++  const before=(await h.state()).data
++  const method=['tools','list'].join('/'),discover=['server','discover'].join('/')
++  const principal={...c,agentId:randomUUID()}
++  const token=await accessToken(principal)
++  let sequence=0
++  const raw=async(rpcMethod,bearer=token)=>{
++   const id=++sequence
++   const response=await fetch(h.origin+'/mcp',{method:'POST',redirect:'manual',signal:AbortSignal.timeout(25_000),headers:{origin:h.origin,authorization:'Bearer '+bearer,'content-type':['application','json'].join('/'),'MCP-Protocol-Version':VERSION,'Mcp-Method':rpcMethod},body:JSON.stringify({jsonrpc:'2.0',id,method:rpcMethod,params:{_meta:{'io.modelcontextprotocol/protocolVersion':VERSION}}})})
++   const body=await response.json()
++   assert.equal(body.id,id)
++   return {status:response.status,retryAfter:response.headers.get('retry-after'),body}
++  }
++  const discovery=await raw(discover)
++  assert.equal(discovery.status,200)
++  const limit=discovery.body.result._meta['com.runeditrun/limits'].requestsPerMinute
++  assert.ok(Number.isSafeInteger(limit)&&limit>0,'Discovery must advertise a positive request capacity')
++  assert.ok(limit<10_000,'The native burst must remain bounded')
++  // Begin only when a full bounded burst fits in this real capacity window.
++  // This wait does not reset, advance or recover the installation's counter.
++  const windowMs=60_000,minimumRemaining=45_000,remaining=windowMs-Date.now()%windowMs
++  if(remaining<minimumRemaining)await delay(remaining+25)
++  const start=Date.now(),answers=Array(limit+1)
++  let next=0
++  await Promise.all(Array.from({length:Math.min(16,answers.length)},async()=>{
++   while(next<answers.length) {
++    const index=next++
++    assert.ok(Date.now()-start<25_000,'Capacity burst exceeded its bounded execution time')
++    answers[index]=await raw(method)
++   }
++  }))
++  const end=Date.now()
++  assert.equal(Math.floor(end/windowMs),Math.floor(start/windowMs),'Every burst request must reach the same real capacity window')
++  const admitted=answers.filter(answer=>answer.status===200),limited=answers.filter(answer=>answer.status===429)
++  assert.equal(admitted.length,limit,'The advertised per-agent capacity must be served')
++  assert.equal(limited.length,1,'The first request above capacity must be refused')
++  for(const answer of admitted) {
++   assert.equal(answer.body.error,undefined)
++   assert.ok(answer.body.result.tools.some(tool=>tool.name==='purse.workspace.snapshot'),'Authenticated listing must expose the native purchasing tool')
++  }
++  for(const answer of limited) {
++   assert.equal(answer.body.error.data.code,'rate_limited')
++   assert.equal(answer.body.result,undefined,'A capacity refusal must not expose a listing result')
++   assert.ok(answer.retryAfter!==null&&/^\d+(?:\.\d+)?$/.test(answer.retryAfter)&&Number(answer.retryAfter)>0,'HTTP 429 must carry a positive numeric Retry-After')
++  }
++  // A replacement credential for the same agent cannot reset capacity.
++  const replacement=await raw(method,await accessToken(principal))
++  assert.equal(replacement.status,429)
++  assert.equal(replacement.body.error.data.code,'rate_limited')
++  assert.equal(replacement.body.result,undefined)
++  assert.ok(replacement.retryAfter!==null&&/^\d+(?:\.\d+)?$/.test(replacement.retryAfter)&&Number(replacement.retryAfter)>0)
++  // Invalid credentials must still be refused before any private listing.
++  const unauthenticated=await raw(method,'synthetic-purse-invalid')
++  assert.equal(unauthenticated.status,401)
++  assert.equal(unauthenticated.body.result,undefined)
++  // A different agent remains admitted; the same signed-in person can still
++  // read and edit the purchase while the burst agent remains rate limited.
++  assert.deepEqual(await c.witness(),witness)
++  const person=await fetch(h.origin+'/api/purse/state',{headers:{cookie:h.owner}})
++  assert.equal(person.status,200)
++  assert.deepEqual((await person.json()).data,before,'Read-only capacity refusals must preserve the entire native purchasing state')
++  const command=await fetch(h.origin+'/api/purse/command/amend',{method:'POST',headers:{origin:h.origin,cookie:h.owner,'content-type':['application','json'].join('/')},body:JSON.stringify({...current,title:'Human reviewed capacity purchase',reason:'Signed-in person retains the native purchasing door'})})
++  assert.equal(command.status,200)
++  const amended=await command.json()
++  assert.equal(amended.id,draft.id)
++  assert.equal(amended.revision,current.revision+1)
++  assert.equal(amended.title,'Human reviewed capacity purchase')
++  assert.equal(amended.totalMinor,3000)
++  const after=(await h.state()).data
++  const visible=after.request.find(row=>row.id===draft.id)
++  for(const [field,value] of Object.entries(amended))assert.deepEqual(visible[field],value,'Signed-in state must expose the saved '+field)
++  for(const kind of ['decision','order','commitment','receipt','invoice','orderSend'])assert.deepEqual(after[kind]??[],before[kind]??[])
++  const stillLimited=await raw(method)
++  assert.equal(Math.floor(Date.now()/windowMs),Math.floor(start/windowMs),'Person proof must remain within the exhausted agent window')
++  assert.equal(stillLimited.status,429)
++  assert.equal(stillLimited.body.error.data.code,'rate_limited')
++  assert.equal(stillLimited.body.result,undefined)
++  assert.ok(stillLimited.retryAfter!==null&&/^\d+(?:\.\d+)?$/.test(stillLimited.retryAfter)&&Number(stillLimited.retryAfter)>0)
++  assert.equal(h.messages.length,0,'Capacity and native person actions must not send mail')
++  assert.ok(c.points.every(point=>point.ok),JSON.stringify(c.points.filter(point=>!point.ok)))
++  console.log('PROBE BASE-AGENT-011 1 '+phase+': authenticated raw MCP listing burst -> '+admitted.length+' admitted, '+limited.length+' HTTP 429 rate_limited, Retry-After='+limited[0].retryAfter+'; advertised capacity='+limit+'; one real window='+Math.floor(start/windowMs)+'; durationMs='+(end-start))
++  console.log('PROBE BASE-AGENT-011 1 '+phase+' isolation: same-agent replacement token remains limited; invalid bearer refused; native purchasing witness unchanged; second agent and signed-in person read succeed; person amendment advances one revision; no commitment, invoice or outbound effect')
++ }
++} finally {await h.close()}
++})
+diff --git a/tests/agent-door-worker.ts b/tests/agent-door-worker.ts
+index f75b4ac..84766d2 100644
+--- a/tests/agent-door-worker.ts
++++ b/tests/agent-door-worker.ts
+@@ -1,3 +1,4 @@
++// Focused proofs use the native adapter with its production admission limits.
+ import native from './purse-worker'
+ import { purseAgentDoor, purseBusinessSettings } from '../src/agent-door/index.server'
+ const systemNow=Date.now
+diff --git a/tests/purse-harness.mjs b/tests/purse-harness.mjs
+index 6568507..a1acf75 100644
+--- a/tests/purse-harness.mjs
++++ b/tests/purse-harness.mjs
+@@ -29,3 +29,23 @@ export async function harness({ofac,mail,mailRequest,protectedKey,protectedPrevi
+ 
+ // Shared synthetic CSL fixture, also used by the browser transport.
+ export const ofacCsv = await readFile(new URL('./fixtures/ofac.csv',import.meta.url),'utf8')
++
++// Native paired installation for focused MCP proofs. Only disposable trust is
++// supplied; the Worker keeps its real sessions, admission counter and limits.
++export async function agentDoorHarness() {
++ const {randomUUID,webcrypto}=await import('node:crypto')
++ const {createProtocol}=await import('../src/modules/agent-door/conformance/protocol.mjs')
++ const {signJws}=await import('../src/modules/agent-door/conformance/crypto.mjs')
++ const h=await harness({worker:'tests/agent-door-worker.ts'})
++ try {
++  const pair=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify'])
++  const kid=randomUUID(),issuer='https://synthetic-purse-capacity.invalid',installationId=randomUUID(),business='synthetic-purse-capacity'
++  const publicKey=await webcrypto.subtle.exportKey('jwk',pair.publicKey),publicKeys={[kid]:{...publicKey,kid,alg:'ES256',use:'sig'}}
++  const email=['owner','example.test'].join('@'),sub=randomUUID(),iat=Math.floor(Date.now()/1000)
++  await h.configureMail({RER_OWNER_CLAIM_ISSUER:issuer,RER_OWNER_CLAIM_INSTALLATION_ID:installationId,RER_OWNER_CLAIM_PUBLIC_KEYS:JSON.stringify(publicKeys),RER_BUSINESS_TRUST:JSON.stringify({v:1,issuer,audience:h.origin,subject:installationId,email,keys:publicKeys})})
++  const settings=await signJws(pair.privateKey,kid,'rer-business-settings+jwt',{v:1,iss:issuer,aud:h.origin,sub:installationId,business,email,owner_id:sub,jti:randomUUID(),iat,exp:iat+300,rev:1,values:{},logo:null,team:[]})
++  assert.equal((await h.send('/api/rer/business-settings',{settings})).status,200)
++  const c=createProtocol({fetch:(url,init)=>fetch(url,init),origin:h.origin,surface:JSON.parse(await readFile('agent-surface.json','utf8')),signer:{issuer,installationId,kid,privateKey:pair.privateKey},person:{email,cookie:h.owner,sub},business,consent:randomUUID(),agentId:randomUUID(),seq:0,revision:0,points:[]})
++  return {h,c}
++ } catch(error) {await h.close();throw error}
++}

@@ -1,0 +1,62 @@
+{
+  "head": "9bc9d51a9db7d36a63e23bb69d7b9042a1fee49e",
+  "github_api_calls_before_watcher": 4,
+  "watcher_calls": 4,
+  "observations": [
+    {
+      "conclusion": null,
+      "event": "push",
+      "head_sha": "9bc9d51a9db7d36a63e23bb69d7b9042a1fee49e",
+      "html_url": "https://github.com/just-every/run-purse/actions/runs/42225935643",
+      "id": 42225935643,
+      "name": "Verify",
+      "status": "in_progress",
+      "observed": "2026-11-06T13:31:08.929860+00:00",
+      "operation": "discovery"
+    },
+    {
+      "conclusion": null,
+      "head_sha": "9bc9d51a9db7d36a63e23bb69d7b9042a1fee49e",
+      "html_url": "https://github.com/just-every/run-purse/actions/runs/42225935643",
+      "status": "in_progress",
+      "id": 42225935643,
+      "event": "push",
+      "name": "Verify",
+      "observed": "2026-11-06T13:35:35.090882+00:00",
+      "operation": "poll"
+    },
+    {
+      "conclusion": null,
+      "head_sha": "9bc9d51a9db7d36a63e23bb69d7b9042a1fee49e",
+      "html_url": "https://github.com/just-every/run-purse/actions/runs/42225935643",
+      "status": "in_progress",
+      "id": 42225935643,
+      "event": "push",
+      "name": "Verify",
+      "observed": "2026-11-06T13:40:36.620633+00:00",
+      "operation": "poll"
+    },
+    {
+      "conclusion": null,
+      "head_sha": "9bc9d51a9db7d36a63e23bb69d7b9042a1fee49e",
+      "html_url": "https://github.com/just-every/run-purse/actions/runs/42225935643",
+      "status": "in_progress",
+      "id": 42225935643,
+      "event": "push",
+      "name": "Verify",
+      "observed": "2026-11-06T13:45:38.117844+00:00",
+      "operation": "poll"
+    },
+    {
+      "conclusion": null,
+      "head_sha": "9bc9d51a9db7d36a63e23bb69d7b9042a1fee49e",
+      "html_url": "https://github.com/just-every/run-purse/actions/runs/42225935643",
+      "status": "in_progress",
+      "id": 42225935643,
+      "event": "push",
+      "name": "Verify",
+      "observed": "2026-11-06T13:50:39.563269+00:00",
+      "operation": "poll"
+    }
+  ]
+}
