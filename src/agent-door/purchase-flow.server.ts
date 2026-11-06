@@ -68,7 +68,9 @@ export function purchaseFlowTools(env: Bindings): ToolDefinition[] {
         })
         items.unshift(`Invoice ${args.reference}`)
       }
-      return {target:{id:record.id,name:record.title??record.number},amount:{value,currency:record.currency},payee:[...new Set(affected.map(row=>row.supplierSnapshot?.name??row.supplier))].join(', '),items:[String(args.decision??spec.op),...items,...(args.reason?[String(args.reason)]:[])]}
+      // Policy facts retain native minor units; the person summary's currency
+      // formatter takes major units, so its approval amount must be converted.
+      return {target:{id:record.id,name:record.title??record.number},amount:{value:value/100,currency:record.currency},payee:[...new Set(affected.map(row=>row.supplierSnapshot?.name??row.supplier))].join(', '),items:[String(args.decision??spec.op),...items,...(args.reason?[String(args.reason)]:[])]}
     },
     async run(args,ctx){
       await resolve(spec,args,ctx)

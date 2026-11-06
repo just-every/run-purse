@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "8ff7f7a13ca3dfdd4767c8ef2b16b9ccff39e7df79dfe94aeab86ecd51761474",
+      "sha256": "e4c3d31a32f194735c9359eb7c07adb92db09bb705f6ee034dea2ebe8a889664",
       "executable": false
     },
     "DEMO.md": {
@@ -408,7 +408,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "c99ecaea3ed11f67191187327cd380c40ca59bb17fc0c55055a2d9bb5154eba7",
+      "sha256": "f7e2ee8001b8b89b02fdcc718681b61384d2dc7261876fc091730b470b911b4d",
       "executable": false
     },
     "packaging.json": {
@@ -1208,7 +1208,7 @@
       "executable": false
     },
     "src/agent-door/purchase-flow.server.ts": {
-      "sha256": "023d3efe9b7f6bc9d54aaf86d3c5c293d403092b7ef5a1737f5d0e32eca5c476",
+      "sha256": "fb47328c3563133a04b29697e408294ed1c2fc4f29dd8b994006e5e0806bc15a",
       "executable": false
     },
     "src/agent-door/quotes.server.ts": {
@@ -5267,6 +5267,10 @@
       "sha256": "9ac07e8d095a721d07790d8cb41d4a05c3b96669746f2903a6fb2cb2b8878e75",
       "executable": false
     },
+    "tests/agent-door-policy-limits.mjs": {
+      "sha256": "8e7c7082698c6e163461ea7c9df758951f3580b5fd82b226ed7bf2a5a8bd0c20",
+      "executable": false
+    },
     "tests/agent-door-provider-edge.mjs": {
       "sha256": "cf6d472cdac44eceddaae286d2574ffed241a13cd58d5172c6cf8a8c20f56123",
       "executable": false
@@ -5276,7 +5280,7 @@
       "executable": false
     },
     "tests/agent-door-worker.ts": {
-      "sha256": "ce1c3c098662f86db2ee60b29f8022695cea0a05cdb9e8123ca58bee48afeb1a",
+      "sha256": "97072a8b5255ccda9c72a0ea424f44ea32e80a43fea55f3fbb72481cc7a2e439",
       "executable": false
     },
     "tests/agent-governance-fixture.mjs": {
