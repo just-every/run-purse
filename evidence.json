@@ -1,0 +1,118 @@
+{
+  "files": [
+    {
+      "blob": "1e0b3fc5c6c02d693c6481a81ebf04d251c848d5",
+      "bytes": 1726,
+      "path": "PLAN.md",
+      "sha256": "ff8b91204a57e0ec299c05b29c8b05806c3b7b7a995ce4c6fbfafe8e733826de"
+    },
+    {
+      "blob": "fabb8f6b3d12f80a4828de8cba4ac1772382ead3",
+      "bytes": 12540,
+      "path": "REPORT.md",
+      "sha256": "ce3ad1c42cd15251db778e9c2f3d33cb1b498b461419294b062e0598cdc27094"
+    },
+    {
+      "blob": "564c4d271eeb0c9b29ba6487c4d6eaddf4d71add",
+      "bytes": 17147,
+      "path": "base-copy-integrity.json",
+      "sha256": "8fae90820bc5652797647f9bcfc488f47cd3e9ce28d3e9a55606dda1a2acd70b"
+    },
+    {
+      "blob": "ea738470303b585be99aebc52f7081de3d03310c",
+      "bytes": 545,
+      "path": "capacity-recheck.log",
+      "sha256": "91b4f0280dd5ee9a69e94301322017845d7a855ef4960ebfec4d3f192e1fc685"
+    },
+    {
+      "blob": "c6c6292b7fadc2af91e12ab60f9d1b63ebe40ec8",
+      "bytes": 522,
+      "path": "capacity.log",
+      "sha256": "8bed545f04781f5bab285d4456f6830c5a432a8ddb92cf0b916f916d2b425255"
+    },
+    {
+      "blob": "b7e84e82327c1f07f81f0bc58cda743a37bf5f36",
+      "bytes": 4238,
+      "path": "checks.json",
+      "sha256": "d2026c64fcb6a6f2d89781e5c9e24a06e9675444e1616fcade970d930168a3a8"
+    },
+    {
+      "blob": "7a934f3e2b663efeaf408f883df1cc97e241c9f8",
+      "bytes": 243,
+      "path": "ci-discovery.json",
+      "sha256": "a1531b211788063d5131dc884fe9389ac78ed59022fd7f2bd39f87e7008cdfd9"
+    },
+    {
+      "blob": "75f19d160368f054b9ec4b28feea4831fd554baa",
+      "bytes": 2018,
+      "path": "ci-final.json",
+      "sha256": "7e7467d747af0754c597d6d40af81f4017a8384cf04dd9392e8e21b895d0bca3"
+    },
+    {
+      "blob": "0d34e5cdf2f7e458884dc1df141233c570f3873b",
+      "bytes": 709,
+      "path": "final-product-push.log",
+      "sha256": "c14e1fbb3e8dd24b14cab0ddae5db3d6ec279ad49a20e86b29619182751e7fee"
+    },
+    {
+      "blob": "a07893cd464f1d32d0340a3a1196120bdec1bbdc",
+      "bytes": 294,
+      "path": "first-party-failed.log",
+      "sha256": "1ab33e5419ee2be68ee9f0b4913f1b037d5147ce1739522c2cd31af534da62c4"
+    },
+    {
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "bytes": 0,
+      "path": "first-party.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "blob": "8bdc8e97bb2ffc81d79f5ce5d2dfaaca4784fcc6",
+      "bytes": 244,
+      "path": "mutation-status.json",
+      "sha256": "1beb9a4eb981a008777fb7b7582d522bf1796a336e3ae2cabb699d0a8f77f670"
+    },
+    {
+      "blob": "50c600ed8346dc076d8ca3ed9909a54c86f827ce",
+      "bytes": 645,
+      "path": "mutation-status.log",
+      "sha256": "43a723d64a19fe605de5f4a1bf437bfb6d1d02702f9b695370eea65f5247818c"
+    },
+    {
+      "blob": "ffd84b3036d18ef4c9885a85ab5ed04c12390a68",
+      "bytes": 893,
+      "path": "product-push.log",
+      "sha256": "03956bd79c1121d4eda0d94a6641c84c5f6bcb3daef63fe630c21b42b504f31a"
+    },
+    {
+      "blob": "3c65fbfc80ae75120acf8b0514d9e7f17bffb7dd",
+      "bytes": 1578,
+      "path": "product-receipt.json",
+      "sha256": "a77a48c1a6c126cb94c5aeba2caad8f3550ea37886b85d56c08db450f25aebae"
+    },
+    {
+      "blob": "c661604aeb2b1d95a7e9a74532db7414267b3964",
+      "bytes": 635,
+      "path": "quotes.log",
+      "sha256": "f7f360dd4e73ec84fbb26b7272d667fec53edb5d5b5432b32a27c71d3984a115"
+    },
+    {
+      "blob": "881e7ea7f3515eb9ed777ca16983395288cbc3ec",
+      "bytes": 130,
+      "path": "remote-refs.txt",
+      "sha256": "96a6e5deacbceae6db8ad3ab67fd20afdce88b3b8defa29810d659abd17ff290"
+    },
+    {
+      "blob": "094d1232940b2342fef777bd37289ad5051ccc90",
+      "bytes": 127,
+      "path": "typecheck.log",
+      "sha256": "aa43eab0bfcb2dbde7cb50ce451d41d56910e14cb34ddc8beaa460d5e7e4f1e7"
+    }
+  ],
+  "product_branch": "cloud/sx-purse-c-f90",
+  "product_head": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+  "ref": "refs/heads/evidence/sx-purse-c-f90",
+  "repository": "just-every/run-purse",
+  "schema": 1,
+  "tag": "sx-purse-c-f90"
+}

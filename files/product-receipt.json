@@ -1,0 +1,40 @@
+{
+  "repository": "just-every/run-purse",
+  "branch": "cloud/sx-purse-c-f90",
+  "head": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+  "parent": "2f4aeb7e9b4f263b5b24876ef62a32dac0f394c2",
+  "push": "success",
+  "attempt": 1,
+  "guard": "cloud-push.py",
+  "status_rows_parent": 127,
+  "status_rows_candidate": 127,
+  "status_rows_dropped": 0,
+  "generated_view_files_committed": false,
+  "base_module_changed": false,
+  "production_limits_changed": false,
+  "identity_audit": "all candidate authors and committers use fleet identity; no trailers",
+  "pr": null,
+  "publication_scan": "deferred to fleet lander; not run in cloud",
+  "landing": "not performed",
+  "run_site": "not run for this branch",
+  "commits": [
+    "2f4aeb7e9b4f263b5b24876ef62a32dac0f394c2",
+    "e245cdba16e8478fbc1a4b1f88cf94975dea40c1"
+  ],
+  "reconciliation": "Fetched and merged current main before the follow-up; already up to date; no published history rewrite.",
+  "verify_run_id": 42215501776,
+  "verify_event": "workflow_dispatch",
+  "verify_url": "https://github.com/just-every/run-purse/actions/runs/42215501776",
+  "remote_refs": {
+    "refs/heads/cloud/sx-purse-c-f90": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+    "refs/heads/main": "0ed797ae6afe100f4663956427ebcc2a58319d40"
+  },
+  "remote_checked_at": "2026-11-06T12:22:53.355242+00:00",
+  "base_main": "0ed797ae6afe100f4663956427ebcc2a58319d40",
+  "verify_status": "in_progress",
+  "verify_conclusion": null,
+  "ci_observed_at": "2026-11-06T12:29:25.689692+00:00",
+  "task_api_calls": 8,
+  "custody": "PUSHED",
+  "ready_claim": false
+}

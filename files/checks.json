@@ -1,0 +1,115 @@
+{
+  "repository": "just-every/run-purse",
+  "branch": "cloud/sx-purse-c-f90",
+  "head": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+  "checks": [
+    {
+      "command": "npx -y @runeditrun/rer setup --owner-email [fleet identity] --non-interactive",
+      "exit": 0,
+      "scope": "local installation"
+    },
+    {
+      "command": "npx -y @runeditrun/rer build",
+      "exit": 0,
+      "scope": "actual Worker and assets"
+    },
+    {
+      "command": "node tests/agent-door-capacity.mjs",
+      "exit": 0,
+      "head": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+      "node": "22.20.0",
+      "log": "capacity.log"
+    },
+    {
+      "command": "node tests/agent-door-quotes.mjs",
+      "exit": 0,
+      "log": "quotes.log",
+      "scope": "shared harness regression; relevant bytes unchanged since execution"
+    },
+    {
+      "command": "pnpm typecheck",
+      "exit": 0,
+      "head": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+      "node": "22.20.0",
+      "log": "typecheck.log",
+      "provenance": "Passed with the same relevant bytes; the final commit changes only contract prose and its source lock."
+    },
+    {
+      "command": "pnpm exec rer check --profile first-party",
+      "exit": 0,
+      "head": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+      "log": "first-party.log",
+      "provenance": "Passed with the same relevant bytes; the final commit changes only contract prose and its source lock."
+    },
+    {
+      "command": "node scripts/contract-docs.mjs write [AGENTS.md clause list]",
+      "exit": 0,
+      "scope": "generated projections restored from origin/main after successful check"
+    },
+    {
+      "command": "node scripts/contract-docs.mjs check [AGENTS.md clause list]",
+      "exit": 0,
+      "scope": "checked generated projections before restoration"
+    },
+    {
+      "command": "node scripts/edition-authoring/cli.mjs lock",
+      "exit": 0,
+      "scope": "after final source changes and synchronization"
+    },
+    {
+      "command": "node scripts/edition-authoring/cli.mjs check",
+      "exit": 0,
+      "head": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+      "provenance": "Passed with the same relevant bytes; the final commit changes only contract prose and its source lock."
+    },
+    {
+      "command": "node scripts/edition-authoring/cli.mjs verify-base --offline",
+      "exit": 0,
+      "head": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+      "log": "base-copy-integrity.json",
+      "provenance": "Passed with the same relevant bytes; the final commit changes only contract prose and its source lock."
+    }
+  ],
+  "mechanical": {
+    "lock": "node scripts/edition-authoring/cli.mjs lock; node scripts/edition-authoring/cli.mjs check",
+    "lock_exit": 0,
+    "views": "AGENTS.md Lander-Regenerate write and check, then restore ACCEPTANCE.md and docs/CLAIMS.md from origin/main",
+    "views_exit": 0,
+    "ledger": "none; no migration change",
+    "ledger_exit": 0
+  },
+  "browser": "not applicable; no changed screens",
+  "counts_before": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22,
+    "total": 127
+  },
+  "counts_after": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22,
+    "total": 127
+  },
+  "status": "BASE-AGENT-011 remains partial; acceptance point 1 gains native proof",
+  "development_correction": {
+    "head": "2f4aeb7e9b4f263b5b24876ef62a32dac0f394c2",
+    "command": "pnpm exec rer check --profile first-party",
+    "exit": 1,
+    "failure": "Evidence interpreted backticked rate_limited and Retry-After labels as missing paths.",
+    "fix": "Removed the two code-label backticks; kept the real test path and all acceptance text; regenerated and checked source lock.",
+    "final_exit": 0,
+    "log": "first-party-failed.log",
+    "ci_repair": false
+  },
+  "additional_observation": {
+    "head": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+    "command": "cloud_run timeout 180 node tests/agent-door-capacity.mjs",
+    "exit": 1,
+    "observed": "Both passing probe lines printed; no assertion, exception or transport diagnostic appeared.",
+    "recheck": "Isolated native invocation with explicit native process and subreaper exit reporting",
+    "recheck_exit": 0,
+    "log": "capacity-recheck.log",
+    "code_changed": false
+  }
+}

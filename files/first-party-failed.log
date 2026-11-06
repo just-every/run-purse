@@ -1,0 +1,3 @@
+CONTRACT.evidence.BASE-AGENT-011: CONTRACT.md:691: BASE-AGENT-011 is partial with evidence rate_limited, which is not in this checkout.
+CONTRACT.evidence.BASE-AGENT-011: CONTRACT.md:691: BASE-AGENT-011 is partial with evidence Retry-After, which is not in this checkout.
+check: failed (exit 1)

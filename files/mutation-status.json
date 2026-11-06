@@ -1,0 +1,7 @@
+{
+  "point": "BASE-AGENT-011.1",
+  "mutation": "Test Worker rewrites a real admission 429 response to HTTP 200; production admission and limits are unchanged.",
+  "command": "node tests/agent-door-capacity.mjs",
+  "exit": 1,
+  "killed": true
+}

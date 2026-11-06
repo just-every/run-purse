@@ -1,0 +1,61 @@
+{
+  "head": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+  "repository": "just-every/run-purse",
+  "run": {
+    "id": 42215501776,
+    "name": "Verify",
+    "status": "in_progress",
+    "conclusion": null,
+    "head_sha": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+    "html_url": "https://github.com/just-every/run-purse/actions/runs/42215501776",
+    "event": "workflow_dispatch"
+  },
+  "watcher_calls": 6,
+  "task_api_calls": 8,
+  "observations": [
+    {
+      "at": "2026-11-06T12:09:23.659838+00:00",
+      "dispatch": "one exact branch Verify; no run existed after documentation-only skip-ci commit"
+    },
+    {
+      "at": "2026-11-06T12:14:24.152267+00:00",
+      "id": 42215501776,
+      "name": "Verify",
+      "status": "in_progress",
+      "conclusion": null,
+      "head_sha": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+      "html_url": "https://github.com/just-every/run-purse/actions/runs/42215501776",
+      "event": "workflow_dispatch"
+    },
+    {
+      "at": "2026-11-06T12:19:24.713454+00:00",
+      "id": 42215501776,
+      "name": "Verify",
+      "status": "in_progress",
+      "conclusion": null,
+      "head_sha": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+      "html_url": "https://github.com/just-every/run-purse/actions/runs/42215501776",
+      "event": "workflow_dispatch"
+    },
+    {
+      "at": "2026-11-06T12:24:25.229421+00:00",
+      "id": 42215501776,
+      "name": "Verify",
+      "status": "in_progress",
+      "conclusion": null,
+      "head_sha": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+      "html_url": "https://github.com/just-every/run-purse/actions/runs/42215501776",
+      "event": "workflow_dispatch"
+    },
+    {
+      "at": "2026-11-06T12:29:25.689692+00:00",
+      "id": 42215501776,
+      "name": "Verify",
+      "status": "in_progress",
+      "conclusion": null,
+      "head_sha": "e245cdba16e8478fbc1a4b1f88cf94975dea40c1",
+      "html_url": "https://github.com/just-every/run-purse/actions/runs/42215501776",
+      "event": "workflow_dispatch"
+    }
+  ]
+}

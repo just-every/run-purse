@@ -1,0 +1,22 @@
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The advertised per-agent capacity must be served
+
+601 !== 600
+
+    at file:///home/agent/rer-consolidation/work/sx-purse-c-f90/run-purse/tests/agent-door-capacity.mjs:50:9
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 601,
+  expected: 600,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.20.0
