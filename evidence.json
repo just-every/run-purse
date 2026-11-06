@@ -1,0 +1,82 @@
+{
+  "files": [
+    {
+      "blob": "31d0282212493e01ed443410f8f3c0b3e3e4c764",
+      "bytes": 1887,
+      "path": "PLAN.md",
+      "sha256": "c7ed9839dd11d6dddf44ec6028ebc46fb536838c09e393f8056354c6c9bbae61"
+    },
+    {
+      "blob": "82cd35b6155bf7f77525f24468c44b92355aeabe",
+      "bytes": 6941,
+      "path": "REPORT.md",
+      "sha256": "bede2f8dc49287b222e888f8724bc34ac3061dab42dfc9aabee874135c6c2d9d"
+    },
+    {
+      "blob": "3afe44613b59baa9b1fe88a44dd3e41182014e2d",
+      "bytes": 1564,
+      "path": "browser-result.json",
+      "sha256": "d676faa83be85bf3fe36b37854a9508897574dd9cfac3fc40f4bb26585b958fd"
+    },
+    {
+      "blob": "364139ded38375452d0b96291f6acc843d46a21f",
+      "bytes": 8577,
+      "path": "failed-browser-37-excerpt.log",
+      "sha256": "99c507f4ffc312ab79eaa58eec0196a5909b1b39984b644e6a74f11e37cc419a"
+    },
+    {
+      "blob": "16dfddf1781e9cc8376a1af6df41e911da9e74fd",
+      "bytes": 296,
+      "path": "main-browser-intake.log",
+      "sha256": "3a267db0de6a4e0ca3e8fe1f7bffb70683d80fabfdf5aa05f12c072711d70142"
+    },
+    {
+      "blob": "e21f024b163912741e803e3f321f063cfe4ed8c4",
+      "bytes": 3305,
+      "path": "main-node22-group37.log",
+      "sha256": "e3ceb15f9045e431b3e522f398a40d505cc778140017f79ecaa9b6597a64e80a"
+    },
+    {
+      "blob": "dc8d0a9c822b810085cf28997cdf923aeed4368a",
+      "bytes": 1945,
+      "path": "main-node22-po-documents.log",
+      "sha256": "951965d90e2dc2194c60177e67f3c0a3c8a96e95a625869f0571e91a65fff028"
+    },
+    {
+      "blob": "8d15bd84295780622fc68d88b2a631e3cad1fa0b",
+      "bytes": 5006,
+      "path": "receipt.json",
+      "sha256": "fd8018cd42357d6ee08ebb2cc3b4893986aeb3681dabfc2ab1058e6d799a66ae"
+    },
+    {
+      "blob": "16dfddf1781e9cc8376a1af6df41e911da9e74fd",
+      "bytes": 296,
+      "path": "resolver-browser-intake.log",
+      "sha256": "3a267db0de6a4e0ca3e8fe1f7bffb70683d80fabfdf5aa05f12c072711d70142"
+    },
+    {
+      "blob": "16dfddf1781e9cc8376a1af6df41e911da9e74fd",
+      "bytes": 296,
+      "path": "resolver-node22-browser-intake.log",
+      "sha256": "3a267db0de6a4e0ca3e8fe1f7bffb70683d80fabfdf5aa05f12c072711d70142"
+    },
+    {
+      "blob": "9fe8328fdb366134cde3c89390b4a3e5b0057743",
+      "bytes": 1127,
+      "path": "source-comparison.txt",
+      "sha256": "db8fcc9f715e65cd9203b565d9bb11d0c34d645ad082b4f06bee68f7c1d154e0"
+    },
+    {
+      "blob": "bc24d320fbb123430201c83060a4dcbd5213484d",
+      "bytes": 130,
+      "path": "typecheck.log",
+      "sha256": "73e612617eafba88c9bdafddf80627a4642ee5b17dfa5f84d70abe956232f0b4"
+    }
+  ],
+  "product_branch": "cloud/sx-purse-f79fix-1",
+  "product_head": "84aa99e2e259e79b811058edb044970d5f8dafde",
+  "ref": "refs/heads/evidence/sx-purse-f79fix-1",
+  "repository": "just-every/run-purse",
+  "schema": 1,
+  "tag": "sx-purse-f79fix-1"
+}

@@ -1,0 +1,140 @@
+{
+  "tag": "sx-purse-f79fix-1",
+  "repository": "just-every/run-purse",
+  "initial_main": "84aa99e2e259e79b811058edb044970d5f8dafde",
+  "cited_resolver": "85ef6259b406c0dfc9f0e560dec7d89d31d5815a",
+  "observed_resolver_tip": "3f274c33e90ecc0360622c96faad5e04e19f6543",
+  "ci_run": 42284624952,
+  "ci_job": 128149138757,
+  "ci_log_reads": 1,
+  "failed_command": "node tests/browser-intake.mjs --width=390",
+  "assertion": "tests/browser-approver-edits.mjs:28:365 -> tests/purse-harness.mjs:17:99",
+  "expected_http": 200,
+  "observed_ci_http": 409,
+  "ci_error": "State or authority changed; reload",
+  "source_diff_resolver_to_main": [],
+  "commands": [
+    {
+      "command": "npx -y @runeditrun/rer setup --owner-email fleet@runeditrun.com --non-interactive",
+      "exit": 0
+    },
+    {
+      "head": "84aa99e2e259e79b811058edb044970d5f8dafde",
+      "runtime": "Node 24.19.0",
+      "command": "node tests/browser-intake.mjs --width=390",
+      "exit": 0,
+      "log": "main-browser-intake.log"
+    },
+    {
+      "head": "85ef6259b406c0dfc9f0e560dec7d89d31d5815a",
+      "runtime": "Node 24.19.0",
+      "command": "node tests/browser-intake.mjs --width=390",
+      "exit": 0,
+      "log": "resolver-browser-intake.log"
+    },
+    {
+      "head": "84aa99e2e259e79b811058edb044970d5f8dafde",
+      "runtime": "Node 22.20.0",
+      "command": "pnpm typecheck",
+      "exit": 0,
+      "log": "typecheck.log"
+    },
+    {
+      "head": "85ef6259b406c0dfc9f0e560dec7d89d31d5815a",
+      "runtime": "Node 22.20.0",
+      "command": "node tests/browser-intake.mjs --width=390",
+      "exit": 0,
+      "log": "resolver-node22-browser-intake.log"
+    },
+    {
+      "head": "84aa99e2e259e79b811058edb044970d5f8dafde",
+      "runtime": "Node 22.20.0",
+      "command": "node scripts/ci/run-shard.mjs 37",
+      "timeout_seconds": 1200,
+      "exit": 1,
+      "log": "main-node22-group37.log"
+    },
+    {
+      "head": "84aa99e2e259e79b811058edb044970d5f8dafde",
+      "runtime": "Node 22.20.0",
+      "command": "node tests/browser.mjs --width=1440 --journey=po-documents",
+      "exit": 0,
+      "reason": "Retry only the command that failed before assertions due to incomplete filtered-clone objects; group 37 is not rerun.",
+      "log": "main-node22-po-documents.log"
+    }
+  ],
+  "counts": {
+    "before": {
+      "done": 54,
+      "partial": 51,
+      "missing": 22,
+      "total": 127
+    },
+    "after": {
+      "done": 54,
+      "partial": 51,
+      "missing": 22,
+      "total": 127
+    }
+  },
+  "clause_change": "BASE-AGENT/order-send PARTIAL -> PARTIAL (unchanged)",
+  "product_commits": [],
+  "product_pushed": false,
+  "ci_dispatches": 0,
+  "ci_reruns": 0,
+  "diagnosis": {
+    "source_identity": "The exact cited resolver and initial main have identical src, failing leaf, harness, workflow and shard manifest.",
+    "candidate_only_changes": [
+      "42 lines added to tests/po-generation.test.mjs",
+      "sources.lock.json regenerated"
+    ],
+    "suspected_shared_race": "PurchasingApp retains an earlier Saved. notice while a later command starts; the test can observe that prior notice before the new command has finished. This remains a hypothesis without instrumentation or a changed test.",
+    "group_environment_issue": "First command failed during a disposable local clone: filtered source lacked 1025 promisor objects; hydrating retained refs, without altering product code or assertions."
+  },
+  "leaf_results": {
+    "resolver_node24": "pass",
+    "main_node24": "pass",
+    "resolver_node22": "pass",
+    "main_node22_in_group37": "pass"
+  },
+  "group37_results": {
+    "po-documents": "passed at 1440 in isolated rerun after filtered-clone hydration",
+    "intake": "passed at 390",
+    "access": "passed at 390",
+    "order-thread": "passed at 390",
+    "overall_exit": 1,
+    "recovered_command_exit": 0,
+    "all_four_commands_eventually_passed": true
+  },
+  "toolchain": {
+    "initial_script_selected_node": "24.19.0",
+    "ci_matched_node": "22.20.0",
+    "pnpm": "10.12.4",
+    "chromium": "/usr/bin/chromium"
+  },
+  "git_hydration": {
+    "initial_missing_objects": 1025,
+    "after_refetch_missing_objects": 12,
+    "final_missing_objects": 0,
+    "reason": "Support unmodified browser-runtime.mjs disposable local committed clones."
+  },
+  "github_budget": {
+    "limit": 10,
+    "used": 1,
+    "calls": [
+      "gh run view 42284624952 --job 128149138757 --repo just-every/run-purse --log-failed"
+    ]
+  },
+  "terminal_product": {
+    "branch": "cloud/sx-purse-f79fix-1",
+    "head": "84aa99e2e259e79b811058edb044970d5f8dafde",
+    "worktree_clean": true,
+    "pushed": false,
+    "pr": null,
+    "new_candidate_verify": null
+  },
+  "status": "BLOCKED",
+  "blocker": "The original stale-state assertion is not reproduced on either tested SHA; no resolver-only product differential exists relative to main. Original Verify 42284624952 remains failed.",
+  "supersedes_resolver_landing": false,
+  "product_readiness": "Not READY; no product candidate or new Verify"
+}

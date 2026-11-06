@@ -1,0 +1,37 @@
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+
+
+test:purse-browser
+Heavy job admitted: Purse test:purse-browser:suite [50813ad7fe09]
+▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+
+
+rer install: exit 0
+rer setup --owner-email owner@example.test --port 38173: exit 0
+rer check: exit 0
+rer describe: exit 0
+rer import --input exports/email-intake-source.rer --journal exports/email-intake-source.rer --yes: exit 0
+rer setup --owner-email owner@example.test --port 38173: exit 0
+rer build: exit 0
+rer deploy --dry-run: exit 0
+rer export --output exports/installation.rer: exit 0
+rer import --input exports/installation.rer --yes: exit 4
+rer install: exit 0
+rer setup --owner-email restored-owner@example.test --port 41913: exit 0
+rer import --input exports/corrupt.rer --yes: exit 2
+rer export --output exports/empty-before.rer: exit 0
+rer import --input exports/semantic-request.rer --yes: exit 4
+rer export --output exports/empty-after-request.rer: exit 0
+rer import --input exports/semantic-order.rer --yes: exit 4
+rer export --output exports/empty-after-order.rer: exit 0
+rer import --input exports/semantic-receipt.rer --yes: exit 4
+rer export --output exports/empty-after-receipt.rer: exit 0
+rer import --input exports/semantic-invoice.rer --yes: exit 4
+rer export --output exports/empty-after-invoice.rer: exit 0
+rer import --input exports/semantic-attachment.rer --yes: exit 4
+rer export --output exports/empty-after-attachment.rer: exit 0
+rer import --input exports/installation.rer --yes: exit 4
+rer import --input exports/installation.rer --journal exports/installation.rer --yes: exit 0
+rer export --output exports/restored.rer: exit 0
+rer reset --yes: exit 0
+Browser and CLI proof passed; screenshots and documents: /home/agent/rer-consolidation/work/sx-purse-f79fix-1/packet/main-node22-po-documents

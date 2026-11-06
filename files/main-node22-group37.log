@@ -1,0 +1,74 @@
+::group::node tests/browser.mjs --width=1440 --journey=po-documents
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+
+
+test:purse-browser
+Heavy job admitted: Purse test:purse-browser:suite [50813ad7fe09]
+▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+
+
+node:internal/errors:983
+  const err = new Error(message);
+              ^
+
+Error: Command failed: git clone --no-hardlinks --quiet [REDACTED] /tmp/purse-installation-6Hw3Tf
+remote: warning: lazy fetching disabled; some objects may not be available        
+remote: fatal: could not fetch 5b511c227c396325b13520726e65e43616e91d6d from promisor remote        
+error: git upload-pack: git-pack-objects died with error.
+fatal: git upload-pack: aborting due to possible repository corruption on the remote side.
+remote: aborting due to possible repository corruption on the remote side.
+fatal: early EOF
+fatal: fetch-pack: invalid index-pack output
+
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at ChildProcess.exithandler (node:child_process:417:12)
+    at ChildProcess.emit (node:events:519:28)
+    at ChildProcess.emit (node:domain:489:12)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5) {
+  code: 128,
+  killed: false,
+  signal: null,
+  cmd: 'git clone --no-hardlinks --quiet [REDACTED] /tmp/purse-installation-6Hw3Tf',
+  stdout: '',
+  stderr: 'remote: warning: lazy fetching disabled; some objects may not be available        \n' +
+    'remote: fatal: could not fetch 5b511c227c396325b13520726e65e43616e91d6d from promisor remote        \n' +
+    'error: git upload-pack: git-pack-objects died with error.\n' +
+    'fatal: git upload-pack: aborting due to possible repository corruption on the remote side.\n' +
+    'remote: aborting due to possible repository corruption on the remote side.\n' +
+    'fatal: early EOF\n' +
+    'fatal: fetch-pack: invalid index-pack output\n'
+}
+
+Node.js v22.20.0
+::endgroup::
+::group::node tests/browser-intake.mjs --width=390
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+
+
+INTAKE-001 guided App journey passed at 390
+Native approval pool browser journey passed at 390
+INTAKE-001 App and actual portability continuation passed at 390
+::endgroup::
+::group::node tests/browser-access.mjs --width=390
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+
+
+Native access web 390 owner
+Native access web 390 requester
+Native access web 390 approver
+Native access web 390 buyer
+Native access web 390 receiver
+Native access web 390 ap-clerk
+Native access web 390 finance-viewer
+Native access web 390 auditor
+Native access web 390 lead
+Scoped native role web journeys passed at 390
+::endgroup::
+::group::node tests/browser-order-thread.mjs --width=390
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+
+
+PO-002 signed reply and AGENT-003 source-bound promise/alternative web passed at 390
+::endgroup::

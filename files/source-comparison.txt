@@ -1,0 +1,30 @@
+$ git rev-parse origin/main origin/cloud/sx-purse-c-f79-land-a6a3f7d08b
+84aa99e2e259e79b811058edb044970d5f8dafde
+3f274c33e90ecc0360622c96faad5e04e19f6543
+exit=0
+
+$ git show -s --format=%H %s 85ef6259b406c0dfc9f0e560dec7d89d31d5815a
+85ef6259b406c0dfc9f0e560dec7d89d31d5815a Fix erasure of historical PO send consent contacts
+exit=0
+
+$ git diff --stat 85ef6259 origin/main
+ sources.lock.json                  |  4 +--
+ tests/agent-door-policy-limits.mjs | 50 ++++++++++++++++++++++++++------------
+ tests/po-generation.test.mjs       | 42 --------------------------------
+ 3 files changed, 36 insertions(+), 60 deletions(-)
+exit=0
+
+$ git diff --name-only 85ef6259 origin/main -- src tests/browser-intake.mjs tests/browser-approver-edits.mjs tests/purse-harness.mjs scripts/ci/shards.json .github/workflows/verify.yml
+
+exit=0
+
+$ git show --stat --oneline 85ef6259
+85ef625 Fix erasure of historical PO send consent contacts
+ sources.lock.json            |  2 +-
+ tests/po-generation.test.mjs | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+), 1 deletion(-)
+exit=0
+
+$ git status --porcelain
+
+exit=0

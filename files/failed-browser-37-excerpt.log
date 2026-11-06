@@ -1,0 +1,74 @@
+browser (37)	Run every command in the group	﻿2026-11-06T20:56:22.0438499Z ##[group]Run node scripts/ci/run-shard.mjs 37
+browser (37)	Run every command in the group	2026-11-06T20:56:22.0438816Z node scripts/ci/run-shard.mjs 37
+browser (37)	Run every command in the group	2026-11-06T20:56:22.0455988Z shell: /usr/bin/bash -e {0}
+browser (37)	Run every command in the group	2026-11-06T20:56:22.0699367Z ##[group]node tests/browser.mjs --width=1440 --journey=po-documents
+browser (37)	Run every command in the group	2026-11-06T20:56:35.0787055Z rer install: exit 0
+browser (37)	Run every command in the group	2026-11-06T20:57:12.6982557Z rer setup --owner-email owner@example.test --port 46727: exit 0
+browser (37)	Run every command in the group	2026-11-06T20:57:13.1282419Z rer check: exit 0
+browser (37)	Run every command in the group	2026-11-06T20:57:13.3155604Z rer describe: exit 0
+browser (37)	Run every command in the group	2026-11-06T20:57:56.4723018Z rer import --input exports/email-intake-source.rer --journal exports/email-intake-source.rer --yes: exit 0
+browser (37)	Run every command in the group	2026-11-06T20:59:26.9172215Z rer setup --owner-email owner@example.test --port 46727: exit 0
+browser (37)	Run every command in the group	2026-11-06T20:59:31.3260030Z rer build: exit 0
+browser (37)	Run every command in the group	2026-11-06T20:59:44.6606610Z rer deploy --dry-run: exit 0
+browser (37)	Run every command in the group	2026-11-06T20:59:56.8671938Z rer export --output exports/installation.rer: exit 0
+browser (37)	Run every command in the group	2026-11-06T20:59:57.8660943Z rer import --input exports/installation.rer --yes: exit 4
+browser (37)	Run every command in the group	2026-11-06T21:00:10.0120015Z rer install: exit 0
+browser (37)	Run every command in the group	2026-11-06T21:00:42.3231849Z rer setup --owner-email restored-owner@example.test --port 33611: exit 0
+browser (37)	Run every command in the group	2026-11-06T21:00:43.1128657Z rer import --input exports/corrupt.rer --yes: exit 2
+browser (37)	Run every command in the group	2026-11-06T21:00:53.2277710Z rer export --output exports/empty-before.rer: exit 0
+browser (37)	Run every command in the group	2026-11-06T21:01:11.5283719Z rer import --input exports/semantic-request.rer --yes: exit 4
+browser (37)	Run every command in the group	2026-11-06T21:01:19.5595274Z rer export --output exports/empty-after-request.rer: exit 0
+browser (37)	Run every command in the group	2026-11-06T21:01:34.2317821Z rer import --input exports/semantic-order.rer --yes: exit 4
+browser (37)	Run every command in the group	2026-11-06T21:01:44.8195213Z rer export --output exports/empty-after-order.rer: exit 0
+browser (37)	Run every command in the group	2026-11-06T21:01:59.9645421Z rer import --input exports/semantic-receipt.rer --yes: exit 4
+browser (37)	Run every command in the group	2026-11-06T21:02:07.3071529Z rer export --output exports/empty-after-receipt.rer: exit 0
+browser (37)	Run every command in the group	2026-11-06T21:02:22.1722290Z rer import --input exports/semantic-invoice.rer --yes: exit 4
+browser (37)	Run every command in the group	2026-11-06T21:02:29.7010708Z rer export --output exports/empty-after-invoice.rer: exit 0
+browser (37)	Run every command in the group	2026-11-06T21:02:44.0758274Z rer import --input exports/semantic-attachment.rer --yes: exit 4
+browser (37)	Run every command in the group	2026-11-06T21:02:52.0190957Z rer export --output exports/empty-after-attachment.rer: exit 0
+browser (37)	Run every command in the group	2026-11-06T21:03:08.4059589Z rer import --input exports/installation.rer --yes: exit 4
+browser (37)	Run every command in the group	2026-11-06T21:03:32.0900556Z rer import --input exports/installation.rer --journal exports/installation.rer --yes: exit 0
+browser (37)	Run every command in the group	2026-11-06T21:03:46.0324507Z rer export --output exports/restored.rer: exit 0
+browser (37)	Run every command in the group	2026-11-06T21:04:17.8203827Z rer reset --yes: exit 0
+browser (37)	Run every command in the group	2026-11-06T21:04:17.8208646Z Browser and CLI proof passed; screenshots and documents: /home/runner/work/_temp/purse-proof/37/1
+browser (37)	Run every command in the group	2026-11-06T21:04:18.6673817Z ##[endgroup]
+browser (37)	Run every command in the group	2026-11-06T21:04:18.6674415Z ##[group]node tests/browser-intake.mjs --width=390
+browser (37)	Run every command in the group	2026-11-06T21:04:28.9701371Z INTAKE-001 guided App journey passed at 390
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5983263Z node:internal/modules/run_main:123
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5983828Z     triggerUncaughtException(
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5984133Z     ^
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5984309Z 
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5984734Z AssertionError [ERR_ASSERTION]: {"error":"State or authority changed; reload"}
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5986252Z 
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5986366Z 409 !== 200
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5986484Z 
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5986805Z     at Object.state (file:///home/runner/work/run-purse/run-purse/tests/purse-harness.mjs:17:99)
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5987725Z     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5988339Z     at async pendingApprovalJourney (file:///home/runner/work/run-purse/run-purse/tests/browser-approver-edits.mjs:28:365)
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5988915Z     at async file:///home/runner/work/run-purse/run-purse/tests/browser-intake.mjs:34:4 {
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5989510Z   generatedMessage: false,
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5989716Z   code: 'ERR_ASSERTION',
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5989905Z   actual: 409,
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5990081Z   expected: 200,
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5990261Z   operator: 'strictEqual',
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5990454Z   diff: 'simple'
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5990617Z }
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5990708Z 
+browser (37)	Run every command in the group	2026-11-06T21:04:31.5990780Z Node.js v22.20.0
+browser (37)	Run every command in the group	2026-11-06T21:04:31.6286136Z ##[endgroup]
+browser (37)	Run every command in the group	2026-11-06T21:04:31.6286736Z ##[group]node tests/browser-access.mjs --width=390
+browser (37)	Run every command in the group	2026-11-06T21:04:42.6373493Z Native access web 390 owner
+browser (37)	Run every command in the group	2026-11-06T21:04:43.3635990Z Native access web 390 requester
+browser (37)	Run every command in the group	2026-11-06T21:04:45.0698762Z Native access web 390 approver
+browser (37)	Run every command in the group	2026-11-06T21:04:45.7900488Z Native access web 390 buyer
+browser (37)	Run every command in the group	2026-11-06T21:04:47.4006703Z Native access web 390 receiver
+browser (37)	Run every command in the group	2026-11-06T21:04:48.0173297Z Native access web 390 ap-clerk
+browser (37)	Run every command in the group	2026-11-06T21:04:50.4170006Z Native access web 390 finance-viewer
+browser (37)	Run every command in the group	2026-11-06T21:04:52.1240596Z Native access web 390 auditor
+browser (37)	Run every command in the group	2026-11-06T21:04:54.4568960Z Native access web 390 lead
+browser (37)	Run every command in the group	2026-11-06T21:05:00.1137869Z Scoped native role web journeys passed at 390
+browser (37)	Run every command in the group	2026-11-06T21:05:00.1635806Z ##[endgroup]
+browser (37)	Run every command in the group	2026-11-06T21:05:00.1636273Z ##[group]node tests/browser-order-thread.mjs --width=390
+browser (37)	Run every command in the group	2026-11-06T21:05:07.7271541Z PO-002 signed reply and AGENT-003 source-bound promise/alternative web passed at 390
+browser (37)	Run every command in the group	2026-11-06T21:05:07.8141696Z ##[endgroup]
+browser (37)	Run every command in the group	2026-11-06T21:05:07.8187848Z ##[error]Process completed with exit code 1.

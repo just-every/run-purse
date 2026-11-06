@@ -1,0 +1,58 @@
+{
+  "passed": true,
+  "shard": "po-documents",
+  "journeys": [
+    {
+      "clause": "CONTRACT-001",
+      "width": 1440,
+      "emptyWorkspace": true
+    },
+    {
+      "request": "0798ecd3-7c0a-4a5c-aff8-f5888e75ff75",
+      "order": "ceb773db-96c7-4ca5-8855-26cd0ea9260e",
+      "number": "PO-000001",
+      "width": 1440
+    },
+    {
+      "clause": "SUPPLIER-007",
+      "width": 1440,
+      "supplier": "578c1a2a-79d1-456e-a9b6-b5967d849460"
+    },
+    {
+      "clause": "STOCK-001",
+      "width": 1440,
+      "request": "f683c9bb-957d-4480-9ba6-60a35e72dd13"
+    },
+    {
+      "clause": "PO-010",
+      "width": 1440,
+      "order": "930dcf7f-79f8-46f0-b359-e8b75f40d6e4"
+    },
+    {
+      "clause": "PO-009",
+      "width": 1440,
+      "order": "bf78ec2e-5e86-4a30-8b66-a6836fb88999"
+    },
+    {
+      "clause": "INVOICE-002",
+      "width": 1440,
+      "order": "fe39054a-38b8-4909-9a2e-36b28ae91daa",
+      "reading": "472c8e35-f447-436c-84e1-af6c00c6eb41",
+      "invoice": "dc9f9c01-d0b2-49af-8c1f-ac88cccafeb0",
+      "source": "7ea2ddbf-5df2-4b38-9aef-6fdc0414261e",
+      "attachment": "0818476e-d297-44b5-acbb-98235be5e5c0"
+    }
+  ],
+  "archive": "complete export/restore/export equivalence, corrupt/nonempty and five semantic-link refusals",
+  "continuation": {
+    "batch": "9fc92118-f96e-4baa-b14a-46b0609a150b",
+    "restoredStatusResumeUndo": true,
+    "denied": [
+      "signed-out",
+      "receiver",
+      "revoked-session"
+    ],
+    "renewedPurchase": "cbfa9ea0-5a69-42d3-b9d1-3baae031aec7"
+  },
+  "root": "fresh committed clones"
+}
