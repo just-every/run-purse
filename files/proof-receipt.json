@@ -1,0 +1,54 @@
+{
+  "head": "9611051ea75d48a116d4bafa98c2a505a1a83f17",
+  "branch": "cloud/sx-purse-c-f94",
+  "journey": {
+    "command": "PURSE_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium PURSE_EVIDENCE=<packet browser directory> cloud_run timeout 1200 pnpm run test:agent-policy-limits",
+    "exit": 0,
+    "node": "22.20.0",
+    "door": "MCP on the actual disposable native Worker and signed-in browser approval",
+    "screens": [
+      1440,
+      390
+    ]
+  },
+  "typecheck": {
+    "command": "pnpm typecheck",
+    "exit": 0,
+    "node": "22.20.0"
+  },
+  "assertionsRemoved": 0,
+  "testRegistrationsAdded": 0,
+  "sourceChangedAfterProof": false,
+  "files": [
+    {
+      "path": "policy-journey.log",
+      "sha256": "3a5e74c60e115155e842779a1397e359f0c0e257d86c9215203de053ac568be7",
+      "bytes": 1000
+    },
+    {
+      "path": "typecheck.log",
+      "sha256": "3b33f22e72e2c74498f0e9e982d9b0c732c7ccd74d23eb951f0f79a794bb8e51",
+      "bytes": 127
+    },
+    {
+      "path": "browser/policy-limits-pending-1440.png",
+      "sha256": "679ce7ed5c09503b91d39b0102387fcf47e3a705736c59dc7d3ed5854aabeec0",
+      "bytes": 80638
+    },
+    {
+      "path": "browser/policy-limits-pending-390.png",
+      "sha256": "9232c7dbe2cb3353d7089ce1aca9ea306faf91b422a20c684d282480f6bec3a4",
+      "bytes": 72141
+    },
+    {
+      "path": "browser/policy-limits-confirmed-1440.png",
+      "sha256": "0975c42d0b106364d8a6e08b36415542c12da2a65f6d5c825c6285672d04f02c",
+      "bytes": 55000
+    },
+    {
+      "path": "browser/policy-limits-confirmed-390.png",
+      "sha256": "b53d436d6b3b4293621260b94f8629fc3feb6c791811ea65e0b075dda5309d59",
+      "bytes": 47940
+    }
+  ]
+}

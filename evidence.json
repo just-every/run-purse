@@ -1,0 +1,70 @@
+{
+  "files": [
+    {
+      "blob": "e806994063cbd811f6562552aabb1667f6c547a0",
+      "bytes": 9400,
+      "path": "REPORT.md",
+      "sha256": "4f17653dce23148968a3523a1c0937a2fa8546e97ddfa5fbf9a80eae4697edff"
+    },
+    {
+      "blob": "33b2f64406d778e736b8e3bac36b86cf2b96f94c",
+      "bytes": 55000,
+      "path": "browser/policy-limits-confirmed-1440.png",
+      "sha256": "0975c42d0b106364d8a6e08b36415542c12da2a65f6d5c825c6285672d04f02c"
+    },
+    {
+      "blob": "c107973db2b92771c1d04c0c1865d4571095fb99",
+      "bytes": 47940,
+      "path": "browser/policy-limits-confirmed-390.png",
+      "sha256": "b53d436d6b3b4293621260b94f8629fc3feb6c791811ea65e0b075dda5309d59"
+    },
+    {
+      "blob": "7ef7d4cf22d202a7a66b8abf739a0122dd5511b4",
+      "bytes": 80638,
+      "path": "browser/policy-limits-pending-1440.png",
+      "sha256": "679ce7ed5c09503b91d39b0102387fcf47e3a705736c59dc7d3ed5854aabeec0"
+    },
+    {
+      "blob": "b62ce085b916c7f48c24f89af86efbbaf8889426",
+      "bytes": 72141,
+      "path": "browser/policy-limits-pending-390.png",
+      "sha256": "9232c7dbe2cb3353d7089ce1aca9ea306faf91b422a20c684d282480f6bec3a4"
+    },
+    {
+      "blob": "f52a4d81f26868adbb15b2f4caafbb9beaaeb3e8",
+      "bytes": 406,
+      "path": "ci-receipt.json",
+      "sha256": "e22519efbf5d10148e94c4fe07c6bfaf6c2d9c360e84d3bdf45df717b786cbe4"
+    },
+    {
+      "blob": "dfac2aed9d808308fb343c69ee9bc6bfd2b968d0",
+      "bytes": 287885,
+      "path": "mechanical-receipt.json",
+      "sha256": "fa0a8624a1371f7980deb07ee04a0dc9036255e6b24f05221ca3ed8e47d417f8"
+    },
+    {
+      "blob": "01610fa8cada32fad8b9729735fe5e4b7fd5083f",
+      "bytes": 1000,
+      "path": "policy-journey.log",
+      "sha256": "3a5e74c60e115155e842779a1397e359f0c0e257d86c9215203de053ac568be7"
+    },
+    {
+      "blob": "ccbc9d02a272dcf3760c4448339859bb9491f5f1",
+      "bytes": 1651,
+      "path": "proof-receipt.json",
+      "sha256": "f422a664f4d0bf21d455f96f62974387a29cbf45f4f56804d73f10ed8928ec8c"
+    },
+    {
+      "blob": "e3d3cb2414240d34713ccc4a529db31a7b07abf7",
+      "bytes": 127,
+      "path": "typecheck.log",
+      "sha256": "3b33f22e72e2c74498f0e9e982d9b0c732c7ccd74d23eb951f0f79a794bb8e51"
+    }
+  ],
+  "product_branch": "cloud/sx-purse-c-f94",
+  "product_head": "9611051ea75d48a116d4bafa98c2a505a1a83f17",
+  "ref": "refs/heads/evidence/sx-purse-c-f94",
+  "repository": "just-every/run-purse",
+  "schema": 1,
+  "tag": "sx-purse-c-f94"
+}
