@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "e4c3d31a32f194735c9359eb7c07adb92db09bb705f6ee034dea2ebe8a889664",
+      "sha256": "40dc3eaaab421458e898eed94e94ac0a0994ed213dc50c609304532967d905b5",
       "executable": false
     },
     "DEMO.md": {
@@ -5268,7 +5268,7 @@
       "executable": false
     },
     "tests/agent-door-policy-limits.mjs": {
-      "sha256": "8e7c7082698c6e163461ea7c9df758951f3580b5fd82b226ed7bf2a5a8bd0c20",
+      "sha256": "57152cde965c50e1e885b4d206a56f48bd96346a60b11f4ee66f803bb8cf6517",
       "executable": false
     },
     "tests/agent-door-provider-edge.mjs": {

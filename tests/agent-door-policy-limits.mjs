@@ -6,10 +6,12 @@ import {withAgentBrowser} from './agent-door-browser-session.mjs'
 import {createProtocol,errorCode} from '../src/modules/agent-door/conformance/protocol.mjs'
 import {signJws,accessToken} from '../src/modules/agent-door/conformance/crypto.mjs'
 
-const clock='2026-11-06T12:00:00.000Z'
+// Freeze the run's starting instant so midnight cannot split cap admission.
+// Start at real time because the native SQL authority fence also checks expiry.
+const clock=new Date().toISOString()
 const address=number=>['synthetic-purse-'+number,'example.test'].join('@')
 const value=answer=>{assert.equal(answer.result?.isError,false,errorCode(answer));return answer.result.structuredContent}
-const effects=state=>Object.fromEntries(['request','revision','decision','commitment','order','orderSend'].map(kind=>[kind,state[kind]??[]]))
+const effects=state=>Object.fromEntries(['request','revision','decision','commitment','policy','budget','periodBudgets','totals','order','orderSend'].map(kind=>[kind,state[kind]??[]]))
 const total=rows=>rows.reduce((sum,row)=>sum+row.amountMinor,0)
 
 // One native money journey: real invitations, signed company policy, MCP,
@@ -26,7 +28,7 @@ try {
  // The bootstrap owner's existing native address is supplied by the harness.
  const ownerAddress=(await h.state()).actor.email
  await h.configureMail({RER_OWNER_CLAIM_ISSUER:issuer,RER_OWNER_CLAIM_INSTALLATION_ID:installationId,RER_OWNER_CLAIM_PUBLIC_KEYS:JSON.stringify(publicKeys),RER_BUSINESS_TRUST:JSON.stringify({v:1,issuer,audience:h.origin,subject:installationId,email:ownerAddress,keys:publicKeys})})
- const iat=Date.parse(clock)/1000
+ const iat=Math.floor(Date.parse(clock)/1000)
  const roster=[{email:requesterEmail,name:'Policy requester',role:'member',invite:1},{email:approverEmail,name:'Designated policy approver',role:'member',invite:1}]
  const settings=async(rev,team)=>{
   const signed=await signJws(pair.privateKey,kid,'rer-business-settings+jwt',{v:1,iss:issuer,aud:h.origin,sub:installationId,business,email:ownerAddress,owner_id:ownerId,jti:randomUUID(),iat,exp:iat+3600,rev,values:{},logo:null,team})
@@ -62,6 +64,7 @@ try {
  const args=record=>({id:record.id,revision:record.revision,decision:'approved',reason:'Exact native purchase decision',idempotency_key:randomUUID()})
  const call=input=>c.tool('purse.requests.decide',input)
  const classification=(answer,amount,disposition,rule)=>{
+  assert.ok(answer.decision,JSON.stringify({status:answer.status,body:answer.body}))
   assert.equal(answer.decision.disposition,disposition);assert.equal(answer.decision.revision,c.revision)
   assert.deepEqual(answer.decision.classes,[
    {class:'money',facts:{measure:amount,currency:'USD',counterparty:'known'},rule,do:disposition},
@@ -78,6 +81,8 @@ try {
   const native=await state(),decisions=native.decision.filter(row=>agentIds.includes(row.preparedBy?.agent.id))
   assert.equal(decisions.length,expected.length)
   assert.equal(total(native.commitment),expected.reduce((sum,amount)=>sum+amount,0))
+  assert.equal(native.totals.USD??0,expected.reduce((sum,amount)=>sum+amount,0))
+  assert.deepEqual(native.policy.find(row=>row.id===nativePolicy.id),nativePolicy)
   assert.deepEqual(decisions.map(row=>native.request.find(record=>record.id===row.request).totalMinor).sort((a,b)=>a-b),[...expected].sort((a,b)=>a-b))
   assert.equal(native.order.length,0);assert.equal(native.orderSend?.length??0,0)
  }
@@ -129,7 +134,10 @@ try {
   await page.locator('[data-approval-state="executed"]').waitFor()
   await capture('policy-limits-confirmed')
  })
- const completed=value(await c.tool('purse.requests.decide',mediumArgs,{requestState:pending.result.requestState}))
+ const confirmation=await c.tool('purse.requests.decide',mediumArgs,{requestState:pending.result.requestState}),completed=value(confirmation)
+ const receipt=confirmation.result._meta['com.runeditrun/receipt']
+ assert.equal(receipt.approval_id,handle.id);assert.equal(receipt.decision_id,pending.decision.id)
+ assert.deepEqual(receipt.approved_by,[approverId])
  assert.equal(completed.status,'approved')
  const mediumAfter=await state(),decision=mediumAfter.decision.find(row=>row.request===medium.id)
  assert.deepEqual(decision.companyApprovers,[{id:approverId,name:'Designated policy approver'}])
@@ -137,6 +145,7 @@ try {
  await usage([40000,60000]);await audit(mediumArgs,'approval',personRule,'done')
  assert.equal((await h.send(approvalPath+'/approve',consent,approver)).value.approval.state,'executed')
  assert.deepEqual(effects(await state()),effects(mediumAfter));await usage([40000,60000])
+ assert.deepEqual((await call(mediumArgs)).result._meta['com.runeditrun/receipt'],receipt)
  console.log('PROBE BASE-AGENT-007 point 3 thresholds: MCP request decision -> USD 400 autonomous, USD 600 pending without native effects until the named signed-in person approves, USD 20000 blocked without effects; money and commitment retained')
  // Usage from the first revision must still count under a seed-scoped cap.
  await c.adopt(policy(150000))
