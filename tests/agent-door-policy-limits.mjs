@@ -143,21 +143,34 @@ try {
  const blockedArgs=args(large),blocked=await call(blockedArgs)
  classification(blocked,2000000,'blocked',blockedRule);assert.equal(errorCode(blocked),'policy_blocked')
  assert.deepEqual(effects(await state()),beforePending);await usage([40000]);await audit(blockedArgs,'blocked',blockedRule,'refused')
- // Browser approval is the actual signed-in person action, not an API surrogate.
- await withAgentBrowser({request,origin:h.origin,cookie:approver},async({page,capture})=>{
-  await page.goto(handle.url,{waitUntil:'networkidle'})
-  assert.equal(await page.locator('[data-approval-state="pending"]').count(),1)
-  assert.equal(await page.getByText('Amount $600.00',{exact:true}).count(),1)
-  await page.getByText('Details',{exact:true}).click()
-  assert.ok((await page.locator('main').innerText()).includes('Designated policy approver'))
-  await capture('policy-limits-pending')
-  assert.deepEqual(effects(await state()),beforePending)
-  const response=page.waitForResponse(response=>new URL(response.url()).pathname===approvalPath+'/approve')
-  await page.getByRole('button',{name:'Approve',exact:true}).click()
-  assert.equal((await response).status(),200)
-  await page.locator('[data-approval-state="executed"]').waitFor()
-  await capture('policy-limits-confirmed')
- })
+ // Both monetary approval paths require the named signed-in person's click.
+ const approveInBrowser=async(answer,amount,before,name)=>{
+  const pendingHandle=answer.result._meta['com.runeditrun/approval']
+  const path='/agents/api/approvals/'+pendingHandle.id
+  const saved=(await c.personJson(path)).approval
+  assert.equal(saved.state,'pending');assert.equal(saved.revision,answer.decision.revision)
+  assert.deepEqual(saved.approvers,['person:'+approverId])
+  assert.deepEqual(saved.summary.amount,{value:amount/100,currency:'USD'})
+  const exactConsent={revision:saved.revision,summary_sha256:saved.summary_sha256}
+  assert.equal((await h.send(path+'/approve',exactConsent,requester)).status,403)
+  assert.equal((await h.send(path+'/approve',exactConsent,h.owner)).status,403)
+  assert.deepEqual(effects(await state()),before)
+  await withAgentBrowser({request,origin:h.origin,cookie:approver},async({page,capture})=>{
+   await page.goto(pendingHandle.url,{waitUntil:'networkidle'})
+   assert.equal(await page.locator('[data-approval-state="pending"]').count(),1)
+   assert.equal(await page.getByText('Amount $'+(amount/100).toFixed(2),{exact:true}).count(),1)
+   await page.getByText('Details',{exact:true}).click()
+   assert.ok((await page.locator('main').innerText()).includes('Designated policy approver'))
+   await capture(name+'-pending')
+   assert.deepEqual(effects(await state()),before)
+   const response=page.waitForResponse(response=>new URL(response.url()).pathname===path+'/approve')
+   await page.getByRole('button',{name:'Approve',exact:true}).click()
+   assert.equal((await response).status(),200)
+   await page.locator('[data-approval-state="executed"]').waitFor()
+   await capture(name+'-confirmed')
+  })
+ }
+ await approveInBrowser(pending,60000,beforePending,'policy-limits')
  const confirmation=await c.tool('purse.requests.decide',mediumArgs,{requestState:pending.result.requestState}),completed=value(confirmation)
  const receipt=confirmation.result._meta['com.runeditrun/receipt']
  assert.equal(receipt.approval_id,handle.id);assert.equal(receipt.decision_id,pending.decision.id)
@@ -201,11 +214,16 @@ try {
  const crossingHandle=cross.result._meta['com.runeditrun/approval']
  assert.deepEqual((await c.tool('purse.requests.decide',crossArgs,{token})).result._meta['com.runeditrun/approval'],crossingHandle)
  assert.deepEqual(effects(await state()),beforeCross);await usage([40000,60000,50000])
- assert.equal((await c.decideApproval(cross)).body.approval.state,'executed')
+ await approveInBrowser(cross,40000,beforeCross,'policy-cap')
  const crossingDone=await c.tool('purse.requests.decide',crossArgs,{token,requestState:cross.result.requestState})
  assert.equal(value(crossingDone).status,'approved')
  const crossingReceipt=crossingDone.result._meta['com.runeditrun/receipt']
  assert.equal(crossingReceipt.approval_id,crossingHandle.id);assert.deepEqual(crossingReceipt.approved_by,[approverId])
+ const crossingNative=(await state()).decision.find(row=>row.request===capCross.id)
+ assert.equal(crossingNative.preparedBy.agent.id,secondAgent)
+ assert.equal(crossingNative.preparedBy.for.id,approverId)
+ assert.deepEqual(crossingNative.companyApprovers,[{id:approverId,name:'Designated policy approver'}])
+ assert.equal(crossingNative.revision,capCross.revision)
  expectedPurchases.set(capCross.id,40000)
  await usage([40000,60000,50000,40000],[c.agentId,c.agentId,c.agentId,secondAgent]);await audit(crossArgs,'approval',personRule,'done')
  const afterCross=effects(await state())
