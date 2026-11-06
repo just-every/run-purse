@@ -49,7 +49,7 @@ No DONE claim is made. For the complete clause:
 
 1. FAIL for full qualification: the wider registry and remaining clause outcomes are unqualified; the selected point 3 slice passes locally.
 2. PASS for this slice: real seeded records, allowed money outcome, refused outcome, pending no-effect state, independent totals and unsafe-session refusals.
-3. Pending exact-SHA Verify receipt; new journey is unconditionally registered in normal Verify.
+3. PASS for the slice: push Verify 42215750746 completed successfully on 5a410fe2e885bdf52d6ce5cc71c747e006f9a767; the new journey is unconditionally registered in normal Verify.
 4. PASS for local slice proof: the new journey and four screenshots were rerun from the clean exact final product head. Other touched checks ran against unchanged relevant source bytes; receipt binding distinguishes that from a clean-head execution.
 5. UNCHANGED: no receiving-clause inheritance claim or text change.
 6. PASS for partial bookkeeping: the original Gap is retained and expanded honestly; contract generation write and check pass before restoring the generated views, as required for cloud candidates. The historical Judged-from line is retained; no DONE provenance is asserted.
@@ -79,4 +79,8 @@ The cloud publication scan and guarded landing belong to the fleet. Publication 
 
 Local fixture correction: a hard-coded test instant caused the genuine SQL expiry fence to refuse a later run before classification. The final fixture freezes each run at its real starting instant and signs integral-second timestamps. The native expiry fence is unchanged; the clean final candidate journey passes.
 
-Current exact-SHA Verify observation: run 42215750746, event push, in progress at 2026-11-06T12:17:38Z. No green result is claimed for the candidate yet.
+Final exact-SHA Verify observation: run 42215750746, event push, completed success at the 2026-11-06T12:37:38Z observation, head 5a410fe2e885bdf52d6ce5cc71c747e006f9a767. Eight GitHub API calls were used; no workflow was dispatched or rerun.
+
+Final cloud self-check: named money outcomes and the real person approval are proved in the registered journey, with exact-SHA Verify green. No assertion from main was weakened or removed. The existing quotation regression still proves revocation, erasure and replay refusal. The new money fixture proves named-person refusal, once-only execution, exact state reconciliation and correct USD 600.00 display. Source lock and copied Base integrity pass. The two generated views are absent from the product diff. Publication scanning, main equality and candidate Run site belong to the fleet landing gate and are not claimed here. This is READY for the bounded partial progress, not a DONE or landed claim.
+
+Evidence custody: the earlier report-only packet at 41faa5439d2da9816736c005b53570619df95352 was fetched into isolated storage and all 22 files matched their manifest hashes. TRANSPORT-RECEIPT.json records that actual transfer. The final publication advances the same evidence ref with this completed CI result and that transport receipt. Product refs, checkout and index are unchanged by evidence publication.
