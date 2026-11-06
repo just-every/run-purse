@@ -29,3 +29,23 @@ export async function harness({ofac,mail,mailRequest,protectedKey,protectedPrevi
 
 // Shared synthetic CSL fixture, also used by the browser transport.
 export const ofacCsv = await readFile(new URL('./fixtures/ofac.csv',import.meta.url),'utf8')
+
+// Native paired installation for focused MCP proofs. Only disposable trust is
+// supplied; the Worker keeps its real sessions, admission counter and limits.
+export async function agentDoorHarness() {
+ const {randomUUID,webcrypto}=await import('node:crypto')
+ const {createProtocol}=await import('../src/modules/agent-door/conformance/protocol.mjs')
+ const {signJws}=await import('../src/modules/agent-door/conformance/crypto.mjs')
+ const h=await harness({worker:'tests/agent-door-worker.ts'})
+ try {
+  const pair=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify'])
+  const kid=randomUUID(),issuer='https://synthetic-purse-capacity.invalid',installationId=randomUUID(),business='synthetic-purse-capacity'
+  const publicKey=await webcrypto.subtle.exportKey('jwk',pair.publicKey),publicKeys={[kid]:{...publicKey,kid,alg:'ES256',use:'sig'}}
+  const email=['owner','example.test'].join('@'),sub=randomUUID(),iat=Math.floor(Date.now()/1000)
+  await h.configureMail({RER_OWNER_CLAIM_ISSUER:issuer,RER_OWNER_CLAIM_INSTALLATION_ID:installationId,RER_OWNER_CLAIM_PUBLIC_KEYS:JSON.stringify(publicKeys),RER_BUSINESS_TRUST:JSON.stringify({v:1,issuer,audience:h.origin,subject:installationId,email,keys:publicKeys})})
+  const settings=await signJws(pair.privateKey,kid,'rer-business-settings+jwt',{v:1,iss:issuer,aud:h.origin,sub:installationId,business,email,owner_id:sub,jti:randomUUID(),iat,exp:iat+300,rev:1,values:{},logo:null,team:[]})
+  assert.equal((await h.send('/api/rer/business-settings',{settings})).status,200)
+  const c=createProtocol({fetch:(url,init)=>fetch(url,init),origin:h.origin,surface:JSON.parse(await readFile('agent-surface.json','utf8')),signer:{issuer,installationId,kid,privateKey:pair.privateKey},person:{email,cookie:h.owner,sub},business,consent:randomUUID(),agentId:randomUUID(),seq:0,revision:0,points:[]})
+  return {h,c}
+ } catch(error) {await h.close();throw error}
+}
