@@ -1,3 +1,4 @@
+// Focused proofs use the native adapter with its production admission limits.
 import native from './purse-worker'
 import { purseAgentDoor, purseBusinessSettings } from '../src/agent-door/index.server'
 export default { ...native, async fetch(request: Request, env: any, ctx: ExecutionContext) {

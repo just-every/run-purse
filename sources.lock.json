@@ -120,7 +120,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "8ff7f7a13ca3dfdd4767c8ef2b16b9ccff39e7df79dfe94aeab86ecd51761474",
+      "sha256": "0c2b0d48926f6da830fff2a9e517ebf598e9552c2745f375c1c046d8aeef5cdc",
       "executable": false
     },
     "DEMO.md": {
@@ -408,7 +408,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "c99ecaea3ed11f67191187327cd380c40ca59bb17fc0c55055a2d9bb5154eba7",
+      "sha256": "fa33adcee57fb425a2e6a7f0edab173638fb812334395347523b58202e9ba0de",
       "executable": false
     },
     "packaging.json": {
@@ -5263,6 +5263,10 @@
       "sha256": "274ed66699fb637d574a7a757326025f60bc7aeec2f2c35f69651613f1765c1e",
       "executable": false
     },
+    "tests/agent-door-capacity.mjs": {
+      "sha256": "e059ccd1d8a0d44636553a81794e4766aac73e4eb2a88ebb73d6ff8ba0e8e1a4",
+      "executable": false
+    },
     "tests/agent-door-journey.mjs": {
       "sha256": "9ac07e8d095a721d07790d8cb41d4a05c3b96669746f2903a6fb2cb2b8878e75",
       "executable": false
@@ -5276,7 +5280,7 @@
       "executable": false
     },
     "tests/agent-door-worker.ts": {
-      "sha256": "ce1c3c098662f86db2ee60b29f8022695cea0a05cdb9e8123ca58bee48afeb1a",
+      "sha256": "617cb0c1bf01e60b4b8a664187bf81fe7addc1ea4645603f76c2ad7be5d2b181",
       "executable": false
     },
     "tests/agent-governance-fixture.mjs": {
@@ -5956,7 +5960,7 @@
       "executable": false
     },
     "tests/purse-harness.mjs": {
-      "sha256": "a4d517055151f1d477867615cb45363469d1091f8122feff29c6ac80342e242d",
+      "sha256": "bc957548651d5199bebb7c78931f344ead48de05d54970c7af0498e115c2d8b1",
       "executable": false
     },
     "tests/purse-worker.ts": {
