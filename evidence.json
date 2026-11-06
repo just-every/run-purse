@@ -1,0 +1,148 @@
+{
+  "files": [
+    {
+      "blob": "6192a80df93cab81f88a9aed81de6164d25a02e4",
+      "bytes": 10909,
+      "path": "REPORT.md",
+      "sha256": "0c986ae8a227289e359e740433b81ebbf97545b979892c9eb67ffa320d7e7626"
+    },
+    {
+      "blob": "9d8508b2b9444fc91cf8d7f234a880ede0bfac67",
+      "bytes": 1067,
+      "path": "baseline-journey.log",
+      "sha256": "5f71dadd5dce1386d96d47269d3a2229fb44e9b8f760503deb3aab940444d4ac"
+    },
+    {
+      "blob": "7cd50eee7965990a8dc9916d15657e20d11bb105",
+      "bytes": 88,
+      "path": "check-1.log",
+      "sha256": "3a2e53a97946f30a2beac00c6729e8a6d1bff0cf7b171ba35fdb526f35645fc9"
+    },
+    {
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "bytes": 0,
+      "path": "check-2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "blob": "852dbb6c9919ff93df41eb2dfe249acd18efc6c3",
+      "bytes": 248756,
+      "path": "check-3.log",
+      "sha256": "fb81dc82ca51473dfd24294bd27a07a9568ab7c1f8c2c01a2b2683279cf7be4b"
+    },
+    {
+      "blob": "564c4d271eeb0c9b29ba6487c4d6eaddf4d71add",
+      "bytes": 17147,
+      "path": "check-4.log",
+      "sha256": "8fae90820bc5652797647f9bcfc488f47cd3e9ce28d3e9a55606dda1a2acd70b"
+    },
+    {
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "bytes": 0,
+      "path": "check-5.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "blob": "542c17567de3e25b763e16121bdd2628c7efa719",
+      "bytes": 1277,
+      "path": "checks.json",
+      "sha256": "87acc1c97287593b417c4fea511a77fc5b9b2de38192f2538b4530c5b5a440f6"
+    },
+    {
+      "blob": "c4f28da50e027cc69b54b0c27549e9efcc1440c7",
+      "bytes": 225,
+      "path": "ci-discovery.json",
+      "sha256": "5d6632a301ca1f4a78f4543dc1eaaf12d7376057b4b17383deefd4d762c17e8f"
+    },
+    {
+      "blob": "be533a55f5216f3459dee3f580b47b8685a7bc00",
+      "bytes": 175,
+      "path": "ci-status.json",
+      "sha256": "1af7679b28621188bbf54e0cf94e314cd850a42895d8e421d8a9d5a08c2f4627"
+    },
+    {
+      "blob": "586bb4bcfb69318399b8c5ccb179badfff95a145",
+      "bytes": 255,
+      "path": "commit-identities.log",
+      "sha256": "c25a9c829a41ff3b6938f4311bbea40664474a5d0bc965f03084b9b336738113"
+    },
+    {
+      "blob": "b890bb820a2676db2ffd624b2f70c956b21c2fb8",
+      "bytes": 961,
+      "path": "policy-journey-node22.log",
+      "sha256": "505eb3b5c984fe8ea3459e6f87580e8dc6d3441a97a9252543c287759c0f5998"
+    },
+    {
+      "blob": "9d8508b2b9444fc91cf8d7f234a880ede0bfac67",
+      "bytes": 1067,
+      "path": "policy-journey.log",
+      "sha256": "5f71dadd5dce1386d96d47269d3a2229fb44e9b8f760503deb3aab940444d4ac"
+    },
+    {
+      "blob": "54f100036f2a9bed490f373dfca3cc18d7102dc1",
+      "bytes": 1115,
+      "path": "precommit-views.json",
+      "sha256": "fe768fec5dd7f918b589374a76710b7c41982d34336649c224c0bee83d282b05"
+    },
+    {
+      "blob": "8ef2733498d943db3b60c45efb637da4f05a725f",
+      "bytes": 3487,
+      "path": "receipt.json",
+      "sha256": "075167513979dd03ba2dfbbf134399f1573f6701f7c4aa10e3a1d2cfc0f00bf6"
+    },
+    {
+      "blob": "9cc133dc8bfe40f198604a64f7bc7abb560c8d49",
+      "bytes": 54506,
+      "path": "screens/policy-cap-confirmed-1440.png",
+      "sha256": "7f66fa41ffd149b546db6a2123fd50cb2c1612b6936a3a814f8d64b7e6474f58"
+    },
+    {
+      "blob": "d043a261804dbad726ac217afdb6c577dd7834d3",
+      "bytes": 47222,
+      "path": "screens/policy-cap-confirmed-390.png",
+      "sha256": "0f73d2c64ec39126e03c1b25243c924aa96679114a96236b367f7fc9ca9f3ad6"
+    },
+    {
+      "blob": "4da460652eda543713a41f8c22972ca026419199",
+      "bytes": 80183,
+      "path": "screens/policy-cap-pending-1440.png",
+      "sha256": "ee527313884c43279a8d8512e824c8c39eca65199fd94c6a14f7dc3bff78377d"
+    },
+    {
+      "blob": "a08890454da2a06897b6b13b5092fce9ae18b932",
+      "bytes": 71280,
+      "path": "screens/policy-cap-pending-390.png",
+      "sha256": "8c3bfd30e67d1eca8ed2495e34bbc60d18f3ee7b3b4b46b5d7cd33bbc480c3c2"
+    },
+    {
+      "blob": "7e3c44994158606c00f7a5b759901f56fc379171",
+      "bytes": 55066,
+      "path": "screens/policy-limits-confirmed-1440.png",
+      "sha256": "f99191986365c2daa0194b535cc3369c1d9eb677d8e1fe7be7c4ef827c9362e0"
+    },
+    {
+      "blob": "e841a2ac769387ce205287cccac75db100cb4643",
+      "bytes": 48003,
+      "path": "screens/policy-limits-confirmed-390.png",
+      "sha256": "032c55cf260d9f394bc6f12fe65c1292745c4a541257e86e39f92b2f224ef1ca"
+    },
+    {
+      "blob": "4055bbe88da76e06ed5fac7b44009cbff8686b60",
+      "bytes": 80686,
+      "path": "screens/policy-limits-pending-1440.png",
+      "sha256": "e2554ba7da60d590abb8120f95884f34c5fa06f1ed1116c6cc8d06b6a625cf72"
+    },
+    {
+      "blob": "958b0d56ae2ff22c21de498da00dd31075dce888",
+      "bytes": 72207,
+      "path": "screens/policy-limits-pending-390.png",
+      "sha256": "ab081b32a2d40c284fec24db3d2a5d9e2a1f91861a941642eba4472c9bd598bb"
+    }
+  ],
+  "product_branch": "cloud/sx-purse-c-f95",
+  "product_head": "84aa99e2e259e79b811058edb044970d5f8dafde",
+  "ref": "refs/heads/evidence/sx-purse-c-f95",
+  "repository": "just-every/run-purse",
+  "schema": 1,
+  "tag": "sx-purse-c-f95"
+}

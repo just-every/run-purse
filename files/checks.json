@@ -1,0 +1,37 @@
+[
+  {
+    "head": "84aa99e2e259e79b811058edb044970d5f8dafde",
+    "command": "pnpm typecheck",
+    "exit": 0,
+    "output": "check-1.log",
+    "output_sha256": "3a2e53a97946f30a2beac00c6729e8a6d1bff0cf7b171ba35fdb526f35645fc9"
+  },
+  {
+    "head": "84aa99e2e259e79b811058edb044970d5f8dafde",
+    "command": "pnpm exec rer check --profile first-party",
+    "exit": 0,
+    "output": "check-2.log",
+    "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "head": "84aa99e2e259e79b811058edb044970d5f8dafde",
+    "command": "node scripts/edition-authoring/cli.mjs check",
+    "exit": 0,
+    "output": "check-3.log",
+    "output_sha256": "fb81dc82ca51473dfd24294bd27a07a9568ab7c1f8c2c01a2b2683279cf7be4b"
+  },
+  {
+    "head": "84aa99e2e259e79b811058edb044970d5f8dafde",
+    "command": "node scripts/edition-authoring/cli.mjs verify-base --offline",
+    "exit": 0,
+    "output": "check-4.log",
+    "output_sha256": "8fae90820bc5652797647f9bcfc488f47cd3e9ce28d3e9a55606dda1a2acd70b"
+  },
+  {
+    "head": "84aa99e2e259e79b811058edb044970d5f8dafde",
+    "command": "git diff --check origin/main...HEAD",
+    "exit": 0,
+    "output": "check-5.log",
+    "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]

@@ -1,0 +1,92 @@
+{
+  "repository": "just-every/run-purse",
+  "branch": "cloud/sx-purse-c-f95",
+  "head": "84aa99e2e259e79b811058edb044970d5f8dafde",
+  "main": "60134d0d91def75bb0a9fd2e67d2e9dae714c68b",
+  "main_equals_candidate": false,
+  "setup": {
+    "command": "npx -y @runeditrun/rer setup --owner-email [fleet address] --non-interactive",
+    "exit": 0
+  },
+  "journey": {
+    "command": "pnpm run test:agent-policy-limits",
+    "runtime": "Node 22.20.0",
+    "browser": "/usr/bin/chromium",
+    "exit": 0,
+    "log": "policy-journey-node22.log",
+    "assertion_width": 1440,
+    "proof_widths": [
+      1440,
+      390
+    ]
+  },
+  "mechanical": {
+    "views": [
+      {
+        "command": "node scripts/contract-docs.mjs write IMPORT-001 INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 SUPPLIER-008 PO-012 PO-006 NOTIFY-001 PO-011 AGENT-010 BASE-AGENT-001 BASE-AGENT-002 BASE-AGENT-003 BASE-AGENT-004 BASE-AGENT-005 BASE-AGENT-006 BASE-AGENT-007 BASE-AGENT-008 BASE-AGENT-009 BASE-AGENT-010 BASE-AGENT-011 BASE-AGENT-012 BASE-AGENT-013 ACCESS-003 BUDGET-001 APPROVAL-003",
+        "exit": 0,
+        "output": "Contract documentation write passed\n"
+      },
+      {
+        "command": "node scripts/contract-docs.mjs check IMPORT-001 INVOICE-005 COMMENT-001 BUDGET-002 REPORT-002 PUNCHOUT-002 INTAKE-005 REPORT-004 CODING-002 MATCH-002 SUPPLIER-006 RECEIVE-002 SUPPLIER-008 PO-012 PO-006 NOTIFY-001 PO-011 AGENT-010 BASE-AGENT-001 BASE-AGENT-002 BASE-AGENT-003 BASE-AGENT-004 BASE-AGENT-005 BASE-AGENT-006 BASE-AGENT-007 BASE-AGENT-008 BASE-AGENT-009 BASE-AGENT-010 BASE-AGENT-011 BASE-AGENT-012 BASE-AGENT-013 ACCESS-003 BUDGET-001 APPROVAL-003",
+        "exit": 0,
+        "output": "Contract documentation check passed\n"
+      }
+    ],
+    "lock": {
+      "write": "node scripts/edition-authoring/cli.mjs lock",
+      "write_exit": 0,
+      "check": "node scripts/edition-authoring/cli.mjs check",
+      "check_exit": 0
+    },
+    "ledger": {
+      "command": null,
+      "exit": 0,
+      "reason": "No migration changed"
+    }
+  },
+  "source_lock_sha256": "8425dd070641c2e77879e8875423e18561b0b69c8bbfec182171c2e3ba8eccb6",
+  "status": {
+    "before": {
+      "done": 54,
+      "partial": 51,
+      "missing": 22
+    },
+    "after": {
+      "done": 54,
+      "partial": 51,
+      "missing": 22
+    },
+    "clause": "BASE-AGENT-007",
+    "before_clause": "PARTIAL",
+    "after_clause": "PARTIAL",
+    "proven_points": [
+      3
+    ]
+  },
+  "publication_scan": {
+    "commit": "84aa99e2e259e79b811058edb044970d5f8dafde",
+    "complete": null,
+    "historyScanned": null,
+    "findings": null,
+    "status": "NOT_RUN",
+    "reason": "Cloud adaptation delegates the exact-SHA scan to the fleet lander"
+  },
+  "custody": {
+    "product_push": "success",
+    "product_remote": "https://github.com/just-every/run-purse.git",
+    "ci_run": 42248787773,
+    "ci_event": "push",
+    "ci_conclusion": null,
+    "ci_status": "in_progress",
+    "pr": null,
+    "run_site": null,
+    "landing": "not attempted",
+    "ci_observed_at": "2026-11-06T16:09:15.276825+00:00"
+  },
+  "preserved_commits": [
+    "84aa99e2e259e79b811058edb044970d5f8dafde Prove named-person browser approval for monetary cap crossings",
+    "9611051ea75d48a116d4bafa98c2a505a1a83f17 Reconcile policy approvals with native budget reservations",
+    "23195faf3e0f1784ff3abfd40c4365467c5444df Prove money policy boundaries and cap approval replay"
+  ]
+}
