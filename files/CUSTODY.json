@@ -1,0 +1,18 @@
+{
+  "repository": "just-every/run-purse",
+  "branch": "cloud/sx-purse-c-f96",
+  "head": "99a8fabb6a74b834e5d17f14c90a855acfeeb1e7",
+  "remote_tracking_head": "99a8fabb6a74b834e5d17f14c90a855acfeeb1e7",
+  "clean": true,
+  "full_history": true,
+  "candidate_commits": 2,
+  "identity_check": "passed",
+  "unchanged": [
+    "CONTRACT.md",
+    "ACCEPTANCE.md",
+    "docs/CLAIMS.md",
+    "src/modules/agent-door",
+    "src/agent-door",
+    "agent-surface.json"
+  ]
+}

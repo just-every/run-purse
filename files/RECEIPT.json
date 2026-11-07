@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "tag": "sx-purse-c-f96",
+  "repository": "just-every/run-purse",
+  "branch": "cloud/sx-purse-c-f96",
+  "head": "99a8fabb6a74b834e5d17f14c90a855acfeeb1e7",
+  "main_at_merge": "c070712429cebc093cb975adaff1a57eae2258b5",
+  "checks": [
+    {
+      "name": "build",
+      "command": "npx -y @runeditrun/rer build",
+      "exit": 0
+    },
+    {
+      "name": "typecheck",
+      "command": "pnpm typecheck",
+      "exit": 0
+    },
+    {
+      "name": "first-party",
+      "command": "pnpm exec rer check --profile first-party",
+      "exit": 0
+    },
+    {
+      "name": "views",
+      "command": "node scripts/contract-docs.mjs write BASE-AGENT-009; node scripts/contract-docs.mjs check BASE-AGENT-009",
+      "exit": 0
+    },
+    {
+      "name": "lock",
+      "command": "node scripts/edition-authoring/cli.mjs lock; node scripts/edition-authoring/cli.mjs check",
+      "exit": 0
+    },
+    {
+      "name": "base-copies",
+      "command": "node scripts/edition-authoring/cli.mjs verify-base --offline",
+      "exit": 0
+    },
+    {
+      "name": "ledger",
+      "command": "node /tmp/purse-ledger-check.mjs",
+      "exit": 0
+    },
+    {
+      "name": "native",
+      "command": "node tests/agent-door-erasure.mjs",
+      "exit": 0
+    },
+    {
+      "name": "browser",
+      "command": "perl -e 'alarm 1200; exec @ARGV' -- node tests/browser-agent-door-erasure.mjs",
+      "exit": 0
+    },
+    {
+      "name": "regression",
+      "command": "node --test --test-name-pattern='ERASURE-001 native reviewed owner' tests/audit-log.test.mjs",
+      "exit": 0
+    }
+  ],
+  "results": {
+    "before_preparations": 4,
+    "after_erasure": 4,
+    "after_fresh_live_approval": 5,
+    "reviewed_fields": 72,
+    "affected_records": 11
+  },
+  "screenshots": [
+    {
+      "path": "browser/erased-agent-audit-and-counts-1440.png",
+      "sha256": "b3b19ba86c6c298e6217703a2c3df1528478abbb3a0d35c20c58385abd8289bc",
+      "bytes": 170140
+    },
+    {
+      "path": "browser/erased-agent-audit-and-counts-390.png",
+      "sha256": "301c3a46cc3276bef7b03f8a83962c584f94c28252cb13f34e59d3f3d55ae596",
+      "bytes": 153684
+    },
+    {
+      "path": "browser/erased-agent-completed-approval-1440.png",
+      "sha256": "3033f9387735839b0fd7616933a49ea8dfb38877c17978d803feb75d7020a8ea",
+      "bytes": 42830
+    },
+    {
+      "path": "browser/erased-agent-completed-approval-390.png",
+      "sha256": "4eefc24d1e2711f06059fe3061499617ac35fa974e6ed00318e5fb496972d7bf",
+      "bytes": 39296
+    },
+    {
+      "path": "browser/erased-agent-pending-approval-1440.png",
+      "sha256": "13f43c280bf7687007c8088d506975deaa5c27d9bf9fae51a99d4c681475f1b1",
+      "bytes": 35287
+    },
+    {
+      "path": "browser/erased-agent-pending-approval-390.png",
+      "sha256": "4ee05764cb2680d72c6d8b20073303bec8aca403d0c4a2cb9c9b725d977a5e20",
+      "bytes": 31520
+    },
+    {
+      "path": "browser/erased-agent-review-feed-1440.png",
+      "sha256": "f8366acede197b5153439f85823d7118abc4072c9b53cc079fbe1d189411b153",
+      "bytes": 61791
+    },
+    {
+      "path": "browser/erased-agent-review-feed-390.png",
+      "sha256": "e080aa90389e9baef4b6482ddcb112b6e872311680824e64caca0dca40e51a1c",
+      "bytes": 56153
+    }
+  ],
+  "ci_run_id": 42414707303,
+  "ci_status": "in_progress",
+  "publication_scan": {
+    "complete": false,
+    "historyScanned": null,
+    "findings": null,
+    "reason": "Fleet lander owns the exact-SHA full-history publication scan"
+  },
+  "clause_status_before": "PARTIAL",
+  "clause_status_after": "PARTIAL",
+  "counts_before": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22
+  },
+  "counts_after": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22
+  },
+  "source_proof": {
+    "src/purse/erasure-agent-artifacts.ts": "4f813d83a926206bbb4ca99794491835a3daa286f9f1f89725255341a74b6e35",
+    "src/purse/erasure-plan.ts": "91240394f259b6c8c36f071cb36104a746f8b8df0b1fcb82929a0e107f524e05",
+    "src/purse/erasure-api.ts": "789ab59678c52d568a0748d51e5dff9997a6189a4a2c4dc779d74bc52757c600",
+    "src/purse/erasure-native.ts": "8088405082ff83b01bf4e6a729e486a415aa6c7372d1a5cec2c35daa1a777179",
+    "src/purse/erasure-execute.ts": "c92272345f632e8e528067249482c8f88e9bba941730ef85112dd5ae8a8fae4c",
+    "tests/agent-door-erasure.mjs": "e1f1dfc8c3341a0dba179bc8cbc60526e73e8a9b569661b184b0fef18397cae5",
+    "tests/browser-agent-door-erasure.mjs": "4c56df344fa3b25a7f14499942c7490ac057de5ea2e33ed976f4035a0906e5d1"
+  },
+  "ci_conclusion": null,
+  "github_calls": 3
+}

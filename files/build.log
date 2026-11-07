@@ -1,0 +1,45 @@
+Using project Node 22.20.0 (current Node 24.19.0).
+Heavy job admitted: Purse build:workflow [16b3647347de]
+Checking pinned pnpm
+10.12.4
+Building your application
+build:app
+▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+
+
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 276 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/client/.assetsignore               0.02 kB
+dist/client/assets/index-bvqbhP-H.js  312.47 kB │ gzip: 101.22 kB
+dist/client/assets/app-C86Yseyk.js    542.20 kB │ gzip: 141.56 kB
+
+✓ built in 392ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+vite v8.2.2 building ssr environment for production...
+transforming...
+✓ 1182 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/server/wrangler.json                                      1.56 kB │ gzip:     0.79 kB
+dist/server/.vite/manifest.json                                3.19 kB │ gzip:     0.67 kB
+dist/server/assets/empty-plugin-adapters-D_0twvAa.js           0.28 kB │ gzip:     0.18 kB
+dist/server/assets/start-D8qDT34V.js                           0.28 kB │ gzip:     0.21 kB
+dist/server/assets/_tanstack-start-manifest_v-D_8Y-kHH.js      0.49 kB │ gzip:     0.29 kB
+dist/server/assets/jsx-runtime-BsfcbOOH.js                    19.02 kB │ gzip:     5.14 kB
+dist/server/assets/router-CA3wHLRX.js                         40.08 kB │ gzip:    10.47 kB
+dist/server/assets/travel-export-format-dI_8D2u7.js           77.75 kB │ gzip:    23.34 kB
+dist/server/assets/Match-CyD0FdS1.js                         145.57 kB │ gzip:    36.64 kB
+dist/server/assets/app-DUsszmuD.js                           932.54 kB │ gzip:   179.05 kB
+dist/server/assets/pdfjs-DfXV6eIT.js                       2,110.56 kB │ gzip:   554.42 kB
+dist/server/index.js                                       5,880.08 kB │ gzip: 1,600.15 kB
+
+✓ built in 1.49s
+Your application is built
+build: complete (exit 0)
