@@ -5,7 +5,8 @@ import type { ErasurePlan } from './erasure-plan';
 import { requireThat, type Actor, type Data } from './types';
 const sql=(sql:string,...params:any[]):D1Sql=>({sql,params});
 export async function eraseNativeCopies(env:Bindings,plan:ErasurePlan,a:Actor) {
- const statements:D1Sql[]=[],installationFields:Data[]=[],db=env.DB,operator=plan.subject.operator;
+ requireThat(plan.agentArtifacts,'Retained agent artifacts must be reviewed',409);
+ const statements:D1Sql[]=[...plan.agentArtifacts.statements],installationFields:Data[]=[plan.agentArtifacts.inventory],db=env.DB,operator=plan.subject.operator;
  if(operator) {
   installationFields.push({store:'native identity',fields:['email','display name','external identity links','SCIM links','sessions and outstanding credentials']});
   requireThat(operator!==a.id,'Cannot erase the current owner',409);

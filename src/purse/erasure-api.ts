@@ -1,3 +1,4 @@
+import { planAgentArtifactErasure } from './erasure-agent-artifacts';
 import { eraseNativeCopies } from './erasure-native';
 import { Hono } from 'hono';
 import { runtimeBindings, type Bindings } from '../auth.server';
@@ -34,6 +35,7 @@ erasureApi.post('/api/purse/erasure/:operation',async c=>{
   if(op==='retention'||op==='ready'){return c.json(await (op==='retention'?retentionDoor:readyDoor)(env,a,body,state,revision));}
   if(op==='resume'){await readFence(env.DB,a,revision);return c.json(await finishErasure(env,a,body.id));}
   const subject=await erasureSubject(env.DB,state,body),plan=planErasure(state,subject,op==='preview'?uid():body.review,revision);
+  await planAgentArtifactErasure(env.DB,plan);
   if(op==='preview') {
    const native=await eraseNativeCopies(env,plan,a);
    await readFence(env.DB,a,revision);

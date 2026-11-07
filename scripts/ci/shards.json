@@ -177,7 +177,8 @@
   ],
   "41": [
     ["tests/browser.mjs", "--width=390", "--journey=supplier-duplicates"],
-    ["tests/browser.mjs", "--width=390", "--journey=invoice-inbox"]
+    ["tests/browser.mjs", "--width=390", "--journey=invoice-inbox"],
+    ["tests/browser-agent-door-erasure.mjs"]
   ],
   "42": [
     ["tests/browser.mjs", "--width=1440", "--journey=performance-report"],
