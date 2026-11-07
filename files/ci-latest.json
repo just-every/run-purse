@@ -1,0 +1,11 @@
+{
+  "call": 7,
+  "at": "2026-11-07T22:58:54.615566+00:00",
+  "command": "gh api repos/just-every/run-purse/actions/runs/42421158292 --jq {status,conclusion,head_sha,html_url}",
+  "exit": 0,
+  "conclusion": "success",
+  "head_sha": "951a12174c7dd7769b3917d9e9956d25d7e433cd",
+  "html_url": "https://github.com/just-every/run-purse/actions/runs/42421158292",
+  "status": "completed",
+  "run_id": 42421158292
+}

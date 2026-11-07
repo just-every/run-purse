@@ -1,0 +1,29 @@
+TAP version 13
+# [33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+# Subtest: INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicates, repeated PDFs, remit changes and lookalike senders; reasoned review gates planning on every document door
+ok 1 - INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicates, repeated PDFs, remit changes and lookalike senders; reasoned review gates planning on every document door
+  ---
+  duration_ms: 8092.366979
+  type: 'test'
+  ...
+# Subtest: Legacy archive import migrates retained evidence without rewriting hashes, and tampered evidence refuses atomically through the archive door
+ok 2 - Legacy archive import migrates retained evidence without rewriting hashes, and tampered evidence refuses atomically through the archive door
+  ---
+  duration_ms: 61067.418899
+  type: 'test'
+  ...
+# Subtest: Supplier group invoice ancestry keeps supplier references independent and refuses unresolved group over-balance planning
+ok 3 - Supplier group invoice ancestry keeps supplier references independent and refuses unresolved group over-balance planning
+  ---
+  duration_ms: 3890.965131
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 74904.348799

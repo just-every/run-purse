@@ -1,0 +1,4 @@
+
+> @procurement/purse@0.1.1 typecheck /workspace/run-purse
+> tsc --build --incremental
+

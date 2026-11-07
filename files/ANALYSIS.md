@@ -1,0 +1,15 @@
+# Diagnosis
+
+Original exact-SHA Verify: 42414707303, failed rer-verify job 128530185344, invoice-risk.test.mjs:76, protected suffix in public output 8. Read the failed job once with gh run view. Output 8 is JSON.stringify(h.messages), including auth confirmation URLs and PO attachment bytes.
+
+Unmodified candidate 99a8fabb6a74b834e5d17f14c90a855acfeeb1e7 passes all three tests locally, including under pinned Node 22.20.0. Current main c070712 passes the same complete file, including under the pinned Node 22.20.0 runtime. The candidate diff does not modify invoice-risk, protected-value assertions, supplier-protected masks, or invoice evidence handling. Its erasure traversal changes only execute during owner erasure, which the failing test does not perform.
+
+Controlled reproduction: temporarily change the disposable HTTP fixture listener from an ephemeral port to 39731 and run the native-source-facts test through the physical .mjs entry. Both unmodified candidate and main fail the exact original assertion at line 76 for output 8. The synthetic TIN ends in 9731; the preexisting native auth links contain loopback port 39731. Those links were generated before any protected values were introduced. This disproves treating every such match as a candidate-only protected-suffix disclosure. The original archived log contains no offending bytes, so its particular collision cannot be proven to have been a port rather than another independent opaque value.
+
+Decision: correct the fixture, preserving product behavior and every original assertion. Create the protected fixture values only after the independent auth/PO mail baseline exists, choosing numeric suffixes absent from that baseline. The current native owner protected-store door establishes the matching baseline before invoice capture. No output is omitted, token is stripped, opaque exemption is expanded, or suffix assertion is relaxed. An additional assertion requires the entire pre-input mail baseline to remain unchanged after protected storage and invoice operations. A future full-value, bare suffix or masked-suffix disclosure after protected input will still fail.
+
+The first controlled after-run passed the target invoice-risk test but the complete file could not run with every harness sharing port 39731: its multi-installation archive test correctly received EADDRINUSE. The listener modification was restored; final full-file validation uses the original ephemeral listener. This diagnostic limitation is preserved in fixed-invoice-risk-collision.log.
+
+No CONTRACT.md Status, Gap or Evidence edit. CLAIM: BASE-AGENT-009 PARTIAL to PARTIAL; counts remain 54 done / 51 partial / 22 missing before and after. No workflow edit or CI dispatch/rerun. Retained-artifact custody remains the published candidate implementation.
+
+A focused before/after controlled-port replay under the same Node 22.20.0 confirms original candidate exit 1 at the suffix assertion and fixed candidate exit 0. Receipts: candidate-port-collision-node22.log and fixed-port-collision-node22.log.

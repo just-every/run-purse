@@ -1,0 +1,29 @@
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+
+
+✖ INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicates, repeated PDFs, remit changes and lookalike senders; reasoned review gates planning on every document door (7745.464229ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9257.769297
+
+✖ failing tests:
+
+test at tests/invoice-risk.test.mjs:10:1
+✖ INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicates, repeated PDFs, remit changes and lookalike senders; reasoned review gates planning on every document door (7745.464229ms)
+  AssertionError [ERR_ASSERTION]: Protected suffix in public output 8 outside proven source identities
+      at TestContext.<anonymous> (file:///workspace/purse-main/tests/invoice-risk.test.mjs:76:60)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

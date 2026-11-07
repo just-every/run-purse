@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "tag": "sx-purse-f96fix-1",
+  "repository": "just-every/run-purse",
+  "branch": "cloud/sx-purse-f96fix-1",
+  "head": "951a12174c7dd7769b3917d9e9956d25d7e433cd",
+  "parent": "99a8fabb6a74b834e5d17f14c90a855acfeeb1e7",
+  "main_at_start": "c070712429cebc093cb975adaff1a57eae2258b5",
+  "main_merge_needed": false,
+  "product_push": {
+    "status": "pushed",
+    "attempts": 1,
+    "receipt": "product-push.log"
+  },
+  "claim": {
+    "clause": "BASE-AGENT-009",
+    "before": "PARTIAL",
+    "after": "PARTIAL",
+    "before_counts": {
+      "done": 54,
+      "partial": 51,
+      "missing": 22
+    },
+    "after_counts": {
+      "done": 54,
+      "partial": 51,
+      "missing": 22
+    }
+  },
+  "changed_from_candidate": [
+    "tests/invoice-risk.test.mjs",
+    "sources.lock.json"
+  ],
+  "validation": [
+    {
+      "command": "node --test --test-concurrency=2 tests/invoice-risk.test.mjs",
+      "checkout": "unmodified candidate",
+      "node": "24.19.0",
+      "exit": 0,
+      "tests": 3,
+      "receipt": "candidate-invoice-risk.log"
+    },
+    {
+      "command": "node --test --test-concurrency=2 tests/invoice-risk.test.mjs",
+      "checkout": "main",
+      "node": "22.20.0",
+      "exit": 0,
+      "tests": 3,
+      "receipt": "main-invoice-risk-node22.log"
+    },
+    {
+      "command": "node --test --test-concurrency=2 --test-name-pattern='native source facts' tests/invoice-risk.test.mjs",
+      "checkout": "unmodified candidate with temporary port39731 instrumentation",
+      "exit": 1,
+      "expected": 1,
+      "receipt": "candidate-port-collision.log"
+    },
+    {
+      "command": "node --test --test-concurrency=2 --test-name-pattern='native source facts' tests/invoice-risk.test.mjs",
+      "checkout": "main with temporary port39731 instrumentation",
+      "exit": 1,
+      "expected": 1,
+      "receipt": "main-port-collision.log"
+    },
+    {
+      "command": "node --test --test-concurrency=2 tests/invoice-risk.test.mjs",
+      "checkout": "fixed candidate with temporary port39731 instrumentation",
+      "node": "22.20.0",
+      "target_test": "pass",
+      "exit": 1,
+      "limitation": "Multi-installation archive test needs independent ports; EADDRINUSE caused by temporary instrumentation",
+      "receipt": "fixed-invoice-risk-collision.log"
+    },
+    {
+      "command": "node --test --test-concurrency=2 tests/invoice-risk.test.mjs",
+      "checkout": "fixed candidate, normal listener",
+      "node": "22.20.0",
+      "exit": 0,
+      "tests": 3,
+      "receipt": "fixed-invoice-risk.log"
+    },
+    {
+      "command": "one-off physical .mjs fixture with deliberately appended full protected value",
+      "node": "22.20.0",
+      "exit": 1,
+      "expected": 1,
+      "assertion": "Full protected value in public output 8",
+      "receipt": "negative-full.log"
+    },
+    {
+      "command": "one-off physical .mjs fixture with deliberately appended masked protected suffix",
+      "node": "22.20.0",
+      "exit": 1,
+      "expected": 1,
+      "assertion": "Protected suffix in public output 8 outside proven source identities",
+      "receipt": "negative-suffix.log"
+    },
+    {
+      "command": "node tests/agent-door-erasure.mjs",
+      "node": "22.20.0",
+      "exit": 0,
+      "receipt": "erasure-journey.log",
+      "result": {
+        "preparationsBefore": 4,
+        "preparationsAfterErasure": 4,
+        "preparationsAfterFreshApproval": 5,
+        "retainedFields": 72,
+        "affected": 11
+      }
+    },
+    {
+      "command": "pnpm typecheck",
+      "exit": 0,
+      "receipt": "typecheck.log"
+    },
+    {
+      "command": "node scripts/edition-authoring/cli.mjs lock",
+      "exit": 0,
+      "receipt": "source-lock.json"
+    },
+    {
+      "command": "node scripts/edition-authoring/cli.mjs check",
+      "exit": 0,
+      "receipt": "source-check.json"
+    },
+    {
+      "command": "node scripts/edition-authoring/cli.mjs verify-base --offline",
+      "exit": 0,
+      "receipt": "base-check.json"
+    },
+    {
+      "command": "pnpm sources:check",
+      "exit": 0,
+      "receipt": "sources-check.log"
+    },
+    {
+      "command": "node --test --test-concurrency=2 tests/invoice-risk.test.mjs",
+      "checkout": "unmodified candidate",
+      "node": "22.20.0",
+      "exit": 0,
+      "tests": 3,
+      "receipt": "candidate-invoice-risk-node22.log"
+    },
+    {
+      "command": "node --test --test-concurrency=2 --test-name-pattern='native source facts' tests/invoice-risk.test.mjs",
+      "checkout": "unmodified candidate with temporary port39731 instrumentation",
+      "node": "22.20.0",
+      "exit": 1,
+      "expected": 1,
+      "receipt": "candidate-port-collision-node22.log"
+    },
+    {
+      "command": "node --test --test-concurrency=2 --test-name-pattern='native source facts' tests/invoice-risk.test.mjs",
+      "checkout": "fixed candidate with temporary port39731 instrumentation",
+      "node": "22.20.0",
+      "exit": 0,
+      "tests": 1,
+      "receipt": "fixed-port-collision-node22.log"
+    }
+  ],
+  "ci": {
+    "call": 7,
+    "at": "2026-11-07T22:58:54.615566+00:00",
+    "command": "gh api repos/just-every/run-purse/actions/runs/42421158292 --jq {status,conclusion,head_sha,html_url}",
+    "exit": 0,
+    "conclusion": "success",
+    "head_sha": "951a12174c7dd7769b3917d9e9956d25d7e433cd",
+    "html_url": "https://github.com/just-every/run-purse/actions/runs/42421158292",
+    "status": "completed",
+    "run_id": 42421158292,
+    "receipt": "ci-api-receipt.json"
+  },
+  "identity": {
+    "all_candidate_commits_checked": true,
+    "including_side_parents": true,
+    "count": 3,
+    "receipt": "identity-check.log",
+    "trailers": "absent"
+  },
+  "pr": null,
+  "ui_changes": false,
+  "contract_edits": false,
+  "workflow_edits": false,
+  "dispatch_or_rerun": false,
+  "blockers": [],
+  "custody": "READY",
+  "github_calls_used": 7
+}

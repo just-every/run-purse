@@ -1,0 +1,127 @@
+{
+  "regular_files_only": true,
+  "injected_bundle_values_found": false,
+  "credential_patterns_found": false,
+  "files": [
+    {
+      "path": "ANALYSIS.md",
+      "bytes": 2767
+    },
+    {
+      "path": "PLAN.md",
+      "bytes": 1305
+    },
+    {
+      "path": "RECEIPT.json",
+      "bytes": 4655
+    },
+    {
+      "path": "REPORT.md",
+      "bytes": 4608
+    },
+    {
+      "path": "base-check.json",
+      "bytes": 17147
+    },
+    {
+      "path": "candidate-invoice-risk.log",
+      "bytes": 757
+    },
+    {
+      "path": "candidate-port-collision.log",
+      "bytes": 1292
+    },
+    {
+      "path": "ci-api-receipt.json",
+      "bytes": 439
+    },
+    {
+      "path": "ci-discovery.json",
+      "bytes": 14511
+    },
+    {
+      "path": "ci-latest.json",
+      "bytes": 413
+    },
+    {
+      "path": "commit-messages.log",
+      "bytes": 322
+    },
+    {
+      "path": "diagnostic-1.log",
+      "bytes": 455
+    },
+    {
+      "path": "diagnostic-2.log",
+      "bytes": 455
+    },
+    {
+      "path": "diagnostic-3.log",
+      "bytes": 454
+    },
+    {
+      "path": "erasure-journey.log",
+      "bytes": 428
+    },
+    {
+      "path": "fixed-invoice-risk-collision.log",
+      "bytes": 1773
+    },
+    {
+      "path": "fixed-invoice-risk.log",
+      "bytes": 1363
+    },
+    {
+      "path": "identity-check.log",
+      "bytes": 255
+    },
+    {
+      "path": "main-invoice-risk-node22.log",
+      "bytes": 1364
+    },
+    {
+      "path": "main-invoice-risk.log",
+      "bytes": 759
+    },
+    {
+      "path": "main-port-collision.log",
+      "bytes": 1294
+    },
+    {
+      "path": "negative-full.log",
+      "bytes": 1279
+    },
+    {
+      "path": "negative-suffix.log",
+      "bytes": 1308
+    },
+    {
+      "path": "original-failure.log",
+      "bytes": 139520
+    },
+    {
+      "path": "product-push.log",
+      "bytes": 908
+    },
+    {
+      "path": "source-changes.json",
+      "bytes": 523
+    },
+    {
+      "path": "source-check.json",
+      "bytes": 249567
+    },
+    {
+      "path": "source-lock.json",
+      "bytes": 249553
+    },
+    {
+      "path": "sources-check.log",
+      "bytes": 267388
+    },
+    {
+      "path": "typecheck.log",
+      "bytes": 88
+    }
+  ]
+}

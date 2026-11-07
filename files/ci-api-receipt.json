@@ -1,0 +1,68 @@
+[
+  {
+    "call": 2,
+    "at": "2026-11-07T22:33:52.256093+00:00",
+    "command": "gh api repos/just-every/run-purse/actions/runs?head_sha=951a12174c7dd7769b3917d9e9956d25d7e433cd&per_page=100",
+    "exit": 0,
+    "status": "in_progress",
+    "conclusion": null,
+    "head_sha": "951a12174c7dd7769b3917d9e9956d25d7e433cd",
+    "html_url": "https://github.com/just-every/run-purse/actions/runs/42421158292",
+    "run_id": 42421158292
+  },
+  {
+    "call": 3,
+    "at": "2026-11-07T22:38:52.699508+00:00",
+    "command": "gh api repos/just-every/run-purse/actions/runs/42421158292 --jq {status,conclusion,head_sha,html_url}",
+    "exit": 0,
+    "conclusion": null,
+    "head_sha": "951a12174c7dd7769b3917d9e9956d25d7e433cd",
+    "html_url": "https://github.com/just-every/run-purse/actions/runs/42421158292",
+    "status": "in_progress",
+    "run_id": 42421158292
+  },
+  {
+    "call": 4,
+    "at": "2026-11-07T22:43:53.174004+00:00",
+    "command": "gh api repos/just-every/run-purse/actions/runs/42421158292 --jq {status,conclusion,head_sha,html_url}",
+    "exit": 0,
+    "conclusion": null,
+    "head_sha": "951a12174c7dd7769b3917d9e9956d25d7e433cd",
+    "html_url": "https://github.com/just-every/run-purse/actions/runs/42421158292",
+    "status": "in_progress",
+    "run_id": 42421158292
+  },
+  {
+    "call": 5,
+    "at": "2026-11-07T22:48:53.674808+00:00",
+    "command": "gh api repos/just-every/run-purse/actions/runs/42421158292 --jq {status,conclusion,head_sha,html_url}",
+    "exit": 0,
+    "conclusion": null,
+    "head_sha": "951a12174c7dd7769b3917d9e9956d25d7e433cd",
+    "html_url": "https://github.com/just-every/run-purse/actions/runs/42421158292",
+    "status": "in_progress",
+    "run_id": 42421158292
+  },
+  {
+    "call": 6,
+    "at": "2026-11-07T22:53:54.125586+00:00",
+    "command": "gh api repos/just-every/run-purse/actions/runs/42421158292 --jq {status,conclusion,head_sha,html_url}",
+    "exit": 0,
+    "conclusion": null,
+    "head_sha": "951a12174c7dd7769b3917d9e9956d25d7e433cd",
+    "html_url": "https://github.com/just-every/run-purse/actions/runs/42421158292",
+    "status": "in_progress",
+    "run_id": 42421158292
+  },
+  {
+    "call": 7,
+    "at": "2026-11-07T22:58:54.615566+00:00",
+    "command": "gh api repos/just-every/run-purse/actions/runs/42421158292 --jq {status,conclusion,head_sha,html_url}",
+    "exit": 0,
+    "conclusion": "success",
+    "head_sha": "951a12174c7dd7769b3917d9e9956d25d7e433cd",
+    "html_url": "https://github.com/just-every/run-purse/actions/runs/42421158292",
+    "status": "completed",
+    "run_id": 42421158292
+  }
+]
