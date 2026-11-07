@@ -107,7 +107,7 @@
     }
   ],
   "ci_run_id": 42414707303,
-  "ci_status": "in_progress",
+  "ci_status": "completed",
   "publication_scan": {
     "complete": false,
     "historyScanned": null,
@@ -135,6 +135,132 @@
     "tests/agent-door-erasure.mjs": "e1f1dfc8c3341a0dba179bc8cbc60526e73e8a9b569661b184b0fef18397cae5",
     "tests/browser-agent-door-erasure.mjs": "4c56df344fa3b25a7f14499942c7490ac057de5ea2e33ed976f4035a0906e5d1"
   },
-  "ci_conclusion": null,
-  "github_calls": 3
+  "ci_conclusion": "failure",
+  "github_calls": 8,
+  "product_commits": [
+    {
+      "head": "99a8fabb6a74b834e5d17f14c90a855acfeeb1e7",
+      "subject": "Fence erased preparation content and preserve native archive journals"
+    },
+    {
+      "head": "b0319398e6e55ebf09f892791562eefe062b8fab",
+      "subject": "Retain anonymous agent artifacts during owner erasure [skip ci]"
+    }
+  ],
+  "evidence_roundtrip_verified": "11b4fa2c852b83b2f92480f8701402d291929f93",
+  "failed_job": 128530185344,
+  "failed_test": "INVOICE-003, AP-003 and REPORT-003 native source facts",
+  "failure": "Protected suffix in public output 8 outside proven source identities",
+  "browser_group_41": {
+    "job": 128530185790,
+    "conclusion": "success"
+  },
+  "reproduction": {
+    "head": "99a8fabb6a74b834e5d17f14c90a855acfeeb1e7",
+    "job": 128530185344,
+    "command": "pnpm exec rer verify",
+    "node": "22.20.0",
+    "pnpm": "10.12.4",
+    "test": "tests/invoice-risk.test.mjs#INVOICE-003, AP-003 and REPORT-003 native source facts",
+    "exit": 1,
+    "failure": "Protected suffix in public output 0 outside proven source identities",
+    "ci_failure": "Protected suffix in public output 8 outside proven source identities",
+    "passed": 151,
+    "failed": 1,
+    "repairs": 0
+  },
+  "main_probe": {
+    "head": "c070712429cebc093cb975adaff1a57eae2258b5",
+    "command": "node --test --test-name-pattern='INVOICE-003, AP-003 and REPORT-003 native source facts' tests/invoice-risk.test.mjs",
+    "exit": 0
+  },
+  "terminal": "BLOCKED",
+  "blocker": "Exact-SHA Verify is red in the invoice-risk protected-suffix assertion; matching full command reproduces it; bounded diagnostic fixtures do not isolate the field; no guessed repair or weakened assertion",
+  "diagnostics": [
+    {
+      "file": "diagnostic-1.log",
+      "exit": 0,
+      "sha256": "5bd4940f913a80bc4e30698a15a0d3a31dcb310e99c647c6b80f5fcb7ab4e398"
+    },
+    {
+      "file": "diagnostic-2.log",
+      "exit": 0,
+      "sha256": "68f0c56712e4a41b9dba72f33f90547ee2af00703a3824c73247dde1cff1d5ec"
+    },
+    {
+      "file": "diagnostic-3.log",
+      "exit": 0,
+      "sha256": "530e5e9f6a38b5ea2e84f0c63ad7c8d33ddf698ccace3ccef970b118a1e4c0fd"
+    },
+    {
+      "file": "diagnostic-4.log",
+      "exit": 0,
+      "sha256": "db597d82064033bfee056dac9336158ad55939fb7fb62c0c9c8ab8a17e033318"
+    },
+    {
+      "file": "diagnostic-5.log",
+      "exit": 0,
+      "sha256": "4355cb488e97881dc2c5bb5c660a29e9421ef561b3ae566f4dcedd445ff7873e"
+    },
+    {
+      "file": "diagnostic-6.log",
+      "exit": 0,
+      "sha256": "a281702f71e5a874a394005c4111056d1f4553f875fc257635194f3860088d94"
+    },
+    {
+      "file": "diagnostic-7.log",
+      "exit": 0,
+      "sha256": "ad5f88ed512be8bb5b3a0907235661f87ca5a3c217bdbf07cd4753f266f7b828"
+    },
+    {
+      "file": "diagnostic-8.log",
+      "exit": 0,
+      "sha256": "34123a4d26db2e99ee75cd2285ca5d069ae2ed0794947ad3fb94afbc9e94b6cb"
+    },
+    {
+      "file": "diagnostic-9.log",
+      "exit": 0,
+      "sha256": "f0f4b623559c362b32321332abf0f7b32ab64a632bb9fae96af2ab9ac4608fb8"
+    },
+    {
+      "file": "diagnostic-10.log",
+      "exit": 0,
+      "sha256": "13a1f802dae5552c5d604a76e267911b5c6a116db8241f3a9c46a49d36175684"
+    },
+    {
+      "file": "diagnostic-11.log",
+      "exit": 0,
+      "sha256": "2bd4ad5ff671947ba601593cbbe30cf7cbea6e0d4bb3b51de29a9bcbb385d2f2"
+    },
+    {
+      "file": "diagnostic-12.log",
+      "exit": 0,
+      "sha256": "7cad7ab8c81ef743f4e6713e03bef6550bfb7e44cd2ccd775bbd9c3ff71c8669"
+    },
+    {
+      "file": "diagnostic-13.log",
+      "exit": 0,
+      "sha256": "2b5a3c542ae8f3804573a6d83d81287d74d14f1ac794c7e59d53a5810d045f91"
+    },
+    {
+      "file": "diagnostic-14.log",
+      "exit": 0,
+      "sha256": "7e7579eba6d5454646601ca48e058a273ff0af3f9f43118cf0f338d50ec50788"
+    },
+    {
+      "file": "diagnostic-15.log",
+      "exit": 0,
+      "sha256": "e3bc4a9252081bbc25d5c6d454ef7c7ce7534694d6927276e81236e84ec5a921"
+    },
+    {
+      "file": "diagnostic-16.log",
+      "exit": 0,
+      "sha256": "9ede795da7b8f9d1c1aaf86b9a7c2616ff33b8e562055329c7a9d77781342e4a"
+    },
+    {
+      "file": "diagnostic-17.log",
+      "exit": 0,
+      "sha256": "3425003c3c99359b04f7504a6f0db6dd5f2af0c446a056f0fe3244964347ac56"
+    }
+  ]
 }

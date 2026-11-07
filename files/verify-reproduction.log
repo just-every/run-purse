@@ -1,0 +1,1185 @@
+Heavy job admitted: Purse verify:workflow [16b3647347de]
+Checking pinned pnpm
+10.12.4
+Installing Chromium and its headless shell from the checkout’s Playwright
+Downloading Chromium 140.0.7339.186 (playwright build v1193) from https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1193/chromium-linux.zip
+|                                                                                |   0% of 173.8 MiB
+|■■■■■■■■                                                                        |  10% of 173.8 MiB
+|■■■■■■■■■■■■■■■■                                                                |  20% of 173.8 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 173.8 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 173.8 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 173.8 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 173.8 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 173.8 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 173.8 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 173.8 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 173.8 MiB
+Chromium 140.0.7339.186 (playwright build v1193) downloaded to /home/agent/.cache/ms-playwright/chromium-1193
+Downloading FFMPEG playwright build v1011 from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-linux.zip
+|                                                                                |   0% of 2.3 MiB
+|■■■■■■■■                                                                        |  10% of 2.3 MiB
+|■■■■■■■■■■■■■■■■                                                                |  20% of 2.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 2.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 2.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 2.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 2.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 2.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 2.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 2.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 2.3 MiB
+FFMPEG playwright build v1011 downloaded to /home/agent/.cache/ms-playwright/ffmpeg-1011
+Downloading Chromium Headless Shell 140.0.7339.186 (playwright build v1193) from https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1193/chromium-headless-shell-linux.zip
+|                                                                                |   0% of 104.3 MiB
+|■■■■■■■■                                                                        |  10% of 104.3 MiB
+|■■■■■■■■■■■■■■■■                                                                |  20% of 104.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 104.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 104.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 104.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 104.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 104.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 104.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 104.3 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 104.3 MiB
+Chromium Headless Shell 140.0.7339.186 (playwright build v1193) downloaded to /home/agent/.cache/ms-playwright/chromium_headless_shell-1193
+Verifying application
+
+> @procurement/purse@0.1.1 verify:app [REDACTED]
+> rer queue verify:app -- sh -c "pnpm run build && pnpm run typecheck && pnpm run test:purse && pnpm run test:runtime && pnpm run test:site" && pnpm run test:mail
+
+verify:app
+
+> @procurement/purse@0.1.1 build [REDACTED]
+> rer build
+
+Checking pinned pnpm
+10.12.4
+Building your application
+build:app
+▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+
+
+(node:6397) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 276 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/client/.assetsignore               0.02 kB
+dist/client/assets/index-bvqbhP-H.js  312.47 kB │ gzip: 101.22 kB
+dist/client/assets/app-C86Yseyk.js    542.20 kB │ gzip: 141.56 kB
+
+✓ built in 459ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+vite v8.2.2 building ssr environment for production...
+transforming...
+✓ 1182 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/server/wrangler.json                                      1.56 kB │ gzip:     0.79 kB
+dist/server/.vite/manifest.json                                3.19 kB │ gzip:     0.67 kB
+dist/server/assets/empty-plugin-adapters-D_0twvAa.js           0.28 kB │ gzip:     0.18 kB
+dist/server/assets/start-D8qDT34V.js                           0.28 kB │ gzip:     0.21 kB
+dist/server/assets/_tanstack-start-manifest_v-D_8Y-kHH.js      0.49 kB │ gzip:     0.29 kB
+dist/server/assets/jsx-runtime-BsfcbOOH.js                    19.02 kB │ gzip:     5.14 kB
+dist/server/assets/router-CA3wHLRX.js                         40.08 kB │ gzip:    10.47 kB
+dist/server/assets/travel-export-format-dI_8D2u7.js           77.75 kB │ gzip:    23.34 kB
+dist/server/assets/Match-CyD0FdS1.js                         145.57 kB │ gzip:    36.64 kB
+dist/server/assets/app-DUsszmuD.js                           932.54 kB │ gzip:   179.05 kB
+dist/server/assets/pdfjs-DfXV6eIT.js                       2,110.56 kB │ gzip:   554.42 kB
+dist/server/index.js                                       5,880.08 kB │ gzip: 1,600.15 kB
+
+✓ built in 1.45s
+Your application is built
+{"version":1,"verb":"build","event":"result","ok":true,"exitCode":0}
+
+> @procurement/purse@0.1.1 typecheck [REDACTED]
+> tsc --build --incremental
+
+
+> @procurement/purse@0.1.1 test:purse [REDACTED]
+> node --test --test-concurrency=2 tests/purse.test.mjs tests/access.test.mjs tests/entities.test.mjs tests/identity.test.mjs tests/saml.test.mjs tests/scim.test.mjs tests/stockroom.test.mjs tests/order-closure.test.mjs tests/blanket-orders.test.mjs tests/order-adoption.test.mjs tests/supplier-screening.test.mjs tests/supplier-performance.test.mjs tests/catalogue.test.mjs tests/catalogue-import.test.mjs tests/supplier-duplicates.test.mjs tests/supplier-documents.test.mjs tests/supplier-tax.test.mjs tests/order-chasing.test.mjs tests/agent-governance.test.mjs tests/late-order-resolution.test.mjs tests/quote-agent.test.mjs tests/po-generation.test.mjs tests/supplier-invoice.test.mjs tests/order-thread.test.mjs tests/payables.test.mjs tests/audit-log.test.mjs tests/spend-report.test.mjs tests/saved-reports.test.mjs tests/coding-agent.test.mjs tests/po-documents.test.mjs tests/po-supplier-groups.test.mjs tests/performance-report.test.mjs tests/invoice-risk.test.mjs tests/receipt-routing.test.mjs tests/quote-reading.test.mjs tests/invoice-reading.test.mjs tests/rfq.test.mjs tests/email-intake.test.mjs tests/invoice-inbox.test.mjs tests/integration-tokens.test.mjs tests/search.test.mjs tests/agreements.test.mjs tests/agreement-reading.test.mjs tests/agreement-savings.test.mjs tests/agent-value.test.mjs tests/agent-value-checkins.test.mjs tests/travel.test.mjs tests/travel-routing.test.mjs tests/order-send.test.mjs tests/comments.test.mjs tests/budget-disposition.test.mjs tests/browser-archive.test.mjs tests/budget-import.test.mjs tests/cross-team-reviews.test.mjs tests/accrual-report.test.mjs tests/custom-fields.test.mjs tests/invoice-exceptions.test.mjs tests/invoice-exception-agent.test.mjs tests/protected-value-assertions.test.mjs tests/supplier-proposals.test.mjs tests/shipment-references.test.mjs tests/notifications.test.mjs tests/approval-email.test.mjs tests/procurify-lines.test.mjs && node tests/agent-door-quotes.mjs && pnpm run test:agent-policy-limits && pnpm run test:agent-capacity && node tests/agent-door-erasure.mjs
+
+TAP version 13
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Scoped procurement roles, native custom receiving, report sources, audit grants and readonly refusals through public HTTP
+ok 1 - Scoped procurement roles, native custom receiving, report sources, audit grants and readonly refusals through public HTTP
+  ---
+  duration_ms: 8423.138106
+  type: 'test'
+  ...
+# Subtest: Native mutation and value snapshots keep private policies and revisions scoped while edited fields reach former approvers
+ok 2 - Native mutation and value snapshots keep private policies and revisions scoped while edited fields reach former approvers
+  ---
+  duration_ms: 4721.159182
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Native period-end accrual reconciles dated goods and services, genuine approvals, scoped exports and restored source history without restoring authority
+ok 3 - Native period-end accrual reconciles dated goods and services, genuine approvals, scoped exports and restored source history without restoring authority
+  ---
+  duration_ms: 45304.526875
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Native agent governance enforces type, current authority, two chases, immediate pause and immutable source-exact records without supplier instructions
+ok 4 - Native agent governance enforces type, current authority, two chases, immediate pause and immutable source-exact records without supplier instructions
+  ---
+  duration_ms: 29320.915792
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: AGENT-005 real scheduled 30/90-day requester check-ins claim once concurrently, retain exact sources and consume paused intervals
+ok 5 - AGENT-005 real scheduled 30/90-day requester check-ins claim once concurrently, retain exact sources and consume paused intervals
+  ---
+  duration_ms: 6647.99297
+  type: 'test'
+  ...
+# Subtest: AGENT-005 scheduled check-ins reject current revoked/inactive requester authority and never retry uncertain mail or stale revisions
+ok 6 - AGENT-005 scheduled check-ins reject current revoked/inactive requester authority and never retry uncertain mail or stale revisions
+  ---
+  duration_ms: 6530.992155
+  type: 'test'
+  ...
+# Subtest: AGENT-006 public Cron proposes in the recorded notice window once per source, honoring purchase types and current finance grants without sending
+ok 7 - AGENT-006 public Cron proposes in the recorded notice window once per source, honoring purchase types and current finance grants without sending
+  ---
+  duration_ms: 6422.467976
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: AGENT-005 exact approved promises, original provider-reported 50/31/19 evidence, requester-only explicit confirmation and immutable portable provenance
+ok 8 - AGENT-005 exact approved promises, original provider-reported 50/31/19 evidence, requester-only explicit confirmation and immutable portable provenance
+  ---
+  duration_ms: 29431.24735
+  type: 'test'
+  ...
+# Subtest: AGENT-005 receipt need-date and confirmed quoted-saving evidence reuse REPORT-003 amounts without manufacturing unsigned savings
+ok 9 - AGENT-005 receipt need-date and confirmed quoted-saving evidence reuse REPORT-003 amounts without manufacturing unsigned savings
+  ---
+  duration_ms: 5312.086988
+  type: 'test'
+  ...
+# Subtest: Recurring consolidation scenarios recompute from native sources, require independent exact consents and never change or send purchasing
+ok 10 - Recurring consolidation scenarios recompute from native sources, require independent exact consents and never change or send purchasing
+  ---
+  duration_ms: 5971.962904
+  type: 'test'
+  ...
+# Subtest: Assigned agreement and budget owners approve recorded-term forecasts before one exact human notice and separate cancellation records
+ok 11 - Assigned agreement and budget owners approve recorded-term forecasts before one exact human notice and separate cancellation records
+  ---
+  duration_ms: 6030.360528
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Subtest: CONTRACT-001 real PDF proposals retain original/page confidence, corrected Cron dates and complete archive provenance through public doors
+ok 12 - CONTRACT-001 real PDF proposals retain original/page confidence, corrected Cron dates and complete archive provenance through public doors
+  ---
+  duration_ms: 26623.311759
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Subtest: CONTRACT-001 REPORT-003 confirmed agreement prices realize exact approved invoice savings, source history and amendment caps through public doors
+ok 13 - CONTRACT-001 REPORT-003 confirmed agreement prices realize exact approved invoice savings, source history and amendment caps through public doors
+  ---
+  duration_ms: 6218.710986
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: CONTRACT-001 owner-confirmed agreement history, active member assignment, recorded renewal terms, exact invoice attribution, notice claims and complete restore through public doors
+ok 14 - CONTRACT-001 owner-confirmed agreement history, active member assignment, recorded renewal terms, exact invoice attribution, notice claims and complete restore through public doors
+  ---
+  duration_ms: 28724.448816
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Native email approval confirms all decisions through current sessions and the ordinary audited budget command exactly once
+ok 15 - Native email approval confirms all decisions through current sessions and the ordinary audited budget command exactly once
+  ---
+  duration_ms: 6724.031956
+  type: 'test'
+  ...
+# Subtest: Email locators refuse stale sources, changed authority and restored or erased identities without reviving purchasing authority
+ok 16 - Email locators refuse stale sources, changed authority and restored or erased identities without reviving purchasing authority
+  ---
+  duration_ms: 25974.14327
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: AUDIT-001 owner filters a PO history and exports exact decision policy, revisions and grants through native HTTP
+ok 17 - AUDIT-001 owner filters a PO history and exports exact decision policy, revisions and grants through native HTTP
+  ---
+  duration_ms: 4364.896277
+  type: 'test'
+  ...
+# Subtest: ERASURE-001 native reviewed owner erasure anonymizes financial audit, RFQ and email originals, retains encrypted tax/evidence and fences archive resurrection
+ok 18 - ERASURE-001 native reviewed owner erasure anonymizes financial audit, RFQ and email originals, retains encrypted tax/evidence and fences archive resurrection
+  ---
+  duration_ms: 76345.445942
+  type: 'test'
+  ...
+# Subtest: ERASURE-001 retention clock lists expired TIN, bank and W-9 values, erases them only on confirmation, and refuses buyer, auditor, token and agent at every door
+ok 19 - ERASURE-001 retention clock lists expired TIN, bank and W-9 values, erases them only on confirmation, and refuses buyer, auditor, token and agent at every door
+  ---
+  duration_ms: 41098.30429
+  type: 'test'
+  ...
+# Subtest: ERASURE-001 a journal-less fresh restore is held until the native owner acknowledges, then restores labelled erasure history unverified
+ok 20 - ERASURE-001 a journal-less fresh restore is held until the native owner acknowledges, then restores labelled erasure history unverified
+  ---
+  duration_ms: 44698.77964
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: PO-005 blanket invoice draw-down preserves approved caps, validity, commitments, current amendments and source-exact archives
+ok 21 - PO-005 blanket invoice draw-down preserves approved caps, validity, commitments, current amendments and source-exact archives
+  ---
+  duration_ms: 5487.219596
+  type: 'test'
+  ...
+# Subtest: blanket orders show billed balances only to readers of every invoice they sum
+ok 22 - blanket orders show billed balances only to readers of every invoice they sum
+  ---
+  duration_ms: 4137.99746
+  type: 'test'
+  ...
+# Subtest: PO-005 real release authority, structured service value matching and consented recurring Cron pause at agreement boundaries
+ok 23 - PO-005 real release authority, structured service value matching and consented recurring Cron pause at agreement boundaries
+  ---
+  duration_ms: 9190.653301
+  type: 'test'
+  ...
+# Subtest: Archive equality keeps every retained order field while receiving suggestions advance at installation midnight
+ok 24 - Archive equality keeps every retained order field while receiving suggestions advance at installation midnight
+  ---
+  duration_ms: 25.872985
+  type: 'test'
+  ...
+# Subtest: Receiving suggestion checks use the configured installation timezone and allow a read that crosses midnight
+ok 25 - Receiving suggestion checks use the configured installation timezone and allow a read that crosses midnight
+  ---
+  duration_ms: 1.8588
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Reviewed quarter disposition moves unchanged 60 and 40 shares exactly once with current independent authority and portable history
+ok 26 - Reviewed quarter disposition moves unchanged 60 and 40 shares exactly once with current independent authority and portable history
+  ---
+  duration_ms: 49682.577793
+  type: 'test'
+  ...
+# Subtest: Unsafe quarter moves refuse changed sources, insufficient capacity, unreviewed amendments and restored or erased consent
+ok 27 - Unsafe quarter moves refuse changed sources, insufficient capacity, unreviewed amendments and restored or erased consent
+  ---
+  duration_ms: 49781.905253
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Reviewed native budgets bind bytes, mapping and authority; unchanged imports write nothing
+ok 28 - Reviewed native budgets bind bytes, mapping and authority; unchanged imports write nothing
+  ---
+  duration_ms: 4721.712947
+  type: 'test'
+  ...
+# Subtest: Budget owner sees scoped totals and a single threshold crossing without acquiring approval authority
+ok 29 - Budget owner sees scoped totals and a single threshold crossing without acquiring approval authority
+  ---
+  duration_ms: 4454.907472
+  type: 'test'
+  ...
+# Subtest: Budget assignments and threshold history survive restore without reviving erased owners or review authority
+ok 30 - Budget assignments and threshold history survive restore without reviving erased owners or review authority
+  ---
+  duration_ms: 48494.165744
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Hosted catalogue review atomically imports exact identities and dated currency prices under current authority, preserving purchases and archive continuation
+ok 31 - Hosted catalogue review atomically imports exact identities and dated currency prices under current authority, preserving purchases and archive continuation
+  ---
+  duration_ms: 26805.324666
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: CATALOG-001 items retain metadata, dated prices, coding, required files and atomically expanded bundles through authenticated HTTP
+ok 32 - CATALOG-001 items retain metadata, dated prices, coding, required files and atomically expanded bundles through authenticated HTTP
+  ---
+  duration_ms: 5703.958204
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: AGENT-008 source-backed split review and two human GL corrections govern the third invoice without sends or purchasing changes
+ok 33 - AGENT-008 source-backed split review and two human GL corrections govern the third invoice without sends or purchasing changes
+  ---
+  duration_ms: 6225.404185
+  type: 'test'
+  ...
+# Subtest: AGENT-008 flags preferred supplier sources and separates day, requester, currency and current source scope
+ok 34 - AGENT-008 flags preferred supplier sources and separates day, requester, currency and current source scope
+  ---
+  duration_ms: 4373.32791
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Internal comments preserve the pending queue and current scope while member mentions redact inaccessible content
+ok 35 - Internal comments preserve the pending queue and current scope while member mentions redact inaccessible content
+  ---
+  duration_ms: 5715.815268
+  type: 'test'
+  ...
+# Subtest: Author changes keep complete audited versions and portable files, and member erasure cannot revive authors or captures
+ok 36 - Author changes keep complete audited versions and portable files, and member erasure cannot revive authors or captures
+  ---
+  duration_ms: 60036.948589
+  type: 'test'
+  ...
+# Subtest: Issued PO comments and attachments stay off supplier links, frozen documents and outbound threads
+ok 37 - Issued PO comments and attachments stay off supplier links, frozen documents and outbound threads
+  ---
+  duration_ms: 4999.506675
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Native cross-team reviews order questions, files and decisions before independent purchase approval, conversion and issuance
+ok 38 - Native cross-team reviews order questions, files and decisions before independent purchase approval, conversion and issuance
+  ---
+  duration_ms: 6562.32383
+  type: 'test'
+  ...
+# Subtest: Cross-team review archives retain audited history and scoped files without restoring authority; erasure fences identities and replay
+ok 39 - Cross-team review archives retain audited history and scoped files without restoring authority; erasure fences identities and replay
+  ---
+  duration_ms: 57186.743034
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Subtest: Native typed custom fields validate requests, freeze approved PO and source-confirmed bill values, and reconcile scoped currency reports
+ok 40 - Native typed custom fields validate requests, freeze approved PO and source-confirmed bill values, and reconcile scoped currency reports
+  ---
+  duration_ms: 5558.332965
+  type: 'test'
+  ...
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Subtest: Definition changes and amendments retain historical custom values and archive restore cannot revive purchasing authority
+ok 41 - Definition changes and amendments retain historical custom values and archive restore cannot revive purchasing authority
+  ---
+  duration_ms: 44038.396784
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: INTAKE-004 signed provider intake preserves private sources, requester completion, held assignment and durable replay/mail claims
+ok 42 - INTAKE-004 signed provider intake preserves private sources, requester completion, held assignment and durable replay/mail claims
+  ---
+  duration_ms: 37630.672049
+  type: 'test'
+  ...
+# Subtest: Concurrent distinct signed emails retain each source once across intake revision conflicts
+ok 43 - Concurrent distinct signed emails retain each source once across intake revision conflicts
+  ---
+  duration_ms: 4147.136299
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Native entity purchasing reconciles two independent budgets and frozen PDFs while unsafe authority and cross-entity actions change nothing
+ok 44 - Native entity purchasing reconciles two independent budgets and frozen PDFs while unsafe authority and cross-entity actions change nothing
+  ---
+  duration_ms: 6624.961591
+  type: 'test'
+  ...
+# Subtest: Entity history continues through real archives and erasure without restoring identities or accepting stale entity authority
+ok 45 - Entity history continues through real archives and erasure without restoring identities or accepting stale entity authority
+  ---
+  duration_ms: 47103.162492
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: SCIM provisions a scoped member who signs in through a real local IdP; sign-out, disable, revocation and SCIM deactivation end native OIDC sessions
+ok 46 - SCIM provisions a scoped member who signs in through a real local IdP; sign-out, disable, revocation and SCIM deactivation end native OIDC sessions
+  ---
+  duration_ms: 4647.75993
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: INTAKE-007 owner-bound create-only bearer: idempotency, native human approval, scope, show-once lifecycle, audit and archive exclusion
+ok 47 - INTAKE-007 owner-bound create-only bearer: idempotency, native human approval, scope, show-once lifecycle, audit and archive exclusion
+  ---
+  duration_ms: 28492.070984
+  type: 'test'
+  ...
+# Subtest: SECURITY-001 explicit encrypted include restores protected fields and matching atomically without installation keys or reveal grants
+ok 48 - SECURITY-001 explicit encrypted include restores protected fields and matching atomically without installation keys or reveal grants
+  ---
+  duration_ms: 24976.566586
+  type: 'test'
+  ...
+# Subtest: Owner-scoped Locket PO reads expose only mapped financial data; lifecycle, audit, rate and create-only boundaries hold
+ok 49 - Owner-scoped Locket PO reads expose only mapped financial data; lifecycle, audit, rate and create-only boundaries hold
+  ---
+  duration_ms: 4982.967187
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Invoice exception drafts cite exact price and receipt evidence without executing purchasing or payment changes
+ok 50 - Invoice exception drafts cite exact price and receipt evidence without executing purchasing or payment changes
+  ---
+  duration_ms: 7117.996575
+  type: 'test'
+  ...
+# Subtest: Exception draft archives and erasure preserve immutable evidence without restoring execution authority
+ok 51 - Exception draft archives and erasure preserve immutable evidence without restoring execution authority
+  ---
+  duration_ms: 61491.303314
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Invoice exception assignment and receiver correction preserve age, source custody and independent cash approval through native HTTP
+ok 52 - Invoice exception assignment and receiver correction preserve age, source custody and independent cash approval through native HTTP
+  ---
+  duration_ms: 6108.496985
+  type: 'test'
+  ...
+# Subtest: Exception and correction history survives real archives and erasure without restoring assignment or capture authority
+ok 53 - Exception and correction history survives real archives and erasure without restoring assignment or capture authority
+  ---
+  duration_ms: 72653.452764
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Subtest: INVOICE-001 AP inbox captures signed supplier mail as private drafts, holds unknown and look-alike senders, and feeds INVOICE-002/003 review and holds
+ok 54 - INVOICE-001 AP inbox captures signed supplier mail as private drafts, holds unknown and look-alike senders, and feeds INVOICE-002/003 review and holds
+  ---
+  duration_ms: 40560.562562
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Subtest: INVOICE-002 original text PDFs, MIME invoices and real scans await explicit review, exact reconciliation and source confirmation before invoice evidence
+ok 55 - INVOICE-002 original text PDFs, MIME invoices and real scans await explicit review, exact reconciliation and source confirmation before invoice evidence
+  ---
+  duration_ms: 5728.24925
+  type: 'test'
+  ...
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Subtest: INVOICE-002 and INVOICE-003 source-bound confirmation preserves original privacy, rejects sensitive prepared fields, flags remit/sender/duplicate changes and refuses cash planning
+ok 56 - INVOICE-002 and INVOICE-003 source-bound confirmation preserves original privacy, rejects sensitive prepared fields, flags remit/sender/duplicate changes and refuses cash planning
+  ---
+  duration_ms: 5026.082476
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicates, repeated PDFs, remit changes and lookalike senders; reasoned review gates planning on every document door
+not ok 57 - INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicates, repeated PDFs, remit changes and lookalike senders; reasoned review gates planning on every document door
+  ---
+  duration_ms: 7051.649939
+  type: 'test'
+  location: '[REDACTED]/tests/invoice-risk.test.mjs:10:1'
+  failureType: 'testCodeFailure'
+  error: 'Protected suffix in public output 0 outside proven source identities'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file://[REDACTED]/tests/invoice-risk.test.mjs:76:60)
+    process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: Legacy archive import migrates retained evidence without rewriting hashes, and tampered evidence refuses atomically through the archive door
+ok 58 - Legacy archive import migrates retained evidence without rewriting hashes, and tampered evidence refuses atomically through the archive door
+  ---
+  duration_ms: 69360.283473
+  type: 'test'
+  ...
+# Subtest: Supplier group invoice ancestry keeps supplier references independent and refuses unresolved group over-balance planning
+ok 59 - Supplier group invoice ancestry keeps supplier references independent and refuses unresolved group over-balance planning
+  ---
+  duration_ms: 4911.591563
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Signed supplier delay becomes a source-bound promise action, requester notice and priced on-time alternative with no commercial commitment
+ok 60 - Signed supplier delay becomes a source-bound promise action, requester notice and priced on-time alternative with no commercial commitment
+  ---
+  duration_ms: 29730.893555
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Native notifications bind recipient and source events, replay read and dismiss once, and preserve purchasing and current scope
+ok 61 - Native notifications bind recipient and source events, replay read and dismiss once, and preserve purchasing and current scope
+  ---
+  duration_ms: 5949.49144
+  type: 'test'
+  ...
+# Subtest: Notification archive continuation and erasure preserve history without restoring native recipient authority
+ok 62 - Notification archive continuation and erasure preserve history without restoring native recipient authority
+  ---
+  duration_ms: 54986.995935
+  type: 'test'
+  ...
+# Subtest: Native notification preferences hold Pacific quiet hours across daylight saving, batch a digest, and consume delivery claims without widening authority
+ok 63 - Native notification preferences hold Pacific quiet hours across daylight saving, batch a digest, and consume delivery claims without widening authority
+  ---
+  duration_ms: 18005.57584
+  type: 'test'
+  ...
+# Subtest: Scheduled native reminders retain queue age, channel choices never fall back, and signed mail outcomes bind the current recipient and replay once
+ok 64 - Scheduled native reminders retain queue age, channel choices never fall back, and signed mail outcomes bind the current recipient and replay once
+  ---
+  duration_ms: 9755.705199
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: IMPORT-003 owner reviews source 10/4/2 balances, adopts without mail, receives three, confirms original-number invoices and preserves approval, budget, deposit, cash and archive lineage
+ok 65 - IMPORT-003 owner reviews source 10/4/2 balances, adopts without mail, receives three, confirms original-number invoices and preserves approval, budget, deposit, cash and archive lineage
+  ---
+  duration_ms: 5773.980326
+  type: 'test'
+  ...
+# Subtest: IMPORT-003 supplier and currency replacement approves only the unreceived remainder and retains old receipts, invoices, prepaid credits and cash in their source currency
+ok 66 - IMPORT-003 supplier and currency replacement approves only the unreceived remainder and retains old receipts, invoices, prepaid credits and cash in their source currency
+  ---
+  duration_ms: 4309.388783
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: PO-003 overdue and unacknowledged POs chase on cadence, escalate once, share real evidence and stop on close or current holds
+ok 67 - PO-003 overdue and unacknowledged POs chase on cadence, escalate once, share real evidence and stop on close or current holds
+  ---
+  duration_ms: 6367.949606
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: PO-010 buyer closes whole, line and partial balances, invoices become exceptions, and reopen checks authority and budget
+ok 68 - PO-010 buyer closes whole, line and partial balances, invoices become exceptions, and reopen checks authority and budget
+  ---
+  duration_ms: 4991.430334
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Explicit native buyer change send freezes exact numbered PDF and originals, scopes supplier acknowledgment and retains audit/archive custody
+ok 69 - Explicit native buyer change send freezes exact numbered PDF and originals, scopes supplier acknowledgment and retains audit/archive custody
+  ---
+  duration_ms: 10065.802645
+  type: 'test'
+  ...
+# Subtest: Native current buyer scope, exact approval and claim-before-send prevent stale, duplicate and uncertain automatic sends
+ok 70 - Native current buyer scope, exact approval and claim-before-send prevent stale, duplicate and uncertain automatic sends
+  ---
+  duration_ms: 6449.906038
+  type: 'test'
+  ...
+# Subtest: Real supplier-link expiry and explicit withdrawal fence read, original and acknowledgment doors without restoring bearer authority
+ok 71 - Real supplier-link expiry and explicit withdrawal fence read, original and acknowledgment doors without restoring bearer authority
+  ---
+  duration_ms: 8322.974926
+  type: 'test'
+  ...
+# Subtest: Initial supplier responses retain exact frozen PO and promises, and only buyer adoption creates an unapproved amendment
+ok 72 - Initial supplier responses retain exact frozen PO and promises, and only buyer adoption creates an unapproved amendment
+  ---
+  duration_ms: 5351.248292
+  type: 'test'
+  ...
+# Subtest: Initial send and supplier response refuse stale authority and nonnative, pending, revoked or cross-origin sources without another mail attempt
+ok 73 - Initial send and supplier response refuse stale authority and nonnative, pending, revoked or cross-origin sources without another mail attempt
+  ---
+  duration_ms: 5312.874619
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: A native buyer email question and signed supplier reply retain exact private files, scoped requester follow-up, audit and portable custody
+ok 74 - A native buyer email question and signed supplier reply retain exact private files, scoped requester follow-up, audit and portable custody
+  ---
+  duration_ms: 28253.521546
+  type: 'test'
+  ...
+# Subtest: Supplier-thread sends enforce current native buyer, exact revision and consent, and never retry a claimed uncertain effect
+ok 75 - Supplier-thread sends enforce current native buyer, exact revision and consent, and never retry a claimed uncertain effect
+  ---
+  duration_ms: 4889.003841
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Subtest: AP-003 terms, ordered due bills, expiring discount and weekly cash obligations through native HTTP
+ok 76 - AP-003 terms, ordered due bills, expiring discount and weekly cash obligations through native HTTP
+  ---
+  duration_ms: 144114.155767
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: REPORT-003 public performance measures drill to exact events and approved quote/invoice savings, never unsigned discounts
+ok 77 - REPORT-003 public performance measures drill to exact events and approved quote/invoice savings, never unsigned discounts
+  ---
+  duration_ms: 5293.856851
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: PO-009 real HTTP PDF/HTML carry location profiles, frozen identity, line shipping/tax, original attachments and numbered amendment differences
+ok 78 - PO-009 real HTTP PDF/HTML carry location profiles, frozen identity, line shipping/tax, original attachments and numbered amendment differences
+  ---
+  duration_ms: 14189.358649
+  type: 'test'
+  ...
+# Subtest: PO-012 native freight, tax, unit and SKU conversion keeps current limits, exact documents and one commitment
+ok 79 - PO-012 native freight, tax, unit and SKU conversion keeps current limits, exact documents and one commitment
+  ---
+  duration_ms: 6329.575107
+  type: 'test'
+  ...
+# Subtest: Supplier group PDFs freeze each counterparty and only applicable original certificate bytes
+ok 80 - Supplier group PDFs freeze each counterparty and only applicable original certificate bytes
+  ---
+  duration_ms: 4757.02349
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# PROBE PO-008 standing send: native scheduled handler -> one accepted frozen PDF and original; competing buyer send 409; unknown outcome attempted once; cap held; audit, restore and erasure passed
+# PROBE PO-008 B: native supplier replacement before any send, disabled consent history and owner erasure -> former contact selectable, preview 200, execute 200, consent and restored history anonymized; current contact preserved; no supplier sends
+# Subtest: PO generation rules create one native PO, wait above the limit and for supplier activation, retain sources and invoice holds, with separate buyer sending consent
+ok 81 - PO generation rules create one native PO, wait above the limit and for supplier activation, retain sources and invoice holds, with separate buyer sending consent
+  ---
+  duration_ms: 61742.458679
+  type: 'test'
+  ...
+# PROBE PO-008 consent fences: native policy command and scheduler -> default off, pause, changed contacts and owner transfer refuse further sends; renewed exact consent sends once
+# Subtest: Automatic PO generation rechecks live approval grants, current catalogue terms, currency rules and owner pause before committing
+ok 82 - Automatic PO generation rechecks live approval grants, current catalogue terms, currency rules and owner pause before committing
+  ---
+  duration_ms: 12493.611672
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Native supplier groups reconcile source lines, frozen originals, separate invoice balances, budget sources and restored history
+ok 83 - Native supplier groups reconcile source lines, frozen originals, separate invoice balances, budget sources and restored history
+  ---
+  duration_ms: 49145.100809
+  type: 'test'
+  ...
+# Subtest: Supplier group conversion fences complete-request variance, required budget owners, stale authority and concurrent once-only issuance
+ok 84 - Supplier group conversion fences complete-request variance, required budget owners, stale authority and concurrent once-only issuance
+  ---
+  duration_ms: 6391.939478
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Reviewed historical multi-line migration reconciles exact source identities, stays inert and continues safely through undo, restore and erasure
+ok 85 - Reviewed historical multi-line migration reconciles exact source identities, stays inert and continues safely through undo, restore and erasure
+  ---
+  duration_ms: 41388.886622
+  type: 'test'
+  ...
+# Subtest: Protected-content assertions distinguish native metadata collisions from leaked values and suffixes
+ok 86 - Protected-content assertions distinguish native metadata collisions from leaked values and suffixes
+  ---
+  duration_ms: 6.536736
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Purse purchasing flows through native authenticated HTTP and real persistent D1
+    # Subtest: P01 business and genuine member sign-in persist scoped capabilities
+    ok 1 - P01 business and genuine member sign-in persist scoped capabilities
+      ---
+      duration_ms: 357.039276
+      type: 'test'
+      ...
+    # Subtest: P02 supplier status and blocking refuse purchase
+    ok 2 - P02 supplier status and blocking refuse purchase
+      ---
+      duration_ms: 73.749947
+      type: 'test'
+      ...
+    # Subtest: P03 approved catalogue prices are copied into revision snapshots
+    ok 3 - P03 approved catalogue prices are copied into revision snapshots
+      ---
+      duration_ms: 73.373193
+      type: 'test'
+      ...
+    # Subtest: P04 durable exact revisions and real attachment bytes
+    ok 4 - P04 durable exact revisions and real attachment bytes
+      ---
+      duration_ms: 48.99091
+      type: 'test'
+      ...
+    # Subtest: P05 quote comparison preserves unlike currencies and missing terms
+    ok 5 - P05 quote comparison preserves unlike currencies and missing terms
+      ---
+      duration_ms: 42.076409
+      type: 'test'
+      ...
+    # Subtest: P06 exact-revision policy, self approval refusal and concurrent budget reservation
+    ok 6 - P06 exact-revision policy, self approval refusal and concurrent budget reservation
+      ---
+      duration_ms: 211.569714
+      type: 'test'
+      ...
+    # Subtest: P07 return and expiring scoped delegation retain decision history
+    ok 7 - P07 return and expiring scoped delegation retain decision history
+      ---
+      duration_ms: 183.179095
+      type: 'test'
+      ...
+    # Subtest: P08 concurrent conversion allocates approved lines once and produces document
+    ok 8 - P08 concurrent conversion allocates approved lines once and produces document
+      ---
+      duration_ms: 57.78929
+      type: 'test'
+      ...
+    # Subtest: P09 issued supplier/cost amendment retains old issuance and renews authority
+    ok 9 - P09 issued supplier/cost amendment retains old issuance and renews authority
+      ---
+      duration_ms: 248.849558
+      type: 'test'
+      ...
+    # Subtest: P10 and RECEIVE-001 assigned receiving, rejection and returns reconcile commitments
+    ok 10 - P10 and RECEIVE-001 assigned receiving, rejection and returns reconcile commitments
+      ---
+      duration_ms: 192.07478
+      type: 'test'
+      ...
+    # Subtest: P11 supplier invoice identity, discrepancies, real evidence and accounting CSV
+    ok 11 - P11 supplier invoice identity, discrepancies, real evidence and accounting CSV
+      ---
+      duration_ms: 615.115951
+      type: 'test'
+      ...
+    # Subtest: P13 reviewed Base import-kit D1 preview, changed-input refusal, resume and undo
+    ok 12 - P13 reviewed Base import-kit D1 preview, changed-input refusal, resume and undo
+      ---
+      duration_ms: 551.813945
+      type: 'test'
+      ...
+    # Subtest: P13 undo preserves edited and downstream-used targets with durable dispositions; jobs stay actor-bound
+    ok 13 - P13 undo preserves edited and downstream-used targets with durable dispositions; jobs stay actor-bound
+      ---
+      duration_ms: 719.738138
+      type: 'test'
+      ...
+    # Subtest: P14 five human preparation workflows keep versions and downloadable drafts
+    ok 14 - P14 five human preparation workflows keep versions and downloadable drafts
+      ---
+      duration_ms: 291.87365
+      type: 'test'
+      ...
+    # Subtest: P14 ProposedActions reject stale inputs and current wrong-role execution
+    ok 15 - P14 ProposedActions reject stale inputs and current wrong-role execution
+      ---
+      duration_ms: 193.551429
+      type: 'test'
+      ...
+    # Subtest: P16 decimal rounding and currency-separated append-only ledger
+    ok 16 - P16 decimal rounding and currency-separated append-only ledger
+      ---
+      duration_ms: 50.173599
+      type: 'test'
+      ...
+    # Subtest: Currency text enters native purchasing exactly and invalid representations leave state unchanged
+    ok 17 - Currency text enters native purchasing exactly and invalid representations leave state unchanged
+      ---
+      duration_ms: 2770.245667
+      type: 'test'
+      ...
+    # Subtest: P17 signed-out, wrong-role, forged revision, revoked and cross-record refuse without mutation
+    ok 18 - P17 signed-out, wrong-role, forged revision, revoked and cross-record refuse without mutation
+      ---
+      duration_ms: 213.82729
+      type: 'test'
+      ...
+    1..18
+ok 87 - Purse purchasing flows through native authenticated HTTP and real persistent D1
+  ---
+  duration_ms: 10874.935228
+  type: 'test'
+  ...
+# Subtest: SECURITY-001 / AGENT-010 structured protected fields never enter preparation records, actions, downloads or refusal audit
+ok 88 - SECURITY-001 / AGENT-010 structured protected fields never enter preparation records, actions, downloads or refusal audit
+  ---
+  duration_ms: 5102.991195
+  type: 'test'
+  ...
+# Subtest: INTAKE-001 request again reviews current prices and omissions, copies only chosen bytes and persists a new draft with fresh authority
+ok 89 - INTAKE-001 request again reviews current prices and omissions, copies only chosen bytes and persists a new draft with fresh authority
+  ---
+  duration_ms: 5337.343827
+  type: 'test'
+  ...
+# Subtest: INTAKE-001 category configuration, private unfinished drafts, current routes, split and custom copy, pending suppliers and email authority
+ok 90 - INTAKE-001 category configuration, private unfinished drafts, current routes, split and custom copy, pending suppliers and email authority
+  ---
+  duration_ms: 5715.6128
+  type: 'test'
+  ...
+# Subtest: APPROVAL-004 exact pending header edits carry or renew chain approvals and move one reservation
+ok 91 - APPROVAL-004 exact pending header edits carry or renew chain approvals and move one reservation
+  ---
+  duration_ms: 30078.169587
+  type: 'test'
+  ...
+# Subtest: Conditional native approval pools serialize a first decision, withdraw queues and await every parallel reviewer
+ok 92 - Conditional native approval pools serialize a first decision, withdraw queues and await every parallel reviewer
+  ---
+  duration_ms: 27545.892664
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Subtest: Quote agent produces a source-bound comparison from three supplier formats, flags uncertainty, and leaves award and approval to the buyer
+ok 93 - Quote agent produces a source-bound comparison from three supplier formats, flags uncertainty, and leaves award and approval to the buyer
+  ---
+  duration_ms: 5725.826201
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Subtest: SOURCE-002 real PDF and MIME email fields remain separate until scoped correction and confirmation create a new draft revision
+ok 94 - SOURCE-002 real PDF and MIME email fields remain separate until scoped correction and confirmation create a new draft revision
+  ---
+  duration_ms: 6468.802509
+  type: 'test'
+  ...
+# Subtest: SOURCE-002 external reader proposal binds a scanned/image original and declared provenance, with review before revision
+ok 95 - SOURCE-002 external reader proposal binds a scanned/image original and declared provenance, with review before revision
+  ---
+  duration_ms: 5265.672001
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: RECEIVE-001 responsible receivers, due email prompts, automatic invoice holds, partial/full receipts, reassignment and PO-010 closure use current authority
+ok 96 - RECEIVE-001 responsible receivers, due email prompts, automatic invoice holds, partial/full receipts, reassignment and PO-010 closure use current authority
+  ---
+  duration_ms: 29835.285401
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: SOURCE-001 supplier links, immutable revisions, reminders, cross-supplier award and source-backed savings
+ok 97 - SOURCE-001 supplier links, immutable revisions, reminders, cross-supplier award and source-backed savings
+  ---
+  duration_ms: 108420.385372
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Signed SAML native admission rejects forged identities and replay; disable, SCIM handoff and restore retain current authority
+ok 98 - Signed SAML native admission rejects forged identities and replay; disable, SCIM handoff and restore retain current authority
+  ---
+  duration_ms: 28023.413787
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Saved report views recompute scoped allocation rows, literal CSV and parsed XLSX with independent currency totals
+ok 99 - Saved report views recompute scoped allocation rows, literal CSV and parsed XLSX with independent currency totals
+  ---
+  duration_ms: 5787.168217
+  type: 'test'
+  ...
+# Subtest: Saved definitions never restore authority and refuse revoked scope, foreign members and erased identity
+ok 100 - Saved definitions never restore authority and refuse revoked scope, foreign members and erased identity
+  ---
+  duration_ms: 26073.005223
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: SCIM owner consent, stable identities, department scope and credential lifecycle through public doors
+ok 101 - SCIM owner consent, stable identities, department scope and credential lifecycle through public doors
+  ---
+  duration_ms: 4747.797849
+  type: 'test'
+  ...
+# Subtest: SCIM deactivation always ends sessions and transfers approvals through owner custody and audited non-self reassignment
+ok 102 - SCIM deactivation always ends sessions and transfers approvals through owner custody and audited non-self reassignment
+  ---
+  duration_ms: 26719.253227
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Subtest: SEARCH-001 public search in 100000 real D1 records finds exact purchasing sources under one second and enforces current scope and protected-field exclusion
+ok 103 - SEARCH-001 public search in 100000 real D1 records finds exact purchasing sources under one second and enforces current scope and protected-field exclusion
+  ---
+  duration_ms: 202913.136125
+  type: 'test'
+  ...
+# Subtest: scoped search lists only purchases whose every line, split allocation and order coding fits the reader grant
+ok 104 - scoped search lists only purchases whose every line, split allocation and order coding fits the reader grant
+  ---
+  duration_ms: 5444.066366
+  type: 'test'
+  ...
+# Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+# Subtest: SEARCH-001 complete archive restore preserves source-bound search and rebuilds full-text lookup before readiness
+ok 105 - SEARCH-001 complete archive restore preserves source-bound search and rebuilds full-text lookup before readiness
+  ---
+  duration_ms: 36047.544126
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Supplier acknowledgment captures bounded shipment references, appends corrections and fences unsafe writes without changing purchasing
+ok 106 - Supplier acknowledgment captures bounded shipment references, appends corrections and fences unsafe writes without changing purchasing
+  ---
+  duration_ms: 5931.633096
+  type: 'test'
+  ...
+# Subtest: Shipment history survives archive and erasure while expired, withdrawn, superseded and revoked capabilities remain inert
+ok 107 - Shipment history survives archive and erasure while expired, withdrawn, superseded and revoked capabilities remain inert
+  ---
+  duration_ms: 69691.112809
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: REPORT-001 scoped HTTP dashboards filter source rows, preserve cents/currencies and distinguish reservations, issued commitments and invoice evidence
+ok 108 - REPORT-001 scoped HTTP dashboards filter source rows, preserve cents/currencies and distinguish reservations, issued commitments and invoice evidence
+  ---
+  duration_ms: 5004.303061
+  type: 'test'
+  ...
+# Subtest: BUDGET-001 dated department exposure reserves pending, commits buyer changes and retains received unbilled value
+ok 109 - BUDGET-001 dated department exposure reserves pending, commits buyer changes and retains received unbilled value
+  ---
+  duration_ms: 7779.05641
+  type: 'test'
+  ...
+# Subtest: Spend questions recompute exact finance figures and department sources, refuse unknown facts and obey owner pause and current scope
+ok 110 - Spend questions recompute exact finance figures and department sources, refuse unknown facts and obey owner pause and current scope
+  ---
+  duration_ms: 4660.0403
+  type: 'test'
+  ...
+# Subtest: Supplier group report sources retain charge cents and each allocation through partial receiving, closure and reopening
+ok 111 - Supplier group report sources retain charge cents and each allocation through partial receiving, closure and reopening
+  ---
+  duration_ms: 4546.623321
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: STOCK-001 counts create one preferred-item draft; a person submits and outstanding supply prevents duplicates
+ok 112 - STOCK-001 counts create one preferred-item draft; a person submits and outstanding supply prevents duplicates
+  ---
+  duration_ms: 5120.536917
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: SUPPLIER-004 dated evidence, clock-driven supplier/owner reminders, lapse holds and reviewed replacement
+ok 113 - SUPPLIER-004 dated evidence, clock-driven supplier/owner reminders, lapse holds and reviewed replacement
+  ---
+  duration_ms: 6516.76134
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: SUPPLIER-003 duplicate matching, redacted CSV custody and history-preserving merge through authenticated public doors
+ok 114 - SUPPLIER-003 duplicate matching, redacted CSV custody and history-preserving merge through authenticated public doors
+  ---
+  duration_ms: 8323.302199
+  type: 'test'
+  ...
+# Subtest: SECURITY-001 encrypted owner storage, native reveal, role masks, atomic matching and safe refusal through public HTTP
+ok 115 - SECURITY-001 encrypted owner storage, native reveal, role masks, atomic matching and safe refusal through public HTTP
+  ---
+  duration_ms: 7343.104078
+  type: 'test'
+  ...
+# Subtest: SECURITY-001 unavailable installation key returns 503 without protected or matching writes
+ok 116 - SECURITY-001 unavailable installation key returns 503 without protected or matching writes
+  ---
+  duration_ms: 4838.769496
+  type: 'test'
+  ...
+# Subtest: SECURITY-001 owner rotation authenticates all values atomically and key-loss recovery requires explicit audited reentry
+ok 117 - SECURITY-001 owner rotation authenticates all values atomically and key-loss recovery requires explicit audited reentry
+  ---
+  duration_ms: 5838.206432
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Supplier invoice link captures exact private PDF and balance ancestry, holds source confirmation and duplicate/excess evidence, and exposes only its own authentic statuses
+ok 118 - Supplier invoice link captures exact private PDF and balance ancestry, holds source confirmation and duplicate/excess evidence, and exposes only its own authentic statuses
+  ---
+  duration_ms: 7405.002858
+  type: 'test'
+  ...
+# Subtest: Owner-consented supplier flip approves only confirmed three-way evidence, schedules once and holds excess or later risk through public doors
+ok 119 - Owner-consented supplier flip approves only confirmed three-way evidence, schedules once and holds excess or later risk through public doors
+  ---
+  duration_ms: 31218.874444
+  type: 'test'
+  ...
+# Subtest: Standing supplier approval refuses price and receipt discrepancies and holds source risk until reasoned review
+ok 120 - Standing supplier approval refuses price and receipt discrepancies and holds source risk until reasoned review
+  ---
+  duration_ms: 20241.753216
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: SUPPLIER-005 supplier scorecards drill to delivery, quality, distinct invoice exceptions, acknowledgments, spend and reasoned issues
+ok 121 - SUPPLIER-005 supplier scorecards drill to delivery, quality, distinct invoice exceptions, acknowledgments, spend and reasoned issues
+  ---
+  duration_ms: 6174.596157
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Pending supplier review preserves approval, returns unissued requests and releases exact reservations once through native HTTP
+ok 122 - Pending supplier review preserves approval, returns unissued requests and releases exact reservations once through native HTTP
+  ---
+  duration_ms: 5072.7302
+  type: 'test'
+  ...
+# Subtest: Supplier proposal choices preserve duplicate privacy, proposer separation and current native authority
+ok 123 - Supplier proposal choices preserve duplicate privacy, proposer separation and current native authority
+  ---
+  duration_ms: 4840.503278
+  type: 'test'
+  ...
+# Subtest: Supplier proposal erasure and archive continuation retain inert review and release history without resurrecting identity
+ok 124 - Supplier proposal erasure and archive continuation retain inert review and release history without resurrecting identity
+  ---
+  duration_ms: 76664.376716
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: SUPPLIER-007 screens new suppliers and identity edits, holds matches and retains dated review evidence
+ok 125 - SUPPLIER-007 screens new suppliers and identity edits, holds matches and retains dated review evidence
+  ---
+  duration_ms: 6394.231464
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Human supplier tax review binds private W-9 bytes, keeps decisions and refuses stale or unauthorized changes through native HTTP
+ok 126 - Human supplier tax review binds private W-9 bytes, keeps decisions and refuses stale or unauthorized changes through native HTTP
+  ---
+  duration_ms: 6830.749137
+  type: 'test'
+  ...
+# Subtest: Supplier tax archive and erasure preserve anonymous evidence without restoring reviewer or identity authority
+ok 127 - Supplier tax archive and erasure preserve anonymous evidence without restoring reviewer or identity authority
+  ---
+  duration_ms: 81286.376733
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: INTAKE-006 optional owner-configured international review extends the native chain with current independent authority
+ok 128 - INTAKE-006 optional owner-configured international review extends the native chain with current independent authority
+  ---
+  duration_ms: 6968.982008
+  type: 'test'
+  ...
+# Subtest: INTAKE-006 international travel approval routes and policy evidence survive a real archive without restoring authority
+ok 129 - INTAKE-006 international travel approval routes and policy evidence survive a real archive without restoring authority
+  ---
+  duration_ms: 32879.495174
+  type: 'test'
+  ...
+# ▲ [WARNING] Proxy environment variables detected. We'll use your proxy for fetch requests.
+# Subtest: Published GSA meals defaults use exact fiscal-year city or county scope and explicit standard CONUS selection
+ok 130 - Published GSA meals defaults use exact fiscal-year city or county scope and explicit standard CONUS selection
+  ---
+  duration_ms: 5465.269908
+  type: 'test'
+  ...
+# Subtest: INTAKE-006 native Austin travel estimate, manager and finance chain, date amendments and exact reservations
+ok 131 - INTAKE-006 native Austin travel estimate, manager and finance chain, date amendments and exact reservations
+  ---
+  duration_ms: 4535.334222
+  type: 'test'
+  ...
+# Subtest: INTAKE-006 native report import rejects wrong authority and sources, transfers actual and releases once
+ok 132 - INTAKE-006 native report import rejects wrong authority and sources, transfers actual and releases once
+  ---
+  duration_ms: 47375.366688
+  type: 'test'
+  ...
+# Subtest: Assistant travel gives only the exact active traveler approved booking terms and keeps source custody unchanged
+ok 133 - Assistant travel gives only the exact active traveler approved booking terms and keeps source custody unchanged
+  ---
+  duration_ms: 3720.956894
+  type: 'test'
+  ...
+# Subtest: Retained native travel approvals accept later financial evidence after approver departure without reviving purchase authority
+ok 134 - Retained native travel approvals accept later financial evidence after approver departure without reviving purchase authority
+  ---
+  duration_ms: 3421.500531
+  type: 'test'
+  ...
+1..134
+# tests 152
+# suites 0
+# pass 151
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1516942.059638
+ ELIFECYCLE  Command failed with exit code 1.
+ ELIFECYCLE  Command failed with exit code 1.
+Verifying application: exit 1, signal none.
+Command: pnpm
+Last output (up to 40 lines):
+ok 130 - Published GSA meals defaults use exact fiscal-year city or county scope and explicit standard CONUS selection
+  ---
+  duration_ms: 5465.269908
+  type: 'test'
+  ...
+# Subtest: INTAKE-006 native Austin travel estimate, manager and finance chain, date amendments and exact reservations
+ok 131 - INTAKE-006 native Austin travel estimate, manager and finance chain, date amendments and exact reservations
+  ---
+  duration_ms: 4535.334222
+  type: 'test'
+  ...
+# Subtest: INTAKE-006 native report import rejects wrong authority and sources, transfers actual and releases once
+ok 132 - INTAKE-006 native report import rejects wrong authority and sources, transfers actual and releases once
+  ---
+  duration_ms: 47375.366688
+  type: 'test'
+  ...
+# Subtest: Assistant travel gives only the exact active traveler approved booking terms and keeps source custody unchanged
+ok 133 - Assistant travel gives only the exact active traveler approved booking terms and keeps source custody unchanged
+  ---
+  duration_ms: 3720.956894
+  type: 'test'
+  ...
+# Subtest: Retained native travel approvals accept later financial evidence after approver departure without reviving purchase authority
+ok 134 - Retained native travel approvals accept later financial evidence after approver departure without reviving purchase authority
+  ---
+  duration_ms: 3421.500531
+  type: 'test'
+  ...
+1..134
+# tests 152
+# suites 0
+# pass 151
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1516942.059638
+ ELIFECYCLE  Command failed with exit code 1.
+ ELIFECYCLE  Command failed with exit code 1.
+Log: [REDACTED]/.seed/installer/commands-6103/install.log
+verify: failed (exit 1)

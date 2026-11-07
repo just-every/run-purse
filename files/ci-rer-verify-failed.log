@@ -1,0 +1,1126 @@
+rer-verify	Run pnpm exec rer verify	﻿2026-11-07T21:12:23.7163122Z ##[group]Run pnpm exec rer verify
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:23.7163435Z [36;1mpnpm exec rer verify[0m
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:23.7184155Z shell: /usr/bin/bash -e {0}
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:23.7184415Z env:
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:23.7184644Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:23.7185110Z ##[endgroup]
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:24.3482702Z Checking pinned pnpm
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:24.5038324Z 10.12.4
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:24.6865513Z Installing Chromium and its headless shell from the checkout’s Playwright
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:25.0162149Z Downloading Chromium 140.0.7339.186 (playwright build v1193) from https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1193/chromium-linux.zip
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:25.2793422Z |                                                                                |   0% of 173.8 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:25.4536997Z |■■■■■■■■                                                                        |  10% of 173.8 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:25.5393231Z |■■■■■■■■■■■■■■■■                                                                |  20% of 173.8 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:25.6299732Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 173.8 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:25.7120901Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 173.8 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:25.8543790Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 173.8 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:25.9897117Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 173.8 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:26.1254148Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 173.8 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:26.2452682Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 173.8 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:26.3421500Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 173.8 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:26.4643887Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 173.8 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.5199786Z Chromium 140.0.7339.186 (playwright build v1193) downloaded to /home/runner/.cache/ms-playwright/chromium-1193
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.5200735Z Downloading FFMPEG playwright build v1011 from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-linux.zip
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.7135416Z |                                                                                |   0% of 2.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.7693070Z |■■■■■■■■                                                                        |  10% of 2.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.7931430Z |■■■■■■■■■■■■■■■■                                                                |  20% of 2.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.8080293Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 2.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.8182937Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 2.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.8298238Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 2.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.8360754Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 2.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.8603049Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 2.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.8651204Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 2.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.8682782Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 2.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.8710518Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 2.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.9041921Z FFMPEG playwright build v1011 downloaded to /home/runner/.cache/ms-playwright/ffmpeg-1011
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:28.9043282Z Downloading Chromium Headless Shell 140.0.7339.186 (playwright build v1193) from https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1193/chromium-headless-shell-linux.zip
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:29.0330409Z |                                                                                |   0% of 104.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:29.1612039Z |■■■■■■■■                                                                        |  10% of 104.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:29.2142404Z |■■■■■■■■■■■■■■■■                                                                |  20% of 104.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:29.2688309Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 104.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:29.3272850Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 104.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:29.3881498Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 104.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:29.4472666Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 104.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:29.4920508Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 104.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:29.5498322Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 104.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:29.6031377Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 104.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:29.6501752Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 104.3 MiB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:30.7558698Z Chromium Headless Shell 140.0.7339.186 (playwright build v1193) downloaded to /home/runner/.cache/ms-playwright/chromium_headless_shell-1193
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:30.8812373Z Verifying application
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:31.0513017Z 
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:31.0513817Z > @procurement/purse@0.1.1 verify:app [REDACTED]
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:31.0514681Z > rer queue verify:app -- sh -c "pnpm run build && pnpm run typecheck && pnpm run test:purse && pnpm run test:runtime && pnpm run test:site" && pnpm run test:mail
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:31.0515792Z 
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:31.1233914Z verify:app
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:31.2953277Z 
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:31.2953988Z > @procurement/purse@0.1.1 build [REDACTED]
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:31.2954442Z > rer build
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:31.2954548Z 
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:31.6926689Z Checking pinned pnpm
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:31.8452516Z 10.12.4
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:31.9035598Z Building your application
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:32.1463116Z build:app
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.3160961Z (node:2715) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.3161465Z (Use `node --trace-warnings ...` to show where the warning was created)
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.4706977Z vite v8.2.2 building client environment for production...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.4769257Z transforming...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.5887938Z ✓ 276 modules transformed.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6179023Z rendering chunks...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6635966Z computing gzip size...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6695315Z dist/client/.assetsignore               0.02 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6698033Z dist/client/assets/index-bvqbhP-H.js  312.47 kB │ gzip: 101.22 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6698580Z dist/client/assets/app-C86Yseyk.js    542.20 kB │ gzip: 141.56 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6698817Z 
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6698929Z ✓ built in 201ms
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6700984Z [plugin builtin:vite-reporter] 
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6701418Z (!) Some chunks are larger than 500 kB after minification. Consider:
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6701845Z - Using dynamic import() to code-split the application
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6702855Z - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6703540Z - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6703997Z vite v8.2.2 building ssr environment for production...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:33.6762441Z transforming...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.2201395Z ✓ 1182 modules transformed.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.3557999Z rendering chunks...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.5947545Z computing gzip size...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6612281Z dist/server/wrangler.json                                      1.59 kB │ gzip:     0.80 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6614567Z dist/server/.vite/manifest.json                                3.19 kB │ gzip:     0.67 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6615689Z dist/server/assets/empty-plugin-adapters-D_0twvAa.js           0.28 kB │ gzip:     0.18 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6616533Z dist/server/assets/start-D8qDT34V.js                           0.28 kB │ gzip:     0.21 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6617404Z dist/server/assets/_tanstack-start-manifest_v-B_7yAhGB.js      0.53 kB │ gzip:     0.30 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6618256Z dist/server/assets/jsx-runtime-BsfcbOOH.js                    19.02 kB │ gzip:     5.14 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6619081Z dist/server/assets/router-CA3wHLRX.js                         40.08 kB │ gzip:    10.47 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6619976Z dist/server/assets/travel-export-format-dI_8D2u7.js           77.75 kB │ gzip:    23.34 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6620795Z dist/server/assets/Match-CyD0FdS1.js                         145.57 kB │ gzip:    36.64 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6621595Z dist/server/assets/app-DUsszmuD.js                           932.54 kB │ gzip:   179.05 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6622388Z dist/server/assets/pdfjs-DfXV6eIT.js                       2,110.56 kB │ gzip:   554.42 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6623137Z dist/server/index.js                                       5,880.08 kB │ gzip: 1,600.15 kB
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6623541Z 
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:34.6623906Z ✓ built in 988ms
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:35.0020148Z Your application is built
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:35.0218629Z build: complete (exit 0)
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:35.2026938Z 
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:35.2027780Z > @procurement/purse@0.1.1 typecheck [REDACTED]
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:35.2028145Z > tsc --build --incremental
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:35.2028286Z 
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:44.0075826Z 
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:44.0076783Z > @procurement/purse@0.1.1 test:purse [REDACTED]
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:44.0086041Z > node --test --test-concurrency=2 tests/purse.test.mjs tests/access.test.mjs tests/entities.test.mjs tests/identity.test.mjs tests/saml.test.mjs tests/scim.test.mjs tests/stockroom.test.mjs tests/order-closure.test.mjs tests/blanket-orders.test.mjs tests/order-adoption.test.mjs tests/supplier-screening.test.mjs tests/supplier-performance.test.mjs tests/catalogue.test.mjs tests/catalogue-import.test.mjs tests/supplier-duplicates.test.mjs tests/supplier-documents.test.mjs tests/supplier-tax.test.mjs tests/order-chasing.test.mjs tests/agent-governance.test.mjs tests/late-order-resolution.test.mjs tests/quote-agent.test.mjs tests/po-generation.test.mjs tests/supplier-invoice.test.mjs tests/order-thread.test.mjs tests/payables.test.mjs tests/audit-log.test.mjs tests/spend-report.test.mjs tests/saved-reports.test.mjs tests/coding-agent.test.mjs tests/po-documents.test.mjs tests/po-supplier-groups.test.mjs tests/performance-report.test.mjs tests/invoice-risk.test.mjs tests/receipt-routing.test.mjs tests/quote-reading.test.mjs tests/invoice-reading.test.mjs tests/rfq.test.mjs tests/email-intake.test.mjs tests/invoice-inbox.test.mjs tests/integration-tokens.test.mjs tests/search.test.mjs tests/agreements.test.mjs tests/agreement-reading.test.mjs tests/agreement-savings.test.mjs tests/agent-value.test.mjs tests/agent-value-checkins.test.mjs tests/travel.test.mjs tests/travel-routing.test.mjs tests/order-send.test.mjs tests/comments.test.mjs tests/budget-disposition.test.mjs tests/browser-archive.test.mjs tests/budget-import.test.mjs tests/cross-team-reviews.test.mjs tests/accrual-report.test.mjs tests/custom-fields.test.mjs tests/invoice-exceptions.test.mjs tests/invoice-exception-agent.test.mjs tests/protected-value-assertions.test.mjs tests/supplier-proposals.test.mjs tests/shipment-references.test.mjs tests/notifications.test.mjs tests/approval-email.test.mjs tests/procurify-lines.test.mjs && node tests/agent-door-quotes.mjs && pnpm run test:agent-policy-limits && pnpm run test:agent-capacity && node tests/agent-door-erasure.mjs
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:44.0093966Z 
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:44.0464866Z TAP version 13
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:52.2434533Z # Subtest: Scoped procurement roles, native custom receiving, report sources, audit grants and readonly refusals through public HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:52.2435986Z ok 1 - Scoped procurement roles, native custom receiving, report sources, audit grants and readonly refusals through public HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:52.2436550Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:52.2437058Z   duration_ms: 7328.556086
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:52.2437459Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:52.2437748Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:55.4490122Z # Subtest: Native mutation and value snapshots keep private policies and revisions scoped while edited fields reach former approvers
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:55.4496335Z ok 2 - Native mutation and value snapshots keep private policies and revisions scoped while edited fields reach former approvers
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:55.4497086Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:55.4497387Z   duration_ms: 3205.143038
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:55.4497705Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:12:55.4498000Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:14.0497490Z # Subtest: Native period-end accrual reconciles dated goods and services, genuine approvals, scoped exports and restored source history without restoring authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:14.0499545Z ok 3 - Native period-end accrual reconciles dated goods and services, genuine approvals, scoped exports and restored source history without restoring authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:14.0500115Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:14.0500301Z   duration_ms: 29034.331513
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:14.0500505Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:14.0500688Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:18.7403626Z # Subtest: Native agent governance enforces type, current authority, two chases, immediate pause and immutable source-exact records without supplier instructions
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:18.7406005Z ok 4 - Native agent governance enforces type, current authority, two chases, immediate pause and immutable source-exact records without supplier instructions
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:18.7406625Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:18.7406830Z   duration_ms: 22368.46196
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:18.7407041Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:18.7407562Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:22.3671838Z # Subtest: AGENT-005 real scheduled 30/90-day requester check-ins claim once concurrently, retain exact sources and consume paused intervals
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:22.3673150Z ok 5 - AGENT-005 real scheduled 30/90-day requester check-ins claim once concurrently, retain exact sources and consume paused intervals
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:22.3673786Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:22.3674141Z   duration_ms: 7398.567069
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:22.3674346Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:22.3674550Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:27.3148963Z # Subtest: AGENT-005 scheduled check-ins reject current revoked/inactive requester authority and never retry uncertain mail or stale revisions
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:27.3170509Z ok 6 - AGENT-005 scheduled check-ins reject current revoked/inactive requester authority and never retry uncertain mail or stale revisions
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:27.3171274Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:27.3171663Z   duration_ms: 4943.994945
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:27.3171996Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:27.3172331Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:32.7552182Z # Subtest: AGENT-006 public Cron proposes in the recorded notice window once per source, honoring purchase types and current finance grants without sending
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:32.7553694Z ok 7 - AGENT-006 public Cron proposes in the recorded notice window once per source, honoring purchase types and current finance grants without sending
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:32.7554175Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:32.7554313Z   duration_ms: 5441.787084
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:32.7554801Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:32.7555072Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:38.0806276Z # Subtest: AGENT-005 exact approved promises, original provider-reported 50/31/19 evidence, requester-only explicit confirmation and immutable portable provenance
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:38.0807944Z ok 8 - AGENT-005 exact approved promises, original provider-reported 50/31/19 evidence, requester-only explicit confirmation and immutable portable provenance
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:38.0808738Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:38.0809113Z   duration_ms: 18338.067765
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:38.0809493Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:38.0809797Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:41.7706470Z # Subtest: AGENT-005 receipt need-date and confirmed quoted-saving evidence reuse REPORT-003 amounts without manufacturing unsigned savings
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:41.7726283Z ok 9 - AGENT-005 receipt need-date and confirmed quoted-saving evidence reuse REPORT-003 amounts without manufacturing unsigned savings
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:41.7755643Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:41.7846189Z   duration_ms: 3681.874451
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:41.7875518Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:41.7907159Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:46.2637825Z # Subtest: Recurring consolidation scenarios recompute from native sources, require independent exact consents and never change or send purchasing
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:46.2643556Z ok 10 - Recurring consolidation scenarios recompute from native sources, require independent exact consents and never change or send purchasing
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:46.2644335Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:46.2644756Z   duration_ms: 4501.762627
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:46.2645240Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:46.2645489Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5010347Z # Subtest: Assigned agreement and budget owners approve recorded-term forecasts before one exact human notice and separate cancellation records
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5033648Z ok 11 - Assigned agreement and budget owners approve recorded-term forecasts before one exact human notice and separate cancellation records
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5034160Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5034456Z   duration_ms: 4238.037016
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5034713Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5035073Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5829993Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5839838Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5840815Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5841687Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5843096Z # Subtest: CONTRACT-001 real PDF proposals retain original/page confidence, corrected Cron dates and complete archive provenance through public doors
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5844186Z ok 12 - CONTRACT-001 real PDF proposals retain original/page confidence, corrected Cron dates and complete archive provenance through public doors
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5844835Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5845576Z   duration_ms: 16152.02055
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5845837Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:50.5846020Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:53.7602370Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:54.9790074Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:55.3792619Z # Subtest: CONTRACT-001 REPORT-003 confirmed agreement prices realize exact approved invoice savings, source history and amendment caps through public doors
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:55.3804640Z ok 13 - CONTRACT-001 REPORT-003 confirmed agreement prices realize exact approved invoice savings, source history and amendment caps through public doors
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:55.3805661Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:55.3806043Z   duration_ms: 4591.645117
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:55.3806439Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:13:55.3806804Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:10.1608911Z # Subtest: CONTRACT-001 owner-confirmed agreement history, active member assignment, recorded renewal terms, exact invoice attribution, notice claims and complete restore through public doors
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:10.1629922Z ok 14 - CONTRACT-001 owner-confirmed agreement history, active member assignment, recorded renewal terms, exact invoice attribution, notice claims and complete restore through public doors
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:10.1630777Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:10.1631166Z   duration_ms: 18632.862881
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:10.1631622Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:10.1631834Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:17.3876871Z # Subtest: Native email approval confirms all decisions through current sessions and the ordinary audited budget command exactly once
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:17.3878150Z ok 15 - Native email approval confirms all decisions through current sessions and the ordinary audited budget command exactly once
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:17.3879035Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:17.3879467Z   duration_ms: 4880.475484
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:17.3879730Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:17.3879907Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:17.3880493Z # Subtest: Email locators refuse stale sources, changed authority and restored or erased identities without reviving purchasing authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:17.3881408Z ok 16 - Email locators refuse stale sources, changed authority and restored or erased identities without reviving purchasing authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:17.3881885Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:17.3882060Z   duration_ms: 16218.849046
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:17.3882261Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:17.3882425Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:56.8886607Z # Subtest: AUDIT-001 owner filters a PO history and exports exact decision policy, revisions and grants through native HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:56.8895497Z ok 17 - AUDIT-001 owner filters a PO history and exports exact decision policy, revisions and grants through native HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:56.8897417Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:56.8897618Z   duration_ms: 3171.542779
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:56.8897838Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:56.8898100Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:56.8898835Z # Subtest: ERASURE-001 native reviewed owner erasure anonymizes financial audit, RFQ and email originals, retains encrypted tax/evidence and fences archive resurrection
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:56.8900112Z ok 18 - ERASURE-001 native reviewed owner erasure anonymizes financial audit, RFQ and email originals, retains encrypted tax/evidence and fences archive resurrection
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:56.8900970Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:56.8901390Z   duration_ms: 42566.775088
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:56.8901899Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:14:56.8902215Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:19.4017055Z # Subtest: ERASURE-001 retention clock lists expired TIN, bank and W-9 values, erases them only on confirmation, and refuses buyer, auditor, token and agent at every door
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:19.4018693Z ok 19 - ERASURE-001 retention clock lists expired TIN, bank and W-9 values, erases them only on confirmation, and refuses buyer, auditor, token and agent at every door
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:19.4019475Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:19.4019778Z   duration_ms: 22514.37877
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:19.4020248Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:19.4020536Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.3633041Z # Subtest: ERASURE-001 a journal-less fresh restore is held until the native owner acknowledges, then restores labelled erasure history unverified
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.3634320Z ok 20 - ERASURE-001 a journal-less fresh restore is held until the native owner acknowledges, then restores labelled erasure history unverified
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.3675722Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.3695538Z   duration_ms: 23961.512069
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.3705675Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.3735288Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4460774Z # Subtest: PO-005 blanket invoice draw-down preserves approved caps, validity, commitments, current amendments and source-exact archives
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4463553Z ok 21 - PO-005 blanket invoice draw-down preserves approved caps, validity, commitments, current amendments and source-exact archives
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4464173Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4464576Z   duration_ms: 3932.784875
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4464850Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4465466Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4465865Z # Subtest: blanket orders show billed balances only to readers of every invoice they sum
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4466461Z ok 22 - blanket orders show billed balances only to readers of every invoice they sum
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4466816Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4466994Z   duration_ms: 2861.508336
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4467200Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4467369Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4467936Z # Subtest: PO-005 real release authority, structured service value matching and consented recurring Cron pause at agreement boundaries
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4468843Z ok 23 - PO-005 real release authority, structured service value matching and consented recurring Cron pause at agreement boundaries
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4469363Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4469540Z   duration_ms: 7011.371722
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4469743Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4469913Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4470428Z # Subtest: Archive equality keeps every retained order field while receiving suggestions advance at installation midnight
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4471243Z ok 24 - Archive equality keeps every retained order field while receiving suggestions advance at installation midnight
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4471699Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4471866Z   duration_ms: 14.454297
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4472066Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4472236Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4472729Z # Subtest: Receiving suggestion checks use the configured installation timezone and allow a read that crosses midnight
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4473484Z ok 25 - Receiving suggestion checks use the configured installation timezone and allow a read that crosses midnight
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4473924Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4474087Z   duration_ms: 0.814973
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4474275Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4474436Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4475129Z # Subtest: Reviewed quarter disposition moves unchanged 60 and 40 shares exactly once with current independent authority and portable history
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4476032Z ok 26 - Reviewed quarter disposition moves unchanged 60 and 40 shares exactly once with current independent authority and portable history
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4476522Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4476693Z   duration_ms: 27864.309595
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4476895Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4477056Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4477558Z # Subtest: Unsafe quarter moves refuse changed sources, insufficient capacity, unreviewed amendments and restored or erased consent
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4478358Z ok 27 - Unsafe quarter moves refuse changed sources, insufficient capacity, unreviewed amendments and restored or erased consent
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4480272Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4480434Z   duration_ms: 27186.903384
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4480615Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:15:43.4480765Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6105575Z # Subtest: Reviewed native budgets bind bytes, mapping and authority; unchanged imports write nothing
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6107257Z ok 28 - Reviewed native budgets bind bytes, mapping and authority; unchanged imports write nothing
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6107796Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6108076Z   duration_ms: 2796.682032
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6108384Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6108650Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6109171Z # Subtest: Budget owner sees scoped totals and a single threshold crossing without acquiring approval authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6109927Z ok 29 - Budget owner sees scoped totals and a single threshold crossing without acquiring approval authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6110417Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6110704Z   duration_ms: 2865.404294
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6111834Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6112129Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6112737Z # Subtest: Budget assignments and threshold history survive restore without reviving erased owners or review authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6113569Z ok 30 - Budget assignments and threshold history survive restore without reviving erased owners or review authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6114061Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6114315Z   duration_ms: 25761.636878
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6116976Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6117234Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6898271Z # Subtest: Hosted catalogue review atomically imports exact identities and dated currency prices under current authority, preserving purchases and archive continuation
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6914490Z ok 31 - Hosted catalogue review atomically imports exact identities and dated currency prices under current authority, preserving purchases and archive continuation
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6915554Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6915909Z   duration_ms: 14429.931603
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6916220Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:00.6916491Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:03.0871704Z # Subtest: CATALOG-001 items retain metadata, dated prices, coding, required files and atomically expanded bundles through authenticated HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:03.0896128Z ok 32 - CATALOG-001 items retain metadata, dated prices, coding, required files and atomically expanded bundles through authenticated HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:03.0907749Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:03.0907950Z   duration_ms: 3516.037532
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:03.0908090Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:03.0908201Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:05.2612449Z # Subtest: AGENT-008 source-backed split review and two human GL corrections govern the third invoice without sends or purchasing changes
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:05.2626300Z ok 33 - AGENT-008 source-backed split review and two human GL corrections govern the third invoice without sends or purchasing changes
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:05.2677211Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:05.2691379Z   duration_ms: 3786.839822
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:05.2725266Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:05.2768074Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:08.0286796Z # Subtest: AGENT-008 flags preferred supplier sources and separates day, requester, currency and current source scope
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:08.0287347Z ok 34 - AGENT-008 flags preferred supplier sources and separates day, requester, currency and current source scope
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:08.0287611Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:08.0287743Z   duration_ms: 2765.551604
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:08.0287903Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:08.0288018Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:39.7991943Z # Subtest: Internal comments preserve the pending queue and current scope while member mentions redact inaccessible content
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:39.7993170Z ok 35 - Internal comments preserve the pending queue and current scope while member mentions redact inaccessible content
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:39.7993827Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:39.7994150Z   duration_ms: 3590.052454
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:39.7994485Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:39.7995279Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:39.7995950Z # Subtest: Author changes keep complete audited versions and portable files, and member erasure cannot revive authors or captures
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:39.7996922Z ok 36 - Author changes keep complete audited versions and portable files, and member erasure cannot revive authors or captures
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:39.7998167Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:39.7998344Z   duration_ms: 32216.118198
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:39.7998553Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:39.7998735Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:42.7276456Z # Subtest: Issued PO comments and attachments stay off supplier links, frozen documents and outbound threads
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:42.7277224Z ok 37 - Issued PO comments and attachments stay off supplier links, frozen documents and outbound threads
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:42.7277546Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:42.7277732Z   duration_ms: 2927.435175
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:42.7277977Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:42.7278149Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:43.3705453Z # Subtest: Native cross-team reviews order questions, files and decisions before independent purchase approval, conversion and issuance
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:43.3707321Z ok 38 - Native cross-team reviews order questions, files and decisions before independent purchase approval, conversion and issuance
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:43.3708029Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:43.3708347Z   duration_ms: 4246.981152
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:43.3708674Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:43.3708965Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:43.3709686Z # Subtest: Cross-team review archives retain audited history and scoped files without restoring authority; erasure fences identities and replay
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:43.3711042Z ok 39 - Cross-team review archives retain audited history and scoped files without restoring authority; erasure fences identities and replay
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:43.3711679Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:43.3711980Z   duration_ms: 30206.249974
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:43.3712311Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:43.3712601Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:46.7103608Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:46.9560151Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:47.1759619Z # Subtest: Native typed custom fields validate requests, freeze approved PO and source-confirmed bill values, and reconcile scoped currency reports
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:47.1760791Z ok 40 - Native typed custom fields validate requests, freeze approved PO and source-confirmed bill values, and reconcile scoped currency reports
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:47.1761510Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:47.1761797Z   duration_ms: 3529.476502
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:47.1762099Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:47.1762362Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:16:49.7496477Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1186101Z # Subtest: Definition changes and amendments retain historical custom values and archive restore cannot revive purchasing authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1193390Z ok 41 - Definition changes and amendments retain historical custom values and archive restore cannot revive purchasing authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1194014Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1194531Z   duration_ms: 22942.754884
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1194730Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1195045Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1938854Z # Subtest: INTAKE-004 signed provider intake preserves private sources, requester completion, held assignment and durable replay/mail claims
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1940953Z ok 42 - INTAKE-004 signed provider intake preserves private sources, requester completion, held assignment and durable replay/mail claims
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1941992Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1942278Z   duration_ms: 19935.928205
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1942583Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1942838Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1943365Z # Subtest: Concurrent distinct signed emails retain each source once across intake revision conflicts
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1944122Z ok 43 - Concurrent distinct signed emails retain each source once across intake revision conflicts
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1945043Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1945304Z   duration_ms: 2336.86324
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1945589Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:10.1945848Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:11.6492459Z # Subtest: Native entity purchasing reconciles two independent budgets and frozen PDFs while unsafe authority and cross-entity actions change nothing
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:11.6493707Z ok 44 - Native entity purchasing reconciles two independent budgets and frozen PDFs while unsafe authority and cross-entity actions change nothing
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:11.6494496Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:11.6495085Z   duration_ms: 4049.981266
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:11.6495345Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:11.6495517Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:36.5993696Z # Subtest: Entity history continues through real archives and erasure without restoring identities or accepting stale entity authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:36.5997048Z ok 45 - Entity history continues through real archives and erasure without restoring identities or accepting stale entity authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:36.5998079Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:36.5998398Z   duration_ms: 24950.196307
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:36.5998747Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:36.5999039Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:36.6779932Z # Subtest: SCIM provisions a scoped member who signs in through a real local IdP; sign-out, disable, revocation and SCIM deactivation end native OIDC sessions
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:36.6781089Z ok 46 - SCIM provisions a scoped member who signs in through a real local IdP; sign-out, disable, revocation and SCIM deactivation end native OIDC sessions
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:36.6782011Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:36.6782200Z   duration_ms: 2783.241621
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:36.6782409Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:36.6782582Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:43.6097584Z # Subtest: INTAKE-007 owner-bound create-only bearer: idempotency, native human approval, scope, show-once lifecycle, audit and archive exclusion
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:43.6141006Z ok 47 - INTAKE-007 owner-bound create-only bearer: idempotency, native human approval, scope, show-once lifecycle, audit and archive exclusion
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:43.6141607Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:43.6141788Z   duration_ms: 15409.965544
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:43.6141982Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:43.6142142Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:43.6142698Z # Subtest: SECURITY-001 explicit encrypted include restores protected fields and matching atomically without installation keys or reveal grants
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:43.6143586Z ok 48 - SECURITY-001 explicit encrypted include restores protected fields and matching atomically without installation keys or reveal grants
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:43.6144066Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:43.6144227Z   duration_ms: 13638.332197
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:43.6144421Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:43.6144580Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:46.6933320Z # Subtest: Owner-scoped Locket PO reads expose only mapped financial data; lifecycle, audit, rate and create-only boundaries hold
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:46.6934440Z ok 49 - Owner-scoped Locket PO reads expose only mapped financial data; lifecycle, audit, rate and create-only boundaries hold
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:46.6935022Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:46.6935149Z   duration_ms: 3084.306786
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:46.6935279Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:17:46.6935391Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:12.9784741Z # Subtest: Invoice exception drafts cite exact price and receipt evidence without executing purchasing or payment changes
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:12.9786317Z ok 50 - Invoice exception drafts cite exact price and receipt evidence without executing purchasing or payment changes
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:12.9786934Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:12.9787227Z   duration_ms: 4507.141903
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:12.9787526Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:12.9787695Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:12.9788160Z # Subtest: Exception draft archives and erasure preserve immutable evidence without restoring execution authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:12.9788862Z ok 51 - Exception draft archives and erasure preserve immutable evidence without restoring execution authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:12.9789263Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:12.9789428Z   duration_ms: 30885.051238
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:12.9789917Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:12.9790079Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:27.5822079Z # Subtest: Invoice exception assignment and receiver correction preserve age, source custody and independent cash approval through native HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:27.5824647Z ok 52 - Invoice exception assignment and receiver correction preserve age, source custody and independent cash approval through native HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:27.5825419Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:27.5825713Z   duration_ms: 3764.862024
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:27.5826000Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:27.5826245Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:27.5826796Z # Subtest: Exception and correction history survives real archives and erasure without restoring assignment or capture authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:27.5827578Z ok 53 - Exception and correction history survives real archives and erasure without restoring assignment or capture authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:27.5828053Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:27.5828301Z   duration_ms: 36165.871832
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:27.5828584Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:27.5828826Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:34.9606244Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:34.9607138Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:34.9607753Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:34.9608388Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:34.9609612Z # Subtest: INVOICE-001 AP inbox captures signed supplier mail as private drafts, holds unknown and look-alike senders, and feeds INVOICE-002/003 review and holds
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:34.9610594Z ok 54 - INVOICE-001 AP inbox captures signed supplier mail as private drafts, holds unknown and look-alike senders, and feeds INVOICE-002/003 review and holds
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:34.9611111Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:34.9615647Z   duration_ms: 21093.357505
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:34.9615996Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:34.9616279Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0386356Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0395112Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0396144Z # Subtest: INVOICE-002 original text PDFs, MIME invoices and real scans await explicit review, exact reconciliation and source confirmation before invoice evidence
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0397365Z ok 55 - INVOICE-002 original text PDFs, MIME invoices and real scans await explicit review, exact reconciliation and source confirmation before invoice evidence
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0398022Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0398311Z   duration_ms: 3268.552849
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0398617Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0398897Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0399440Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0400230Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0401314Z # Subtest: INVOICE-002 and INVOICE-003 source-bound confirmation preserves original privacy, rejects sensitive prepared fields, flags remit/sender/duplicate changes and refuses cash planning
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0402675Z ok 56 - INVOICE-002 and INVOICE-003 source-bound confirmation preserves original privacy, rejects sensitive prepared fields, flags remit/sender/duplicate changes and refuses cash planning
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0403426Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0403701Z   duration_ms: 3019.924604
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0404003Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:35.0404274Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4870940Z # Subtest: INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicates, repeated PDFs, remit changes and lookalike senders; reasoned review gates planning on every document door
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4872082Z not ok 57 - INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicates, repeated PDFs, remit changes and lookalike senders; reasoned review gates planning on every document door
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4872825Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4873015Z   duration_ms: 4813.562384
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4873252Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4873513Z   location: '[REDACTED]/tests/invoice-risk.test.mjs:10:1'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4873806Z   failureType: 'testCodeFailure'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4874204Z   error: 'Protected suffix in public output 8 outside proven source identities'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4874526Z   code: 'ERR_ASSERTION'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4874713Z   name: 'AssertionError'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4875166Z   expected: true
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4875334Z   actual: false
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4875507Z   operator: '=='
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4875680Z   stack: |-
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4876004Z     TestContext.<anonymous> (file://[REDACTED]/tests/invoice-risk.test.mjs:76:60)
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4876473Z     process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4876880Z     async Test.run (node:internal/test_runner/test:1054:7)
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4877286Z     async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:18:40.4877609Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:15.5043409Z # Subtest: Legacy archive import migrates retained evidence without rewriting hashes, and tampered evidence refuses atomically through the archive door
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:15.5050048Z ok 58 - Legacy archive import migrates retained evidence without rewriting hashes, and tampered evidence refuses atomically through the archive door
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:15.5050677Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:15.5050950Z   duration_ms: 35026.903728
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:15.5051157Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:15.5051343Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:18.8827259Z # Subtest: Supplier group invoice ancestry keeps supplier references independent and refuses unresolved group over-balance planning
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:18.8841317Z ok 59 - Supplier group invoice ancestry keeps supplier references independent and refuses unresolved group over-balance planning
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:18.8889735Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:18.8895461Z   duration_ms: 3375.245737
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:18.8895630Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:18.8895747Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:18.9803249Z # Subtest: Signed supplier delay becomes a source-bound promise action, requester notice and priced on-time alternative with no commercial commitment
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:18.9804505Z ok 60 - Signed supplier delay becomes a source-bound promise action, requester notice and priced on-time alternative with no commercial commitment
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:18.9825563Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:18.9825819Z   duration_ms: 15387.21642
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:18.9826033Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:18.9826212Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:24.2518330Z # Subtest: Native notifications bind recipient and source events, replay read and dismiss once, and preserve purchasing and current scope
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:24.2519596Z ok 61 - Native notifications bind recipient and source events, replay read and dismiss once, and preserve purchasing and current scope
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:24.2520455Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:24.2521108Z   duration_ms: 3519.254278
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:24.2521551Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:24.2521858Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:24.2522811Z # Subtest: Notification archive continuation and erasure preserve history without restoring native recipient authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:24.2523770Z ok 62 - Notification archive continuation and erasure preserve history without restoring native recipient authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:24.2524446Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:24.2524738Z   duration_ms: 28506.37652
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:24.2525333Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:24.2525626Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:35.2454121Z # Subtest: Native notification preferences hold Pacific quiet hours across daylight saving, batch a digest, and consume delivery claims without widening authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:35.2456463Z ok 63 - Native notification preferences hold Pacific quiet hours across daylight saving, batch a digest, and consume delivery claims without widening authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:35.2457606Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:35.2457925Z   duration_ms: 10993.699014
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:35.2458268Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:35.2458562Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.6926497Z # Subtest: Scheduled native reminders retain queue age, channel choices never fall back, and signed mail outcomes bind the current recipient and replay once
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.6928033Z ok 64 - Scheduled native reminders retain queue age, channel choices never fall back, and signed mail outcomes bind the current recipient and replay once
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.6935042Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.6935344Z   duration_ms: 6447.599905
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.6936062Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.6936351Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7691597Z # Subtest: IMPORT-003 owner reviews source 10/4/2 balances, adopts without mail, receives three, confirms original-number invoices and preserves approval, budget, deposit, cash and archive lineage
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7693350Z ok 65 - IMPORT-003 owner reviews source 10/4/2 balances, adopts without mail, receives three, confirms original-number invoices and preserves approval, budget, deposit, cash and archive lineage
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7694001Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7694232Z   duration_ms: 3513.371666
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7694581Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7695004Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7700372Z # Subtest: IMPORT-003 supplier and currency replacement approves only the unreceived remainder and retains old receipts, invoices, prepaid credits and cash in their source currency
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7702111Z ok 66 - IMPORT-003 supplier and currency replacement approves only the unreceived remainder and retains old receipts, invoices, prepaid credits and cash in their source currency
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7702564Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7702720Z   duration_ms: 2613.734122
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7702855Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7702964Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7703298Z # Subtest: PO-003 overdue and unacknowledged POs chase on cadence, escalate once, share real evidence and stop on close or current holds
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7703798Z ok 67 - PO-003 overdue and unacknowledged POs chase on cadence, escalate once, share real evidence and stop on close or current holds
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7704076Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7704243Z   duration_ms: 4292.070411
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7704437Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7704603Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7705271Z # Subtest: PO-010 buyer closes whole, line and partial balances, invoices become exceptions, and reopen checks authority and budget
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7706080Z ok 68 - PO-010 buyer closes whole, line and partial balances, invoices become exceptions, and reopen checks authority and budget
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7706531Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7706706Z   duration_ms: 3004.211026
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7706901Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:41.7707067Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:42.1648435Z # Subtest: Explicit native buyer change send freezes exact numbered PDF and originals, scopes supplier acknowledgment and retains audit/archive custody
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:42.1649418Z ok 69 - Explicit native buyer change send freezes exact numbered PDF and originals, scopes supplier acknowledgment and retains audit/archive custody
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:42.1649873Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:42.1650000Z   duration_ms: 6284.831293
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:42.1650134Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:42.1650249Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:46.0580341Z # Subtest: Native current buyer scope, exact approval and claim-before-send prevent stale, duplicate and uncertain automatic sends
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:46.0581272Z ok 70 - Native current buyer scope, exact approval and claim-before-send prevent stale, duplicate and uncertain automatic sends
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:46.0581737Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:46.0581921Z   duration_ms: 3893.090121
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:46.0582128Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:46.0582307Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:52.6786800Z # Subtest: Real supplier-link expiry and explicit withdrawal fence read, original and acknowledgment doors without restoring bearer authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:52.6789861Z ok 71 - Real supplier-link expiry and explicit withdrawal fence read, original and acknowledgment doors without restoring bearer authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:52.6790391Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:52.6790595Z   duration_ms: 6620.329738
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:52.6790808Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:52.6790986Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:56.0136529Z # Subtest: Initial supplier responses retain exact frozen PO and promises, and only buyer adoption creates an unapproved amendment
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:56.0156098Z ok 72 - Initial supplier responses retain exact frozen PO and promises, and only buyer adoption creates an unapproved amendment
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:56.0166712Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:56.0195437Z   duration_ms: 3333.397466
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:56.0195920Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:56.0196133Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:59.3095685Z # Subtest: Initial send and supplier response refuse stale authority and nonnative, pending, revoked or cross-origin sources without another mail attempt
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:59.3103558Z ok 73 - Initial send and supplier response refuse stale authority and nonnative, pending, revoked or cross-origin sources without another mail attempt
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:59.3139075Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:59.3139973Z   duration_ms: 3297.57133
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:59.3140323Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:19:59.3140599Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:00.9431682Z # Subtest: A native buyer email question and signed supplier reply retain exact private files, scoped requester follow-up, audit and portable custody
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:00.9437306Z ok 74 - A native buyer email question and signed supplier reply retain exact private files, scoped requester follow-up, audit and portable custody
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:00.9437669Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:00.9437804Z   duration_ms: 15490.018116
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:00.9437948Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:00.9438064Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:00.9438421Z # Subtest: Supplier-thread sends enforce current native buyer, exact revision and consent, and never retry a claimed uncertain effect
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:00.9438982Z ok 75 - Supplier-thread sends enforce current native buyer, exact revision and consent, and never retry a claimed uncertain effect
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:00.9439281Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:00.9439400Z   duration_ms: 2698.677883
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:00.9439538Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:00.9439653Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:50.6782568Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:51.0412093Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:51.4109469Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:51.4743362Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:51.7985969Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:51.9882189Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:52.2200034Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:52.5343550Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:20:53.4149373Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.2382202Z # Subtest: AP-003 terms, ordered due bills, expiring discount and weekly cash obligations through native HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.2386992Z ok 76 - AP-003 terms, ordered due bills, expiring discount and weekly cash obligations through native HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.2387539Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.2387889Z   duration_ms: 76966.753353
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.2388493Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.2388789Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3400424Z # Subtest: REPORT-003 public performance measures drill to exact events and approved quote/invoice savings, never unsigned discounts
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3401770Z ok 77 - REPORT-003 public performance measures drill to exact events and approved quote/invoice savings, never unsigned discounts
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3405094Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3405672Z   duration_ms: 3068.475536
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3406145Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3406350Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3406994Z # Subtest: PO-009 real HTTP PDF/HTML carry location profiles, frozen identity, line shipping/tax, original attachments and numbered amendment differences
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3407920Z ok 78 - PO-009 real HTTP PDF/HTML carry location profiles, frozen identity, line shipping/tax, original attachments and numbered amendment differences
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3408435Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3408613Z   duration_ms: 9233.14163
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3408813Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3408977Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3409463Z # Subtest: PO-012 native freight, tax, unit and SKU conversion keeps current limits, exact documents and one commitment
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3410182Z ok 79 - PO-012 native freight, tax, unit and SKU conversion keeps current limits, exact documents and one commitment
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3410579Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3410750Z   duration_ms: 4637.046419
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3410944Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3411106Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3411534Z # Subtest: Supplier group PDFs freeze each counterparty and only applicable original certificate bytes
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3414136Z ok 80 - Supplier group PDFs freeze each counterparty and only applicable original certificate bytes
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3414526Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3414695Z   duration_ms: 3050.523645
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3415055Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3415223Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3426621Z # PROBE PO-008 standing send: native scheduled handler -> one accepted frozen PDF and original; competing buyer send 409; unknown outcome attempted once; cap held; audit, restore and erasure passed
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3428314Z # PROBE PO-008 B: native supplier replacement before any send, disabled consent history and owner erasure -> former contact selectable, preview 200, execute 200, consent and restored history anonymized; current contact preserved; no supplier sends
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3431749Z # Subtest: PO generation rules create one native PO, wait above the limit and for supplier activation, retain sources and invoice holds, with separate buyer sending consent
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3432821Z ok 81 - PO generation rules create one native PO, wait above the limit and for supplier activation, retain sources and invoice holds, with separate buyer sending consent
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3433306Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3433488Z   duration_ms: 34020.690462
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3433698Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3433864Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3434543Z # PROBE PO-008 consent fences: native policy command and scheduler -> default off, pause, changed contacts and owner transfer refuse further sends; renewed exact consent sends once
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3435666Z # Subtest: Automatic PO generation rechecks live approval grants, current catalogue terms, currency rules and owner pause before committing
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3436541Z ok 82 - Automatic PO generation rechecks live approval grants, current catalogue terms, currency rules and owner pause before committing
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3436988Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3437162Z   duration_ms: 8109.161742
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3437359Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:17.3437521Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:31.1348035Z # Subtest: Native supplier groups reconcile source lines, frozen originals, separate invoice balances, budget sources and restored history
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:31.1349490Z ok 83 - Native supplier groups reconcile source lines, frozen originals, separate invoice balances, budget sources and restored history
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:31.1350660Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:31.1351046Z   duration_ms: 24380.017456
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:31.1351539Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:31.1351720Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:35.3040296Z # Subtest: Supplier group conversion fences complete-request variance, required budget owners, stale authority and concurrent once-only issuance
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:35.3041338Z ok 84 - Supplier group conversion fences complete-request variance, required budget owners, stale authority and concurrent once-only issuance
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:35.3041851Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:35.3042073Z   duration_ms: 4169.700712
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:35.3042279Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:35.3042453Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.7996507Z # Subtest: Reviewed historical multi-line migration reconciles exact source identities, stays inert and continues safely through undo, restore and erasure
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.7997566Z ok 85 - Reviewed historical multi-line migration reconciles exact source identities, stays inert and continues safely through undo, restore and erasure
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.7998088Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.7998261Z   duration_ms: 21608.259033
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.7998401Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.7998509Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.8640140Z # Subtest: Protected-content assertions distinguish native metadata collisions from leaked values and suffixes
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.8641257Z ok 86 - Protected-content assertions distinguish native metadata collisions from leaked values and suffixes
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.8641946Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.8642343Z   duration_ms: 3.541338
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.8642847Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.8643018Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9415561Z # Subtest: Purse purchasing flows through native authenticated HTTP and real persistent D1
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9422181Z     # Subtest: P01 business and genuine member sign-in persist scoped capabilities
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9423043Z     ok 1 - P01 business and genuine member sign-in persist scoped capabilities
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9423541Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9423830Z       duration_ms: 239.20179
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9432610Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9433149Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9433617Z     # Subtest: P02 supplier status and blocking refuse purchase
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9433914Z     ok 2 - P02 supplier status and blocking refuse purchase
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9434194Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9434371Z       duration_ms: 46.453249
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9434574Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9434745Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9435173Z     # Subtest: P03 approved catalogue prices are copied into revision snapshots
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9435676Z     ok 3 - P03 approved catalogue prices are copied into revision snapshots
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9435992Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9436167Z       duration_ms: 60.649703
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9436374Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9436559Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9436830Z     # Subtest: P04 durable exact revisions and real attachment bytes
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9437212Z     ok 4 - P04 durable exact revisions and real attachment bytes
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9437490Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9437657Z       duration_ms: 36.535299
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9437861Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9438026Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9438345Z     # Subtest: P05 quote comparison preserves unlike currencies and missing terms
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9438831Z     ok 5 - P05 quote comparison preserves unlike currencies and missing terms
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9439148Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9439315Z       duration_ms: 34.103965
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9439528Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9439696Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9440061Z     # Subtest: P06 exact-revision policy, self approval refusal and concurrent budget reservation
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9440631Z     ok 6 - P06 exact-revision policy, self approval refusal and concurrent budget reservation
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9440986Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9441161Z       duration_ms: 167.522772
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9441366Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9441537Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9442165Z     # Subtest: P07 return and expiring scoped delegation retain decision history
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9442636Z     ok 7 - P07 return and expiring scoped delegation retain decision history
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9442946Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9443119Z       duration_ms: 144.947739
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9443318Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9443489Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9443843Z     # Subtest: P08 concurrent conversion allocates approved lines once and produces document
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9444401Z     ok 8 - P08 concurrent conversion allocates approved lines once and produces document
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9444742Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9445051Z       duration_ms: 43.241616
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9445248Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9445414Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9445736Z     # Subtest: P09 issued supplier/cost amendment retains old issuance and renews authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9446238Z     ok 9 - P09 issued supplier/cost amendment retains old issuance and renews authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9446582Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9446749Z       duration_ms: 205.506609
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9447177Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9447384Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9447750Z     # Subtest: P10 and RECEIVE-001 assigned receiving, rejection and returns reconcile commitments
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9448302Z     ok 10 - P10 and RECEIVE-001 assigned receiving, rejection and returns reconcile commitments
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9448695Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9448800Z       duration_ms: 154.182596
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9448924Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9449038Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9449314Z     # Subtest: P11 supplier invoice identity, discrepancies, real evidence and accounting CSV
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9449766Z     ok 11 - P11 supplier invoice identity, discrepancies, real evidence and accounting CSV
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9449975Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9450082Z       duration_ms: 455.076218
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9450210Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:39.9450314Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:40.3326047Z     # Subtest: P13 reviewed Base import-kit D1 preview, changed-input refusal, resume and undo
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:40.3329333Z     ok 12 - P13 reviewed Base import-kit D1 preview, changed-input refusal, resume and undo
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:40.3329711Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:40.3329869Z       duration_ms: 396.754045
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:40.3330006Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:40.3330116Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:40.9292800Z     # Subtest: P13 undo preserves edited and downstream-used targets with durable dispositions; jobs stay actor-bound
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:40.9315825Z     ok 13 - P13 undo preserves edited and downstream-used targets with durable dispositions; jobs stay actor-bound
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:40.9327249Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:40.9327514Z       duration_ms: 596.126635
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:40.9327744Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:40.9327948Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.1386756Z     # Subtest: P14 five human preparation workflows keep versions and downloadable drafts
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.1395938Z     ok 14 - P14 five human preparation workflows keep versions and downloadable drafts
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.1396342Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.1396525Z       duration_ms: 210.220604
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.1396733Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.1396910Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.2592304Z     # Subtest: P14 ProposedActions reject stale inputs and current wrong-role execution
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.2592995Z     ok 15 - P14 ProposedActions reject stale inputs and current wrong-role execution
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.2593224Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.2593344Z       duration_ms: 120.565024
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.2593478Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.2593587Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.2959641Z     # Subtest: P16 decimal rounding and currency-separated append-only ledger
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.2964246Z     ok 16 - P16 decimal rounding and currency-separated append-only ledger
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.2964572Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.2965466Z       duration_ms: 36.869156
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.2965672Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:41.2965841Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.1125143Z     # Subtest: Currency text enters native purchasing exactly and invalid representations leave state unchanged
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.1135612Z     ok 17 - Currency text enters native purchasing exactly and invalid representations leave state unchanged
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.1135928Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.1136101Z       duration_ms: 1816.498943
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.1136272Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.1136445Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.2613610Z     # Subtest: P17 signed-out, wrong-role, forged revision, revoked and cross-record refuse without mutation
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.2614662Z     ok 18 - P17 signed-out, wrong-role, forged revision, revoked and cross-record refuse without mutation
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.2615585Z       ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.2615968Z       duration_ms: 148.063521
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.2616367Z       type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.2616741Z       ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.3026591Z     1..18
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.3080062Z ok 87 - Purse purchasing flows through native authenticated HTTP and real persistent D1
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.3135666Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.3165588Z   duration_ms: 7128.882257
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.3255775Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:43.3296417Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:46.5002697Z # Subtest: SECURITY-001 / AGENT-010 structured protected fields never enter preparation records, actions, downloads or refusal audit
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:46.5021783Z ok 88 - SECURITY-001 / AGENT-010 structured protected fields never enter preparation records, actions, downloads or refusal audit
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:46.5022388Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:46.5022577Z   duration_ms: 3201.763116
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:46.5022786Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:46.5022952Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:49.7492115Z # Subtest: INTAKE-001 request again reviews current prices and omissions, copies only chosen bytes and persists a new draft with fresh authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:49.7493149Z ok 89 - INTAKE-001 request again reviews current prices and omissions, copies only chosen bytes and persists a new draft with fresh authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:49.7493652Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:49.7493840Z   duration_ms: 3156.299641
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:49.7494035Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:49.7494182Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:53.1486979Z # Subtest: INTAKE-001 category configuration, private unfinished drafts, current routes, split and custom copy, pending suppliers and email authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:53.1516095Z ok 90 - INTAKE-001 category configuration, private unfinished drafts, current routes, split and custom copy, pending suppliers and email authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:53.1516964Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:53.1545579Z   duration_ms: 3486.801402
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:53.1575525Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:21:53.1575913Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:10.6072741Z # Subtest: APPROVAL-004 exact pending header edits carry or renew chain approvals and move one reservation
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:10.6078596Z ok 91 - APPROVAL-004 exact pending header edits carry or renew chain approvals and move one reservation
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:10.6079317Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:10.6079681Z   duration_ms: 17463.982709
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:10.6080262Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:10.6080482Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.6336347Z # Subtest: Conditional native approval pools serialize a first decision, withdraw queues and await every parallel reviewer
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.6341090Z ok 92 - Conditional native approval pools serialize a first decision, withdraw queues and await every parallel reviewer
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.6341808Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.6342200Z   duration_ms: 17026.199368
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.6342441Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.6342611Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7228816Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7246995Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7248657Z # Subtest: Quote agent produces a source-bound comparison from three supplier formats, flags uncertainty, and leaves award and approval to the buyer
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7249740Z ok 93 - Quote agent produces a source-bound comparison from three supplier formats, flags uncertainty, and leaves award and approval to the buyer
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7250395Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7250788Z   duration_ms: 3242.006108
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7251033Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7251223Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7251686Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7252502Z # Subtest: SOURCE-002 real PDF and MIME email fields remain separate until scoped correction and confirmation create a new draft revision
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7253350Z ok 94 - SOURCE-002 real PDF and MIME email fields remain separate until scoped correction and confirmation create a new draft revision
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7253651Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7253780Z   duration_ms: 3778.763632
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7253917Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7254026Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7254358Z # Subtest: SOURCE-002 external reader proposal binds a scanned/image original and declared provenance, with review before revision
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7254869Z ok 95 - SOURCE-002 external reader proposal binds a scanned/image original and declared provenance, with review before revision
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7255414Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7255763Z   duration_ms: 3007.079527
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7255931Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7256068Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7256478Z # Subtest: RECEIVE-001 responsible receivers, due email prompts, automatic invoice holds, partial/full receipts, reassignment and PO-010 closure use current authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7257133Z ok 96 - RECEIVE-001 responsible receivers, due email prompts, automatic invoice holds, partial/full receipts, reassignment and PO-010 closure use current authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7257485Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7257591Z   duration_ms: 17726.16825
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7257715Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:22:27.7257820Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.8326720Z # Subtest: SOURCE-001 supplier links, immutable revisions, reminders, cross-supplier award and source-backed savings
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.8327837Z ok 97 - SOURCE-001 supplier links, immutable revisions, reminders, cross-supplier award and source-backed savings
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.8329936Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.8330345Z   duration_ms: 57726.834144
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.8331005Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.8331294Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9083316Z # Subtest: Signed SAML native admission rejects forged identities and replay; disable, SCIM handoff and restore retain current authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9084577Z ok 98 - Signed SAML native admission rejects forged identities and replay; disable, SCIM handoff and restore retain current authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9085421Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9085714Z   duration_ms: 15555.959794
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9086343Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9086552Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9087106Z # Subtest: Saved report views recompute scoped allocation rows, literal CSV and parsed XLSX with independent currency totals
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9087910Z ok 99 - Saved report views recompute scoped allocation rows, literal CSV and parsed XLSX with independent currency totals
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9088329Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9088498Z   duration_ms: 3409.890706
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9088711Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9088873Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9089316Z # Subtest: Saved definitions never restore authority and refuse revoked scope, foreign members and erased identity
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9090020Z ok 100 - Saved definitions never restore authority and refuse revoked scope, foreign members and erased identity
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9090427Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9090591Z   duration_ms: 14738.436322
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9090789Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:08.9090956Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:21.7465927Z # Subtest: SCIM owner consent, stable identities, department scope and credential lifecycle through public doors
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:21.7467132Z ok 101 - SCIM owner consent, stable identities, department scope and credential lifecycle through public doors
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:21.7467689Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:21.7467966Z   duration_ms: 3192.522208
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:21.7468271Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:21.7468554Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:21.7469168Z # Subtest: SCIM deactivation always ends sessions and transfers approvals through owner custody and audited non-self reassignment
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:21.7469999Z ok 102 - SCIM deactivation always ends sessions and transfers approvals through owner custody and audited non-self reassignment
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:21.7470481Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:21.7470723Z   duration_ms: 14511.2807
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:21.7470988Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:23:21.7471222Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:39.6810985Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:39.6813295Z # Subtest: SEARCH-001 public search in 100000 real D1 records finds exact purchasing sources under one second and enforces current scope and protected-field exclusion
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:39.6814732Z ok 103 - SEARCH-001 public search in 100000 real D1 records finds exact purchasing sources under one second and enforces current scope and protected-field exclusion
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:39.6815686Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:39.6819729Z   duration_ms: 89897.402702
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:39.6820743Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:39.6821168Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:42.4476601Z # Subtest: scoped search lists only purchases whose every line, split allocation and order coding fits the reader grant
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:42.4478392Z ok 104 - scoped search lists only purchases whose every line, split allocation and order coding fits the reader grant
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:42.4478817Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:42.4479009Z   duration_ms: 2766.899567
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:42.4479218Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:42.4479433Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:24:44.9753504Z # Warning: UnknownErrorException: Ensure that the `standardFontDataUrl` API parameter is provided.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.5250844Z # Subtest: SEARCH-001 complete archive restore preserves source-bound search and rebuilds full-text lookup before readiness
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.5253484Z ok 105 - SEARCH-001 complete archive restore preserves source-bound search and rebuilds full-text lookup before readiness
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.5253812Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.5253939Z   duration_ms: 18077.837505
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.5254073Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.5254235Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6231695Z # Subtest: Supplier acknowledgment captures bounded shipment references, appends corrections and fences unsafe writes without changing purchasing
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6250196Z ok 106 - Supplier acknowledgment captures bounded shipment references, appends corrections and fences unsafe writes without changing purchasing
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6250855Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6251107Z   duration_ms: 3517.686808
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6251300Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6251455Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6251989Z # Subtest: Shipment history survives archive and erasure while expired, withdrawn, superseded and revoked capabilities remain inert
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6252564Z ok 107 - Shipment history survives archive and erasure while expired, withdrawn, superseded and revoked capabilities remain inert
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6252843Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6252965Z   duration_ms: 34905.196899
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6253095Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6253248Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6253721Z # Subtest: REPORT-001 scoped HTTP dashboards filter source rows, preserve cents/currencies and distinguish reservations, issued commitments and invoice evidence
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6254515Z ok 108 - REPORT-001 scoped HTTP dashboards filter source rows, preserve cents/currencies and distinguish reservations, issued commitments and invoice evidence
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6255295Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6255401Z   duration_ms: 2969.412139
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6255524Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6255627Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6255919Z # Subtest: BUDGET-001 dated department exposure reserves pending, commits buyer changes and retains received unbilled value
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6256400Z ok 109 - BUDGET-001 dated department exposure reserves pending, commits buyer changes and retains received unbilled value
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6256664Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6256773Z   duration_ms: 4660.880821
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6256895Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6257000Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6257330Z # Subtest: Spend questions recompute exact finance figures and department sources, refuse unknown facts and obey owner pause and current scope
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6257855Z ok 110 - Spend questions recompute exact finance figures and department sources, refuse unknown facts and obey owner pause and current scope
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6258145Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6258251Z   duration_ms: 2672.73343
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6258371Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6258474Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6258780Z # Subtest: Supplier group report sources retain charge cents and each allocation through partial receiving, closure and reopening
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6259260Z ok 111 - Supplier group report sources retain charge cents and each allocation through partial receiving, closure and reopening
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6259531Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6259769Z   duration_ms: 2661.597
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6259888Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6259990Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6260279Z # Subtest: STOCK-001 counts create one preferred-item draft; a person submits and outstanding supply prevents duplicates
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6260729Z ok 112 - STOCK-001 counts create one preferred-item draft; a person submits and outstanding supply prevents duplicates
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6260983Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6261086Z   duration_ms: 3112.940179
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6261205Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6261308Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6261588Z # Subtest: SUPPLIER-004 dated evidence, clock-driven supplier/owner reminders, lapse holds and reviewed replacement
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6262023Z ok 113 - SUPPLIER-004 dated evidence, clock-driven supplier/owner reminders, lapse holds and reviewed replacement
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6262270Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6262369Z   duration_ms: 4204.765263
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6262487Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6262588Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6262892Z # Subtest: SUPPLIER-003 duplicate matching, redacted CSV custody and history-preserving merge through authenticated public doors
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6263368Z ok 114 - SUPPLIER-003 duplicate matching, redacted CSV custody and history-preserving merge through authenticated public doors
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6263635Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6263735Z   duration_ms: 4467.482172
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6263854Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6263954Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6264256Z # Subtest: SECURITY-001 encrypted owner storage, native reveal, role masks, atomic matching and safe refusal through public HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6264721Z ok 115 - SECURITY-001 encrypted owner storage, native reveal, role masks, atomic matching and safe refusal through public HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6265145Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6265245Z   duration_ms: 3528.936619
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6265364Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6265465Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6265715Z # Subtest: SECURITY-001 unavailable installation key returns 503 without protected or matching writes
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6266096Z ok 116 - SECURITY-001 unavailable installation key returns 503 without protected or matching writes
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6266324Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6266425Z   duration_ms: 2161.531366
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6266541Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6266641Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6266947Z # Subtest: SECURITY-001 owner rotation authenticates all values atomically and key-loss recovery requires explicit audited reentry
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6267531Z ok 117 - SECURITY-001 owner rotation authenticates all values atomically and key-loss recovery requires explicit audited reentry
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6267800Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6267901Z   duration_ms: 2661.02537
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6268022Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:00.6268125Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8226179Z # Subtest: Supplier invoice link captures exact private PDF and balance ancestry, holds source confirmation and duplicate/excess evidence, and exposes only its own authentic statuses
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8256585Z ok 118 - Supplier invoice link captures exact private PDF and balance ancestry, holds source confirmation and duplicate/excess evidence, and exposes only its own authentic statuses
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8257242Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8257424Z   duration_ms: 3446.492531
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8257656Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8257816Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8258459Z # Subtest: Owner-consented supplier flip approves only confirmed three-way evidence, schedules once and holds excess or later risk through public doors
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8259435Z ok 119 - Owner-consented supplier flip approves only confirmed three-way evidence, schedules once and holds excess or later risk through public doors
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8259966Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8260130Z   duration_ms: 14683.578982
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8260353Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8260516Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8261043Z # Subtest: Standing supplier approval refuses price and receipt discrepancies and holds source risk until reasoned review
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8262098Z ok 120 - Standing supplier approval refuses price and receipt discrepancies and holds source risk until reasoned review
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8262574Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8262739Z   duration_ms: 11302.310146
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8262956Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8263117Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8976233Z # Subtest: SUPPLIER-005 supplier scorecards drill to delivery, quality, distinct invoice exceptions, acknowledgments, spend and reasoned issues
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8980069Z ok 121 - SUPPLIER-005 supplier scorecards drill to delivery, quality, distinct invoice exceptions, acknowledgments, spend and reasoned issues
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8982678Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8982884Z   duration_ms: 3468.288209
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8983097Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:07.8983270Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:08.7626936Z # Subtest: Pending supplier review preserves approval, returns unissued requests and releases exact reservations once through native HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:08.7685894Z ok 122 - Pending supplier review preserves approval, returns unissued requests and releases exact reservations once through native HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:08.7715268Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:08.7755458Z   duration_ms: 2952.829455
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:08.7756072Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:08.7756290Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:11.5545076Z # Subtest: Supplier proposal choices preserve duplicate privacy, proposer separation and current native authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:11.5546049Z ok 123 - Supplier proposal choices preserve duplicate privacy, proposer separation and current native authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:11.5546475Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:11.5546657Z   duration_ms: 2797.292541
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:11.5546858Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:11.5547023Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:42.2608603Z # Subtest: Supplier proposal erasure and archive continuation retain inert review and release history without resurrecting identity
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:42.2609560Z ok 124 - Supplier proposal erasure and archive continuation retain inert review and release history without resurrecting identity
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:42.2610023Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:42.2610198Z   duration_ms: 30705.835741
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:42.2610397Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:42.2610562Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:42.3428913Z # Subtest: SUPPLIER-007 screens new suppliers and identity edits, holds matches and retains dated review evidence
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:42.3431895Z ok 125 - SUPPLIER-007 screens new suppliers and identity edits, holds matches and retains dated review evidence
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:42.3433022Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:42.3433428Z   duration_ms: 3099.672336
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:42.3433807Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:42.3434176Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:46.6166935Z # Subtest: Human supplier tax review binds private W-9 bytes, keeps decisions and refuses stale or unauthorized changes through native HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:46.6206209Z ok 126 - Human supplier tax review binds private W-9 bytes, keeps decisions and refuses stale or unauthorized changes through native HTTP
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:46.6245377Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:46.6245796Z   duration_ms: 3716.847472
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:46.6246027Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:46.6246198Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:46.6246697Z # Subtest: Supplier tax archive and erasure preserve anonymous evidence without restoring reviewer or identity authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:46.6247437Z ok 127 - Supplier tax archive and erasure preserve anonymous evidence without restoring reviewer or identity authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:46.6247880Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:46.6248049Z   duration_ms: 30211.635505
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:46.6248246Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:46.6248413Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:59.4206602Z # Subtest: INTAKE-006 optional owner-configured international review extends the native chain with current independent authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:59.4207492Z ok 128 - INTAKE-006 optional owner-configured international review extends the native chain with current independent authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:59.4208307Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:59.4208692Z   duration_ms: 2973.626282
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:59.4208937Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:59.4209132Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:59.4209652Z # Subtest: INTAKE-006 international travel approval routes and policy evidence survive a real archive without restoring authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:59.4210476Z ok 129 - INTAKE-006 international travel approval routes and policy evidence survive a real archive without restoring authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:59.4210958Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:59.4211129Z   duration_ms: 13320.120509
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:59.4211606Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:25:59.4211938Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1829179Z # Subtest: Published GSA meals defaults use exact fiscal-year city or county scope and explicit standard CONUS selection
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1833745Z ok 130 - Published GSA meals defaults use exact fiscal-year city or county scope and explicit standard CONUS selection
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1834035Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1834188Z   duration_ms: 2840.243927
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1834328Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1834496Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1834795Z # Subtest: INTAKE-006 native Austin travel estimate, manager and finance chain, date amendments and exact reservations
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1835479Z ok 131 - INTAKE-006 native Austin travel estimate, manager and finance chain, date amendments and exact reservations
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1835742Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1835855Z   duration_ms: 2758.414849
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1836049Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1836173Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1836455Z # Subtest: INTAKE-006 native report import rejects wrong authority and sources, transfers actual and releases once
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1836970Z ok 132 - INTAKE-006 native report import rejects wrong authority and sources, transfers actual and releases once
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1837223Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1837336Z   duration_ms: 24035.953097
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1837467Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:17.1837645Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:19.1979923Z # Subtest: Assistant travel gives only the exact active traveler approved booking terms and keeps source custody unchanged
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:19.1982008Z ok 133 - Assistant travel gives only the exact active traveler approved booking terms and keeps source custody unchanged
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:19.1982591Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:19.1982819Z   duration_ms: 2015.483885
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:19.1983040Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:19.1983225Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1348459Z # Subtest: Retained native travel approvals accept later financial evidence after approver departure without reviving purchase authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1357451Z ok 134 - Retained native travel approvals accept later financial evidence after approver departure without reviving purchase authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1358043Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1358299Z   duration_ms: 1936.999828
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1358499Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1358666Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1991349Z 1..134
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1992122Z # tests 152
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1992275Z # suites 0
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1992439Z # pass 151
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1993638Z # fail 1
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1993797Z # cancelled 0
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1993976Z # skipped 0
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1994134Z # todo 0
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.1994316Z # duration_ms 817171.034435
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.2124610Z  ELIFECYCLE  Command failed with exit code 1.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.2814319Z  ELIFECYCLE  Command failed with exit code 1.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3395063Z Verifying application: exit 1, signal none.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3395407Z Command: pnpm
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3395591Z Last output (up to 40 lines):
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3396054Z ok 130 - Published GSA meals defaults use exact fiscal-year city or county scope and explicit standard CONUS selection
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3396478Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3396654Z   duration_ms: 2840.243927
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3396853Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3397014Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3397356Z # Subtest: INTAKE-006 native Austin travel estimate, manager and finance chain, date amendments and exact reservations
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3398022Z ok 131 - INTAKE-006 native Austin travel estimate, manager and finance chain, date amendments and exact reservations
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3398276Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3398382Z   duration_ms: 2758.414849
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3398528Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3398633Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3398909Z # Subtest: INTAKE-006 native report import rejects wrong authority and sources, transfers actual and releases once
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3399342Z ok 132 - INTAKE-006 native report import rejects wrong authority and sources, transfers actual and releases once
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3399594Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3399703Z   duration_ms: 24035.953097
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3399831Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3399957Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3400264Z # Subtest: Assistant travel gives only the exact active traveler approved booking terms and keeps source custody unchanged
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3400742Z ok 133 - Assistant travel gives only the exact active traveler approved booking terms and keeps source custody unchanged
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3401023Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3401125Z   duration_ms: 2015.483885
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3401263Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3401365Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3401705Z # Subtest: Retained native travel approvals accept later financial evidence after approver departure without reviving purchase authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3402257Z ok 134 - Retained native travel approvals accept later financial evidence after approver departure without reviving purchase authority
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3402591Z   ---
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3402693Z   duration_ms: 1936.999828
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3402827Z   type: 'test'
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3402931Z   ...
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3403022Z 1..134
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3403138Z # tests 152
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3403238Z # suites 0
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3403357Z # pass 151
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3403458Z # fail 1
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3403572Z # cancelled 0
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3403687Z # skipped 0
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3403787Z # todo 0
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3403913Z # duration_ms 817171.034435
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3404363Z  ELIFECYCLE  Command failed with exit code 1.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3404605Z  ELIFECYCLE  Command failed with exit code 1.
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3404796Z Log: [REDACTED]/.seed/installer/install.log
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3405191Z verify: failed (exit 1)
+rer-verify	Run pnpm exec rer verify	2026-11-07T21:26:21.3548180Z ##[error]Process completed with exit code 1.

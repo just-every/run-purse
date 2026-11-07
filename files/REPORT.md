@@ -6,7 +6,7 @@ Candidate: 99a8fabb6a74b834e5d17f14c90a855acfeeb1e7
 Integrated main: c070712429cebc093cb975adaff1a57eae2258b5
 
 CLAIM BASE-AGENT-009 PARTIAL points=1,3 tests=tests/agent-door-erasure.mjs#agentDoorErasure; tests/browser-agent-door-erasure.mjs#retained preparation views and decision counts
-GAP BASE-AGENT-009: The requested current-owner supplier-contact preparation custody slice is proved locally. The wider registry, other tools and subjects, broader client custody, removal and rebinding, portable agent artifacts, new erasure tools, resources, scheduled delegation and provider qualifications remain unqualified as the assignment holds them. No full-clause DONE or new policy qualification is claimed.
+GAP BASE-AGENT-009: The requested current-owner supplier-contact preparation custody slice is proved locally and in browser job 128530185790. Exact candidate Verify is red in the existing invoice-risk assertion, reproduced locally; no safe repair was identified. The wider registry, other tools and subjects, broader client custody, removal and rebinding, portable agent artifacts, new erasure tools, resources, scheduled delegation and provider qualifications remain unqualified as the assignment holds them. No full-clause DONE or new policy qualification is claimed.
 
 Contract counts remain 54 DONE, 51 PARTIAL, 22 MISSING. BASE-AGENT-009 remains PARTIAL. No Status, Gap or Evidence cell was edited. Plan-row handoff: record the native retained preparation custody slice as implemented and locally proved; preserve every existing hold. No other campaign clause was supplied as unblocked within this slice.
 
@@ -66,7 +66,7 @@ These rows concern the supplied POINT, not qualification of omitted registry fam
 | --- | --- | --- |
 | 1 | PASS for supplied slice; full clause PARTIAL | R1–R9 above; omitted acceptance outcomes are explicitly unqualified |
 | 2 | PASS for supplied slice | Nonempty real artifacts; owner execution succeeds; wrong-owner, stale review and stale approval refuse; fresh sponsor approval still succeeds |
-| 3 | PENDING | New scripts are invoked by existing push Verify commands; run 42414707303 must reach its exact-SHA result |
+| 3 | FAIL overall Verify; slice browser proof PASS | Push Verify 42414707303 finished failure in invoice-risk. Browser group 41, job 128530185790, finished success and executed the complete new native and browser journey. |
 | 4 | PASS locally | Native and browser journeys rerun on 99a8fabb6a74b834e5d17f14c90a855acfeeb1e7; relevant regression source bytes are unchanged since its passing run |
 | 5 | PASS, INSPECTED | BASE-AGENT-009 requirement explicitly extends BASE-OPS-005; no inheritance text changed |
 | 6 | PASS, mechanical | Contract write and check pass; generated views restored from main; Status cells deliberately remain lander-owned |
@@ -78,14 +78,31 @@ These rows concern the supplied POINT, not qualification of omitted registry fam
 
 ## Verification and pre-ready checks
 
-All local commands in RECEIPT.json passed. Build, typecheck, first-party profile, copied Base integrity, contract generation, lock check and migration-ledger preflight pass. The native migration is applied once. Contract projections are restored to main before both commits. The copied agent-door module, agent adapter and current registry have no diff. No pre-existing assertion was deleted, narrowed, skipped or moved behind a condition. The suite adds two high-stakes public-door scripts; no pin or duplicate test was removed in this area.
+The initial target-specific local commands in RECEIPT.json passed. The later exact-command Verify reproduction failed as recorded below. Build, typecheck, first-party profile, copied Base integrity, contract generation, lock check and migration-ledger preflight pass. The native migration is applied once. Contract projections are restored to main before both commits. The copied agent-door module, agent adapter and current registry have no diff. No pre-existing assertion was deleted, narrowed, skipped or moved behind a condition. The suite adds two high-stakes public-door scripts; no pin or duplicate test was removed in this area.
 
 MECHANICAL lock=node scripts/edition-authoring/cli.mjs lock and check exit=0; views=node scripts/contract-docs.mjs write BASE-AGENT-009 and check BASE-AGENT-009 exit=0, generated views restored; ledger=node /tmp/purse-ledger-check.mjs exit=0.
 
-Pre-ready items: (1) requested retained-artifact outcomes have public-door journeys with dangerous allowed and refused paths; exact-SHA CI is pending, (2) no assertion weakened, (3) erased-contact and identical-replay paths are exercised while the sponsor and consent stay live; credential-revocation coverage remains existing conformance, (4) existing screens retain their existing controls and layout; screenshots show no overflow, and no UI controls were added, (5) local lock is fresh; exact candidate publication scan, main equality and Run site remain lander work. No full-clause DONE self-certification is made.
+Pre-ready items: (1) requested retained-artifact outcomes have public-door journeys with dangerous allowed and refused paths; exact-SHA CI is red in the existing invoice-risk test, (2) no assertion weakened, (3) erased-contact and identical-replay paths are exercised while the sponsor and consent stay live; credential-revocation coverage remains existing conformance, (4) existing screens retain their existing controls and layout; screenshots show no overflow, and no UI controls were added, (5) local lock is fresh; exact candidate publication scan, main equality and Run site remain lander work. No full-clause DONE self-certification is made.
 
 Publication scan: commit=99a8fabb6a74b834e5d17f14c90a855acfeeb1e7 complete=false historyScanned=unestablished findings=unestablished; not run in cloud under the task adaptation. This is neither a zero-finding claim nor a landing receipt.
 
-Current main health at c070712429cebc093cb975adaff1a57eae2258b5: Verify 42413122725 succeeded, Run site 42413122727 succeeded; an additional Verify 42413271190 was in progress. Candidate Verify: 42414707303, push event, initially in progress. No PR was required or opened. Product was pushed through the fleet guard twice, first a skip-CI save and then the candidate, with fleet author and committer inspection over every candidate commit. Neither main nor another product ref was pushed.
+Current main health at c070712429cebc093cb975adaff1a57eae2258b5: Verify 42413122725 succeeded, Run site 42413122727 succeeded; an additional Verify 42413271190 was in progress. Candidate Verify: 42414707303, push event, finished failure. All 44 browser groups passed; group 41 job 128530185790 includes the new journey. No PR was required or opened. Product was pushed through the fleet guard twice, first a skip-CI save and then the candidate, with fleet author and committer inspection over every candidate commit. Neither main nor another product ref was pushed.
 
 The first disposable-harness migration-preflight attempt did not settle and was stopped by its recorded owned PIDs. The installation-based ledger preflight passed against the actual local migrated database; migration-ledger.log is that successful receipt. No environment data, secret bindings, setup output or private gate material is included in this packet.
+
+
+## Terminal CI blocker and actual reproduction
+
+BLOCKED branch=cloud/sx-purse-c-f96 head=99a8fabb6a74b834e5d17f14c90a855acfeeb1e7
+
+Verify 42414707303 completed failure. Job 128530185344, rer-verify, failed its exact command `pnpm exec rer verify`; the aggregate verify job 128534149747 consequently failed. Forty-five jobs succeeded, including all 44 browser groups. Browser group 41 job 128530185790 executed the new retained-artifact journey successfully on the candidate.
+
+The failed archive was fetched once with `gh run view 42414707303 --repo just-every/run-purse --job 128530185344 --log-failed`. It reports `tests/invoice-risk.test.mjs:76`, test “INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicates, repeated PDFs, remit changes and lookalike senders; reasoned review gates planning on every document door”, error “Protected suffix in public output 8 outside proven source identities”. This is not a generated-view freshness failure.
+
+Before any repair, the exact failed command was run on the same candidate with Node 22.20.0 and pnpm 10.12.4. It completed exit 1 after 152 tests: 151 passed, one failed. The same assertion failed in public output 0. The complete actual non-secret log and structured receipt are verify-reproduction.log and VERIFY_REPRODUCED.json. The cloud VM reproduction supplied CI=1; it did not claim to be the hosted GitHub runner.
+
+A focused test on integrated main c070712429cebc093cb975adaff1a57eae2258b5 passed on the same cloud VM. Seventeen bounded instrumented fixture runs also passed. The diagnostic copy retained every original assertion and recorded only field paths and value types on a hit; it produced no hit. These results show unstable reproduction but do not identify the actual field or justify a guessed privacy repair. No permanent source or test change was made after the red Verify, and no assertion was weakened. No workflow was dispatched or rerun. Eight GitHub calls were used.
+
+The product remains fully pushed and branch-only. Plan-row handoff: retained-artifact custody is implemented and proved for the supplied native preparation slice; qualification and landing remain held by this red Verify and the explicit full-clause remainders. Counts remain 54 DONE, 51 PARTIAL, 22 MISSING. Route the invoice-risk assertion to fv for triage. There is no READY claim and no landing or publication-scan receipt.
+
+VERIFY_REPRODUCED {"head":"99a8fabb6a74b834e5d17f14c90a855acfeeb1e7","job":128530185344,"command":"pnpm exec rer verify","test":"tests/invoice-risk.test.mjs:76","exit":1,"failure":"Protected suffix in public output 0 outside proven source identities"}

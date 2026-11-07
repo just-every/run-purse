@@ -1,0 +1,14 @@
+{
+  "head": "99a8fabb6a74b834e5d17f14c90a855acfeeb1e7",
+  "job": 128530185344,
+  "command": "pnpm exec rer verify",
+  "node": "22.20.0",
+  "pnpm": "10.12.4",
+  "test": "tests/invoice-risk.test.mjs#INVOICE-003, AP-003 and REPORT-003 native source facts",
+  "exit": 1,
+  "failure": "Protected suffix in public output 0 outside proven source identities",
+  "ci_failure": "Protected suffix in public output 8 outside proven source identities",
+  "passed": 151,
+  "failed": 1,
+  "repairs": 0
+}
