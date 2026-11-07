@@ -408,7 +408,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "496617b95da3fde021961efad76500c4ceaee71fce6cde3a9a289aa5d1570e57",
+      "sha256": "a2b6628e884864ec35de3d6b29daae4774df10e0b36d78b5f01eeef06972de06",
       "executable": false
     },
     "packaging.json": {
@@ -5272,7 +5272,7 @@
       "executable": false
     },
     "tests/agent-door-policy-limits.mjs": {
-      "sha256": "57152cde965c50e1e885b4d206a56f48bd96346a60b11f4ee66f803bb8cf6517",
+      "sha256": "3170a09d0b1b05268012a23b2b898adb922e8f0b903cd5689bb596605331bf7d",
       "executable": false
     },
     "tests/agent-door-provider-edge.mjs": {
