@@ -3,6 +3,7 @@ import {randomUUID,webcrypto} from 'node:crypto'
 import {readFile} from 'node:fs/promises'
 import {pathToFileURL} from 'node:url'
 import {harness} from './purse-harness.mjs'
+import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
 import {reauthenticateErasure} from './erasure-flow.mjs'
 import {createProtocol,errorCode} from '../src/modules/agent-door/conformance/protocol.mjs'
 import {signJws} from '../src/modules/agent-door/conformance/crypto.mjs'
@@ -38,7 +39,7 @@ export async function agentDoorErasure(visit) {
   const protocol=agentId=>createProtocol({fetch:(url,init)=>h.mf.dispatchFetch(url,init),origin:h.origin,surface,signer:{issuer,installationId,kid,privateKey:pair.privateKey},person:{email:sponsorAddress,cookie:sponsor,sub:sponsorId},business,consent:randomUUID(),agentId,seq:0,revision:0,points:[],now:()=>Date.parse(clock)})
   const c=protocol(randomUUID()),autoClient=protocol(randomUUID()),reviewClient=protocol(randomUUID()),unrelated=protocol(randomUUID())
   const policy={schema:'rer-agent-policy/1',catalogue:'rer-agent-classes/1',rules:[{id:'all',class:'*',do:'autonomous'},{id:'review-other',class:'*',agent:unrelated.agentId,do:'review'},{id:'review-preparation',class:'*',agent:reviewClient.agentId,do:'review'},{id:'approve-preparation',class:'*',agent:c.agentId,do:'approval',approver:['sponsor'],wait:'PT1H'}],reviewers:['sponsor'],spend:{none:true}}
-  const input=(person,label)=>({workflow:'intake',draft:label+' '+person.name+' '+person.email,fields:{contact:person.name,reply:person.email},references:[{kind:'supplier',id:supplier.id}],idempotency_key:randomUUID()})
+  const input=(person,label)=>({workflow:'intake',draft:label+' '+person.name+' '+person.email,fields:{contact:person.name,reply:person.email,action:'Reach '+person.email,kind:'Contact '+person.name,logo:'Private note '+person.email},references:[{kind:'supplier',id:supplier.id}],idempotency_key:randomUUID()})
   const call=args=>c.tool('purse.preparations.create',args)
   const state=async()=>(await h.state()).data
   await c.adopt(policy)
@@ -62,6 +63,20 @@ export async function agentDoorErasure(visit) {
   assert.equal(unrelatedBefore.draft,untouched.draft)
   const chronology=(await h.send('/agents/api/audit',undefined,h.owner)).value.rows
   const identity=rows=>rows.map(({id,at,agent,sponsor,tool,classes,revision,rules,decision,outcome,idempotency_key,approval,review})=>({id,at,agent,sponsor,tool,classes,revision,rules,decision,outcome,idempotency_key,approval,review}))
+  for(const [client,args,decision,outcome]of [[autoClient,autoArgs,'autonomous','done'],[reviewClient,reviewArgs,'review','done'],[c,approvedArgs,'approval','pending'],[c,pendingArgs,'approval','pending']]) {
+   const row=chronology.find(row=>row.idempotency_key===args.idempotency_key&&row.outcome===outcome)
+   assert.ok(row,'Native call has a durable audit row')
+   assert.equal(row.agent.id,client.agentId);assert.equal(row.sponsor.id,sponsorId)
+   assert.equal(row.consent,client.consent);assert.equal(row.client_id,'rer-agent-conformance')
+   assert.equal(row.tool,'purse.preparations.create');assert.equal(row.door,'mcp')
+   assert.equal(row.idempotency_key,args.idempotency_key);assert.equal(row.revision,c.revision)
+   assert.equal(row.decision,decision);assert.equal(row.outcome,outcome)
+   assert.deepEqual(row.classes,[{class:'standard',facts:{measure:1}}])
+   assert.equal(row.rules[0].do,decision);assert.ok(row.operation_id);assert.ok(row.agent.name);assert.ok(row.sponsor.name)
+   assert.ok(Array.isArray(row.scopes)&&row.scopes.includes('purchasing:write'))
+   if(decision==='review')assert.equal(row.review.id,reviewId)
+   if(decision==='approval')assert.ok(row.approval.id)
+  }
   const chronologyBefore=identity(chronology)
   const reads=async()=>{
    const paths=['/agents/api/audit','/agents/api/reviews','/agents/api/approvals',approvalPath,'/agents/api/approvals/'+approvedId,'/agents/api/approvals/'+hiddenId,'/agents', '/agents/approvals/'+pendingId, '/agents/approvals/'+approvedId]
@@ -91,6 +106,8 @@ export async function agentDoorErasure(visit) {
   assert.equal(erased.status,200,JSON.stringify(erased.value));assert.equal(erased.value.phase,'complete')
   const receipt=erased.value
   assert.ok(receipt.installationFields.some(row=>row.store==='agent retained artifacts'))
+  const rows=(await h.db.prepare('SELECT * FROM p_records').all()).results
+  assert.equal(validatePurchasingArchive(rows),true,'Anonymous native history remains a valid archive source')
   const after=await state()
   for(const personValue of Object.values(contact))assert.ok(!JSON.stringify(after).includes(personValue),personValue)
   assert.equal(after.agentRun.length,baseline.agentRun.length)
@@ -128,7 +145,7 @@ export async function agentDoorErasure(visit) {
   const agents=(await h.send('/agents/api/agents',undefined,h.owner)).value
   assert.ok(!JSON.stringify(agents).includes('"revoked":true'))
   console.log('PROBE BASE-AGENT-009 retained-artifact-custody: native owner erasure -> reviewed input, outcome and display copies scrubbed; old claims inert; live sponsor creates once')
-  return {preparationsBefore:4,preparationsAfterErasure:4,preparationsAfterFreshApproval:5,retainedFields:receipt.fields.length,affected:receipt.affected.length}
+  return {preparationsBefore:4,preparationsAfterErasure:4,preparationsAfterFreshApproval:5,retainedFields:receipt.fields.length+receipt.agentArtifactFields.length,affected:receipt.affected.length}
  } finally {await h.close()}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)console.log(JSON.stringify(await agentDoorErasure()))

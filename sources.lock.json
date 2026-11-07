@@ -932,7 +932,7 @@
       "executable": false
     },
     "scripts/installer/portability.mjs": {
-      "sha256": "480335350c541095c0715edf386b84f8c9beca0af1686c9274025ce862b03552",
+      "sha256": "ea3f1ac8975bfdeeb28b545273cea99b6ac60f1373f1503ac43a1674258a8120",
       "executable": false
     },
     "scripts/installer/restore-access.mjs": {
@@ -3664,7 +3664,7 @@
       "executable": false
     },
     "src/purse/erasure-agent-artifacts.ts": {
-      "sha256": "3af3afd19ffebd5ce2de1fff52d28601370cf178258a240f647011de64eb34ee",
+      "sha256": "4f813d83a926206bbb4ca99794491835a3daa286f9f1f89725255341a74b6e35",
       "executable": false
     },
     "src/purse/erasure-api.ts": {
@@ -3688,7 +3688,7 @@
       "executable": false
     },
     "src/purse/erasure-execute.ts": {
-      "sha256": "7a8ec4d07e60e83cb260ec2d447e06fbadf86e0744c1a8bf482215ffe3cd0971",
+      "sha256": "c92272345f632e8e528067249482c8f88e9bba941730ef85112dd5ae8a8fae4c",
       "executable": false
     },
     "src/purse/erasure-history-text.d.mts": {
@@ -3716,7 +3716,7 @@
       "executable": false
     },
     "src/purse/erasure-plan.ts": {
-      "sha256": "163a782a81f4cdb2ea7b93a86acb037f620734d7ca0492108ff965c19ddd2147",
+      "sha256": "91240394f259b6c8c36f071cb36104a746f8b8df0b1fcb82929a0e107f524e05",
       "executable": false
     },
     "src/purse/erasure-refusal.ts": {
@@ -5276,7 +5276,7 @@
       "executable": false
     },
     "tests/agent-door-erasure.mjs": {
-      "sha256": "685fc9cc954e0464c1999052d8ccb0ff731ebf1ecd5de72f463f45d4360748cf",
+      "sha256": "e1f1dfc8c3341a0dba179bc8cbc60526e73e8a9b569661b184b0fef18397cae5",
       "executable": false
     },
     "tests/agent-door-journey.mjs": {

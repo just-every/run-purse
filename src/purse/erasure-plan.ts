@@ -55,11 +55,11 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   if(value.key)blobs.add(value.key);
   return file;
  };
- const visit=(value:any,field:string,affected:boolean):any=>{
-  if(typeof value==='string')return affected&&privateNotes.has(field)?erasedText:replace(value,field);
-  if(Array.isArray(value))return value.map(item=>visit(item,field,affected));
+ const visit=(value:any,field:string,affected:boolean,content=false):any=>{
+  if(typeof value==='string')return affected&&privateNotes.has(field)?erasedText:replace(value,content?'':field);
+  if(Array.isArray(value))return value.map(item=>visit(item,field,affected,content));
   if(value&&typeof value==='object') {
-   const result=Object.fromEntries(Object.entries(value).map(([name,item])=>[replace(name),name==='logo'?item:visit(item,name,affected)]));
+   const result=Object.fromEntries(Object.entries(value).map(([name,item])=>[replace(name),name==='logo'&&!content?item:visit(item,name,affected,content)]));
    if(affected&&typeof value.trackingNumber==='string'&&(value.source==='supplier-reported'||value.action==='shipment-reference-recorded')){result.trackingNumber=erasedText;if(value.reason)result.reason=erasedText;}
    if(affected&&value.document&&value.documentVersion&&value.reviewed&&value.eligibility)result.reason=erasedText;
    if(affected&&value.sha256&&typeof value.size==='number')result.name=erasedText;
@@ -71,7 +71,7 @@ export function planErasure(before:State,subject:ErasureSubject,id:string,revisi
   if(['nativeReviewAuthority','nativeTaxAuthority','nativeDepositAuthority','nativeBudgetAuthority'].includes(row.kind))continue;
   if(row.kind==='erasureReceipt'&&row.value.actor===subject.operator){const value={...row.value,actor:alias};state.set(oldKey,{...row,value});fields.push({kind:row.kind,id:row.id,path:['actor'],before:erasureDigest(row.value.actor),after:erasureDigest(alias)});continue;}
   if(['supplierMatchingKey','invoiceEvidenceKey','erasureReceipt'].includes(row.kind))continue;
-  const affected=linked.has(row.id),value=visit(row.value,'',affected);
+  const affected=linked.has(row.id),value=visit(row.value,'',affected,row.kind==='agentRun'&&row.value.mode==='human-preparation');
   if(['notificationMailEvent','notificationPreference','notificationDelivery','notification','shipmentReference','depositRule','depositApplication','supplierProposal','supplierProposalReview','supplierTaxReview','supplierRma','supplierCredit','supplierCreditApplication','crossTeamReview','comment','orderThreadMessage','orderSend','recurringNoticeSend'].includes(row.kind)&&affected)value.erasure=id;
   if(row.kind==='travelExpense'&&affected)Object.assign(value,{erasure:id,originalStatus:'withdrawn',originalSourceVerified:false,sourceBasis:'Original withdrawn by personal-data erasure; normalized financial evidence retained. The original source cannot be reverified.'});
   if(row.kind==='attachment'&&affected)Object.assign(value,eraseFile(value));
