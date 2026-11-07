@@ -11,13 +11,27 @@ test('INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicate
  const h=await harness({protectedKey:createHash('sha256').update('synthetic-purse-1').digest('hex')});t.after(()=>h.close());const cmd=h.command;
  await cmd('business',{name:'Canyon Field Services',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Safety']});
  const requester=await h.member('requester@example.test',['requester']),approver=await h.member('approver@example.test',['approver']),buyer=await h.member('buyer@example.test',['buyer']);
- const bankRouting='021000021',bankAccount='736290184652';
- const supplier=await cmd('supplier',{name:'Canyon Supply',status:'preferred',reason:'Known supplier',contacts:[{name:'Jordan',email:'sales@canyon.example.test'}],matching:{bankRouting,bankAccount}},buyer);
+ const supplier=await cmd('supplier',{name:'Canyon Supply',status:'preferred',reason:'Known supplier',contacts:[{name:'Jordan',email:'sales@canyon.example.test'}]},buyer);
  await cmd('policy',{name:'Safety budget',currency:'USD',category:'*',project:'*',approver:'approver@example.test',limitMinor:1000000,budgetMinor:1000000});
  await cmd('po-generation-policy',{purchaseType:'equipment',supplier:supplier.id,currency:'USD',version:0,enabled:true,maxMinor:100000,consent:true,reason:'Current owner standing authority for one ordinary native goods request',sendEnabled:true,sendConsent:true,sendRecipient:supplier.contacts[0].email});
  const r=await cmd('request',{title:'Safety equipment',supplier:supplier.id,currency:'USD',needDate:'2026-11-30',location:'Denver',costCentre:'Operations',terms:'Net 30',lines:[{description:'Safety kit',quantity:'10',unitMinor:1000,category:'Equipment',project:'Safety'}]},requester);const first=await cmd('quote',{...r,request:r.id,source:'Initial source offer',lines:r.lines.map(l=>({...l,unitMinor:1100}))},requester),winner=await cmd('quote',{...r,request:r.id,source:'Awarded source offer'},requester);await cmd('quote-award',{request:r.id,revision:1,firstQuote:first.id,awardedQuote:winner.id,reason:'Buyer recorded supplier reduction',lines:[{requestLine:r.lines[0].id,firstLine:first.lines[0].id,awardedLine:winner.lines[0].id}]},buyer);await cmd('submit',{id:r.id,revision:1},requester);await cmd('decision',{id:r.id,revision:1,decision:'approved',reason:'Approved'},approver);const generated=await h.mf.dispatchFetch(h.origin+'/cdn-cgi/local/scheduled?time='+(Date.now()+1000));assert.equal(generated.status,200);const o=(await h.state()).data.order.find(order=>order.request===r.id);assert.ok(o);assert.equal((await h.send('/api/purse/order-send/'+o.id,undefined,buyer)).value.event.status,'accepted');assert.equal(h.messages.filter(message=>message.subject.startsWith('Purchase order:')).length,1);await cmd('receipt',{order:o.id,line:o.lines[0].id,event:'receive',quantity:'10',reason:'Ten accepted'});
  const pdf=await PDFDocument.create();pdf.addPage().drawText('Canyon Supply invoice CS-100. Two safety kits. USD 20.00.');const bytes=Buffer.from(await pdf.save()),document={name:'CS-100.pdf',mediaType:'application/pdf',base64:bytes.toString('base64')};
- const protectedValues={tin:'987659731',bankRouting,bankAccount};const protectedMeta=await h.send('/api/purse/supplier-protected/'+supplier.id,undefined,h.owner);assert.equal((await h.send('/api/purse/supplier-protected/'+supplier.id+'/store',{revision:protectedMeta.value.revision,values:protectedValues,reason:'synthetic-purse-2',evidence:'synthetic-purse-3'},h.owner)).status,200);
+ // Auth links and PO attachment bytes already exist independently of protected
+ // input. Pick synthetic suffixes absent from that baseline, so an ephemeral
+ // port (e.g. 39731) or opaque token cannot masquerade as a disclosure. Keep
+ // every output and the full-value/suffix assertions below unchanged.
+ const beforeProtected=JSON.stringify(h.messages);
+ const fixtureValue=initial=>{
+  for(let offset=0;offset<10000;offset++){
+   const suffix=String((Number(initial.slice(-4))+offset)%10000).padStart(4,'0');
+   if(!beforeProtected.includes(suffix))return initial.slice(0,-4)+suffix;
+  }
+  assert.fail('No collision-free synthetic protected suffix');
+ };
+ const protectedValues={tin:fixtureValue('987659731'),bankRouting:fixtureValue('021000021'),bankAccount:fixtureValue('736290184652')};
+ const {bankRouting,bankAccount}=protectedValues;
+ const baselineMessages=structuredClone(h.messages);
+ const protectedMeta=await h.send('/api/purse/supplier-protected/'+supplier.id,undefined,h.owner);assert.equal((await h.send('/api/purse/supplier-protected/'+supplier.id+'/store',{revision:protectedMeta.value.revision,values:protectedValues,reason:'synthetic-purse-2',evidence:'synthetic-purse-3'},h.owner)).status,200);
  const input={order:o.id,reference:'CS-100',source:'Original supplier PDF',invoiceDate:'2026-10-19',senderEmail:'sales@canyon.example.test',remit:{bankRouting,bankAccount},document,allocations:[{line:o.lines[0].id,quantity:'2',amountMinor:2000}]};
  const original=await cmd('invoice',input,buyer);assert.deepEqual(original.flags,[]);assert.equal(original.remit.verified,false);assert.equal(original.sender.authentication,'unverified');assert.equal(original.remit.comparison,'matched');
  assert.equal((await cmd('invoice',input,buyer)).id,original.id,'Exact resent reference is idempotent, no second financial record');
@@ -75,6 +89,7 @@ test('INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicate
   let semantic=output;for(const identity of publicOpaque)semantic=semantic.replaceAll(identity,'[public source identity]');
   for(const value of Object.values(protectedValues))assert.ok(!semantic.includes(value.slice(-4)),'Protected suffix in public output '+index+' outside proven source identities');
  }
+ assert.deepEqual(h.messages,baselineMessages,'Protected storage and invoice work cannot rewrite the pre-input mail baseline');
  assert.equal(validatePurchasingArchive(rows),true,'INVOICE-003 source originals and immutable reviews remain portable');
  // Upgrade fixtures reproduce the original v1 wire representation, including lost bank input.
  const root=JSON.parse((await h.db.prepare("SELECT value FROM p_records WHERE kind='supplierMatchingKey'").first()).value).secret;
