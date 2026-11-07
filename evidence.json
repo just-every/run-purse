@@ -19,10 +19,10 @@
       "sha256": "f4eb84d1e46d81086d608ec0bfcc548e8fa568fd424520d1696ffb8c9183e6c5"
     },
     {
-      "blob": "8061e87d2cb448629e7cef77eee268cc300b8cd1",
-      "bytes": 4925,
+      "blob": "7bea1910f3e0a620d5cf9dcb849e0c205d7a4759",
+      "bytes": 5168,
       "path": "REPORT.md",
-      "sha256": "d3404fd0da693e8f2bf148a4483bdbe7cb0711ca095c64fd684fb27e2d63565a"
+      "sha256": "e399828465c7498d9a886c917eb416ea90e0e4dce23450c52c7ce8d85681b04b"
     },
     {
       "blob": "564c4d271eeb0c9b29ba6487c4d6eaddf4d71add",
@@ -103,6 +103,12 @@
       "sha256": "03e0060a22fddeb8938489eb4861a2b7fbcbbb3c8b8e40d283dd0cf52d09efbe"
     },
     {
+      "blob": "7df2cefb66c674b71e12616f21217834e4012dcb",
+      "bytes": 7166,
+      "path": "evidence-initial-receipt.json",
+      "sha256": "4590d855f97ef75f1185be5e7ff6be61cf4152c62bde9f3e29a8920f96dd12c4"
+    },
+    {
       "blob": "dd3021f56c97ba8d7477d4462df131e44a3cccfd",
       "bytes": 1773,
       "path": "fixed-invoice-risk-collision.log",
@@ -157,10 +163,16 @@
       "sha256": "8707391696abec5182f19b534cd966dc665946a47f7dca5264bc81f6ba88b86e"
     },
     {
-      "blob": "18f8504b41f9d558da888221d464598f96c33fda",
-      "bytes": 2197,
+      "blob": "a9a65542e2d29371aea2191758610e863d9461ef",
+      "bytes": 139520,
+      "path": "original-failure.log",
+      "sha256": "77cfacd0b5ec4c278b89f45c2c5233f81ba82bf972f686c35c3c804e53e3a834"
+    },
+    {
+      "blob": "efb78370cb943fc0555d41fae78f1ea93150e621",
+      "bytes": 6384,
       "path": "packet-review.json",
-      "sha256": "988a0757e2f94738f5b43719a1a35174c8251f1a1f4f47bd36a2b2dfc8e193c0"
+      "sha256": "86ae06cecee9af4018abacd9ea7ef4f753dd5868788201e79b76a3be2d5d12ff"
     },
     {
       "blob": "79da97269cd64a78b614bc6fd8a287f9db596e4a",

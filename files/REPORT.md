@@ -36,7 +36,7 @@ The two changed files relative to the published candidate are tests/invoice-risk
 
 PLAN.md contains the complete execution plan. ANALYSIS.md contains the product-versus-fixture decision. RECEIPT.json records actual commands, outcomes and provenance. Supporting actual output files include the original failed job, candidate/main baselines, controlled reproductions, negative leak probes, final focused checks, erasure journey, identity inspection, source verification, product push and exact-SHA CI API receipts.
 
-Evidence publication goes only to refs/heads/evidence/sx-purse-f96fix-1. Evidence publication is separate from product READY, acceptance and landing. The Mac fleet performs its own publication scan and lands the product; this cloud does not push main.
+Evidence publication goes only to refs/heads/evidence/sx-purse-f96fix-1. The initial evidence selection omitted original-failure.log; the complete packet is republished append-only on the same evidence ref, with evidence-initial-receipt.json preserving the initial transfer receipt. The product branch is unchanged. Evidence publication is separate from product READY, acceptance and landing. The Mac fleet performs its own publication scan and lands the product; this cloud does not push main.
 
 ## Blockers
 
