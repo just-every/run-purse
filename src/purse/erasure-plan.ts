@@ -1,3 +1,4 @@
+import type { AgentArtifactErasure } from './erasure-agent-artifacts';
 import { createHash } from 'node:crypto';
 import { all, get, key, put, requireThat, type Data, type State } from './types';
 import { erasureDigest, erasedText } from './erasure-journal.mjs';
@@ -6,7 +7,7 @@ import type { ErasureSubject } from './erasure-subject';
 
 const structural = /^(?:sha256|evidenceHash|retainedDigest|attestation|bankBinding|secret|fingerprint|sourceFingerprint|mediaType|action|status|event|kind|provider|providerSenderLabel|senderVerified|currency|representation|state|method|code|comparison|authentication|at|.*At|.*Date|.*Version)$/;
 const privateNotes = new Set(['body','sourceText','sourceHtml','messageId','notes','note','personalNotes']);
-export type ErasurePlan = { state:State; fields:Data[]; blobs:string[]; affected:Data[]; fingerprint:string; alias:string; email:string; subject:ErasureSubject; id:string; scrub:(value:any)=>any };
+export type ErasurePlan = { state:State; agentArtifacts?:AgentArtifactErasure; fields:Data[]; blobs:string[]; affected:Data[]; fingerprint:string; alias:string; email:string; subject:ErasureSubject; id:string; scrub:(value:any)=>any };
 export function planErasure(before:State,subject:ErasureSubject,id:string,revision:number):ErasurePlan {
  requireThat(/^[a-f0-9-]{36}$/.test(id),'Review identifier invalid');
  const alias='erased-'+id,email=alias+'@erased.invalid',state=structuredClone(before),fields:Data[]=[],blobs=new Set<string>();

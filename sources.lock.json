@@ -395,6 +395,10 @@
       "sha256": "418fd4c8afc4800970ffaa2921ba1ae92ddc9f591035b22518bf0fbeda2de04f",
       "executable": false
     },
+    "migrations/core/0048_agent_artifact_erasure.sql": {
+      "sha256": "2553520063bb3e634afea9dde1ed80ef38bdc05c95c2aa9cfa818c7d91dd16c7",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "51c8a4e7383e2b5acdddde2220d210c1d14449629e75cee7d19ceaa8bc65586b",
       "executable": false
@@ -408,7 +412,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "a2b6628e884864ec35de3d6b29daae4774df10e0b36d78b5f01eeef06972de06",
+      "sha256": "54a4d7ccf73dc372e37181bde95c6fb26f5e7045b2a8295cc55a848e9a18c9da",
       "executable": false
     },
     "packaging.json": {
@@ -748,7 +752,7 @@
       "executable": false
     },
     "scripts/ci/shards.json": {
-      "sha256": "fefcc67d9ac16002e6a98e2ac993307de9769b683e503e796ed30c86ce88bfee",
+      "sha256": "4764361eae9b1b1436986f9bc434fda66fc7def519b4cd1e860b957e1d5f36f5",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
@@ -3659,8 +3663,12 @@
       "sha256": "5b4ff7e4033b1bd4819a5253d35f7d16212b34f16607a9fee39ae81645ffd673",
       "executable": false
     },
+    "src/purse/erasure-agent-artifacts.ts": {
+      "sha256": "3af3afd19ffebd5ce2de1fff52d28601370cf178258a240f647011de64eb34ee",
+      "executable": false
+    },
     "src/purse/erasure-api.ts": {
-      "sha256": "6f1876ff8cde43e115dc706fd4df38a15d149c16f929b3215752fb947701aad5",
+      "sha256": "789ab59678c52d568a0748d51e5dff9997a6189a4a2c4dc779d74bc52757c600",
       "executable": false
     },
     "src/purse/erasure-checkpoint.d.mts": {
@@ -3672,7 +3680,7 @@
       "executable": false
     },
     "src/purse/erasure-coverage.ts": {
-      "sha256": "fd61427c016a0e724f0b96e72da49a528b2174f9557a7ba54f71b2a75de6cd6a",
+      "sha256": "32aa157ab02f2deb4e23568b0297b7703d136ba8d321af41826947701f05b025",
       "executable": false
     },
     "src/purse/erasure-diff.ts": {
@@ -3680,7 +3688,7 @@
       "executable": false
     },
     "src/purse/erasure-execute.ts": {
-      "sha256": "9337303f5ea29026ba4bf05ae7ffcaa03e62b52c666249b14257b4f9868279f4",
+      "sha256": "7a8ec4d07e60e83cb260ec2d447e06fbadf86e0744c1a8bf482215ffe3cd0971",
       "executable": false
     },
     "src/purse/erasure-history-text.d.mts": {
@@ -3704,11 +3712,11 @@
       "executable": false
     },
     "src/purse/erasure-native.ts": {
-      "sha256": "35c909bccf4bf2f897edc0438809bc823ab298222319bb19ccddf84e4ad833e3",
+      "sha256": "8088405082ff83b01bf4e6a729e486a415aa6c7372d1a5cec2c35daa1a777179",
       "executable": false
     },
     "src/purse/erasure-plan.ts": {
-      "sha256": "01e1a72475041525445a1a8f78716abe07719accf2d9131ab2a791153154e019",
+      "sha256": "163a782a81f4cdb2ea7b93a86acb037f620734d7ca0492108ff965c19ddd2147",
       "executable": false
     },
     "src/purse/erasure-refusal.ts": {
@@ -5267,6 +5275,10 @@
       "sha256": "f2130286347ebe30be571d6c210bc52cb4e0818f5ad2f3c24837375768e75ac4",
       "executable": false
     },
+    "tests/agent-door-erasure.mjs": {
+      "sha256": "685fc9cc954e0464c1999052d8ccb0ff731ebf1ecd5de72f463f45d4360748cf",
+      "executable": false
+    },
     "tests/agent-door-journey.mjs": {
       "sha256": "9ac07e8d095a721d07790d8cb41d4a05c3b96669746f2903a6fb2cb2b8878e75",
       "executable": false
@@ -5349,6 +5361,10 @@
     },
     "tests/browser-accrual-report.mjs": {
       "sha256": "6c5e33cc8412df1ae8bfe539d97079ccab1434facaa61ef7531ea53fd1ff7bdd",
+      "executable": false
+    },
+    "tests/browser-agent-door-erasure.mjs": {
+      "sha256": "4c56df344fa3b25a7f14499942c7490ac057de5ea2e33ed976f4035a0906e5d1",
       "executable": false
     },
     "tests/browser-agent-governance.mjs": {
