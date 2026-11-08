@@ -1,0 +1,24 @@
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: {"error":"Erasure could not settle current authority or source custody. Reload and review; no partial financial changes were committed."}
+
+409 !== 200
+
+    at preview (file:///home/agent/rer-consolidation/work/sx-purse-f96fix2/repo/tests/agent-door-erasure.mjs:91:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async agentDoorErasure (file:///home/agent/rer-consolidation/work/sx-purse-f96fix2/repo/tests/agent-door-erasure.mjs:95:15)
+    at async file:///home/agent/rer-consolidation/work/sx-purse-f96fix2/repo/tests/agent-door-erasure.mjs:171:102 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 409,
+  expected: 200,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.19.0

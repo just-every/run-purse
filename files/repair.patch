@@ -1,0 +1,103 @@
+diff --git a/src/purse/erasure-agent-artifacts.ts b/src/purse/erasure-agent-artifacts.ts
+index 16a26ba..bc12506 100644
+--- a/src/purse/erasure-agent-artifacts.ts
++++ b/src/purse/erasure-agent-artifacts.ts
+@@ -32,15 +32,19 @@ export async function planAgentArtifactErasure(db:D1Database,plan:ErasurePlan) {
+  const settled=await db.prepare(`SELECT CASE WHEN ${idle} THEN 1 ELSE 0 END AS ok`).first<{ok:number}>();
+  requireThat(settled?.ok===1,'Agent execution is in progress; review erasure after it settles',409);
+  statements.push(sql(`INSERT INTO p_guard SELECT CASE WHEN (SELECT revision FROM p_agent_artifact_revision WHERE id=1)=? AND ${idle} THEN 1 ELSE 0 END`,revision));
+- // Free-form tool fields can use names such as action or status. They are
+- // content here, so native structural-field exemptions must not hide a match.
+- const scrub=(value:any):any=>typeof value==='string'?plan.scrub(value):Array.isArray(value)?value.map(scrub):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([name,item])=>[plan.scrub(name),scrub(item)])):value;
++ // Protocol keys and class identifiers are structure, even when a contact's
++ // name occurs inside them. Only the open tool fields map has content keys;
++ // its names and values still need erasure, including action, class or status.
++ const scrub=(value:any,field='',content=false):any=>typeof value==='string'?plan.scrub(value):Array.isArray(value)?value.map(item=>scrub(item,field,content)):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([name,item])=>[
++  content?plan.scrub(name):name,
++  !content&&name==='class'&&(field==='classes'||field==='rules')?item:scrub(item,name,content||name==='fields'),
++ ])):value;
+  const counts:Data[]=[];
+  for(const [index,store]of stores.entries()) {
+   let count=0;
+   for(const row of snapshot[index+1].results as Data[]) {
+    const next={...row};
+-   for(const column of store.json)if(row[column]!==null)next[column]=JSON.stringify(scrub(JSON.parse(row[column])));
++   for(const column of store.json)if(row[column]!==null)next[column]=JSON.stringify(scrub(JSON.parse(row[column]),column));
+    const changed=store.json.some(column=>next[column]!==row[column]);
+    if(!changed)continue;
+    const id=String(row.id??row.decision_id);
+diff --git a/tests/agent-door-erasure.mjs b/tests/agent-door-erasure.mjs
+index a0018e5..a384388 100644
+--- a/tests/agent-door-erasure.mjs
++++ b/tests/agent-door-erasure.mjs
+@@ -19,8 +19,8 @@ export async function agentDoorErasure(visit) {
+  const clock=new Date().toISOString(),h=await harness({worker:'tests/agent-door-worker.ts',clock})
+  try {
+   await h.command('business',{name:'Synthetic erasure workshop',currencies:['USD'],locations:['Denver'],costCentres:['Operations'],projects:['Workshop']})
+-  const contact={name:'Synthetic contact 9601',email:address(9601)}
+-  const other={name:'Synthetic contact 9602',email:address(9602)}
++  const contact={name:'Mary',email:address(9601)}
++  const other={name:'Stan',email:address(9602)}
+   const supplier=await h.command('supplier',{name:'Synthetic erasure supplier',status:'active',reason:'Owner reviewed',contacts:[contact,other]})
+   const sponsorAddress=address(9603),owner=(await h.state()).actor
+   const pair=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify'])
+@@ -37,9 +37,9 @@ export async function agentDoorErasure(visit) {
+   await settings(2,roster.map(row=>({...row,id:sponsorId})))
+   const surface=JSON.parse(await readFile('agent-surface.json','utf8'))
+   const protocol=agentId=>createProtocol({fetch:(url,init)=>h.mf.dispatchFetch(url,init),origin:h.origin,surface,signer:{issuer,installationId,kid,privateKey:pair.privateKey},person:{email:sponsorAddress,cookie:sponsor,sub:sponsorId},business,consent:randomUUID(),agentId,seq:0,revision:0,points:[],now:()=>Date.parse(clock)})
+-  const c=protocol(randomUUID()),autoClient=protocol(randomUUID()),reviewClient=protocol(randomUUID()),unrelated=protocol(randomUUID())
+-  const policy={schema:'rer-agent-policy/1',catalogue:'rer-agent-classes/1',rules:[{id:'all',class:'*',do:'autonomous'},{id:'review-other',class:'*',agent:unrelated.agentId,do:'review'},{id:'review-preparation',class:'*',agent:reviewClient.agentId,do:'review'},{id:'approve-preparation',class:'*',agent:c.agentId,do:'approval',approver:['sponsor'],wait:'PT1H'}],reviewers:['sponsor'],spend:{none:true}}
+-  const input=(person,label)=>({workflow:'intake',draft:label+' '+person.name+' '+person.email,fields:{contact:person.name,reply:person.email,action:'Reach '+person.email,kind:'Contact '+person.name,logo:'Private note '+person.email},references:[{kind:'supplier',id:supplier.id}],idempotency_key:randomUUID()})
++  const c=protocol(randomUUID()),autoClient=protocol(randomUUID()),reviewClient=protocol(randomUUID()),unrelated=protocol(randomUUID()),cappedClient=protocol(randomUUID())
++  const policy={schema:'rer-agent-policy/1',catalogue:'rer-agent-classes/1',rules:[{id:'all',class:'*',do:'autonomous'},{id:'cap-fallback',class:'*',agent:cappedClient.agentId,do:'blocked'},{id:'capped-preparation',class:'standard',seed:'purse',agent:cappedClient.agentId,max_per_day:1,do:'autonomous'},{id:'review-other',class:'*',agent:unrelated.agentId,do:'review'},{id:'review-preparation',class:'*',agent:reviewClient.agentId,do:'review'},{id:'approve-preparation',class:'*',agent:c.agentId,do:'approval',approver:['sponsor'],wait:'PT1H'}],reviewers:['sponsor'],spend:{none:true}}
++  const input=(person,label)=>({workflow:'intake',draft:label+' '+person.name+' '+person.email,fields:{contact:person.name,reply:person.email,action:'Reach '+person.email,kind:'Contact '+person.name,logo:'Private note '+person.email,class:'Contact '+person.name,[person.name+' note']:'Private note '+person.email},references:[{kind:'supplier',id:supplier.id}],idempotency_key:randomUUID()})
+   const call=args=>c.tool('purse.preparations.create',args)
+   const state=async()=>(await h.state()).data
+   await c.adopt(policy)
+@@ -85,12 +85,12 @@ export async function agentDoorErasure(visit) {
+   assert.ok(JSON.stringify(await reads()).includes(contact.email),'The live display must contain the target before erasure')
+   const browser={h,sponsor,contact,other,pendingId,approvedId,reviewId}
+   if(visit)await visit({...browser,stage:'before'})
+-  const preview=async()=>{
++  const preview=async(person=contact)=>{
+    const revision=(await h.send('/api/purse/erasure',undefined,h.owner)).value.revision
+-   const answer=await h.send('/api/purse/erasure/preview',{revision,kind:'contact',id:supplier.id,email:contact.email},h.owner)
++   const answer=await h.send('/api/purse/erasure/preview',{revision,kind:'contact',id:supplier.id,email:person.email},h.owner)
+    assert.equal(answer.status,200,JSON.stringify(answer.value));return answer.value
+   }
+-  const execute=reviewed=>h.send('/api/purse/erasure/execute',{revision:reviewed.revision,kind:'contact',id:supplier.id,email:contact.email,review:reviewed.review,fingerprint:reviewed.fingerprint,consent:true},h.owner)
++  const execute=(reviewed,person=contact)=>h.send('/api/purse/erasure/execute',{revision:reviewed.revision,kind:'contact',id:supplier.id,email:person.email,review:reviewed.review,fingerprint:reviewed.fingerprint,consent:true},h.owner)
+   await reauthenticateErasure(h)
+   const stale=await preview()
+   // A replay changes only retained door history, not the native revision.
+@@ -142,6 +142,30 @@ export async function agentDoorErasure(visit) {
+   assert.equal((await c.decideApproval(await call(liveArgs))).body.approval.state,'executed')
+   assert.equal(content(await call(liveArgs)).draft,liveArgs.draft)
+   assert.equal((await state()).agentRun.length,5)
++  console.log('PROBE BLOCKING-A Mary: owner preview and execute -> 200 and complete; saved approval summaries remain readable; erased pending consent refuses')
++  // A contact name can overlap a protocol class label. Erasure must leave the
++  // signed policy and consumed daily allowance intact across fresh MCP calls.
++  const allowedArgs=input(other,'Consume the daily allowance')
++  const allowed=content(await cappedClient.tool('purse.preparations.create',allowedArgs))
++  assert.equal(allowed.draft,allowedArgs.draft)
++  assert.equal((await state()).agentRun.length,6)
++  const cappedArgs=input(other,'Daily allowance already consumed')
++  const capped=await cappedClient.tool('purse.preparations.create',cappedArgs)
++  assert.equal(errorCode(capped),'policy_blocked')
++  assert.equal(capped.decision.revision,c.revision)
++  const usageBefore=(await h.db.prepare('SELECT * FROM agent_door_usage ORDER BY rowid').all()).results
++  assert.ok(usageBefore.some(row=>row.agent===cappedClient.agentId))
++  const preparationsBefore=(await state()).agentRun.length
++  const stanReview=await preview(other),stanErased=await execute(stanReview,other)
++  assert.equal(stanErased.status,200,JSON.stringify(stanErased.value))
++  assert.equal(stanErased.value.phase,'complete')
++  assert.deepEqual((await h.db.prepare('SELECT * FROM agent_door_usage ORDER BY rowid').all()).results,usageBefore,'Erasure preserves consumed policy allowances')
++  const afterCap=await cappedClient.tool('purse.preparations.create',input(other,'Fresh attempt after contact erasure'))
++  assert.equal(errorCode(afterCap),'policy_blocked','Erasing Stan must not reset the daily standard allowance')
++  assert.equal(afterCap.decision.revision,c.revision)
++  assert.equal((await state()).agentRun.length,preparationsBefore,'A cap refusal must have no native preparation effect')
++  for(const {value} of await reads())assert.ok(!JSON.stringify(value).includes(other.email),'Stan remains in retained displays')
++  console.log('PROBE BLOCKING-B Stan: capped MCP preparation refused before and after owner erasure under the same policy revision; usage unchanged; no extra preparation')
+   const agents=(await h.send('/agents/api/agents',undefined,h.owner)).value
+   assert.ok(!JSON.stringify(agents).includes('"revoked":true'))
+   console.log('PROBE BASE-AGENT-009 retained-artifact-custody: native owner erasure -> reviewed input, outcome and display copies scrubbed; old claims inert; live sponsor creates once')

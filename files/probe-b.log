@@ -1,0 +1,4 @@
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+
+
+{"before":"policy_blocked","after":"policy_blocked","disposition":"blocked","usage":[{"classes":"[{\"class\":\"standard\",\"facts\":{\"measure\":1}}]"}],"preparations":1,"revision":1}

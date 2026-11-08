@@ -1,0 +1,24 @@
+{
+  "source_head": "951a12174c7dd7769b3917d9e9956d25d7e433cd",
+  "reproductions": [
+    {
+      "head": "951a12174c7dd7769b3917d9e9956d25d7e433cd",
+      "job": "gate public-door probe A",
+      "command": "node tests/agent-door-erasure.mjs",
+      "test": "Mary erasure preview with saved preparation approvals",
+      "exit": 1,
+      "failure": "409 !== 200; Erasure could not settle current authority or source custody. Reload and review; no partial financial changes were committed.",
+      "log": "reproduce-a.log",
+      "note": "Extended journey fixture on the original retained-artifact implementation before the repair."
+    },
+    {
+      "head": "951a12174c7dd7769b3917d9e9956d25d7e433cd",
+      "job": "gate public-door probe B",
+      "command": "node PROBE-B.mjs <checkout>",
+      "test": "Stan erasure preserves the exhausted daily allowance",
+      "exit": 1,
+      "failure": "actual null; expected policy_blocked; disposition autonomous; usage class Personal data eraseddard; preparations 2",
+      "log": "reproduce-b.log"
+    }
+  ]
+}

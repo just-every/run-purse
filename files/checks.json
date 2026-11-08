@@ -1,0 +1,54 @@
+{
+  "head": "8d2101bba1ae215a91ac9777608ab98fa461579e",
+  "checks": [
+    {
+      "name": "touched-erasure",
+      "head": "8d2101bba1ae215a91ac9777608ab98fa461579e",
+      "command": [
+        "node",
+        "tests/agent-door-erasure.mjs"
+      ],
+      "exit": 0,
+      "seconds": 7.349,
+      "log": "touched-erasure.log"
+    },
+    {
+      "name": "typecheck",
+      "head": "8d2101bba1ae215a91ac9777608ab98fa461579e",
+      "command": [
+        "pnpm",
+        "typecheck"
+      ],
+      "exit": 0,
+      "seconds": 0.507,
+      "log": "typecheck.log"
+    },
+    {
+      "name": "first-party",
+      "head": "8d2101bba1ae215a91ac9777608ab98fa461579e",
+      "command": [
+        "npx",
+        "-y",
+        "@runeditrun/rer",
+        "check",
+        "--profile",
+        "first-party"
+      ],
+      "exit": 0,
+      "seconds": 1.361,
+      "log": "first-party.log"
+    },
+    {
+      "name": "lock-check",
+      "head": "8d2101bba1ae215a91ac9777608ab98fa461579e",
+      "command": [
+        "node",
+        "scripts/edition-authoring/cli.mjs",
+        "check"
+      ],
+      "exit": 0,
+      "seconds": 0.253,
+      "log": "lock-check.log"
+    }
+  ]
+}

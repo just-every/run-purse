@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "head": "8d2101bba1ae215a91ac9777608ab98fa461579e",
+  "command": "timeout 1200 node tests/browser-agent-door-erasure.mjs",
+  "exit": 0,
+  "assertion_width": 1440,
+  "capture_widths": [
+    1440,
+    390
+  ],
+  "note": "Browser ran after main reconciliation on the source and test bytes committed at this head. No source or test changed between that run and this commit.",
+  "screenshots": [
+    {
+      "path": "browser/erased-agent-audit-and-counts-1440.png",
+      "sha256": "36e5a92d10036f95500169a8bb6228cf14ca703949213e8e35176ff2f54bc755",
+      "width": 1440,
+      "height": 2036
+    },
+    {
+      "path": "browser/erased-agent-audit-and-counts-390.png",
+      "sha256": "c14407accd25b06c8a41f6df4a44ba4bd736a1070d8a9b6093bb4319cb74a909",
+      "width": 390,
+      "height": 2419
+    },
+    {
+      "path": "browser/erased-agent-completed-approval-1440.png",
+      "sha256": "08eea524bbefbd2dc6c9804f2aff3085774f21f4826e9b5d5a9137d7f45703af",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "path": "browser/erased-agent-completed-approval-390.png",
+      "sha256": "fccd1b1e1e8d146ae4a516d07bc3dc1246c38e833356a336acdd6451a6daa5b7",
+      "width": 390,
+      "height": 1000
+    },
+    {
+      "path": "browser/erased-agent-pending-approval-1440.png",
+      "sha256": "a37a821c4ed8680020638788dc978944622a2ae9322bd6eaac68754b67d0e6d4",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "path": "browser/erased-agent-pending-approval-390.png",
+      "sha256": "827dc73d4049e80d99c70a67ef303c3b0dfe2b8bf2b857c05b295e18d6b5a5c6",
+      "width": 390,
+      "height": 1000
+    },
+    {
+      "path": "browser/erased-agent-review-feed-1440.png",
+      "sha256": "ca5846f87e97cea35b0b6e66be473da145483a2cdbaa38dda3ceacfaf7f80f7d",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "path": "browser/erased-agent-review-feed-390.png",
+      "sha256": "10d51494b45969be96d067a28bb0f8fef95e128e55c9341b442938b057705ece",
+      "width": 390,
+      "height": 1000
+    }
+  ]
+}

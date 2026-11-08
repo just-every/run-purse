@@ -1,0 +1,23 @@
+{
+  "head": "8d2101bba1ae215a91ac9777608ab98fa461579e",
+  "contract_status_diff": "",
+  "all_candidate_commit_identities": "fleet",
+  "trailers": "absent",
+  "working_tree_clean": true,
+  "views_write_exit": 0,
+  "views_check_exit": 0,
+  "generated_files_restored_from_main": true,
+  "lock_write_exit": 0,
+  "lock_check_exit": 0,
+  "migration_ledger": "no migration edited in this repair; stacked migration preserved",
+  "test_registrations_added": 0,
+  "assertions_removed": 0,
+  "publication_scan": {
+    "commit": "8d2101bba1ae215a91ac9777608ab98fa461579e",
+    "complete": "NOT_RUN_IN_CLOUD",
+    "historyScanned": "NOT_ESTABLISHED",
+    "findings": "NOT_ESTABLISHED",
+    "owner": "fleet lander"
+  },
+  "landing": "branch only"
+}

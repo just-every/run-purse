@@ -1,0 +1,21 @@
+{
+  "head": "8d2101bba1ae215a91ac9777608ab98fa461579e",
+  "main": "f15435d1a322f4aa5196d131ecdec1a71c9a9799",
+  "before_counts": {
+    "done": 55,
+    "partial": 51,
+    "missing": 22
+  },
+  "after_counts": {
+    "done": 55,
+    "partial": 51,
+    "missing": 22
+  },
+  "contract_diff": "",
+  "repair_files": [
+    "sources.lock.json",
+    "src/purse/erasure-agent-artifacts.ts",
+    "tests/agent-door-erasure.mjs"
+  ],
+  "invoice_fixture_changed_in_repair": false
+}
