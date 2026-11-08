@@ -32,15 +32,19 @@ export async function planAgentArtifactErasure(db:D1Database,plan:ErasurePlan) {
  const settled=await db.prepare(`SELECT CASE WHEN ${idle} THEN 1 ELSE 0 END AS ok`).first<{ok:number}>();
  requireThat(settled?.ok===1,'Agent execution is in progress; review erasure after it settles',409);
  statements.push(sql(`INSERT INTO p_guard SELECT CASE WHEN (SELECT revision FROM p_agent_artifact_revision WHERE id=1)=? AND ${idle} THEN 1 ELSE 0 END`,revision));
- // Free-form tool fields can use names such as action or status. They are
- // content here, so native structural-field exemptions must not hide a match.
- const scrub=(value:any):any=>typeof value==='string'?plan.scrub(value):Array.isArray(value)?value.map(scrub):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([name,item])=>[plan.scrub(name),scrub(item)])):value;
+ // Protocol keys and class identifiers are structure, even when a contact's
+ // name occurs inside them. Only the open tool fields map has content keys;
+ // its names and values still need erasure, including action, class or status.
+ const scrub=(value:any,field='',content=false):any=>typeof value==='string'?plan.scrub(value):Array.isArray(value)?value.map(item=>scrub(item,field,content)):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([name,item])=>[
+  content?plan.scrub(name):name,
+  !content&&name==='class'&&(field==='classes'||field==='rules')?item:scrub(item,name,content||name==='fields'),
+ ])):value;
  const counts:Data[]=[];
  for(const [index,store]of stores.entries()) {
   let count=0;
   for(const row of snapshot[index+1].results as Data[]) {
    const next={...row};
-   for(const column of store.json)if(row[column]!==null)next[column]=JSON.stringify(scrub(JSON.parse(row[column])));
+   for(const column of store.json)if(row[column]!==null)next[column]=JSON.stringify(scrub(JSON.parse(row[column]),column));
    const changed=store.json.some(column=>next[column]!==row[column]);
    if(!changed)continue;
    const id=String(row.id??row.decision_id);

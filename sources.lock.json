@@ -3664,7 +3664,7 @@
       "executable": false
     },
     "src/purse/erasure-agent-artifacts.ts": {
-      "sha256": "4f813d83a926206bbb4ca99794491835a3daa286f9f1f89725255341a74b6e35",
+      "sha256": "1a2a4b545e269d59307e26e1f38937bda10358026984f7360af949e23507c3a2",
       "executable": false
     },
     "src/purse/erasure-api.ts": {
@@ -5276,7 +5276,7 @@
       "executable": false
     },
     "tests/agent-door-erasure.mjs": {
-      "sha256": "e1f1dfc8c3341a0dba179bc8cbc60526e73e8a9b569661b184b0fef18397cae5",
+      "sha256": "6346e1743d350ddb391b0b2b7ac4aa2e84babe894db3b3dc18c00ef5433ae4c1",
       "executable": false
     },
     "tests/agent-door-journey.mjs": {
