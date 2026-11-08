@@ -1,0 +1,172 @@
+{
+  "files": [
+    {
+      "blob": "2b31e4a16c8f261fdf2d6b2a5320361057eb9401",
+      "bytes": 1373,
+      "path": "CHECKS.json",
+      "sha256": "6d55754a3a23209689769e4c123bb68d48c99acc869f0623ce8dffc27009c391"
+    },
+    {
+      "blob": "7b71c84e4fa087a981f9229bc74dac8ab87e24c0",
+      "bytes": 225,
+      "path": "CI-discovery.json",
+      "sha256": "9c4d5230b44725261554b380529245f113bbb85c0e4ca801ae1032d95a9cdbd9"
+    },
+    {
+      "blob": "a4c7789d670c6f938442effb7cf3550848cee559",
+      "bytes": 175,
+      "path": "CI-status.json",
+      "sha256": "338c7b1a6eea03904996bddeea41e28fc660e20cba29fe1bcf65b9c474abd9cd"
+    },
+    {
+      "blob": "30d5beb1248a38df083fbb5fab4612a76a7aaf42",
+      "bytes": 1024,
+      "path": "PROVENANCE.json",
+      "sha256": "e0afbb04a10a4d98d0489a4afb6cbbaaa7edd12dd2128f740adc6e7a3e5ef693"
+    },
+    {
+      "blob": "0ededb905d11e7ffcf52b85b62f5578f54403487",
+      "bytes": 11156,
+      "path": "REPORT.md",
+      "sha256": "da5ee8daf7fbfe8a4b8ed6a47b25b183e13174e9baf9768ada37e84a75ac8519"
+    },
+    {
+      "blob": "c1a1f8f71a52e6670115d214160cbee14fd909c4",
+      "bytes": 3740,
+      "path": "RESPONSE-LOSS-RECEIPT.json",
+      "sha256": "8809d57eaa8b327efb968c5b09ae431f7f9246837b67bea0bdbf1cbd1cf9eb07"
+    },
+    {
+      "blob": "564c4d271eeb0c9b29ba6487c4d6eaddf4d71add",
+      "bytes": 17147,
+      "path": "base-integrity.log",
+      "sha256": "8fae90820bc5652797647f9bcfc488f47cd3e9ce28d3e9a55606dda1a2acd70b"
+    },
+    {
+      "blob": "be32d3a4a1be6a3c5bf4464e85ebea70f25d4683",
+      "bytes": 36,
+      "path": "contract-check.log",
+      "sha256": "78d46e6b841b2fbb5a41a2ca435dcc2f7ce681588f411fd09dfa9201d90b48c9"
+    },
+    {
+      "blob": "73fb132f0293aa4558cf1d56c50526ad6418c562",
+      "bytes": 36,
+      "path": "contract-write.log",
+      "sha256": "70b4f68d81fb33c86328d0ba57f7f6302beedeb61a8828600776c5d4e85f0888"
+    },
+    {
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "bytes": 0,
+      "path": "first-party.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "blob": "51ef1d5f3c1fb605ce3798ac3ddfc805e6132443",
+      "bytes": 1143,
+      "path": "main-CI.json",
+      "sha256": "7dd17b57e2522400463fd769a06d47dc649800611c4819fc7e13f3ea0db2940e"
+    },
+    {
+      "blob": "13e2f67153cf470eacf8798b66e1691b0e9b5c90",
+      "bytes": 798,
+      "path": "product-push.log",
+      "sha256": "7949abced5e04dc674793929391ed8c2f8093124c70473271b72d938ba6eadfd"
+    },
+    {
+      "blob": "92123cc6e1a594c2f0445d4685dd333a0fcb3350",
+      "bytes": 1819,
+      "path": "response-loss-browser.log",
+      "sha256": "1060142203a8c353e930ec0dfa650c149eb0efd3a97e7e4832345aa77bff15e6"
+    },
+    {
+      "blob": "36f7b9470154767d291ff54c72c46efc898f7ee5",
+      "bytes": 94039,
+      "path": "screens/response-loss-autonomous-completed-and-replayed-audit-1440.png",
+      "sha256": "8843c9f13eda07d4f162c1cce158614893fdb7eb72bdcbd8a232d9fe23f4f6a7"
+    },
+    {
+      "blob": "230a2e70c63f876edd9a650feace639c2a6b1469",
+      "bytes": 83038,
+      "path": "screens/response-loss-autonomous-completed-and-replayed-audit-390.png",
+      "sha256": "80cc9d8557196b52419550d345b6b9bd7ece5baa81fa42785093bc5b00102f92"
+    },
+    {
+      "blob": "42281b61cff36535eaedead84c03f4543d9868ab",
+      "bytes": 17710,
+      "path": "screens/response-loss-autonomous-original-review-1440.png",
+      "sha256": "fc6acecac3485db40a1b3b8a183506d5cc9fa47678bae06c88ce36565c01ef96"
+    },
+    {
+      "blob": "256c1ada1bc924ad18e87542247ad40f62ed8f11",
+      "bytes": 13743,
+      "path": "screens/response-loss-autonomous-original-review-390.png",
+      "sha256": "f8880083384b321114110ced37a619d064d0b61d033599ef6a01d45928a361de"
+    },
+    {
+      "blob": "f530e01f851ce75040f8c858052def56994c5d9c",
+      "bytes": 152629,
+      "path": "screens/response-loss-autonomous-single-preparation-1440.png",
+      "sha256": "158d0e70dbbd3539822fa64f53179df6fa07ebc2cd85a154a7795d392112cc88"
+    },
+    {
+      "blob": "6726eb6812bfd0491bdbc40ccf722800ad3888cb",
+      "bytes": 136181,
+      "path": "screens/response-loss-autonomous-single-preparation-390.png",
+      "sha256": "7bcc200d60fed29c574fea167cdf6861ec1acfab190da3081360de438fa8c110"
+    },
+    {
+      "blob": "f18d180f13a4dc0211fc0b489ed94b54d40280c7",
+      "bytes": 99510,
+      "path": "screens/response-loss-held-completed-and-replayed-audit-1440.png",
+      "sha256": "effccd7eac39b8f2553e32a1e13f3b7eac3c7783a1638e5ce26e95e091434641"
+    },
+    {
+      "blob": "f56350f78c2ee626136066eeee29a2a5e00a3a83",
+      "bytes": 88196,
+      "path": "screens/response-loss-held-completed-and-replayed-audit-390.png",
+      "sha256": "b84fcbb18d58bc2cfe03e7e445e0900d6ac29b2f3080bd896df9bdbde1869f9b"
+    },
+    {
+      "blob": "ad569b06140cd7513853ec66573a81ac866c7a76",
+      "bytes": 34147,
+      "path": "screens/response-loss-held-original-review-1440.png",
+      "sha256": "cef40fdc4ade4c44ea70fd6bc535531fbefd1039481655a6e59d64240d3993c7"
+    },
+    {
+      "blob": "60b2125a3c657a19693a9479e58b455dec1d78ab",
+      "bytes": 29148,
+      "path": "screens/response-loss-held-original-review-390.png",
+      "sha256": "81ab6f66a6c07b5f11f4ccf36aec2ae66a15e9e7200bf7c066722d476c6babe3"
+    },
+    {
+      "blob": "137bacbd86f60f150d83af2c433a01139b77f21f",
+      "bytes": 152347,
+      "path": "screens/response-loss-held-single-preparation-1440.png",
+      "sha256": "fa5ce33e4a73efdfb28f41d6c6a996eb34823b61ff3a4ea89d3dd8e158c1b766"
+    },
+    {
+      "blob": "7d82e073831bad10536d61187405b4b32457b62d",
+      "bytes": 135807,
+      "path": "screens/response-loss-held-single-preparation-390.png",
+      "sha256": "8c3404e22546cb32420d0a627fde0f86606bfb624508de7d28a701cfd936fdef"
+    },
+    {
+      "blob": "6316518db524d46c749703d29857d1b058ec9e62",
+      "bytes": 250064,
+      "path": "source-lock-check.log",
+      "sha256": "54085c7dedee04b769b19b872b05271fb0d5b52fdda8bd289883fbc8215e38e3"
+    },
+    {
+      "blob": "7cd50eee7965990a8dc9916d15657e20d11bb105",
+      "bytes": 88,
+      "path": "typecheck.log",
+      "sha256": "3a2e53a97946f30a2beac00c6729e8a6d1bff0cf7b171ba35fdb526f35645fc9"
+    }
+  ],
+  "product_branch": "cloud/sx-purse-c-f97",
+  "product_head": "9193d7c57971de70d541aff4483f7556c277b2c9",
+  "ref": "refs/heads/evidence/sx-purse-c-f97",
+  "repository": "just-every/run-purse",
+  "schema": 1,
+  "tag": "sx-purse-c-f97"
+}

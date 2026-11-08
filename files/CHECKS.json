@@ -1,0 +1,65 @@
+{
+  "head": "9193d7c57971de70d541aff4483f7556c277b2c9",
+  "checks": [
+    {
+      "head": "9193d7c57971de70d541aff4483f7556c277b2c9",
+      "command": [
+        "pnpm",
+        "typecheck"
+      ],
+      "exit": 0,
+      "seconds": 0.443,
+      "log": "typecheck.log"
+    },
+    {
+      "head": "9193d7c57971de70d541aff4483f7556c277b2c9",
+      "command": [
+        "pnpm",
+        "exec",
+        "rer",
+        "check",
+        "--profile",
+        "first-party"
+      ],
+      "exit": 0,
+      "seconds": 0.882,
+      "log": "first-party.log"
+    },
+    {
+      "head": "9193d7c57971de70d541aff4483f7556c277b2c9",
+      "command": [
+        "node",
+        "scripts/edition-authoring/cli.mjs",
+        "check"
+      ],
+      "exit": 0,
+      "seconds": 0.333,
+      "log": "source-lock-check.log"
+    },
+    {
+      "head": "9193d7c57971de70d541aff4483f7556c277b2c9",
+      "command": [
+        "node",
+        "scripts/edition-authoring/cli.mjs",
+        "verify-base",
+        "--offline"
+      ],
+      "exit": 0,
+      "seconds": 0.181,
+      "log": "base-integrity.log"
+    },
+    {
+      "head": "9193d7c57971de70d541aff4483f7556c277b2c9",
+      "command": [
+        "timeout",
+        "1200",
+        "pnpm",
+        "run",
+        "test:agent-response-loss"
+      ],
+      "exit": 0,
+      "seconds": 19.934,
+      "log": "response-loss-browser.log"
+    }
+  ]
+}

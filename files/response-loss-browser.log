@@ -1,0 +1,10 @@
+
+> @procurement/purse@0.1.1 test:agent-response-loss /workspace/run-purse
+> node tests/browser-agent-door-response-loss.mjs
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+
+
+PROBE BASE-AGENT-012 2 autonomous: authenticated raw MCP write -> Worker complete, response dropped, ECONNRESET without parsed outcome; native preparation and attributed audit retained; two canonical retries return their new IDs, equal original content, one effect and original review handle
+PROBE BASE-AGENT-012 2 held: authenticated raw MCP write -> Worker complete, response dropped, ECONNRESET without parsed outcome; native preparation and attributed audit retained; two canonical retries return their new IDs, equal original content, one effect and original review handle
+Native response loss browser proof at 1440 and 390: [{"phase":"autonomous","disposition":"autonomous","policyRevision":1,"preparations":1,"nativePreparationAudit":1,"completedCalls":1,"replayedCalls":2,"reviewCount":0,"reviewState":null,"relay":{"forwarded":1,"requestSha256":"a466b9e902756deaaabe31d50be368c5bebbad871072fa9fef8bd940cc1c40b3","workerCompleted":true,"downstreamBytes":0,"responseBytes":1254,"status":200},"clientFailure":"ECONNRESET","parsedOutcome":false,"newRpcIds":true,"equalStructuredResults":true},{"phase":"held","disposition":"review","policyRevision":1,"preparations":1,"nativePreparationAudit":1,"completedCalls":1,"replayedCalls":2,"reviewCount":1,"reviewState":"open","relay":{"forwarded":1,"requestSha256":"af6597999ef38b94384e9af2aceac9a29ecf07407b2272cd968ac513c3dd3833","workerCompleted":true,"downstreamBytes":0,"responseBytes":1309,"status":200},"clientFailure":"ECONNRESET","parsedOutcome":false,"newRpcIds":true,"equalStructuredResults":true}]

@@ -1,0 +1,39 @@
+{
+  "tag": "sx-purse-c-f97",
+  "repository": "just-every/run-purse",
+  "branch": "cloud/sx-purse-c-f97",
+  "head": "9193d7c57971de70d541aff4483f7556c277b2c9",
+  "base": "8d2101bba1ae215a91ac9777608ab98fa461579e",
+  "pushed": true,
+  "changed": [
+    "package.json",
+    "sources.lock.json",
+    "tests/agent-door-response-loss-relay.mjs",
+    "tests/agent-door-response-loss.mjs",
+    "tests/browser-agent-door-response-loss.mjs"
+  ],
+  "contractStatusChanged": false,
+  "countsBefore": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22
+  },
+  "countsAfter": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22
+  },
+  "verifyRun": 42535406635,
+  "verifyStatus": "in_progress",
+  "mainVerifyRun": 42438135424,
+  "mainRunSite": 42438135471,
+  "publicationScan": {
+    "status": "deferred to guarded Mac lander",
+    "complete": null,
+    "historyScanned": null,
+    "findings": null
+  },
+  "ghCalls": 3,
+  "verifyConclusion": null,
+  "handoff": "PUSHED, exact-SHA Verify in progress; no green CI or landing claimed"
+}

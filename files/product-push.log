@@ -1,0 +1,14 @@
+fleet Git: removed 0 credential-bearing GitHub URL rewrite sections
+PUSH attempt=1/5 command=git push --porcelain origin HEAD:refs/heads/cloud/sx-purse-c-f97
+fleet Git: removed 0 credential-bearing GitHub URL rewrite sections
+To https://github.com/just-every/run-purse.git
+*	HEAD:refs/heads/cloud/sx-purse-c-f97	[new branch]
+Done
+remote: 
+remote: Create a pull request for 'cloud/sx-purse-c-f97' on GitHub by visiting:        
+remote:      https://github.com/just-every/run-purse/pull/new/cloud/sx-purse-c-f97        
+remote: 
+remote: GitHub found 41 vulnerabilities on just-every/run-purse's default branch (20 high, 19 moderate, 2 low). To find out more, visit:        
+remote:      https://github.com/just-every/run-purse/security/dependabot        
+remote: 
+PUSH_OK branch=cloud/sx-purse-c-f97
