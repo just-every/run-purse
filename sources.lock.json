@@ -412,7 +412,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "54a4d7ccf73dc372e37181bde95c6fb26f5e7045b2a8295cc55a848e9a18c9da",
+      "sha256": "8b7126c26d1987637fc72345b8ffed6c68f47ccd2ffbeb313b9b37088e28fe8b",
       "executable": false
     },
     "packaging.json": {
@@ -5295,6 +5295,14 @@
       "sha256": "8d400afcbd47be46ab36191ec30930395294cb8bb15bd3778b045826556fb106",
       "executable": false
     },
+    "tests/agent-door-response-loss-relay.mjs": {
+      "sha256": "46446606f4297c6054020780c23a1caacdf4e580e6147cc122c1ec3a1634eda2",
+      "executable": false
+    },
+    "tests/agent-door-response-loss.mjs": {
+      "sha256": "23ce9ea9eabfccfe88a856da7d26455668e50ebe3957bcbeee4c054b3c8319ed",
+      "executable": false
+    },
     "tests/agent-door-worker.ts": {
       "sha256": "ee7a13ada06f6de40edb6e8d26168c9fed3f5fc26a577f8d99545c2868848f94",
       "executable": false
@@ -5365,6 +5373,10 @@
     },
     "tests/browser-agent-door-erasure.mjs": {
       "sha256": "4c56df344fa3b25a7f14499942c7490ac057de5ea2e33ed976f4035a0906e5d1",
+      "executable": false
+    },
+    "tests/browser-agent-door-response-loss.mjs": {
+      "sha256": "9c78eed3b3046cc51f078056c89da60b3abc8004feef10aa1e049e8a4f65793b",
       "executable": false
     },
     "tests/browser-agent-governance.mjs": {
