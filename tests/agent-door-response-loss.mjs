@@ -79,6 +79,11 @@ export async function agentDoorResponseLoss(visit) {
    assert.equal(loss.failure.code,'ECONNRESET')
    assert.equal(loss.status,undefined);assert.equal(loss.receivedBytes,0)
    assert.equal(loss.parsed,undefined,'The lost call must expose no parsed tool outcome')
+   // The edge is one-use: an accidental second submission must never reach
+   // the Worker. Recovery uses the canonical door below instead.
+   const reusedRelay=await fetch(relay.url,{method:'POST',headers,body,signal:AbortSignal.timeout(25_000)})
+   assert.equal(reusedRelay.status,410,'The response-loss relay must reject reuse')
+   assert.equal(await reusedRelay.text(),'')
    await relay.close();relay=undefined
    const native=(await h.state(sponsor)).data
    assert.equal(native.agentRun.length,1,'Read the persisted effect before any retry')
@@ -118,8 +123,11 @@ export async function agentDoorResponseLoss(visit) {
     assert.equal(reviews.length,1);assert.equal(review.id,original.review.id)
     assert.equal(review.decision_id,original.id);assert.equal(review.state,'open')
    } else {assert.deepEqual(reviews,[]);assert.equal(original.review,null)}
-   const retained=await h.db.prepare('SELECT outcome FROM agent_door_calls WHERE decision_id=?').bind(original.id).first()
+   const retainedCall=()=>h.db.prepare('SELECT * FROM agent_door_calls WHERE decision_id=?').bind(original.id).first()
+   const retained=await retainedCall()
    assert.ok(retained,'The completed call must be durable before its response is retried')
+   assert.equal(retained.state,'done')
+   assert.equal(retained.agent,c.agentId);assert.equal(retained.key,args.idempotency_key)
    const saved=JSON.parse(retained.outcome)
    assert.equal(saved.outcome,'done');assert.equal(saved.result.id,preparation.id)
    const retryIds=['retry-'+randomUUID(),'repeat-'+randomUUID()]
@@ -145,6 +153,7 @@ export async function agentDoorResponseLoss(visit) {
     assert.deepEqual((await h.state(sponsor)).data,native,'A retry cannot add a native effect or audit')
     assert.deepEqual((await h.state()).data,ownerNative)
     assert.deepEqual(await reviewRead(),reviews,'A replay cannot replace or duplicate the original review')
+    assert.deepEqual(await retainedCall(),retained,'A replay cannot replace the completed call or refresh its retention start')
    }
    const rows=await auditRead()
    assert.equal(rows.length,3);assert.equal(rows.filter(row=>row.outcome==='done').length,1)
@@ -153,7 +162,7 @@ export async function agentDoorResponseLoss(visit) {
    assert.equal(h.messages.length,mailCount,'Response recovery must not send mail')
    assert.ok(c.points.every(point=>point.ok))
    if(visit)await visit({h,sponsor,phase,preparation,original,review,rows})
-   receipts.push({phase,disposition,policyRevision:c.revision,preparations:1,nativePreparationAudit:1,completedCalls:1,replayedCalls:2,reviewCount:reviews.length,reviewState:review?.state??null,relay:edge,clientFailure:loss.failure.code,parsedOutcome:false,newRpcIds:true,equalStructuredResults:true})
+   receipts.push({phase,disposition,policyRevision:c.revision,preparations:1,nativePreparationAudit:1,completedCalls:1,replayedCalls:2,reviewCount:reviews.length,reviewState:review?.state??null,relay:edge,clientFailure:loss.failure.code,parsedOutcome:false,relayReuseRejected:true,originalCallUnchanged:true,newRpcIds:true,equalStructuredResults:true})
    console.log('PROBE BASE-AGENT-012 2 '+phase+': authenticated raw MCP write -> Worker complete, response dropped, ECONNRESET without parsed outcome; native preparation and attributed audit retained; two canonical retries return their new IDs, equal original content, one effect and original review handle')
   } finally {
    try {await relay?.close()} finally {await h.close()}

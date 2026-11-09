@@ -5300,7 +5300,7 @@
       "executable": false
     },
     "tests/agent-door-response-loss.mjs": {
-      "sha256": "23ce9ea9eabfccfe88a856da7d26455668e50ebe3957bcbeee4c054b3c8319ed",
+      "sha256": "a74ee64a59965ec6c52e16b4106459f8d3260a8014447501c7d94c231e1a3904",
       "executable": false
     },
     "tests/agent-door-worker.ts": {
