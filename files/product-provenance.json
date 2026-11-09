@@ -1,0 +1,37 @@
+{
+  "repository": "just-every/run-purse",
+  "head": "f001b443394bbfe16b459950ad4ca2ea4b186043",
+  "branch": "cloud/sx-purse-c-f98",
+  "parent": "9193d7c57971de70d541aff4483f7556c277b2c9",
+  "base_at_sync": "9193d7c57971de70d541aff4483f7556c277b2c9",
+  "main_equal_candidate": false,
+  "clean": true,
+  "changed_files": [
+    "sources.lock.json",
+    "tests/agent-door-response-loss.mjs"
+  ],
+  "product_commit": "commit f001b443394bbfe16b459950ad4ca2ea4b186043\nAuthor:     Run Edit Run fleet <fleet@runeditrun.com>\nAuthorDate: Mon Nov 9 00:22:24 2026 +0000\nCommit:     Run Edit Run fleet <fleet@runeditrun.com>\nCommitDate: Mon Nov 9 00:22:24 2026 +0000\n\n    test: keep response-loss recovery bound to the original call",
+  "diff_stat": "sources.lock.json                  |  2 +-\n tests/agent-door-response-loss.mjs | 13 +++++++++++--\n 2 files changed, 12 insertions(+), 3 deletions(-)",
+  "source_digests": {
+    "sources.lock.json": "a6c3e180ecc35b6d8927d9aa237e67b393014188fb747d20026c8fda89e23c32",
+    "tests/agent-door-response-loss.mjs": "a74ee64a59965ec6c52e16b4106459f8d3260a8014447501c7d94c231e1a3904"
+  },
+  "before_counts": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22
+  },
+  "after_counts": {
+    "done": 54,
+    "partial": 51,
+    "missing": 22
+  },
+  "assertions_removed": false,
+  "new_test_registrations": 0,
+  "product_push": {
+    "status": "success",
+    "attempt": 1,
+    "guard": "cloud-push.py",
+    "branch": "cloud/sx-purse-c-f98"
+  }
+}

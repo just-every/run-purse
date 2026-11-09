@@ -1,0 +1,130 @@
+{
+  "files": [
+    {
+      "blob": "b62addefa8f5eea0d958db286b46eb385e6130bf",
+      "bytes": 16505,
+      "path": "REPORT.md",
+      "sha256": "22f572e12b8f0e0069dde1f7e4e3b43f56f38deb96a531df6130ae4defb0301c"
+    },
+    {
+      "blob": "b95df8b4a71400c7a71bebde2fb0caccc0dc093c",
+      "bytes": 93916,
+      "path": "browser/response-loss-autonomous-completed-and-replayed-audit-1440.png",
+      "sha256": "1c753896dc6ef1b79bbc3d564feb347dd088898c4d4f44acbaabee59c12d9c53"
+    },
+    {
+      "blob": "8f31d523687163e868601faa816487c22928c37a",
+      "bytes": 83510,
+      "path": "browser/response-loss-autonomous-completed-and-replayed-audit-390.png",
+      "sha256": "e23c7750e2c4a8f2f4ccb534e887c1bcd7af19a814e582cd418f558c2101c4ef"
+    },
+    {
+      "blob": "42281b61cff36535eaedead84c03f4543d9868ab",
+      "bytes": 17710,
+      "path": "browser/response-loss-autonomous-original-review-1440.png",
+      "sha256": "fc6acecac3485db40a1b3b8a183506d5cc9fa47678bae06c88ce36565c01ef96"
+    },
+    {
+      "blob": "256c1ada1bc924ad18e87542247ad40f62ed8f11",
+      "bytes": 13743,
+      "path": "browser/response-loss-autonomous-original-review-390.png",
+      "sha256": "f8880083384b321114110ced37a619d064d0b61d033599ef6a01d45928a361de"
+    },
+    {
+      "blob": "f530e01f851ce75040f8c858052def56994c5d9c",
+      "bytes": 152629,
+      "path": "browser/response-loss-autonomous-single-preparation-1440.png",
+      "sha256": "158d0e70dbbd3539822fa64f53179df6fa07ebc2cd85a154a7795d392112cc88"
+    },
+    {
+      "blob": "6726eb6812bfd0491bdbc40ccf722800ad3888cb",
+      "bytes": 136181,
+      "path": "browser/response-loss-autonomous-single-preparation-390.png",
+      "sha256": "7bcc200d60fed29c574fea167cdf6861ec1acfab190da3081360de438fa8c110"
+    },
+    {
+      "blob": "85a004a60d505d9ca793fdffc7909d90a8eac1d2",
+      "bytes": 99141,
+      "path": "browser/response-loss-held-completed-and-replayed-audit-1440.png",
+      "sha256": "f466a2e0c452107d566089712a55fb68bc4655d46b682ba66c647f53faf373df"
+    },
+    {
+      "blob": "3fb9ae7cb9644242d25c37d0b126ce20604864c0",
+      "bytes": 88428,
+      "path": "browser/response-loss-held-completed-and-replayed-audit-390.png",
+      "sha256": "aa5951144aff9875dca7afd32744a6707da594be9c14f55ae520b8348a65ba4d"
+    },
+    {
+      "blob": "ad569b06140cd7513853ec66573a81ac866c7a76",
+      "bytes": 34147,
+      "path": "browser/response-loss-held-original-review-1440.png",
+      "sha256": "cef40fdc4ade4c44ea70fd6bc535531fbefd1039481655a6e59d64240d3993c7"
+    },
+    {
+      "blob": "60b2125a3c657a19693a9479e58b455dec1d78ab",
+      "bytes": 29148,
+      "path": "browser/response-loss-held-original-review-390.png",
+      "sha256": "81ab6f66a6c07b5f11f4ccf36aec2ae66a15e9e7200bf7c066722d476c6babe3"
+    },
+    {
+      "blob": "137bacbd86f60f150d83af2c433a01139b77f21f",
+      "bytes": 152347,
+      "path": "browser/response-loss-held-single-preparation-1440.png",
+      "sha256": "fa5ce33e4a73efdfb28f41d6c6a996eb34823b61ff3a4ea89d3dd8e158c1b766"
+    },
+    {
+      "blob": "7d82e073831bad10536d61187405b4b32457b62d",
+      "bytes": 135807,
+      "path": "browser/response-loss-held-single-preparation-390.png",
+      "sha256": "8c3404e22546cb32420d0a627fde0f86606bfb624508de7d28a701cfd936fdef"
+    },
+    {
+      "blob": "cc9dac900311defe5d33dbb11d166d7500bdf04c",
+      "bytes": 2268,
+      "path": "checks.json",
+      "sha256": "f1150dcfd196cc77665decf0ee728520b3ecf775fa02295f17e6f0c6ba7d3d7f"
+    },
+    {
+      "blob": "f83ca7afa61d294c510a00b2d0d058c618549cf1",
+      "bytes": 433,
+      "path": "ci-discovery.json",
+      "sha256": "bc99d6d560f6d16229da43143b64b192a46c6132e63f41fd1d2faa197a675001"
+    },
+    {
+      "blob": "11334887e681111273a515769f1f62fce943f7b7",
+      "bytes": 1709,
+      "path": "ci-status.json",
+      "sha256": "1ca44ddc6886ef9ac1c2f2e7770e21e677c73f56e86f93e01accb4653448ed92"
+    },
+    {
+      "blob": "1c1e1e0107fbd66d4fa98e4a772aac7e0e144645",
+      "bytes": 1480,
+      "path": "product-provenance.json",
+      "sha256": "ec42346a9664a51f95b54c2d747abfe72f08093f3bb080fb6d3c3daadff10153"
+    },
+    {
+      "blob": "f73ec820308f6859c33697b215ddc4915db8f1b7",
+      "bytes": 4169,
+      "path": "response-loss-receipt.json",
+      "sha256": "750dabd769cf94dc73b3e9a5971a37e6a93fda7f549ecd8bf8dcea636a7ea118"
+    },
+    {
+      "blob": "d7f85bff8cfac3f108f49ec0999cd7fe438bf427",
+      "bytes": 1888,
+      "path": "response-loss.log",
+      "sha256": "d17c8db1f00bf656a591c4298858ae89cf522396f5964d40bcaf638a6bf9ac07"
+    },
+    {
+      "blob": "7cd50eee7965990a8dc9916d15657e20d11bb105",
+      "bytes": 88,
+      "path": "typecheck.log",
+      "sha256": "3a2e53a97946f30a2beac00c6729e8a6d1bff0cf7b171ba35fdb526f35645fc9"
+    }
+  ],
+  "product_branch": "cloud/sx-purse-c-f98",
+  "product_head": "f001b443394bbfe16b459950ad4ca2ea4b186043",
+  "ref": "refs/heads/evidence/sx-purse-c-f98",
+  "repository": "just-every/run-purse",
+  "schema": 1,
+  "tag": "sx-purse-c-f98"
+}

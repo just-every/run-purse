@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "tag": "sx-purse-c-f98",
+  "repository": "just-every/run-purse",
+  "branch": "cloud/sx-purse-c-f98",
+  "head": "f001b443394bbfe16b459950ad4ca2ea4b186043",
+  "command": "cloud_run timeout 1200 pnpm test:agent-response-loss",
+  "runtime": "Node 22.20.0",
+  "browser": "/usr/bin/chromium with --no-sandbox",
+  "exit": 0,
+  "policies": [
+    {
+      "phase": "autonomous",
+      "disposition": "autonomous",
+      "policyRevision": 1,
+      "preparations": 1,
+      "nativePreparationAudit": 1,
+      "completedCalls": 1,
+      "replayedCalls": 2,
+      "reviewCount": 0,
+      "reviewState": null,
+      "relay": {
+        "forwarded": 1,
+        "requestSha256": "7a49d96177eac84fb67eb75a72e0cfcbedd793f5c8e5fc9256e2dc84abbc8499",
+        "workerCompleted": true,
+        "downstreamBytes": 0,
+        "responseBytes": 1254,
+        "status": 200
+      },
+      "clientFailure": "ECONNRESET",
+      "parsedOutcome": false,
+      "relayReuseRejected": true,
+      "originalCallUnchanged": true,
+      "newRpcIds": true,
+      "equalStructuredResults": true
+    },
+    {
+      "phase": "held",
+      "disposition": "review",
+      "policyRevision": 1,
+      "preparations": 1,
+      "nativePreparationAudit": 1,
+      "completedCalls": 1,
+      "replayedCalls": 2,
+      "reviewCount": 1,
+      "reviewState": "open",
+      "relay": {
+        "forwarded": 1,
+        "requestSha256": "750153764d81d51c4c09f1a7ffa47912a5813d6ae202a23d38579725f2f5d8b0",
+        "workerCompleted": true,
+        "downstreamBytes": 0,
+        "responseBytes": 1309,
+        "status": 200
+      },
+      "clientFailure": "ECONNRESET",
+      "parsedOutcome": false,
+      "relayReuseRejected": true,
+      "originalCallUnchanged": true,
+      "newRpcIds": true,
+      "equalStructuredResults": true
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "browser/response-loss-autonomous-completed-and-replayed-audit-1440.png",
+      "bytes": 93916,
+      "sha256": "1c753896dc6ef1b79bbc3d564feb347dd088898c4d4f44acbaabee59c12d9c53"
+    },
+    {
+      "path": "browser/response-loss-autonomous-completed-and-replayed-audit-390.png",
+      "bytes": 83510,
+      "sha256": "e23c7750e2c4a8f2f4ccb534e887c1bcd7af19a814e582cd418f558c2101c4ef"
+    },
+    {
+      "path": "browser/response-loss-autonomous-original-review-1440.png",
+      "bytes": 17710,
+      "sha256": "fc6acecac3485db40a1b3b8a183506d5cc9fa47678bae06c88ce36565c01ef96"
+    },
+    {
+      "path": "browser/response-loss-autonomous-original-review-390.png",
+      "bytes": 13743,
+      "sha256": "f8880083384b321114110ced37a619d064d0b61d033599ef6a01d45928a361de"
+    },
+    {
+      "path": "browser/response-loss-autonomous-single-preparation-1440.png",
+      "bytes": 152629,
+      "sha256": "158d0e70dbbd3539822fa64f53179df6fa07ebc2cd85a154a7795d392112cc88"
+    },
+    {
+      "path": "browser/response-loss-autonomous-single-preparation-390.png",
+      "bytes": 136181,
+      "sha256": "7bcc200d60fed29c574fea167cdf6861ec1acfab190da3081360de438fa8c110"
+    },
+    {
+      "path": "browser/response-loss-held-completed-and-replayed-audit-1440.png",
+      "bytes": 99141,
+      "sha256": "f466a2e0c452107d566089712a55fb68bc4655d46b682ba66c647f53faf373df"
+    },
+    {
+      "path": "browser/response-loss-held-completed-and-replayed-audit-390.png",
+      "bytes": 88428,
+      "sha256": "aa5951144aff9875dca7afd32744a6707da594be9c14f55ae520b8348a65ba4d"
+    },
+    {
+      "path": "browser/response-loss-held-original-review-1440.png",
+      "bytes": 34147,
+      "sha256": "cef40fdc4ade4c44ea70fd6bc535531fbefd1039481655a6e59d64240d3993c7"
+    },
+    {
+      "path": "browser/response-loss-held-original-review-390.png",
+      "bytes": 29148,
+      "sha256": "81ab6f66a6c07b5f11f4ccf36aec2ae66a15e9e7200bf7c066722d476c6babe3"
+    },
+    {
+      "path": "browser/response-loss-held-single-preparation-1440.png",
+      "bytes": 152347,
+      "sha256": "fa5ce33e4a73efdfb28f41d6c6a996eb34823b61ff3a4ea89d3dd8e158c1b766"
+    },
+    {
+      "path": "browser/response-loss-held-single-preparation-390.png",
+      "bytes": 135807,
+      "sha256": "8c3404e22546cb32420d0a627fde0f86606bfb624508de7d28a701cfd936fdef"
+    }
+  ]
+}

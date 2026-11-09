@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "head": "f001b443394bbfe16b459950ad4ca2ea4b186043",
+  "source_lock_sha256": "a6c3e180ecc35b6d8927d9aa237e67b393014188fb747d20026c8fda89e23c32",
+  "checks": [
+    {
+      "command": "pnpm test:agent-response-loss",
+      "exit": 0,
+      "runtime": "Node 22.20.0",
+      "receipt": "response-loss-receipt.json"
+    },
+    {
+      "command": "pnpm typecheck",
+      "exit": 0,
+      "runtime": "Node 22.20.0"
+    },
+    {
+      "command": "pnpm exec rer check --profile first-party",
+      "exit": 0
+    },
+    {
+      "command": "node scripts/contract-docs.mjs write <AGENTS.md Lander-Regenerate arguments>",
+      "exit": 0
+    },
+    {
+      "command": "node scripts/contract-docs.mjs check <AGENTS.md Lander-Regenerate arguments>",
+      "exit": 0
+    },
+    {
+      "command": "git checkout origin/main -- ACCEPTANCE.md docs/CLAIMS.md",
+      "exit": 0,
+      "result": "Generated views restored; no contract changes"
+    },
+    {
+      "command": "node scripts/edition-authoring/cli.mjs lock",
+      "exit": 0
+    },
+    {
+      "command": "node scripts/edition-authoring/cli.mjs check",
+      "exit": 0
+    },
+    {
+      "command": "node scripts/edition-authoring/cli.mjs verify-base --offline",
+      "exit": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit": 0
+    },
+    {
+      "command": "git diff origin/main...HEAD -- CONTRACT.md",
+      "exit": 0,
+      "result": "empty"
+    },
+    {
+      "command": "git log origin/main..HEAD --format=identity-and-trailers",
+      "exit": 0,
+      "result": "One candidate; fleet author and committer; no trailers"
+    }
+  ],
+  "publication_scan": {
+    "head": "f001b443394bbfe16b459950ad4ca2ea4b186043",
+    "complete": false,
+    "historyScanned": null,
+    "findings": null,
+    "status": "not run in cloud; guarded Mac lander required"
+  },
+  "migration_ledger": {
+    "status": "not applicable; no migration edits"
+  },
+  "new_test_registrations": 0,
+  "assertions_removed_or_weakened": false,
+  "verify": {
+    "run_id": 42539833185,
+    "head": "f001b443394bbfe16b459950ad4ca2ea4b186043",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/just-every/run-purse/actions/runs/42539833185",
+    "api_calls": 7
+  }
+}
