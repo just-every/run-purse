@@ -7,9 +7,9 @@ import { all, get, uid, type Data } from './types';
 export async function sendRfqMail(env: Bindings, rfq: Data, target: Data, event: Data, url?: string) {
     const sender = operatorMail(env);
     let outcome: Data = { ...event, status: 'unavailable', reason:'mail-not-configured' };
-    if (sender && env.MAIL_FROM && target.email && !target.contactErased) {
+    if (sender?.from !== undefined && target.email && !target.contactErased) {
         try {
-            const result = await sender.send({ deliveryId: `rfq:${event.id}`, from: env.MAIL_FROM, to: [target.email], headers: {}, html: '',
+            const result = await sender.send({ deliveryId: `rfq:${event.id}`, from: sender.from, to: [target.email], headers: {}, html: '',
                 subject: `${event.type === 'reminder' ? 'RFQ reminder' : 'Request for quotation'}: response due ${rfq.deadline}`,
                 text: `Please provide a quotation by ${rfq.deadline}. ${url ? 'Respond or revise your quotation: ' + url : 'Use your invitation link to respond or revise your quotation. Ask the buyer for a new link if needed.'}\n${rfq.scope}\nThis invitation grants no purchasing approval or commitment.` });
             outcome = { ...event, delivery:result, status:result.status==='development'?'suppressed':result.status };

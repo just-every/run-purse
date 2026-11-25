@@ -16,6 +16,7 @@ export async function sendRecurringNotice(env:Bindings,a:Actor,b:Data) {
     requireThat(!all(state,'recurringNoticeSend').some(r=>r.scenario===scenario.id),'This scenario already has a send attempt; uncertain outcomes require investigation and are never retried',409);
     const recipient=text(b.recipient,'Notice recipient',254).toLowerCase();
     requireThat(/^[^\s@<>(),:;"\\]+@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i.test(recipient),'Use one notice recipient email');
+    requireThat(env.MAIL_PROVIDER !== 'none', 'mail_off', 409);
     requireThat(env.MAIL_PROVIDER&&env.MAIL_FROM,'Configure the native mail sender before sending',409);
     const id='recurring-notice:'+scenario.id,at=new Date().toISOString(),reason=text(b.reason,'Notice send reason');
     const event:Data={id,scenario:scenario.id,hash:scenario.hash,draftHash:draft.draftHash,recipient,actor:a.id,email:a.email,operatorVersion:a.version,owner:a.owner,reason,at,status:'uncertain',

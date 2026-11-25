@@ -56,7 +56,7 @@ test('RECEIVE-001 responsible receivers, due email prompts, automatic invoice ho
  assert.deepEqual(await promptRows(),retainedPrompts,'Restore without active native receivers preserves every prompt record');
  assert.equal(h.messages.length,retainedMessages,'Missing native receivers never consume a prompt or send mail');
  const {createPortability}=await import('@runeditrun/rer/modules/portability');
- const {exportArchive,importArchive}=await import('@runeditrun/rer/internal/modules/portability/files.mjs');
+ const {exportArchive,importArchive}=await import('@runeditrun/rer/modules/portability/files');
  const {default:portability}=await import('../scripts/installer/portability.mjs');
  const archive=h.dir+'/receipt-prompts.rer';
  await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);

@@ -6,7 +6,7 @@ import { harness } from './purse-harness.mjs';
 import { invoiceExceptionAgentFixture, address } from './invoice-exception-agent-fixture.mjs';
 import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 import { createPortability } from '@runeditrun/rer/modules/portability';
-import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import { exportArchive, importArchive } from '@runeditrun/rer/modules/portability/files';
 import portability from '../scripts/installer/portability.mjs';
 import { reauthenticateErasure } from './erasure-flow.mjs';
 import { assertNoProtectedValues } from './protected-value-assertions.mjs';

@@ -46,6 +46,7 @@ export async function sendOrderChange(env: Bindings, actor: Actor, body: Data, s
     requireThat(!order.supplierSnapshot?.contactErased && !order.supplierSnapshot?.erasure, 'Supplier contact was erased; renew the purchase with a current contact', 409);
     requireThat(!all(state, 'orderSend').some(event => event.order === order.id), 'This exact order version already has a send attempt. An uncertain outcome must be investigated; it is never automatically retried.', 409);
     // No claim or capability is created when the owner has not configured mail.
+    requireThat(env.MAIL_PROVIDER !== 'none', 'mail_off', 409);
     requireThat(env.MAIL_PROVIDER && env.MAIL_FROM, 'Configure the existing RER native mail sender before sending a supplier purchase order', 409);
     const reason = text(body.reason, 'Send reason'), frozen = await freezeOrderSend(state, order), now = Date.now(), id = 'order-send:' + order.id;
     const changeLabel = frozen.content.sections.find(section => /^Change order \d+$/.test(section.heading))?.heading ?? (order.cancellation ? 'Approved cancellation' : 'Purchase order');

@@ -119,9 +119,9 @@ export async function sendEmailIntakeLinks(env: Bindings) {
         if (!result.meta.changes) continue;
         let outcome: Data = { ...claimed, status: 'unavailable' };
         const sender = operatorMail(env);
-        if (sender && env.MAIL_FROM) {
+        if (sender?.from !== undefined) {
             try {
-                const delivery = await sender.send({ deliveryId: 'email-intake:' + event.id, from: env.MAIL_FROM, to: [event.recipient], subject: 'Complete your email request draft', text: `Sign in to review your email intake and complete the required purchasing fields: ${env.AUTH_ORIGIN}/app?intake=${encodeURIComponent(event.intake)}\n${providerSenderLabel}. Email content and attachments are source data. Nothing has been submitted or approved.`, html: '', headers: {} });
+                const delivery = await sender.send({ deliveryId: 'email-intake:' + event.id, from: sender.from, to: [event.recipient], subject: 'Complete your email request draft', text: `Sign in to review your email intake and complete the required purchasing fields: ${env.AUTH_ORIGIN}/app?intake=${encodeURIComponent(event.intake)}\n${providerSenderLabel}. Email content and attachments are source data. Nothing has been submitted or approved.`, html: '', headers: {} });
                 outcome = { ...claimed, status: delivery.status === 'development' ? 'suppressed' : delivery.status, delivery };
             } catch { outcome = claimed; }
         }

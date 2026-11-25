@@ -276,7 +276,7 @@ test('APPROVAL-004 exact pending header edits carry or renew chain approvals and
  const self=await h.member('synthetic-purse-self@example.test',['requester','approver']);await cmd('policy',{...workflow,name:'synthetic-purse-16',currency:'USD',category:'self',project:'*',limitMinor:500000,budgetMinor:500000,approver:'synthetic-purse-self@example.test'});
  const selfRequest=await cmd('request',{...input,lines:input.lines.map(l=>({...l,category:'self'}))},self);await cmd('submit',{id:selfRequest.id,revision:1},self);
  await cmd('approver-edit',{id:selfRequest.id,revision:1,changes:{class:'Forbidden'},reason:'synthetic-purse-17'},self,403);
- const {createPortability}=await import('@runeditrun/rer/modules/portability'),{exportArchive,importArchive}=await import('@runeditrun/rer/internal/modules/portability/files.mjs'),{default:portability}=await import('../scripts/installer/portability.mjs');
+ const {createPortability}=await import('@runeditrun/rer/modules/portability'),{exportArchive,importArchive}=await import('@runeditrun/rer/modules/portability/files'),{default:portability}=await import('../scripts/installer/portability.mjs');
  const archive=h.dir+'/synthetic-purse-46.rer';await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
  const restored=await harness();t.after(()=>restored.close());await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
  for(const kind of ['request','revision','decision','scimApprovalTransfer']){const records=async db=>(await db.prepare('SELECT * FROM p_records WHERE kind=? ORDER BY id').bind(kind).all()).results;assert.deepEqual(await records(restored.db),await records(h.db),kind+' exact edited history survives a real archive');}
@@ -285,7 +285,7 @@ test('APPROVAL-004 exact pending header edits carry or renew chain approvals and
 
 test('Conditional native approval pools serialize a first decision, withdraw queues and await every parallel reviewer',async t=>{
  const h=await harness();t.after(()=>h.close());const {approvalChainFlow}=await import('./approval-chain-flow.mjs');await approvalChainFlow(h);
- const {createPortability}=await import('@runeditrun/rer/modules/portability'),{exportArchive,importArchive}=await import('@runeditrun/rer/internal/modules/portability/files.mjs'),{default:portability}=await import('../scripts/installer/portability.mjs');
+ const {createPortability}=await import('@runeditrun/rer/modules/portability'),{exportArchive,importArchive}=await import('@runeditrun/rer/modules/portability/files'),{default:portability}=await import('../scripts/installer/portability.mjs');
  const archive=h.dir+'/synthetic-purse-3120.rer';await exportArchive(await createPortability({db:h.db,buckets:{ORIGINALS:h.originals},policy:portability}),archive,[]);
  const restored=await harness();t.after(()=>restored.close());await importArchive(await createPortability({db:restored.db,buckets:{ORIGINALS:restored.originals},policy:portability}),archive,[]);
  for(const kind of ['request','revision','decision','policy','audit'])assert.deepEqual((await restored.db.prepare('SELECT * FROM p_records WHERE kind=? ORDER BY id').bind(kind).all()).results,(await h.db.prepare('SELECT * FROM p_records WHERE kind=? ORDER BY id').bind(kind).all()).results);

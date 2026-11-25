@@ -6,7 +6,7 @@ import {harness} from './purse-harness.mjs';
 import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs';
 import portability from '../scripts/installer/portability.mjs';
 import {createPortability} from '@runeditrun/rer/modules/portability';
-import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import {exportArchive,importArchive} from '@runeditrun/rer/modules/portability/files';
 
 async function pdf(pages){
  const document=await PDFDocument.create(),font=await document.embedFont(StandardFonts.Helvetica);

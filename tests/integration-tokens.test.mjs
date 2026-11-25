@@ -4,7 +4,7 @@ import { createDecipheriv, createHash, pbkdf2Sync } from 'node:crypto';
 import { join } from 'node:path';
 import { records, rows } from './browser-archive.mjs';
 import { createPortability } from '@runeditrun/rer/modules/portability';
-import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import { exportArchive, importArchive } from '@runeditrun/rer/modules/portability/files';
 import portability from '../scripts/installer/portability.mjs';
 import { harness } from './purse-harness.mjs';
 

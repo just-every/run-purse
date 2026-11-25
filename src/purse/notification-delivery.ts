@@ -56,7 +56,7 @@ export async function runNotificationDeliveries(env: Bindings, now = Date.now())
             else {
                 const sender = operatorMail(env);
                 status='unavailable'; code='mail-not-configured';
-                if (sender && env.MAIL_FROM) {
+                if (sender?.from !== undefined) {
                     try {
                         const links = currentItems.flatMap(n => {
                             const row = rows.find(row => row.notification === n.id), source = row?.approvalEmail?.fingerprint;
@@ -66,12 +66,12 @@ export async function runNotificationDeliveries(env: Bindings, now = Date.now())
                             url.searchParams.set('approvalEmail',n.id); url.searchParams.set('source',source);
                             return ['Review this exact approval and confirm your decision after signing in: ' + url.href];
                         });
-                        const result = await sender.send({deliveryId:'notification:'+batch,from:env.MAIL_FROM,to:[live.email],
+                        const result = await sender.send({deliveryId:'notification:'+batch,from:sender.from,to:[live.email],
                             subject:p.cadence==='daily' ? 'Your Purse daily digest' : 'Your Purse notification',
                             text:[`${currentItems.length} purchasing notification${currentItems.length===1?'':'s'} available. Sign in to see current authorized details: ${new URL('/app',env.AUTH_ORIGIN).href}`,...links].join('\n\n'),
                             html:'',headers:{}});
                         status=result.status==='development'?'suppressed':['accepted','uncertain','rejected','rate_limited'].includes(result.status)?result.status:'unavailable';
-                        code=result.status==='development'?'local-mail-suppressed':'mail-provider';
+                        code=result.code==='mail_off'?result.code:result.status==='development'?'local-mail-suppressed':'mail-provider';
                         provider=result.provider; providerMessageId=typeof result.providerMessageId==='string' && /^[A-Za-z0-9_-]{1,128}$/.test(result.providerMessageId)?result.providerMessageId:null;
                     } catch { status='uncertain'; code='mail-outcome-unknown'; }
                 }

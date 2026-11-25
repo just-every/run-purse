@@ -1,6 +1,6 @@
 import {nativeWebContext} from './native-web-fixture.mjs';
 import {createPortability} from '@runeditrun/rer/modules/portability';
-import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import {exportArchive,importArchive} from '@runeditrun/rer/modules/portability/files';
 import portability from '../scripts/installer/portability.mjs';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';

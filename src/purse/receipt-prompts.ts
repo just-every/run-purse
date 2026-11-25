@@ -31,7 +31,7 @@ async function send(env: Bindings, event: Data, now: number): Promise<Data> {
     const native = await env.DB.prepare("SELECT id,role,version FROM oa_operators WHERE lower(email)=? AND status='active'").bind(event.receiver).first<Data>();
     if (native && notificationPreference(state,{...recipient,id:native.id,owner:native.role==='owner',version:native.version}).version) return {...outcome,code:'notification-preferences'};
     const sender = operatorMail(env);
-    if (!sender || !env.MAIL_FROM) return { ...outcome, status: 'unavailable' };
+    if (sender?.from === undefined) return { ...outcome, status: 'unavailable' };
     const url = new URL('/app', env.AUTH_ORIGIN);
     url.searchParams.set('receipt', event.order);
     // The domain fence covers assignment rules, membership, receipts, invoices and PO changes.
@@ -39,7 +39,7 @@ async function send(env: Bindings, event: Data, now: number): Promise<Data> {
         .bind(revision, event.receiver, member ? 1 : 0).first<{ ok: number }>();
     if (!authorized?.ok) return { ...outcome, code: 'authority-changed' };
     try {
-        const result = await sender.send({ deliveryId: `receipt-prompt:${event.id}`, from: env.MAIL_FROM, to: [event.receiver],
+        const result = await sender.send({ deliveryId: `receipt-prompt:${event.id}`, from: sender.from, to: [event.receiver],
             subject: `Receipt requested: ${prompt.number}`,
             text: `PO: ${prompt.number}\nDue date: ${prompt.needDate}\nSign in to record a partial or full receipt: ${url.href}`,
             html: '', headers: {} });

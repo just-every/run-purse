@@ -5,7 +5,7 @@ import {harness} from './purse-harness.mjs'
 import {validatePurchasingArchive} from '../scripts/installer/restore-validation.mjs'
 import portability from '../scripts/installer/portability.mjs'
 import {createPortability} from '@runeditrun/rer/modules/portability'
-import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs'
+import {exportArchive,importArchive} from '@runeditrun/rer/modules/portability/files'
 
 test('CONTRACT-001 owner-confirmed agreement history, active member assignment, recorded renewal terms, exact invoice attribution, notice claims and complete restore through public doors',async t=>{
  let fail=false;

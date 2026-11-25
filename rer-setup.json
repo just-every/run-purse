@@ -134,6 +134,10 @@
           "label": "Local development (mail suppressed)"
         },
         {
+          "value": "none",
+          "label": "Mail off"
+        },
+        {
           "value": "rer",
           "label": "RER managed mail"
         },
@@ -151,7 +155,7 @@
         }
       ],
       "group": "mail",
-      "help": "Choose a provider for hosted email. Local development suppresses mail and needs no provider account.",
+      "help": "Choose a provider for hosted email, or turn mail off and use rer signin for the owner. Local development suppresses mail and needs no provider account.",
       "default": "development"
     },
     {

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {harness} from './purse-harness.mjs';
 import {createPortability} from '@runeditrun/rer/modules/portability';
-import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import {exportArchive,importArchive} from '@runeditrun/rer/modules/portability/files';
 import portability from '../scripts/installer/portability.mjs';
 import {PDFDocument} from 'pdf-lib';
 import {join} from 'node:path';

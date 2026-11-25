@@ -39,7 +39,7 @@ export interface Bindings extends IdentityBindings {
  PROTECTED_DATA_PREVIOUS_KEY?: string
  SESSION_SECRET: string
  SETUP_TOKEN?: string
- MAIL_PROVIDER?: 'development' | 'resend' | 'sendgrid' | 'cloudflare' | 'rer'
+ MAIL_PROVIDER?: 'none' | 'development' | 'resend' | 'sendgrid' | 'cloudflare' | 'rer'
  MAIL_RELAY_URL?: string
  MAIL_FROM?: string
  NOTIFICATION_WEBHOOK_SECRET?: string
@@ -57,7 +57,8 @@ export interface Bindings extends IdentityBindings {
 export const runtimeBindings = (env: Bindings): Bindings => env.RER_DEV_ORIGIN && env.AUTH_LOCAL === 'true' ? { ...env, AUTH_ORIGIN: env.RER_DEV_ORIGIN } : env
 export const authConfig = (env: Bindings): AuthConfig => ({ origin: env.AUTH_ORIGIN, local: env.AUTH_LOCAL === 'true', OWNER_EMAIL: env.OWNER_EMAIL, SESSION_SECRET: env.SESSION_SECRET, SETUP_TOKEN: env.SETUP_TOKEN, MAIL_FROM: env.MAIL_FROM, ...identityProviderConfiguration(env), branding: { productName: branding.name, accentColor: branding.primaryColor, signInPath: '/signin', theme: theme.href } })
 export function operatorAuth(env: Bindings) {
- const auth = scimIdentityAdmission(createOperatorAuth({ db: env.DB, config: authConfig(env), mailSender: operatorMail(env), clientIp: request => request.headers.get('CF-Connecting-IP') ?? '' }), env.DB)
+ const mailSender = env.MAIL_PROVIDER === 'none' ? undefined : operatorMail(env)
+ const auth = scimIdentityAdmission(createOperatorAuth({ db: env.DB, config: authConfig(env), mailSender, clientIp: request => request.headers.get('CF-Connecting-IP') ?? '' }), env.DB)
  return samlProviders(env).length ? samlControls(auth,env.DB,env.AUTH_ORIGIN) : auth
 }
 

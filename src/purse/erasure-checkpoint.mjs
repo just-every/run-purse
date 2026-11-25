@@ -1,4 +1,4 @@
-import { redactionStatements, invalidateTransfersStatements } from '@runeditrun/rer/internal/modules/portability/journal.mjs';
+import { redactionStatements, invalidateTransfersStatements } from '@runeditrun/rer/modules/portability/journal';
 /** Adapt Base's prepared-statement API to import-kit's transaction descriptors.
  * Reads still use the real database; no private statement internals are read. */
 export async function erasureCheckpoint(db) {

@@ -34,9 +34,9 @@ export async function runSupplierReminders(env: Bindings, now = Date.now(), manu
             const native=target==='owner'?await env.DB.prepare("SELECT id,email,role,version FROM oa_operators WHERE lower(email)=? AND status='active'").bind(recipient??'').first<any>():null;
             if(native && notificationPreference(state,{...native,owner:native.role==='owner',session:'',dev:false}).version){ reminder.outcomes.push({...outcome,status:'suppressed',code:'notification-preferences'}); continue; }
             const sender = operatorMail(env);
-            if (sender && env.MAIL_FROM && recipient) {
+            if (sender?.from !== undefined && recipient) {
                 try {
-                    const result = await sender.send({ deliveryId: `supplier-document:${id}:${target}`, from: env.MAIL_FROM, to: [recipient], html: '', headers: {}, subject: `Document refresh required: ${supplier.name}`, text: `${supplier.name}: ${document.type} expires ${document.expires}. ${target === 'supplier' ? 'Upload a refreshed document within seven days: ' + refresh.url : 'Review supplier submissions in Purse: ' + new URL('/app', env.AUTH_ORIGIN).href}. Uploading does not clear a lapse until a buyer reviews it. Required lapsed documents hold new purchase orders.` });
+                    const result = await sender.send({ deliveryId: `supplier-document:${id}:${target}`, from: sender.from, to: [recipient], html: '', headers: {}, subject: `Document refresh required: ${supplier.name}`, text: `${supplier.name}: ${document.type} expires ${document.expires}. ${target === 'supplier' ? 'Upload a refreshed document within seven days: ' + refresh.url : 'Review supplier submissions in Purse: ' + new URL('/app', env.AUTH_ORIGIN).href}. Uploading does not clear a lapse until a buyer reviews it. Required lapsed documents hold new purchase orders.` });
                     outcome = { ...outcome, ...result, at: new Date().toISOString() };
                 } catch { outcome = { ...outcome, status: 'uncertain', at: new Date().toISOString() }; }
             }

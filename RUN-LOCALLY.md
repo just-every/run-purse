@@ -1,6 +1,6 @@
 # Run it locally
 
-Start Purse from nothing with one line: `npx -y @runeditrun/rer dev just-every/run-purse` (set up only: `npx -y @runeditrun/rer setup just-every/run-purse`; without Node: `curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-purse`). This checkout pins `@runeditrun/rer` 0.2.30 as an exact devDependency, locked in
+Start Purse from nothing with one line: `npx -y @runeditrun/rer dev just-every/run-purse` (set up only: `npx -y @runeditrun/rer setup just-every/run-purse`; without Node: `curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-purse`). This checkout pins `@runeditrun/rer` as an exact devDependency, locked in
 `pnpm-lock.yaml`. The installed command selects that checkout's package;
 `OPERATIONS.json` and the package scripts both use `rer VERB`.
 
@@ -207,6 +207,11 @@ Real deployment uses the owner-account procedure and its private credentials.
 provider request. The default environment is `production`; select another with
 `--environment NAME`. Local validation does not establish provider acceptance,
 hosted health or mail delivery.
+
+For a Business without an email provider, use `MAIL_PROVIDER=none rer deploy
+--dry-run` to check the plan. A mail-off deployment needs no sender or mail API
+key. Its owner uses `rer signin` for a one-time sign-in link. Email delivery
+reports `mail_off`, and invitations and email sign-in are unavailable.
 
 `rer describe` reads the current checkout's actual verbs,
 flags, aliases, pins, effects and local state without installing or running

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { performance } from 'node:perf_hooks';
 import { join } from 'node:path';
 import { createPortability } from '@runeditrun/rer/modules/portability';
-import { exportArchive,importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import { exportArchive,importArchive } from '@runeditrun/rer/modules/portability/files';
 import portability from '../scripts/installer/portability.mjs';
 import { harness } from './purse-harness.mjs';
 import { searchPurchasing,addSearchScale,pdfPhrase,bankNumber } from './search-fixtures.mjs';

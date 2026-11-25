@@ -52,7 +52,7 @@ async function send(env: Bindings, event: Data, now: number): Promise<Data> {
     const snapshot = await buildValueSnapshot(fresh.state, request, event.revision);
     if (snapshot.fingerprint !== event.inputs.fingerprint) return { ...suppressed, code: 'evidence-changed' };
     const sender = operatorMail(env);
-    if (!sender || !env.MAIL_FROM) return { ...suppressed, status: 'unavailable' };
+    if (sender?.from === undefined) return { ...suppressed, status: 'unavailable' };
     // The domain revision covers the current request, exact decision, policy and membership.
     // Owner self-requests require the same current native identity and current owner role.
     const permitted = await env.DB.prepare(`SELECT 1 AS ok WHERE (SELECT revision FROM p_meta WHERE id=1)=? AND ${nativeRequester}`)

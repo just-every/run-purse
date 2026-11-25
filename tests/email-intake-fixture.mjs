@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHmac, randomUUID } from 'node:crypto';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { createPortability } from '@runeditrun/rer/modules/portability';
-import { exportArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import { exportArchive } from '@runeditrun/rer/modules/portability/files';
 import portability from '../scripts/installer/portability.mjs';
 import { harness } from './purse-harness.mjs';
 import { exportSeedInclude, seedProtectedKey } from './browser-seed-archive.mjs';

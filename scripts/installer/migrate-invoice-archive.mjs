@@ -1,5 +1,5 @@
 import {randomBytes,randomUUID} from 'node:crypto';
-import {tombstone} from '@runeditrun/rer/internal/modules/portability/journal.mjs';
+import {tombstone} from '@runeditrun/rer/modules/portability/journal';
 import {attestation,classifyLegacyEvidence,digest,retainedEvidence} from '../../src/purse/invoice-evidence-crypto.mjs';
 
 /** The pinned Base policy exposes only staging copies here. All migrations are

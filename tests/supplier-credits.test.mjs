@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { createPortability } from '@runeditrun/rer/modules/portability';
-import { exportArchive, importArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import { exportArchive, importArchive } from '@runeditrun/rer/modules/portability/files';
 import portability from '../scripts/installer/portability.mjs';
 import { validatePurchasingArchive } from '../scripts/installer/restore-validation.mjs';
 import { harness } from './purse-harness.mjs';

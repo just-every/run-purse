@@ -4,7 +4,7 @@ import {mkdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {build} from 'esbuild';
 import {createPortability} from '@runeditrun/rer/modules/portability';
-import {exportArchive,importArchive} from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import {exportArchive,importArchive} from '@runeditrun/rer/modules/portability/files';
 import portability from '../scripts/installer/portability.mjs';
 import {harness} from './purse-harness.mjs';
 import {nativeWebContext} from './native-web-fixture.mjs';

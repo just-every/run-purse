@@ -59,8 +59,10 @@ a forward migration and verified transition/recovery.
 `rer deploy --dry-run` validates the real owner-account
 deployment declaration and builds locally without provider requests. Real
 deployment requires privately supplied `CLOUDFLARE_ACCOUNT_ID` and
-`CLOUDFLARE_API_TOKEN`, the declared owner/session/setup secrets, and a real
-verified mail sender in `deploy.json`. Follow the owner-account deploy-kit
+`CLOUDFLARE_API_TOKEN` and the declared owner/session/setup secrets. For a
+Business without an email provider, set `MAIL_PROVIDER=none` and use `rer signin`
+to issue the owner a one-time sign-in link. Email delivery requires a verified
+`MAIL_FROM` and the selected provider's credentials. Follow the owner-account deploy-kit
 instructions under `node_modules/@runeditrun/rer/modules/deploy-kit`; account scope,
 resource ownership, migrations, receipt and health checks are defined there.
 Local validation does not prove hosted acceptance, provider delivery or remote

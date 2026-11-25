@@ -115,7 +115,8 @@ function governance(s: State, policy: Data, order: Data) {
 /** The claim is durable; every effect then rechecks pause, native identity, grants and source facts. */
 async function send(env: Bindings, event: Data, order: Data, policy: Data, now: number): Promise<Data> {
     const outcome: Data = { recipient: event.outcome.recipient, status: 'unavailable', at: new Date(now).toISOString() };
-    if (!outcome.recipient || !env.MAIL_FROM) return outcome;
+    const sender = operatorMail(env);
+    if (!outcome.recipient || sender?.from === undefined) return outcome;
     const fresh = await load(env.DB), currentPolicy = fresh.state.get(key('orderChasePolicy', order.id))?.value;
     const currentOrder = fresh.state.get(key('order', order.id))?.value;
     if (!currentPolicy?.enabled || currentPolicy.version !== policy.version || !currentOrder
@@ -131,8 +132,6 @@ async function send(env: Bindings, event: Data, order: Data, policy: Data, now: 
         .bind(fresh.revision, ...principal.params, ...(recipient?.params ?? [])).first();
     if (!permitted) return outcome;
     try {
-        const sender = operatorMail(env);
-        if (!sender) return outcome;
         return { ...outcome, ...await sender.send(event.message) };
     } catch { return { ...outcome, status: 'uncertain' }; }
 }

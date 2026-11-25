@@ -1,8 +1,7 @@
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {realpath} from 'node:fs/promises';
-import {processInfo} from '@runeditrun/rer/internal/modules/job-queue/processes.mjs';
-import {processCwd,listeners} from '@runeditrun/rer/internal/onboarding/process-diagnostics.mjs';
+import {processCwd,listeners} from '@runeditrun/rer/process-diagnostics';
 const exec=promisify(execFile);
 
 /** The public RER proxy intentionally refuses trigger URLs. Find only the
@@ -11,8 +10,10 @@ export async function privateSchedule(root,parent,time) {
  const expected=await realpath(root),pending=[parent],seen=new Set();let runtime;
  while(pending.length) {
   const pid=pending.pop();if(seen.has(pid))continue;seen.add(pid);
-  const info=await processInfo(pid);
-  const match=info?.title.match(/\/(?:vite\/bin\/vite\.js|@runeditrun\/rer\/onboarding\/development-runtime\.mjs)\s+dev\b.*?--port\s+(\d+)/);
+  let command;
+  try { ({stdout: command}=await exec('/bin/ps',['-ww','-p',String(pid),'-o','command='])); }
+  catch(error){if(error.code!==1)throw error;continue;}
+  const match=command.match(/\/(?:vite\/bin\/vite\.js|@runeditrun\/rer\/onboarding\/development-runtime\.mjs)\s+dev\b.*?--port\s+(\d+)/);
   if(match&&await realpath(await processCwd(pid))===expected){
    if(runtime)throw new Error('More than one owned application runtime');
    // The CLI binds port zero and announces the actual Vite listener privately.

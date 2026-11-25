@@ -147,7 +147,7 @@ test('INVOICE-003, AP-003 and REPORT-003 native source facts flag near duplicate
 test('Legacy archive import migrates retained evidence without rewriting hashes, and tampered evidence refuses atomically through the archive door',async t=>{
  const {legacyHistoryFixture}=await import('./invoice-history-fixture.mjs');
  const {createPortability}=await import('@runeditrun/rer/modules/portability');
- const {exportArchive,importArchive}=await import('@runeditrun/rer/internal/modules/portability/files.mjs');
+ const {exportArchive,importArchive}=await import('@runeditrun/rer/modules/portability/files');
  const {makePart,ContentVerifier,ArchiveVerifier}=await import('@runeditrun/rer/modules/portability/format');
  const {records,rows}=await import('./browser-archive.mjs');const {writeFile}=await import('node:fs/promises');const {join}=await import('node:path');
  const h=await harness();t.after(()=>h.close());const f=await legacyHistoryFixture(h);

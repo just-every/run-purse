@@ -51,6 +51,7 @@ export async function sendOrderThreadMessage(env: Bindings, actor: Actor, body: 
     requireThat(address.test(recipient), 'Use one supplier contact email');
     requireThat(!recipient.endsWith('@erased.invalid'), 'Supplier contact was erased', 409);
     const content = text(body.body, 'Supplier message', 20_000), reason = text(body.reason, 'Send reason');
+    requireThat(env.MAIL_PROVIDER !== 'none', 'mail_off', 409);
     // A configured inbound address establishes the receiving domain; never infer it from MAIL_FROM.
     const configured = state.get('emailIntakeConfig:main')?.value.address;
     requireThat(typeof configured === 'string' && address.test(configured) && env.MAIL_PROVIDER === 'resend' && env.MAIL_FROM && env.MAIL_API_KEY && env.EMAIL_INTAKE_WEBHOOK_SECRET, 'Configure Resend sending and the signed email intake receiving domain before supplier messaging', 409);

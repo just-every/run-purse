@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { readFile } from 'node:fs/promises';
 import { createPortability } from '@runeditrun/rer/modules/portability';
-import { exportArchive } from '@runeditrun/rer/internal/modules/portability/files.mjs';
+import { exportArchive } from '@runeditrun/rer/modules/portability/files';
 import portability from '../scripts/installer/portability.mjs';
 import { harness } from './purse-harness.mjs';
 import { invoiceText } from './invoice-reading-fixtures.mjs';
