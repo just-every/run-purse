@@ -72,7 +72,7 @@
       "executable": false
     },
     ".github/workflows/run-demo.yml": {
-      "sha256": "a8250bf7b4488b27fe6b410af02501c57f5fd836d0f40cad21a8a8e2311028ab",
+      "sha256": "00bf9cec767b6dc5f9a0b1d46a995496517b7d853b8ef3ad311fb891faf6a826",
       "executable": false
     },
     ".github/workflows/run-site.yml": {
