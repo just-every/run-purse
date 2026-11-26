@@ -1,9 +1,9 @@
 import { hasSupplierReviewHold, initializeSupplierMatching, matchingInputs, supplierPublicValue } from './supplier-identity';
 import { duplicateReview, supplierPublicProfile } from './supplier-matching';
-import { screenSupplier } from './screening';
+import { screenSupplier, type ScreeningList } from './screening';
 import { all, audit, can, date, get, put, requireThat, text, uid, type Actor, type Data, type State } from './types';
 
-export async function suppliers(s: State, a: Actor, op: string, b: Data): Promise<Data | undefined> {
+export async function suppliers(s: State, a: Actor, op: string, b: Data, list?: ScreeningList): Promise<Data | undefined> {
     if (!['supplier', 'screen-supplier', 'review-screening', 'supplier-duplicates', 'supplier-matching-setup'].includes(op)) return;
     can(s, a, 'buyer');
     if (b.id) requireThat(!hasSupplierReviewHold(s,b.id),'Supplier proposal requires native owner review; activation needs onboarding and verified-bank prerequisites',409);
@@ -41,7 +41,7 @@ export async function suppliers(s: State, a: Actor, op: string, b: Data): Promis
     if (previous?.status === 'proposed' && desired !== 'blocked') requireThat(previous.proposedBy !== a.id, 'The proposer cannot activate their own supplier', 403);
     requireThat(input.contractRef == null || typeof input.contractRef === 'string', 'Agreement reference must be text');
     const screenings = [...(previous?.screenings ?? [])];
-    if (!screenings.length || name !== previous?.name || address !== (previous?.address ?? '') || op === 'screen-supplier') screenings.push(await screenSupplier(name, address));
+    if (!screenings.length || name !== previous?.name || address !== (previous?.address ?? '') || op === 'screen-supplier') screenings.push(await screenSupplier(name, address, list));
     const latest = screenings.at(-1)!;
     const status = latest.status === 'pending_review' ? 'pending_review' : latest.status === 'confirmed' ? 'blocked' : desired;
     const result = { ...previous, ...profile, matching, status, requestedStatus: desired, reason, contacts, contractRef: input.contractRef ?? '', renewal: input.renewal ? date(input.renewal) : '', documents: all(s, 'attachment').filter(x => x.record === id).map(x => x.id), duplicateReview: !previous && duplicates.matches.length ? { ...duplicates, actor: a.id, at: new Date().toISOString(), reason: b.duplicateReason } : previous?.duplicateReview ?? null, screenings };

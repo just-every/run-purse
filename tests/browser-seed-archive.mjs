@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { localCliProof } from '@runeditrun/rer/adapter-auth';
-import { localOrigin, localVariables } from '@runeditrun/rer/local/environment';
+import { localVariables } from '@runeditrun/rer/local/environment';
 import { readPrivateFile } from '@runeditrun/rer/private-files';
 
 export const seedProtectedKey = createHash('sha256').update('synthetic-purse-1').digest('hex');
@@ -31,7 +31,7 @@ export async function exportSeedInclude(h) {
  */
 export async function restoreSeedInclude(root, origin, archive) {
     const vars = localVariables(await readPrivateFile(join(root, '.dev.vars')));
-    assert.equal(localOrigin(vars).origin, origin, 'Seed restore uses this checkout’s own loopback installation');
+    assert.equal(new URL(vars.AUTH_ORIGIN).origin, origin, 'Seed restore uses this checkout’s own loopback installation');
     assert.ok(typeof vars.SESSION_SECRET === 'string' && vars.SESSION_SECRET.length >= 32, 'The disposable installation must have its private native session setting');
     const proof = await fetch(origin + '/auth/local/cli-session', { method: 'POST', redirect: 'manual', headers: { origin, 'content-type': 'application/json', 'x-rer-local-cli': localCliProof(vars.SESSION_SECRET) }, body: '{}' });
     assert.equal(proof.status, 303, 'The seed must obtain fresh native owner proof through the public local CLI door');

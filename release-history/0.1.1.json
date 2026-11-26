@@ -1,0 +1,4 @@
+{
+  "version": "0.1.1",
+  "publicReleaseNotes": "Purse now supports hosted installation with a digest-bound setup manifest, deployment specification, dispatch-only Managed workflow and configurable mail providers. This native release uses rer 0.2.80 for archive portability."
+}

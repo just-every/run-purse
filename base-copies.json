@@ -2,6 +2,26 @@
   "schemaVersion": 1,
   "copies": [
     {
+      "path": ".github/workflows/run-demo.yml",
+      "originPath": "export/run-demo.yml",
+      "revision": "fc087acfd6ba2561f52cec2bd85fbdbda66cde0f",
+      "files": {
+        ".github/workflows/run-demo.yml": "8a9f011fa892b7adc7941f2ddd09cb08c8af4c77c05c584c89b70de2cc1ab9b7"
+      },
+      "modes": {
+        ".github/workflows/run-demo.yml": "100644"
+      },
+      "adapted": {
+        ".github/workflows/run-demo.yml": "fc087acfd6ba2561f52cec2bd85fbdbda66cde0f"
+      },
+      "acknowledged": {
+        ".github/workflows/run-demo.yml": {
+          "sha256": "b58d59a26bec4f852e32e71eefadbcaa4c70096e549cb2eccf5aafeba9d8db15",
+          "mode": "100644"
+        }
+      }
+    },
+    {
       "path": ".node-version",
       "originPath": "default-seed/.node-version",
       "revision": "11f94fec479228d71ba6d7dd6ea7796c0d42c544",

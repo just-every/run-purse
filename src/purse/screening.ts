@@ -33,9 +33,13 @@ function* csvRows(raw: string): Generator<string[]> {
         }
     }
 }
-export async function screenSupplier(name: string, address: string) {
+/** The list a screen reads and names in its retained result. Every command screens against the Commerce CSL;
+ * only the demo seed passes its own sample list, so that seeding a demo never fetches. */
+export type ScreeningList = { file: string; url: string; fetch: typeof fetch };
+export const commerceList: ScreeningList = { file: 'Commerce CSL / OFAC SDN', url: sourceUrl, fetch: (input, init) => fetchScreeningSource(input, init) };
+export async function screenSupplier(name: string, address: string, list: ScreeningList = commerceList) {
     let response: Response;
-    try { response = await fetchScreeningSource(sourceUrl, { signal: AbortSignal.timeout(30000) }); }
+    try { response = await list.fetch(list.url, { signal: AbortSignal.timeout(30000) }); }
     catch { throw new Error('OFAC source unavailable; supplier was not saved'); }
     requireThat(response.ok, 'OFAC source unavailable; supplier was not saved', 503);
     const raw = await response.text(), sourceDate = response.headers.get('last-modified');
@@ -57,5 +61,5 @@ export async function screenSupplier(name: string, address: string) {
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
     const sha256 = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
     return { id: crypto.randomUUID(), name, address, at: new Date().toISOString(), status: matches.length ? 'pending_review' : 'clear', matches,
-        sources: [{ file: 'Commerce CSL / OFAC SDN', url: sourceUrl, sourceDate, sha256, entries }] };
+        sources: [{ file: list.file, url: list.url, sourceDate, sha256, entries }] };
 }

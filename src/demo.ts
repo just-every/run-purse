@@ -1,6 +1,7 @@
 import { command } from './purse/api'
 import { load } from './purse/store'
 import { hashRfqToken } from './purse/rfq-links'
+import { commerceList, type ScreeningList } from './purse/screening'
 import { audit, type Actor, type Data } from './purse/types'
 import type { Bindings } from './auth.server'
 
@@ -21,6 +22,14 @@ function tuesdayMorning(now: Date) {
     if (p.weekday === 'Tue' && at <= now.getTime()) return { y: Number(p.year), m: Number(p.month), d: Number(p.day) }
   }
   throw new Error('No Tuesday in the last week')
+}
+
+/** The seed's suppliers are screened against this one-entry sample list, named as sample data in each retained
+ * result, so that seeding never downloads the live Commerce list (19 MB for every supplier). A supplier the
+ * visitor adds or screens again reads the live list. */
+function sampleList(when: number): ScreeningList {
+  const csv = 'source,entity_number,name,alt_names,addresses,programs,source_list_url\n"Specially Designated Nationals (SDN) - Treasury Department",900001,"Sample Restricted Trading Co.","Sample Blocked Alias","1 Sample Street, Sampleville",SAMPLE,https://sanctionslist.ofac.treas.gov/Home/SdnList\n'
+  return { file: 'Sample SDN list (demo data)', url: commerceList.url, fetch: async () => new Response(csv, { headers: { 'last-modified': new Date(when).toUTCString() } }) }
 }
 
 /** Demo data for `rer demo` and the hosted demo (Base modules/demo runs it once, after the owner exists):
@@ -53,9 +62,9 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
   const tue = tuesdayMorning(now)
   const at = (day: number, time: string) => { const [h, min] = time.split(':').map(Number); return central(tue.y, tue.m, tue.d + day, h, min) }
   const date = (day: number) => new Date(Date.UTC(tue.y, tue.m - 1, tue.d + day)).toISOString().slice(0, 10)
-  async function on(when: number, actor: Actor, op: string, body: Data): Promise<Data> {
+  async function on(when: number, actor: Actor, op: string, body: Data, list?: ScreeningList): Promise<Data> {
     const start = new Date().toISOString(), seen = new Map([...state].map(([k, r]) => [k, r.revision]))
-    const result = await command(state, actor, op, body)
+    const result = await command(state, actor, op, body, undefined, list)
     const iso = new Date(when).toISOString()
     for (const [k, r] of state) if (seen.get(k) !== r.revision)
       for (const field of ['at', 'generatedAt', 'issuedAt']) if (typeof r.value[field] === 'string' && r.value[field] >= start) r.value[field] = iso
@@ -69,8 +78,12 @@ export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail:
   await on(setup, owner, 'member', { email: owner.email, name: 'Renee Coleman', roles: ['requester', 'approver', 'buyer', 'receiver'], active: true })
   for (const p of [ray, carla, sam, priya, tasha, megan, luis, kim, jamal, nikhil, ana]) await on(setup, owner, 'member', { email: p.email, name: p.name, roles: p.roles, active: true })
 
-  const supplier = async (name: string, status: string, reason: string, contact: [string, string], extra: Data = {}) =>
-    (await on(at(-29, '10:00'), priya.actor, 'supplier', { name, status, reason, contacts: [{ name: contact[0], email: contact[1] }], ...extra })).id as string
+  const supplier = async (name: string, status: string, reason: string, contact: [string, string], extra: Data = {}) => {
+    const when = at(-29, '10:00')
+    const id = (await on(when, priya.actor, 'supplier', { name, status, reason, contacts: [{ name: contact[0], email: contact[1] }], ...extra }, sampleList(when))).id as string
+    for (const screening of state.get(`supplier:${id}`)!.value.screenings) screening.at = new Date(when).toISOString()
+    return id
+  }
   const cdw = await supplier('CDW', 'preferred', 'IT hardware under the Redbud account agreement', ['Account team', 'redbud@cdw-orders.example'], { contractRef: 'RB-AG-102', renewal: date(70) })
   const uline = await supplier('Uline', 'preferred', 'Shipping supplies for the Columbus dock', ['Customer service', 'orders@uline-orders.example'], { contractRef: 'RB-AG-087', renewal: date(41) })
   const amazon = await supplier('Amazon Business', 'preferred', 'Consumables and small equipment on the business account', ['Business account', 'redbud@amazon-business.example'])

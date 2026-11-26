@@ -1,26 +1,22 @@
 {
-  "version": "0.1.1",
-  "previousVersion": "0.1.0",
-  "publicReleaseNotes": "Purse now supports hosted installation with a digest-bound setup manifest, deployment specification, dispatch-only Managed workflow and configurable mail providers. This native release uses rer 0.2.80 for archive portability.",
+  "version": "0.2.0",
+  "previousVersion": "0.1.1",
+  "publicReleaseNotes": "Purse 0.2.0 adds an agent door with company money limits and named-person approvals, SAML sign-in, cross-team reviews, supplier tax and shipment records, deposits, travel requests, internal comments with search, and a Business that can run Purse with mail off. The hosted demo now starts in seconds: its sample suppliers are screened against a sample list instead of downloading the live screening list twelve times, and each published release redeploys the demo. Built with rer 0.2.140.",
   "migrations": [
-    "migrations/core/0021_owner_signin.sql",
-    "migrations/core/0022_import_kit_progress.sql",
-    "migrations/core/0023_supplier_document_links.sql",
-    "migrations/core/0024_rfq_links.sql",
-    "migrations/core/0025_email_intake.sql",
-    "migrations/core/0026_integration_tokens.sql",
-    "migrations/core/0027_search_names.sql",
-    "migrations/core/0028_search.sql",
-    "migrations/core/0029_agreement_search.sql",
-    "migrations/core/0030_agreement_document_search.sql",
-    "migrations/core/0031_supplier_protected.sql",
-    "migrations/core/0032_scim_authority.sql",
-    "migrations/core/0033_scim_links.sql",
-    "migrations/core/0034_order_send_links.sql",
-    "migrations/core/0035_integration_po_reads.sql",
-    "migrations/core/0036_pantry_credentials.sql",
-    "migrations/core/0037_order_thread.sql"
+    "migrations/core/0038_restore_history.sql",
+    "migrations/core/0039_comment_search.sql",
+    "migrations/core/0040_cross_team_reviews.sql",
+    "migrations/core/0041_supplier_tax.sql",
+    "migrations/core/0042_business_settings.sql",
+    "migrations/core/0043_business_people.sql",
+    "migrations/core/0044_agent_door.sql",
+    "migrations/core/0045_deposit_rule_authority.sql",
+    "migrations/core/0046_saml.sql",
+    "migrations/core/0047_budget_disposition.sql",
+    "migrations/core/0048_agent_artifact_erasure.sql",
+    "migrations/core/0049_agent_door_relay_upgrade.sql",
+    "migrations/core/0050_business_retired.sql"
   ],
   "breaking": false,
-  "agentUpdateInstructions": "Retain the previous source and a private native export. Follow OPERATIONS.md for same-release recovery before upgrading; preserve existing migration bytes and installation secrets."
+  "agentUpdateInstructions": "Retain the previous source and a private native export. Follow OPERATIONS.md for same-release recovery before upgrading; preserve existing migration bytes and installation secrets. The thirteen migrations 0038 to 0050 apply in order on the next deploy."
 }

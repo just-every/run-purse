@@ -72,7 +72,7 @@
       "executable": false
     },
     ".github/workflows/run-demo.yml": {
-      "sha256": "00bf9cec767b6dc5f9a0b1d46a995496517b7d853b8ef3ad311fb891faf6a826",
+      "sha256": "b58d59a26bec4f852e32e71eefadbcaa4c70096e549cb2eccf5aafeba9d8db15",
       "executable": false
     },
     ".github/workflows/run-site.yml": {
@@ -112,7 +112,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "fb0bbb24d92ad2d0f6dd1b060699123b09d062b639d2a5f4ac93b1fbce348272",
+      "sha256": "91c9616ea769057441ec2e14f633fc351b04d53f8a50a8244c56f2cc6baa7cd8",
       "executable": false
     },
     "CLAUDE.md": {
@@ -420,7 +420,7 @@
       "executable": false
     },
     "package.json": {
-      "sha256": "6a9e37e983dac2508c18d58fd2dfe179b62bf5c23ce85e4772d4da4b58a1c921",
+      "sha256": "a01f0bf9d8141ecd98fdc711c4fe2c4e00a314c1748f8189079e17e6657a04c7",
       "executable": false
     },
     "packaging.json": {
@@ -436,7 +436,7 @@
       "executable": false
     },
     "pnpm-lock.yaml": {
-      "sha256": "caa857a92cb165aa9eda3f84c8517ad1a1b144e9197f1770d3b3a4365f61d5ed",
+      "sha256": "3fed04834fecc67d0b7a94b16e537a763257d2f5aede2f1a683956bbdfde63e2",
       "executable": false
     },
     "public/brand/apple-touch-icon.png": {
@@ -728,7 +728,7 @@
       "executable": false
     },
     "RELEASE.json": {
-      "sha256": "cdf2f53f9e936402b19b021ddb775d30edc4444eefa79c03d163cd9449efeb69",
+      "sha256": "5be8f08298462395a58134cd7fa8318539114dc8a24b792f76abf5caf9d797c4",
       "executable": false
     },
     "rer-project.json": {
@@ -1192,7 +1192,7 @@
       "executable": false
     },
     "seed.json": {
-      "sha256": "14809a56bca649e9f13902587d76f4c26e2567fe112ce8e23c003f52eb669767",
+      "sha256": "acd0b690db4f0ef05041488c26fd73e297c2b2ea195d4e9b5f20e41142281c9c",
       "executable": false
     },
     "SOURCE.md": {
@@ -1356,7 +1356,7 @@
       "executable": false
     },
     "src/demo.ts": {
-      "sha256": "1ca686bf07fe121abb4a404d48d4020268b0bb6275427c6891005a1bbbd07a1d",
+      "sha256": "237f1da16c7d4db3ad5d4e2820c422dd751fa95ca0bdfd98c84d369e0af0ee15",
       "executable": false
     },
     "src/dev-personas.ts": {
@@ -3588,7 +3588,7 @@
       "executable": false
     },
     "src/purse/api.ts": {
-      "sha256": "61d6aabda10ad1798e3104dfe90f42c3c0ab0c6655a595dc6ae589ee64329697",
+      "sha256": "1770bf47aece58076d2fdb33b02356f59cdfbb0d4b816821b65c6a65d80295e8",
       "executable": false
     },
     "src/purse/approval-chain-authority.ts": {
@@ -4396,7 +4396,7 @@
       "executable": false
     },
     "src/purse/screening.ts": {
-      "sha256": "bb745bfc0e6de9591f0420e2a0df575c0a50e8257f5e6d52de13a2ebf49665c1",
+      "sha256": "8cb5e9ef84ab3c6b05c322f8948bd5f1d9e404a988737783794be6eccaa5306a",
       "executable": false
     },
     "src/purse/search-access.ts": {
@@ -4516,7 +4516,7 @@
       "executable": false
     },
     "src/purse/suppliers.ts": {
-      "sha256": "77676051ea161dee9a19f5d3c7a01e94e60b6defbac3dab5b23b94984760b010",
+      "sha256": "f05ab321d8d46c3eec4d48149332290acac4ba6d0e44203c352a38c589ef4091",
       "executable": false
     },
     "src/purse/travel-api.ts": {
@@ -5708,7 +5708,7 @@
       "executable": false
     },
     "tests/browser-seed-archive.mjs": {
-      "sha256": "dd10556945d6b3b57a88aafe02a6f5f14f457d9abfdc6982eee08279eb5dc8fb",
+      "sha256": "17c51ef8be93d1f95e609b82ab0b03c59c92553fd1544593dfc18eeac63af83e",
       "executable": false
     },
     "tests/browser-shard.mjs": {
