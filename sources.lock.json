@@ -5392,7 +5392,7 @@
       "executable": false
     },
     "tests/agent-value.test.mjs": {
-      "sha256": "bc5776c06d680edfb448baf1d39208bcb298817115e96553911abed6d9cc9215",
+      "sha256": "2fc36bdf2a3078b997cd2ef09a2b8917e5e17401474fc51bb5babe09213e3d96",
       "executable": false
     },
     "tests/agreement-reading.test.mjs": {
@@ -5672,7 +5672,7 @@
       "executable": false
     },
     "tests/browser-recurring-scenarios.mjs": {
-      "sha256": "bc686f7861ec002d21cb5ec3f35313892f77f271f69216faba38a432e146e5a5",
+      "sha256": "062f24ce51ecc45f059ec08a296189f5ab8ee7813b03c1f5c5da11ec06a802c5",
       "executable": false
     },
     "tests/browser-request-again.mjs": {
@@ -6088,11 +6088,11 @@
       "executable": false
     },
     "tests/recurring-scenario-fixture.mjs": {
-      "sha256": "fffea0dd758bdd4de7c473e8cb162bd04187c072eedb92dcfe747fe76abef5ca",
+      "sha256": "a69608fb05359348b3c28f545f00f8c13caec55d6ee1608f1ab807b447575adb",
       "executable": false
     },
     "tests/recurring-scenario-web-rider.mjs": {
-      "sha256": "e4aad799485151c5441693ec4b8d4c5d726443a80fad112d94a43f842e195daf",
+      "sha256": "617626f449ea34d916b536a458df64a97345053dc4eef38a25a448cc619e2d5a",
       "executable": false
     },
     "tests/restore-po-documents.mjs": {

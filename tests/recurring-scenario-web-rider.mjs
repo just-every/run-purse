@@ -25,7 +25,8 @@ export async function recurringScenarioRider({browser,f,page,panel,bundle,width,
   assert.equal(await member.getByRole('heading',{name:'Attributed invoice evidence',exact:true}).count(),0);
   await snap('assigned-terms',member.locator('main'),member);
   const valuePolicy=(await f.h.state()).data.valuePolicy[0];await f.h.command('value-policy',{...valuePolicy,enabled:false,reason:'Separate recurring proposal research from requester check-in mail'});
-  const tick=await f.h.mf.dispatchFetch(f.h.origin+'/cdn-cgi/local/scheduled?time='+Date.parse('2026-11-24T12:00:00Z'));assert.equal(tick.status,200,await tick.text());
+  const noticeWindowStart=Date.parse(f.dates.notice+'T12:00:00Z')-7*86_400_000;
+  const tick=await f.h.mf.dispatchFetch(f.h.origin+'/cdn-cgi/local/scheduled?time='+noticeWindowStart);assert.equal(tick.status,200,await tick.text());
   await member.goto(f.h.origin+'/app?tab=Preparation');
   const notices=member.getByText('Scheduled recurring review notices',{exact:true});await notices.click();
   await member.getByRole('heading',{name:'Recurring spend needs review',exact:true}).first().waitFor();
@@ -39,7 +40,7 @@ export async function recurringScenarioRider({browser,f,page,panel,bundle,width,
   await panel.getByLabel('Renewal forecast reason for '+agreement.name,{exact:true}).fill('Proposed non-renewal; no supplier billing claim');
   const order=f.orders[1];
   for(const label of ['Proposed cash for '+order.number+' (USD)','Proposed commitment for '+order.number+' (USD)'])await panel.getByLabel(label,{exact:true}).fill('0');
-  await panel.getByLabel('Proposed date for '+order.number,{exact:true}).fill('2026-12-01');
+  await panel.getByLabel('Proposed date for '+order.number,{exact:true}).fill(f.input.assumptions[1].expectedDate);
   const scenario=await save(page,'recurring-scenario-prepare',panel.getByRole('button',{name:'Prepare recurring scenario',exact:true}));
   const card=panel.getByRole('region',{name:'Scenario '+scenario.id,exact:true});
   await card.getByText('forecast from recorded terms; not issued, not realized',{exact:true}).first().waitFor();
