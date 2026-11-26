@@ -19,6 +19,6 @@ export function nativePeople(env: Bindings): PeopleAdapter {
     return person
   }
   return { person:async id=>admitted(await native.person(id)), sponsor:async claims=>admitted(await native.sponsor(claims)),
-    session:async request=>admitted(await native.session(request)),businessMember:native.businessMember,
+    session:async request=>admitted(await native.session(request)),businessMember:native.businessMember,businessStopped:native.businessStopped,
     businessRole:person=>businessRoles.get(person.id)??null }
 }
