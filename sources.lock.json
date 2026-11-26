@@ -5344,7 +5344,7 @@
       "executable": false
     },
     "tests/agent-door-capacity.mjs": {
-      "sha256": "f2130286347ebe30be571d6c210bc52cb4e0818f5ad2f3c24837375768e75ac4",
+      "sha256": "4aa9abcdbf27a81bb071c341fc6dd375f5bb9a6d846a2f5971d1fd37edcd930c",
       "executable": false
     },
     "tests/agent-door-erasure.mjs": {

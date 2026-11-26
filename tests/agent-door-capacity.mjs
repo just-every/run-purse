@@ -28,7 +28,7 @@ try {
    const id=++sequence
    const response=await fetch(h.origin+'/mcp',{method:'POST',redirect:'manual',signal:AbortSignal.timeout(25_000),headers:{origin:h.origin,authorization:'Bearer '+bearer,'content-type':['application','json'].join('/'),'MCP-Protocol-Version':VERSION,'Mcp-Method':rpcMethod},body:JSON.stringify({jsonrpc:'2.0',id,method:rpcMethod,params:{_meta:{'io.modelcontextprotocol/protocolVersion':VERSION}}})})
    const body=await response.json()
-   assert.equal(body.id,id)
+   assert.equal(body.id,response.status===401?null:id)
    return {status:response.status,retryAfter:response.headers.get('retry-after'),body}
   }
   const discovery=await raw(discover)
@@ -72,6 +72,7 @@ try {
   // Invalid credentials must still be refused before any private listing.
   const unauthenticated=await raw(method,'synthetic-purse-invalid')
   assert.equal(unauthenticated.status,401)
+  assert.equal(unauthenticated.body.error.code,-32001)
   assert.equal(unauthenticated.body.result,undefined)
   // A different agent remains admitted; the same signed-in person can still
   // read and edit the purchase while the burst agent remains rate limited.
